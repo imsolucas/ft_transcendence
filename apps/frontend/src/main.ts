@@ -1,24 +1,32 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import './styles/style.css'
+import { ThemeToggle } from "./components/theme-toggle";
+import { renderPage } from "./router";
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+export function App(): HTMLElement {
+  const app = document.createElement("div");
+  app.className =
+    "relative min-h-screen bg-gray-200 text-gray-900 dark:bg-gray-900 dark:text-white";
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+  // Global theme toggle
+  const themeWrapper = document.createElement("div");
+  themeWrapper.className = "absolute bottom-4 right-4";
+  themeWrapper.appendChild(ThemeToggle());
+
+  // Page container (where router injects pages)
+  const pageContainer = document.createElement("div");
+  pageContainer.id = "page-container";
+  pageContainer.className = "flex items-center justify-center min-h-screen";
+
+  app.appendChild(themeWrapper);
+  app.appendChild(pageContainer);
+
+  return app;
+}
+
+// Bootstrapping
+const root = document.getElementById("app");
+if (root) {
+  root.appendChild(App());
+  renderPage("landing"); // start with landing page
+}
+
