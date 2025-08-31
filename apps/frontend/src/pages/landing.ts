@@ -1,8 +1,10 @@
+import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
+
 export function LandingPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen flex justify-center items-center font-poppins';
   container.style.background = 'linear-gradient(90deg, #e2e2e2, #c9d6ff)';
-  
+
   container.innerHTML = `
     <div class="container relative w-[850px] h-[550px] bg-white m-5 rounded-[30px] shadow-[0_0_30px_rgba(0,0,0,0.2)] overflow-hidden max-w-[90vw] font-poppins">
       <!-- Login Form -->
@@ -187,6 +189,58 @@ export function LandingPage(): HTMLElement {
       }
     </style>
   `;
+
+  // --- Google Sign-In button: simple, in-place initializer ---
+  const social = container.querySelector('.social-icons');
+  if (social) {
+    const googleContainer = document.createElement('div');
+    // id used only to render the official GSI button
+    googleContainer.id = 'g_id_signin_container';
+    social.prepend(googleContainer);
+
+    (async () => {
+      try {
+        await loadGoogleSignInService();
+
+        const google = (window as any).google;
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+        if (!google?.accounts?.id) {
+          console.warn('Google Identity SDK not available after load.');
+          return;
+        }
+        if (!clientId) {
+          console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
+          return;
+        }
+
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (resp: any) => {
+            handleCredentialResponse(resp);
+          },
+        });
+
+        // Render button with attributes equivalent to the markup you provided
+        google.accounts.id.renderButton(
+          document.getElementById('g_id_signin_container'),
+          {
+            type: 'standard',
+            size: 'large',
+            theme: 'outline',
+            text: 'sign_in_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+          }
+        );
+
+        // Do not auto prompt (matches data-auto_prompt="false"); omit google.accounts.id.prompt()
+      } catch (err) {
+        console.error('Failed to load/initialize Google Sign-In:', err);
+      }
+    })();
+  }
+
+  return container;
 
   return container;
 }
