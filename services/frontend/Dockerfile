@@ -2,9 +2,12 @@ FROM node:lts-trixie
 
 WORKDIR /usr/src/app/
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 
-RUN npm install
+RUN npm ci
+
+RUN apt-get update && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 3000
 
