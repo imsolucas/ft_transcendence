@@ -7,8 +7,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    volumes:
+      - ../services/frontend/:/usr/src/app/:rw
+      - frontend_node_modules:/usr/src/app/node_modules/
     networks:
       - devnet
+
+volumes:
+  frontend_node_modules:
 
 networks:
   devnet:
