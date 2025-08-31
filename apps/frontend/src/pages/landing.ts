@@ -216,7 +216,7 @@ export function LandingPage(): HTMLElement {
         document.querySelectorAll('.gsi-placeholder').forEach(el => {
           google.accounts.id.renderButton(el,
             {
-              type:'standard',
+              type:'icon',
               size:'large',
               theme:'outline',
               text:'sign_in_with',
