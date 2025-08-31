@@ -25,9 +25,8 @@ export function LandingPage(): HTMLElement {
           <button type="submit" class="btn login-submit-btn w-full h-12 rounded-lg shadow-[0_0_10px_rgba(0,0,0,0.1)] border-none cursor-pointer text-base text-white font-semibold hover:opacity-90 transition-all font-poppins" style="background: #7494ec;">Login</button>
           <p class="text-sm my-4 text-gray-600 font-poppins">or login with social platforms</p>
           <div class="social-icons flex justify-center gap-2">
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-google"></i>
-            </a>
+            <!-- GSI will render here -->
+            <div class="gsi-placeholder inline-flex"></div>
             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
               <i class="bx bxl-facebook"></i>
             </a>
@@ -60,9 +59,8 @@ export function LandingPage(): HTMLElement {
           <button type="submit" class="btn register-submit-btn w-full h-12 rounded-lg shadow-[0_0_10px_rgba(0,0,0,0.1)] border-none cursor-pointer text-base text-white font-semibold hover:opacity-90 transition-all font-poppins" style="background: #7494ec;">Register</button>
           <p class="text-sm my-4 text-gray-600 font-poppins">or register with social platforms</p>
           <div class="social-icons flex justify-center gap-2">
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-google"></i>
-            </a>
+          <!-- GSI will render here -->
+          <div class="gsi-placeholder inline-flex"></div>
             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
               <i class="bx bxl-facebook"></i>
             </a>
@@ -193,11 +191,6 @@ export function LandingPage(): HTMLElement {
   // --- Google Sign-In button: simple, in-place initializer ---
   const social = container.querySelector('.social-icons');
   if (social) {
-    const googleContainer = document.createElement('div');
-    // id used only to render the official GSI button
-    googleContainer.id = 'g_id_signin_container';
-    social.prepend(googleContainer);
-
     (async () => {
       try {
         await loadGoogleSignInService();
@@ -220,18 +213,18 @@ export function LandingPage(): HTMLElement {
           },
         });
 
-        // Render button with attributes equivalent to the markup you provided
-        google.accounts.id.renderButton(
-          document.getElementById('g_id_signin_container'),
-          {
-            type: 'standard',
-            size: 'large',
-            theme: 'outline',
-            text: 'sign_in_with',
-            shape: 'rectangular',
-            logo_alignment: 'left',
-          }
-        );
+        document.querySelectorAll('.gsi-placeholder').forEach(el => {
+          google.accounts.id.renderButton(el,
+            {
+              type:'standard',
+              size:'large',
+              theme:'outline',
+              text:'sign_in_with',
+              shape:'rectangular',
+              logo_alignment:'left'
+            }
+          );
+        });
 
         // Do not auto prompt (matches data-auto_prompt="false"); omit google.accounts.id.prompt()
       } catch (err) {
