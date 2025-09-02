@@ -5,6 +5,7 @@ services:
     build:
       context: ../services/frontend/
       dockerfile: Dockerfile
+    command: ["${FRONTEND_CMD:-dev}"]
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     volumes:
