@@ -1,5 +1,5 @@
-import { LandingPage } from "./pages/landing";
-import { AuthPage } from "./pages/auth"; // Renamed from landing
+import { LandingPage } from "./pages/landingPage";
+import { AuthPage } from "./pages/authPage"; // Renamed from landing
 import { MainPage } from "./pages/main";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
 
