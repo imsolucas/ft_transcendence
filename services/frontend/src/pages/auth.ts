@@ -1,3 +1,5 @@
+import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
+
 export function AuthPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen flex justify-center items-center font-poppins';
@@ -60,15 +62,6 @@ export function AuthPage(): HTMLElement {
           <div class="social-icons flex justify-center gap-2">
             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
               <i class="bx bxl-google"></i>
-            </a>
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-facebook"></i>
-            </a>
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-github"></i>
-            </a>
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-linkedin"></i>
             </a>
           </div>
         </form>
@@ -188,5 +181,60 @@ export function AuthPage(): HTMLElement {
     </style>
   `;
 
+// --- Google Sign-In button: simple, in-place initializer ---
+  const social = container.querySelector('.social-icons');
+  if (social) {
+    (async () => {
+      try {
+        await loadGoogleSignInService();
+
+        const google = (window as any).google;
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+        if (!google?.accounts?.id) {
+          console.warn('Google Identity SDK not available after load.');
+          return;
+        }
+        if (!clientId) {
+          console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
+          return;
+        }
+
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (resp: any) => {
+            handleCredentialResponse(resp);
+          },
+        });
+
+        document.querySelectorAll('.gsi-placeholder').forEach(el => {
+          google.accounts.id.renderButton(el,
+            {
+              type:'icon',
+              size:'large',
+              theme:'outline',
+              text:'sign_in_with',
+              shape:'rectangular',
+              logo_alignment:'left'
+            }
+          );
+        });
+
+        // Do not auto prompt (matches data-auto_prompt="false"); omit google.accounts.id.prompt()
+      } catch (err) {
+        console.error('Failed to load/initialize Google Sign-In:', err);
+      }
+    })();
+  }
+
   return container;
 }
+
+// <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
+//               <i class="bx bxl-facebook"></i>
+//             </a>
+//             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
+//               <i class="bx bxl-github"></i>
+//             </a>
+//             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
+//               <i class="bx bxl-linkedin"></i>
+//             </a>
