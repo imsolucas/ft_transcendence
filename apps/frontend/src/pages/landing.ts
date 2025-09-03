@@ -1,8 +1,10 @@
+import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
+
 export function LandingPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen flex justify-center items-center font-poppins';
   container.style.background = 'linear-gradient(90deg, #e2e2e2, #c9d6ff)';
-  
+
   container.innerHTML = `
     <div class="container relative w-[850px] h-[550px] bg-white m-5 rounded-[30px] shadow-[0_0_30px_rgba(0,0,0,0.2)] overflow-hidden max-w-[90vw] font-poppins">
       <!-- Login Form -->
@@ -23,9 +25,8 @@ export function LandingPage(): HTMLElement {
           <button type="submit" class="btn login-submit-btn w-full h-12 rounded-lg shadow-[0_0_10px_rgba(0,0,0,0.1)] border-none cursor-pointer text-base text-white font-semibold hover:opacity-90 transition-all font-poppins" style="background: #7494ec;">Login</button>
           <p class="text-sm my-4 text-gray-600 font-poppins">or login with social platforms</p>
           <div class="social-icons flex justify-center gap-2">
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-google"></i>
-            </a>
+            <!-- GSI will render here -->
+            <div class="gsi-placeholder inline-flex"></div>
             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
               <i class="bx bxl-facebook"></i>
             </a>
@@ -58,9 +59,8 @@ export function LandingPage(): HTMLElement {
           <button type="submit" class="btn register-submit-btn w-full h-12 rounded-lg shadow-[0_0_10px_rgba(0,0,0,0.1)] border-none cursor-pointer text-base text-white font-semibold hover:opacity-90 transition-all font-poppins" style="background: #7494ec;">Register</button>
           <p class="text-sm my-4 text-gray-600 font-poppins">or register with social platforms</p>
           <div class="social-icons flex justify-center gap-2">
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-google"></i>
-            </a>
+          <!-- GSI will render here -->
+          <div class="gsi-placeholder inline-flex"></div>
             <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
               <i class="bx bxl-facebook"></i>
             </a>
@@ -187,6 +187,53 @@ export function LandingPage(): HTMLElement {
       }
     </style>
   `;
+
+  // --- Google Sign-In button: simple, in-place initializer ---
+  const social = container.querySelector('.social-icons');
+  if (social) {
+    (async () => {
+      try {
+        await loadGoogleSignInService();
+
+        const google = (window as any).google;
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+        if (!google?.accounts?.id) {
+          console.warn('Google Identity SDK not available after load.');
+          return;
+        }
+        if (!clientId) {
+          console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
+          return;
+        }
+
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (resp: any) => {
+            handleCredentialResponse(resp);
+          },
+        });
+
+        document.querySelectorAll('.gsi-placeholder').forEach(el => {
+          google.accounts.id.renderButton(el,
+            {
+              type:'icon',
+              size:'large',
+              theme:'outline',
+              text:'sign_in_with',
+              shape:'rectangular',
+              logo_alignment:'left'
+            }
+          );
+        });
+
+        // Do not auto prompt (matches data-auto_prompt="false"); omit google.accounts.id.prompt()
+      } catch (err) {
+        console.error('Failed to load/initialize Google Sign-In:', err);
+      }
+    })();
+  }
+
+  return container;
 
   return container;
 }
