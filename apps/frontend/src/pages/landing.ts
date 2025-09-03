@@ -1,3 +1,6 @@
+import { isAuthenticated } from '../utils/auth-script';
+import { navigate } from '../router';
+
 export function LandingPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-16';
@@ -42,7 +45,6 @@ export function LandingPage(): HTMLElement {
   const video = document.createElement('video');
   video.className = 'w-full h-auto max-h-[500px] object-cover';
   video.controls = true;
-  video.muted = true;
   video.loop = false;
   video.preload = 'auto';
   video.playsInline = true;
@@ -162,23 +164,12 @@ export function LandingPage(): HTMLElement {
     const watchTrailerBtn = container.querySelector('.watch-trailer-btn');
     
     playNowBtn?.addEventListener('click', () => {
-      // Navigate to auth page if not logged in, or game if logged in
-      const authModule = import('../utils/auth-script');
-      authModule.then(({ isAuthenticated }) => {
-        if (isAuthenticated()) {
-          // Navigate to game
-          const routerModule = import('../router');
-          routerModule.then(({ navigate }) => {
-            navigate('main');
-          });
-        } else {
-          // Navigate to auth page
-          const routerModule = import('../router');
-          routerModule.then(({ navigate }) => {
-            navigate('auth');
-          });
-        }
-      });
+      // Navigate to auth page if not logged in, or main if logged in
+      if (isAuthenticated()) {
+        navigate('main');
+      } else {
+        navigate('auth');
+      }
     });
     
     watchTrailerBtn?.addEventListener('click', () => {
