@@ -16,40 +16,6 @@ export function createNavbar(): HTMLElement {
 	const leftSection = document.createElement('div');
 	leftSection.className = 'flex items-center space-x-4';
 
-	// Status Indicator (for testing)
-	const statusIndicator = document.createElement('div');
-	statusIndicator.className = 'flex items-center space-x-2';
-
-	const statusDot = document.createElement('div');
-	statusDot.className = `w-2 h-2 rounded-full ${isAuthenticated() ? 'bg-green-500' : 'bg-red-500'}`;
-
-	const statusText = document.createElement('span');
-	statusText.className = 'text-xs font-medium text-gray-600';
-	statusText.textContent = isAuthenticated() ? 'Logged In' : 'Logged Out';
-
-	statusIndicator.appendChild(statusDot);
-	statusIndicator.appendChild(statusText);
-
-	// Add click handler to toggle auth state (for testing)
-	statusIndicator.addEventListener('click', () => {
-		if (isAuthenticated()) {
-			logout();
-		} else {
-			// Mock login for testing
-			localStorage.setItem('authToken', 'test-token');
-			localStorage.setItem('user', JSON.stringify({
-				id: '1',
-				username: 'demo',
-				email: 'demo@example.com'
-			}));
-		}
-		updateNavbar();
-	});
-	statusIndicator.style.cursor = 'pointer';
-	statusIndicator.title = 'Click to toggle login state (for testing)';
-
-	leftSection.appendChild(statusIndicator);
-
 	// Ping Pong Logo/Menu Button
 	const logoButton = document.createElement('button');
 	logoButton.className = 'flex items-center space-x-2 p-2 rounded-lg transition-all duration-200 hover:bg-blue-50 cursor-pointer';
@@ -116,7 +82,6 @@ export function createNavbar(): HTMLElement {
 	authSection.className = 'flex items-center';
 
 	if (isAuthenticated()) {
-		// User Profile Dropdown
 		const user = getCurrentUser();
 		const profileContainer = document.createElement('div');
 		profileContainer.className = 'relative';
@@ -124,9 +89,20 @@ export function createNavbar(): HTMLElement {
 		const profileButton = document.createElement('button');
 		profileButton.className = 'flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors duration-200';
 
-		const profileImg = document.createElement('div');
-		profileImg.className = 'w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold';
-		profileImg.textContent = user?.username?.charAt(0).toUpperCase() || 'U';
+		// Use Google profile picture if available
+		let profileImg: HTMLElement;
+		if (user?.picture) {
+			const img = document.createElement('img');
+			img.src = user.picture;
+			img.alt = user.username || 'Profile';
+			img.className = 'w-8 h-8 rounded-full object-cover';
+			profileImg = img;
+		} else {
+			const div = document.createElement('div');
+			div.className = 'w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold';
+			div.textContent = user?.username?.charAt(0).toUpperCase() || 'U';
+			profileImg = div;
+		}
 
 		const profileText = document.createElement('span');
 		profileText.className = 'text-sm font-medium text-gray-700 hidden sm:block';

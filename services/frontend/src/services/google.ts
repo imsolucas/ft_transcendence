@@ -29,36 +29,138 @@ export function loadGoogleSignInService(): Promise<void> {
     script.defer = true;
     script.id = "google-client";
     script.onload = () => resolve();
-    script.onerror = () => reject("Failed to load Google script");
+    script.onerror = () => reject(new Error("Failed to load Google script"));
     document.head.appendChild(script);
   });
 }
 
-
-export function decodeJWT(token: string) : GoogleIdTokenPayload {
-  let base64Url = token.split(".")[1];
-  let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-  let jsonPayload = decodeURIComponent(
-  atob(base64)
-    .split("")
-    .map(function (c) {
-      return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-    })
-    .join("")
-  );
-  return JSON.parse(jsonPayload);
+export function decodeJWT(token: string): GoogleIdTokenPayload {
+  try {
+    let base64Url = token.split(".")[1];
+    let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    let jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding JWT token:', error);
+    throw new Error('Invalid JWT token');
+  }
 }
 
-export function handleCredentialResponse(response: CredentialResponse) {
-  console.log("Encoded JWT ID token: " + response.credential);
+export async function handleCredentialResponse(response: CredentialResponse): Promise<void> {
+  try {
+    console.log("Encoded JWT ID token: " + response.credential);
 
-  const responsePayload = decodeJWT(response.credential);
+    const responsePayload = decodeJWT(response.credential);
 
-  console.log("Decoded JWT ID token fields:");
-  console.log("  Full Name        : " + responsePayload.name);
-  console.log("  Given Name       : " + responsePayload.given_name);
-  console.log("  Family Name      : " + responsePayload.family_name);
-  console.log("  Unique ID        : " + responsePayload.sub);
-  console.log("  Profile image URL: " + responsePayload.picture);
-  console.log("  Email            : " + responsePayload.email);
+    console.log("Decoded JWT ID token fields:");
+    console.log("  Full Name        : " + responsePayload.name);
+    console.log("  Given Name       : " + responsePayload.given_name);
+    console.log("  Family Name      : " + responsePayload.family_name);
+    console.log("  Unique ID        : " + responsePayload.sub);
+    console.log("  Profile image URL: " + responsePayload.picture);
+    console.log("  Email            : " + responsePayload.email);
+
+    // Process the Google authentication
+    const success = await processGoogleAuth(responsePayload, response.credential);
+    
+    if (success) {
+      // Show success notification
+      showNotification('Google Sign-In successful!', 'success');
+      
+      // Update navbar and navigate to main page
+      const { updateNavbar } = await import('../components/Navbar');
+      const { navigate } = await import('../router');
+      
+      updateNavbar();
+      
+      setTimeout(() => {
+        navigate('main');
+      }, 1500);
+    }
+  } catch (error) {
+    console.error('Error handling Google credential:', error);
+    showNotification('Google Sign-In failed. Please try again.', 'error');
+  }
+}
+
+async function processGoogleAuth(payload: GoogleIdTokenPayload, _credential: string): Promise<boolean> {
+  try {
+    // In a real app, you'd send the credential to your backend for verification
+    // For now, we'll simulate the process
+    
+    // Mock API call to your backend
+    // const response = await fetch('/api/auth/google', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({ credential })
+    // });
+    
+    // For demo purposes, simulate successful authentication
+    const mockUser = {
+      id: payload.sub,
+      username: payload.given_name || payload.name?.split(' ')[0] || 'GoogleUser',
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      provider: 'google'
+    };
+
+    // Store authentication data
+    localStorage.setItem('authToken', `google-token-${Date.now()}`);
+    localStorage.setItem('user', JSON.stringify(mockUser));
+
+    return true;
+  } catch (error) {
+    console.error('Error processing Google authentication:', error);
+    return false;
+  }
+}
+
+// Utility function to show notifications (reused from auth-script)
+function showNotification(message: string, type: 'success' | 'error' | 'info'): void {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
+  
+  // Set notification style based on type
+  switch (type) {
+    case 'success':
+      notification.className += ' bg-green-500 text-white';
+      break;
+    case 'error':
+      notification.className += ' bg-red-500 text-white';
+      break;
+    case 'info':
+      notification.className += ' bg-blue-500 text-white';
+      break;
+  }
+  
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => {
+    notification.classList.remove('translate-x-full');
+    notification.classList.add('translate-x-0');
+  }, 100);
+  
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+    notification.classList.remove('translate-x-0');
+    notification.classList.add('translate-x-full');
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
 }

@@ -25,18 +25,7 @@ export function AuthPage(): HTMLElement {
           <button type="submit" class="btn login-submit-btn w-full h-12 rounded-lg shadow-[0_0_10px_rgba(0,0,0,0.1)] border-none cursor-pointer text-base text-white font-semibold hover:opacity-90 transition-all font-poppins" style="background: #7494ec;">Login</button>
           <p class="text-sm my-4 text-gray-600 font-poppins">or login with social platforms</p>
           <div class="social-icons flex justify-center gap-2">
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-google"></i>
-            </a>
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-facebook"></i>
-            </a>
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-github"></i>
-            </a>
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-linkedin"></i>
-            </a>
+            <div id="google-signin-btn-login" class="google-signin-placeholder inline-flex p-2 border-2 border-gray-300 rounded-lg hover:border-[#7494ec] transition-colors"></div>
           </div>
         </form>
       </div>
@@ -60,9 +49,7 @@ export function AuthPage(): HTMLElement {
           <button type="submit" class="btn register-submit-btn w-full h-12 rounded-lg shadow-[0_0_10px_rgba(0,0,0,0.1)] border-none cursor-pointer text-base text-white font-semibold hover:opacity-90 transition-all font-poppins" style="background: #7494ec;">Register</button>
           <p class="text-sm my-4 text-gray-600 font-poppins">or register with social platforms</p>
           <div class="social-icons flex justify-center gap-2">
-            <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
-              <i class="bx bxl-google"></i>
-            </a>
+            <div id="google-signin-btn-register" class="google-signin-placeholder inline-flex p-2 border-2 border-gray-300 rounded-lg hover:border-[#7494ec] transition-colors"></div>
           </div>
         </form>
       </div>
@@ -75,14 +62,14 @@ export function AuthPage(): HTMLElement {
       <!-- Toggle Panels -->
       <div class="toggle-panel toggle-left absolute left-0 w-1/2 h-full text-white flex flex-col justify-center items-center z-20 transition-all duration-[600ms] ease-in-out delay-[1200ms]">
         <h1 class="text-4xl -mt-2 mb-4 font-poppins font-semibold">Hello, Welcome To</h1>
-		<h1 class="text-4xl -mt-2 mb-4 font-poppins font-semibold">Super Pong!</h1>
+        <h1 class="text-4xl -mt-2 mb-4 font-poppins font-semibold">Super Pong!</h1>
         <p class="text-sm mb-5 text-gray-100 font-poppins">Don't have an account?</p>
         <button class="btn register-btn w-40 h-11 bg-transparent border-2 border-white rounded-lg cursor-pointer text-base text-white font-semibold shadow-none hover:bg-white hover:text-[#7494ec] transition-colors font-poppins">Register</button>
       </div>
 
       <div class="toggle-panel toggle-right absolute -right-1/2 w-1/2 h-full text-white flex flex-col justify-center items-center z-20 transition-all duration-[600ms] ease-in-out delay-[600ms]">
         <h1 class="text-4xl -mt-2 mb-4 font-poppins font-semibold">Welcome Back To</h1>
-		<h1 class="text-4xl -mt-2 mb-4 font-poppins font-semibold">Super Pong!</h1>
+        <h1 class="text-4xl -mt-2 mb-4 font-poppins font-semibold">Super Pong!</h1>
         <p class="text-sm mb-5 text-gray-100 font-poppins">Already have an account?</p>
         <button class="btn login-btn w-40 h-11 bg-transparent border-2 border-white rounded-lg cursor-pointer text-base text-white font-semibold shadow-none hover:bg-white hover:text-[#7494ec] transition-colors font-poppins">Login</button>
       </div>
@@ -178,55 +165,93 @@ export function AuthPage(): HTMLElement {
         right: 0;
         transition-delay: 600ms;
       }
+
+      /* Custom Google button styling */
+      .google-signin-placeholder {
+        min-width: 40px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Override Google button default styles */
+      .google-signin-placeholder iframe {
+        border-radius: 8px !important;
+      }
     </style>
   `;
 
-// --- Google Sign-In button: simple, in-place initializer ---
-  const social = container.querySelector('.social-icons');
-  if (social) {
-    (async () => {
-      try {
-        await loadGoogleSignInService();
-
-        const google = (window as any).google;
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-        if (!google?.accounts?.id) {
-          console.warn('Google Identity SDK not available after load.');
-          return;
-        }
-        if (!clientId) {
-          console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
-          return;
-        }
-
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (resp: any) => {
-            handleCredentialResponse(resp);
-          },
-        });
-
-        document.querySelectorAll('.gsi-placeholder').forEach(el => {
-          google.accounts.id.renderButton(el,
-            {
-              type:'icon',
-              size:'large',
-              theme:'outline',
-              text:'sign_in_with',
-              shape:'rectangular',
-              logo_alignment:'left'
-            }
-          );
-        });
-
-        // Do not auto prompt (matches data-auto_prompt="false"); omit google.accounts.id.prompt()
-      } catch (err) {
-        console.error('Failed to load/initialize Google Sign-In:', err);
-      }
-    })();
-  }
+  // Initialize Google Sign-In
+  initializeGoogleSignIn(container);
 
   return container;
+}
+
+async function initializeGoogleSignIn(container: HTMLElement): Promise<void> {
+  try {
+    await loadGoogleSignInService();
+
+    const google = (window as any).google;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+    
+    if (!google?.accounts?.id) {
+      console.warn('Google Identity SDK not available after load.');
+      return;
+    }
+    
+    if (!clientId) {
+	  console.log(clientId)
+      console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
+      return;
+    }
+
+    // Initialize Google Sign-In
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredentialResponse,
+      auto_select: false,
+      cancel_on_tap_outside: true
+    });
+
+    // Render Google Sign-In buttons for both forms
+    const loginButton = container.querySelector('#google-signin-btn-login');
+    const registerButton = container.querySelector('#google-signin-btn-register');
+
+    if (loginButton) {
+      google.accounts.id.renderButton(loginButton, {
+        type: 'icon',
+        size: 'medium',
+        theme: 'outline',
+        shape: 'rectangular',
+        width: 40
+      });
+    }
+
+    if (registerButton) {
+      google.accounts.id.renderButton(registerButton, {
+        type: 'icon',
+        size: 'medium',
+        theme: 'outline',
+        shape: 'rectangular',
+        width: 40
+      });
+    }
+
+  } catch (err) {
+    console.error('Failed to load/initialize Google Sign-In:', err);
+    
+    // Show fallback Google icons if Google Sign-In fails
+    const placeholders = container.querySelectorAll('.google-signin-placeholder');
+    placeholders.forEach(placeholder => {
+      placeholder.innerHTML = `
+        <i class="bx bxl-google text-2xl text-gray-800"></i>
+      `;
+      placeholder.addEventListener('click', () => {
+        console.warn('Google Sign-In not available');
+      });
+    });
+  }
 }
 
 // <a href="#" class="inline-flex p-2 border-2 border-gray-300 rounded-lg text-2xl text-gray-800 hover:border-[#7494ec] hover:text-[#7494ec] transition-colors">
