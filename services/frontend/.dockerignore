@@ -1,5 +1,39 @@
+# Node deps and logs
 node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build/artifact output
+dist
+build
+.out
+.next
+.nuxt
+.cache
+
+# Local env / secrets
+.env
+.env.local
+.env.*.local
+
+# Git, CI, Docker metadata
 .git
 .gitignore
-Dockerfile
-docker-compose.yml
+.dockerignore
+
+# IDE/editor config
+.vscode
+.idea
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage / reports
+coverage
+coverage/
+
+# Misc noisy files
+*.log
