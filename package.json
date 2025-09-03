@@ -6,13 +6,13 @@
   "author": "",
   "license": "ISC",
   "workspaces": [
-    "apps/*",
+    "services/*",
     "libs/*"
   ],
   "scripts": {
-    "dev:frontend": "npm --workspace apps/frontend run dev",
-    "build:frontend": "npm --workspace apps/frontend run build",
-    "preview:frontend": "npm --workspace apps/frontend run preview"
+    "dev:frontend": "npm --workspace services/frontend run dev",
+    "build:frontend": "npm --workspace services/frontend run build",
+    "preview:frontend": "npm --workspace services/frontend run preview"
   },
   "keywords": []
 }
