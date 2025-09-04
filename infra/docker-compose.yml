@@ -8,8 +8,6 @@ services:
     command: ["${FRONTEND_CMD:-dev}"]
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
-    env_file:
-      - ../.env
     volumes:
       - ../services/frontend/:/usr/src/app/:rw
       - frontend_node_modules:/usr/src/app/node_modules/
