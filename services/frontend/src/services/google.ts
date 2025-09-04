@@ -1,3 +1,6 @@
+import { updateNavbar } from '../components/Navbar';
+import { navigate } from '../router';
+
 type CredentialResponse = google.accounts.id.CredentialResponse;
 
 export interface GoogleIdTokenPayload {
@@ -75,9 +78,6 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
       showNotification('Google Sign-In successful!', 'success');
       
       // Update navbar and navigate to main page
-      const { updateNavbar } = await import('../components/Navbar');
-      const { navigate } = await import('../router');
-      
       updateNavbar();
       
       setTimeout(() => {
