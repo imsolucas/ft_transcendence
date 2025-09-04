@@ -1,0 +1,34 @@
+Table Users {
+    id int [primary key]
+    username varchar
+    created_at timestamp
+}
+
+Table Friends {
+    user_id_1 int [ref: > Users.id]
+    user_id_2 int [ref: > Users.id]
+    created_at timestamp
+
+    indexes {
+        (user_id_1, user_id_2)
+    }
+}
+
+Table TeamMembers {
+    id int [pk]
+    team_id int [ref: > Teams.id]
+    user_id int [ref: > Users.id]
+}
+
+Table Teams {
+    id int [primary key]
+    created_at timestamp
+}
+
+Table Matches {
+    id int [primary key]
+    team_id_1 int [ref: > Teams.id]
+    team_id_2 int [ref: > Teams.id]
+    created_at timestamp
+    end_at timestamp
+}
