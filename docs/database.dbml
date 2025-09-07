@@ -1,34 +1,49 @@
 Table Users {
-    id int [primary key]
+    id bigint [primary key]
     username varchar
+    email varchar
+    display_name varchar
+    avatar varchar
+    status varchar
+    created_at timestamp
+    last_updated timestamp
+}
+
+Table Friendship {
+    user_id_1 bigint [ref: > Users.id]
+    user_id_2 bigint [ref: > Users.id]
+    status varchar // pending | active
     created_at timestamp
 }
 
-Table Friends {
-    user_id_1 int [ref: > Users.id]
-    user_id_2 int [ref: > Users.id]
+Table PendingRequests {
+    sender_id bigint [ref: > Users.id]
+    receiver_id bigint [ref: > Users.id]
     created_at timestamp
-
-    indexes {
-        (user_id_1, user_id_2)
-    }
 }
 
-Table TeamMembers {
-    id int [pk]
-    team_id int [ref: > Teams.id]
-    user_id int [ref: > Users.id]
+Table MatchPlayers {
+    match_id bigint [ref: > Matches.id]
+    team_id bigint [ref: > Teams.id]
+    user_id bigint [ref: > Users.id]
+    final_score int
+    joined_at timestamp
 }
 
 Table Teams {
-    id int [primary key]
+    id bigint
+    match_id bigint [ref: > Matches.id]
+    team_size int
+    score bigint
     created_at timestamp
+    ended_at timestamp
 }
 
 Table Matches {
-    id int [primary key]
-    team_id_1 int [ref: > Teams.id]
-    team_id_2 int [ref: > Teams.id]
+    id bigint [primary key]
+    mode varchar
+    status varchar // pending | running | finished | cancelled
     created_at timestamp
-    end_at timestamp
+    started_at timestamp
+    ended_at timestamp
 }
