@@ -1,5 +1,6 @@
 import './styles/style.css'
-import { renderPage } from "./router";
+import { initializeApp } from "./router";
+import { initializeNavbar } from "./components/Navbar";
 
 export function App(): HTMLElement {
   const app = document.createElement("div");
@@ -8,7 +9,6 @@ export function App(): HTMLElement {
   // Page container (where router injects pages)
   const pageContainer = document.createElement("div");
   pageContainer.id = "page-container";
-  // Remove flex centering for landing page - let pages control their own layout
   pageContainer.className = "min-h-screen w-full";
   
   app.appendChild(pageContainer);
@@ -19,5 +19,10 @@ export function App(): HTMLElement {
 const root = document.getElementById("app");
 if (root) {
   root.appendChild(App());
-  renderPage("landing"); // start with landing page
+  
+  // Initialize navbar first
+  initializeNavbar();
+  
+  // Initialize app with proper routing based on auth state
+  initializeApp();
 }

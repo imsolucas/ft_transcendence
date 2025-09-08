@@ -1,5 +1,6 @@
 import { navigate } from '../router';
 import type { Screen } from '../router';
+import { updateNavbar } from '../components/Navbar';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -27,7 +28,7 @@ interface AuthResponse {
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-export function initializeLandingPage(): void {
+export function initializeAuthPage(): void {
   const container = document.querySelector('.container') as HTMLElement;
   const registerBtn = document.querySelector('.register-btn') as HTMLButtonElement;
   const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
@@ -42,61 +43,13 @@ export function initializeLandingPage(): void {
 
   registerBtn.addEventListener('click', () => {
     console.log('Register button clicked - switching to register');
-    
-    // Start the animation first
-    container.classList.add('active');
-    
-    // Switch forms halfway through the animation (when they're hidden)
-    setTimeout(() => {
-      const loginForm = document.querySelector('.form-box.login') as HTMLElement;
-      const registerForm = document.querySelector('.form-box.register') as HTMLElement;
-      
-      if (loginForm && registerForm) {
-        // Disable transitions temporarily for instant switch
-        loginForm.style.transition = 'none';
-        registerForm.style.transition = 'none';
-        
-        // Switch forms instantly while hidden
-        loginForm.style.visibility = 'hidden';
-        registerForm.style.visibility = 'visible';
-        
-        // Re-enable transitions
-        setTimeout(() => {
-          loginForm.style.transition = '';
-          registerForm.style.transition = '';
-        }, 20);
-      }
-    }, 300); // Half of 600ms transition duration
+    switchToRegister(container);
   });
 
   // Toggle to login form  
   loginBtn.addEventListener('click', () => {
     console.log('Login button clicked - switching to login');
-    
-    // Start the animation first
-    container.classList.remove('active');
-    
-    // Switch forms halfway through the animation (when they're hidden)
-    setTimeout(() => {
-      const loginForm = document.querySelector('.form-box.login') as HTMLElement;
-      const registerForm = document.querySelector('.form-box.register') as HTMLElement;
-      
-      if (loginForm && registerForm) {
-        // Disable transitions temporarily for instant switch
-        loginForm.style.transition = 'none';
-        registerForm.style.transition = 'none';
-        
-        // Switch forms instantly while hidden
-        registerForm.style.visibility = 'hidden';
-        loginForm.style.visibility = 'visible';
-        
-        // Re-enable transitions
-        setTimeout(() => {
-          loginForm.style.transition = '';
-          registerForm.style.transition = '';
-        }, 20);
-      }
-    }, 300); // Half of 600ms transition duration
+    switchToLogin(container);
   });
 
   // Handle form submissions
@@ -128,6 +81,36 @@ export function initializeLandingPage(): void {
   });
 }
 
+function switchToRegister(container: HTMLElement): void {
+  const loginForm = document.querySelector('.form-box.login') as HTMLElement;
+  const registerForm = document.querySelector('.form-box.register') as HTMLElement;
+  
+  if (!loginForm || !registerForm) return;
+  
+  container.classList.add('active');
+  
+  // Switch forms halfway through the animation
+  setTimeout(() => {
+    loginForm.style.visibility = 'hidden';
+    registerForm.style.visibility = 'visible';
+  }, 300);
+}
+
+function switchToLogin(container: HTMLElement): void {
+  const loginForm = document.querySelector('.form-box.login') as HTMLElement;
+  const registerForm = document.querySelector('.form-box.register') as HTMLElement;
+  
+  if (!loginForm || !registerForm) return;
+  
+  container.classList.remove('active');
+  
+  // Switch forms halfway through the animation
+  setTimeout(() => {
+    registerForm.style.visibility = 'hidden';
+    loginForm.style.visibility = 'visible';
+  }, 300);
+}
+
 async function handleLogin(): Promise<void> {
   const usernameInput = document.querySelector('.form-box.login input[type="text"]') as HTMLInputElement;
   const passwordInput = document.querySelector('.form-box.login input[type="password"]') as HTMLInputElement;
@@ -157,6 +140,9 @@ async function handleLogin(): Promise<void> {
       }
       
       showNotification('Login successful!', 'success');
+      
+      // Update navbar to show logged-in state
+      updateNavbar();
       
       // Navigate to main page after successful login
       setTimeout(() => {
@@ -211,19 +197,19 @@ async function handleRegistration(): Promise<void> {
     if (response.success) {
       showNotification('Registration successful! Please check your email to verify your account.', 'success');
       
-      // Switch back to login form
-      const container = document.querySelector('.container') as HTMLElement;
-      container.classList.remove('active');
-      
-      // Clear registration form
+      // Clear registration form first
       usernameInput.value = '';
       emailInput.value = '';
       passwordInput.value = '';
       
-      // Optional: Navigate to email verification page
-      // setTimeout(() => {
-      //   navigate('email-verification' as Screen);
-      // }, 2000);
+      // Switch back to login form after a short delay
+      setTimeout(() => {
+        const container = document.querySelector('.container') as HTMLElement;
+        if (container) {
+          switchToLogin(container);
+        }
+      }, 1000);
+      
     } else {
       showNotification(response.message || 'Registration failed', 'error');
     }
@@ -247,41 +233,7 @@ function handleSocialLogin(platform: string): void {
   // Handle popup response...
 }
 
-// // API Functions
-// async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
-//   const response = await fetch(`${API_BASE_URL}/auth/login`, {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/json',
-//     },
-//     body: JSON.stringify(credentials),
-//   });
-
-//   if (!response.ok) {
-//     throw new Error(`HTTP error! status: ${response.status}`);
-//   }
-
-//   return response.json();
-// }
-
-// async function apiRegister(userData: RegisterRequest): Promise<AuthResponse> {
-//   const response = await fetch(`${API_BASE_URL}/auth/register`, {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/json',
-//     },
-//     body: JSON.stringify(userData),
-//   });
-
-//   if (!response.ok) {
-//     throw new Error(`HTTP error! status: ${response.status}`);
-//   }
-
-//   return response.json();
-// }
-
 // API Functions
-// Replace the apiLogin function with this mock version:
 async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
   // Mock API call - simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -306,7 +258,6 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
   }
 }
 
-// Replace the apiRegister function with this mock version:
 async function apiRegister(userData: RegisterRequest): Promise<AuthResponse> {
   // Mock API call - simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1500));
@@ -395,11 +346,15 @@ export function isAuthenticated(): boolean {
 export function logout(): void {
   localStorage.removeItem('authToken');
   localStorage.removeItem('user');
-  navigate('landing' as Screen);
+  updateNavbar();
+  // Force navigation to landing page
+  setTimeout(() => {
+    navigate('landing' as Screen);
+  }, 100);
 }
 
 // Clean up event listeners when navigating away
-export function cleanupLandingPage(): void {
+export function cleanupAuthPage(): void {
   const container = document.querySelector('.container');
   if (container) {
     // Remove all event listeners by cloning and replacing the elements
@@ -438,7 +393,7 @@ export function ensureIconsLoaded(): void {
         else if (className.includes('bxs-envelope')) fallbackText = '📧';
         else if (className.includes('bxl-google')) fallbackText = '🇬';
         else if (className.includes('bxl-facebook')) fallbackText = '📘';
-        else if (className.includes('bxl-github')) fallbackText = '🐙';
+        else if (className.includes('bxl-github')) fallbackText = '🙀';
         else if (className.includes('bxl-linkedin')) fallbackText = '💼';
         
         if (fallbackText) {
