@@ -3,7 +3,7 @@ import { navigate } from '../router';
 
 export function LandingPage(): HTMLElement {
   const container = document.createElement('div');
-  container.className = 'min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-16';
+container.className = 'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16';
   
   // Hero Section
   const heroSection = document.createElement('section');
@@ -25,14 +25,15 @@ export function LandingPage(): HTMLElement {
   // Title section
   const titleSection = document.createElement('div');
   titleSection.className = 'mb-16';
-  titleSection.innerHTML = `
-    <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 font-poppins">
-      Super <span class="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">Pong</span>
-    </h1>
-    <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto font-poppins">
-      Experience the classic game reimagined with stunning visuals, power-ups, and multiplayer action
-    </p>
-  `;
+titleSection.innerHTML = `
+	<h1 class="text-6xl md:text-8xl font-bold text-white mb-6 font-poppins">
+		<span class="bg-gradient-to-r from-[#F49752] to-[#F031A5] bg-clip-text text-transparent">Super</span>
+		<span class="bg-gradient-to-l from-[#F49752] to-[#F031A5] bg-clip-text text-transparent"> Pong</span>
+	</h1>
+	<p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto font-poppins">
+		Experience the classic game reimagined with stunning visuals, power-ups, and multiplayer action
+	</p>
+`;
   
   // Video section
   const videoSection = document.createElement('div');
@@ -130,21 +131,21 @@ export function LandingPage(): HTMLElement {
         <span class="text-2xl">⚡</span>
       </div>
       <h3 class="text-xl font-semibold text-white mb-2 font-poppins">Lightning Fast</h3>
-      <p class="text-gray-400">60fps gameplay with ultra-responsive controls</p>
+      <p class="text-black">60fps gameplay with ultra-responsive controls</p>
     </div>
     <div class="text-center">
       <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
         <span class="text-2xl">🌟</span>
       </div>
       <h3 class="text-xl font-semibold text-white mb-2 font-poppins">Power-ups</h3>
-      <p class="text-gray-400">Collect power-ups to gain special abilities</p>
+      <p class="text-black">Collect power-ups to gain special abilities</p>
     </div>
     <div class="text-center">
       <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 to-red-600 rounded-2xl flex items-center justify-center">
         <span class="text-2xl">👥</span>
       </div>
       <h3 class="text-xl font-semibold text-white mb-2 font-poppins">Multiplayer</h3>
-      <p class="text-gray-400">Challenge players from around the world</p>
+      <p class="text-black">Challenge players from around the world</p>
     </div>
   `;
   
