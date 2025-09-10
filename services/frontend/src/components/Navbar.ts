@@ -66,7 +66,7 @@ export function createNavbar(): HTMLElement {
   `;
 	discordButton.title = 'Join our Discord';
 	discordButton.addEventListener('click', () => {
-		window.open('https://discord.gg/your-server', '_blank');
+		window.open('https://youtube.com', '_blank');
 	});
 
 	// Twitter Button
@@ -79,7 +79,7 @@ export function createNavbar(): HTMLElement {
   `;
 	twitterButton.title = 'Follow us on Twitter';
 	twitterButton.addEventListener('click', () => {
-		window.open('https://twitter.com/your-handle', '_blank');
+		window.open('https://youtube.com', '_blank');
 	});
 
 	socialContainer.appendChild(discordButton);
@@ -118,7 +118,7 @@ export function createNavbar(): HTMLElement {
 		profileText.textContent = user?.username || 'User';
 
 		const chevronIcon = document.createElement('svg');
-		chevronIcon.setAttribute('class', 'w-4 h-4 text-white/60');
+		chevronIcon.setAttribute('class', 'w-4 h-4 text-white/60 transition-transform duration-200');
 		chevronIcon.setAttribute('fill', 'none');
 		chevronIcon.setAttribute('stroke', 'currentColor');
 		chevronIcon.setAttribute('viewBox', '0 0 24 24');
@@ -128,41 +128,110 @@ export function createNavbar(): HTMLElement {
 		profileButton.appendChild(profileText);
 		profileButton.appendChild(chevronIcon);
 
-		// Dropdown Menu - enhanced for better visibility
+		// Enhanced Dropdown Menu with sliding animations
 		const dropdown = document.createElement('div');
-		dropdown.className = 'absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-lg shadow-lg border border-white/20 py-1 hidden';
+		dropdown.className = 'dropdown-menu absolute right-0 mt-2 bg-transparent w-48 backdrop-blur-md rounded-lg shadow-lg border border-white/20 py-1 overflow-hidden';
+		
+		// Set initial state for animation
+		dropdown.style.maxHeight = '0';
+		dropdown.style.opacity = '0';
+		dropdown.style.transform = 'translateY(-10px)';
+		dropdown.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+		
 		dropdown.innerHTML = `
-	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/80 transition-colors">
+	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
 		Profile
 	  </a>
-	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/80 transition-colors">
+	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
 		Game History
 	  </a>
-	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/80 transition-colors">
+	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
 		Settings
 	  </a>
 	  <hr class="my-1">
-	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50/80 transition-colors">
+	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-[#2BD2FF] hover:bg-red-50/80 transition-colors">
 		Logout
 	  </button>
 	`;
 
-		// Profile dropdown toggle
+		let isDropdownOpen = false;
+
+		// Enhanced profile dropdown toggle with animations
 		profileButton.addEventListener('click', (e) => {
 			e.stopPropagation();
-			dropdown.classList.toggle('hidden');
+			
+			if (!isDropdownOpen) {
+				// Open dropdown - slide down animation
+				dropdown.style.display = 'block';
+				
+				// Force a reflow to ensure the display change takes effect
+				dropdown.offsetHeight;
+				
+				// Animate to open state
+				dropdown.style.maxHeight = '200px'; // Adjust based on content
+				dropdown.style.opacity = '1';
+				dropdown.style.transform = 'translateY(0)';
+				chevronIcon.style.transform = 'rotate(180deg)';
+				
+				isDropdownOpen = true;
+			} else {
+				// Close dropdown - slide up animation
+				dropdown.style.maxHeight = '0';
+				dropdown.style.opacity = '0';
+				dropdown.style.transform = 'translateY(-10px)';
+				chevronIcon.style.transform = 'rotate(0deg)';
+				
+				// Hide element after animation completes
+				setTimeout(() => {
+					if (!isDropdownOpen) {
+						dropdown.style.display = 'none';
+					}
+				}, 300);
+				
+				isDropdownOpen = false;
+			}
 		});
 
+		// Enhanced close dropdown function
+		const closeDropdown = () => {
+			if (isDropdownOpen) {
+				dropdown.style.maxHeight = '0';
+				dropdown.style.opacity = '0';
+				dropdown.style.transform = 'translateY(-10px)';
+				chevronIcon.style.transform = 'rotate(0deg)';
+				
+				setTimeout(() => {
+					dropdown.style.display = 'none';
+				}, 300);
+				
+				isDropdownOpen = false;
+			}
+		};
+
 		// Close dropdown when clicking outside
-		document.addEventListener('click', () => {
-			dropdown.classList.add('hidden');
+		document.addEventListener('click', (e) => {
+			if (!profileContainer.contains(e.target as Node)) {
+				closeDropdown();
+			}
 		});
 
 		// Logout handler
 		const logoutBtn = dropdown.querySelector('.logout-btn');
 		logoutBtn?.addEventListener('click', () => {
 			logout();
+			closeDropdown();
 			updateNavbar();
+		});
+
+		// Add click handlers for other dropdown items
+		const dropdownItems = dropdown.querySelectorAll('.dropdown-item');
+		dropdownItems.forEach(item => {
+			item.addEventListener('click', (e) => {
+				e.preventDefault();
+				closeDropdown();
+				// Add your navigation logic here based on the clicked item
+				console.log('Dropdown item clicked:', item.textContent?.trim());
+			});
 		});
 
 		profileContainer.appendChild(profileButton);
@@ -208,11 +277,50 @@ function addCreativeMenuStyles(): void {
 	styleSheet.textContent = `
 		@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@900&display=swap');
 		
+		/* Enhanced dropdown animations */
+		.dropdown-menu {
+			transform-origin: top center;
+		}
+		
+		.dropdown-menu.sliding-down {
+			animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		}
+		
+		.dropdown-menu.sliding-up {
+			animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		}
+		
+		@keyframes slideDown {
+			0% {
+				max-height: 0;
+				opacity: 0;
+				transform: translateY(-10px) scaleY(0.95);
+			}
+			100% {
+				max-height: 200px;
+				opacity: 1;
+				transform: translateY(0) scaleY(1);
+			}
+		}
+		
+		@keyframes slideUp {
+			0% {
+				max-height: 200px;
+				opacity: 1;
+				transform: translateY(0) scaleY(1);
+			}
+			100% {
+				max-height: 0;
+				opacity: 0;
+				transform: translateY(-10px) scaleY(0.95);
+			}
+		}
+		
 		.creative-navigation {
 			margin: 0;
 			padding: 20px;
 			list-style: none;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(to bottom, #4B1B67, #872481, #DC25A3, #F34C94, #F3796A);
 			min-height: 100vh;
 			display: flex;
 			flex-direction: column;
@@ -247,13 +355,13 @@ function addCreativeMenuStyles(): void {
 		
 		.creative-navigation__link:hover::before {
 			transform: translate(8px, -8px);
-			color: #ff1744;
+			color: #9B5DE5;
 			-webkit-text-stroke: 2px transparent;
 		}
 		
 		.creative-navigation__link:hover::after {
 			transform: translate(16px, -16px);
-			color: #4dd0e1;
+			color: #00FF85;
 			-webkit-text-stroke: 2px transparent;
 		}
 		
@@ -308,7 +416,7 @@ function toggleMobileMenu(): void {
 
 	// Menu items with creative styling
 	const menuItems = [
-		{ text: 'Menu', action: () => {
+		{ text: 'Home', action: () => {
 			navigate('landing' as Screen);
 			closeMobileMenu();
 		}},

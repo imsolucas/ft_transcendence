@@ -16,9 +16,29 @@ export function AuthPage(): HTMLElement {
       <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_20px_#00ffff]"></div>
       <div class="absolute bottom-4 left-4 w-6 h-6 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_#ff1493] animation-delay-500"></div>
       
+      <!-- Welcome Screen (initially hidden) -->
+      <div class="welcome-screen absolute inset-0 bg-gradient-to-br from-gray-900/98 to-purple-900/98 backdrop-blur-md flex flex-col justify-center items-center text-white z-50 opacity-0 invisible transition-all duration-1000 ease-in-out">
+        <div class="welcome-content text-center transform scale-75 transition-all duration-1000 ease-out delay-500">
+          <div class="arcade-title mb-12">
+            <h1 class="text-7xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-400 drop-shadow-[0_0_30px_rgba(0,255,255,1)] mb-4 animate-pulse">WELCOME</h1>
+            <h2 class="text-5xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-white to-cyan-400 drop-shadow-[0_0_30px_rgba(255,20,147,1)] animate-pulse animation-delay-300">TO SUPER PONG</h2>
+          </div>
+          
+          <div class="loading-indicator mb-8">
+            <div class="flex justify-center items-center space-x-2">
+              <div class="w-3 h-3 bg-cyan-400 rounded-full animate-bounce shadow-[0_0_10px_#00ffff]"></div>
+              <div class="w-3 h-3 bg-pink-400 rounded-full animate-bounce animation-delay-200 shadow-[0_0_10px_#ff1493]"></div>
+              <div class="w-3 h-3 bg-cyan-400 rounded-full animate-bounce animation-delay-400 shadow-[0_0_10px_#00ffff]"></div>
+            </div>
+          </div>
+          
+          <p class="text-xl text-cyan-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(0,255,255,0.5)] animate-pulse">INITIALIZING GAME...</p>
+        </div>
+      </div>
+
       <!-- Login Form -->
       <div class="form-box login absolute right-0 w-1/2 h-full bg-gradient-to-br from-gray-800/90 to-purple-900/90 backdrop-blur-md flex items-center text-white text-center p-10 z-10 transition-all duration-[600ms] ease-in-out delay-[1200ms] border-l border-pink-400/20">
-        <form class="w-full">
+        <form class="w-full" id="login-form">
           <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">LOGIN</h1>
           
           <div class="input-box relative my-8">
@@ -53,7 +73,7 @@ export function AuthPage(): HTMLElement {
 
       <!-- Registration Form -->
       <div class="form-box register absolute right-0 w-1/2 h-full bg-gradient-to-br from-gray-800/90 to-purple-900/90 backdrop-blur-md flex items-center text-white text-center p-10 z-10 transition-all duration-[600ms] ease-in-out delay-[1200ms] invisible border-l border-pink-400/20">
-        <form class="w-full">
+        <form class="w-full" id="register-form">
           <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_0_10px_rgba(255,20,147,0.5)]">REGISTER</h1>
           
           <div class="input-box relative my-6">
@@ -131,8 +151,16 @@ export function AuthPage(): HTMLElement {
       }
       
       /* Animation delays */
+      .animation-delay-200 {
+        animation-delay: 200ms;
+      }
+      
       .animation-delay-300 {
         animation-delay: 300ms;
+      }
+      
+      .animation-delay-400 {
+        animation-delay: 400ms;
       }
       
       .animation-delay-500 {
@@ -151,6 +179,41 @@ export function AuthPage(): HTMLElement {
       
       .arcade-title h1 {
         animation: neon-glow 2s ease-in-out infinite alternate;
+      }
+      
+      /* Zoom transition keyframes */
+      @keyframes zoomToNavigation {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(10);
+          opacity: 0;
+        }
+      }
+      
+      .container.navigating {
+        animation: zoomToNavigation 1s ease-in forwards;
+        animation-delay: 2s;
+      }
+      
+      /* Welcome screen animations */
+      .container.welcome .welcome-screen {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .container.welcome .welcome-content {
+        transform: scale(1);
+      }
+      
+      /* Hide forms during welcome */
+      .container.welcome .form-box,
+      .container.welcome .toggle-panel,
+      .container.welcome .toggle-bg {
+        opacity: 0;
+        transition: opacity 500ms ease-out;
       }
       
       /* Retro button effects */
@@ -235,6 +298,14 @@ export function AuthPage(): HTMLElement {
         .arcade-title h1 {
           font-size: 2.5rem;
         }
+        
+        .welcome-content .arcade-title h1:first-child {
+          font-size: 3rem;
+        }
+        
+        .welcome-content .arcade-title h2 {
+          font-size: 2rem;
+        }
       }
 
       @media screen and (max-width: 400px) {
@@ -254,6 +325,14 @@ export function AuthPage(): HTMLElement {
           width: 160px;
           height: 48px;
           font-size: 0.875rem;
+        }
+        
+        .welcome-content .arcade-title h1:first-child {
+          font-size: 2.5rem;
+        }
+        
+        .welcome-content .arcade-title h2 {
+          font-size: 1.5rem;
         }
       }
 
@@ -321,13 +400,47 @@ export function AuthPage(): HTMLElement {
     </style>
   `;
 
-  // Initialize Google Sign-In
-  initializeGoogleSignIn(container);
+  // Initialize Google Sign-In and form handlers
+  initializeAuthHandlers(container);
 
   return container;
 }
 
-async function initializeGoogleSignIn(container: HTMLElement): Promise<void> {
+// Enhanced authentication handler
+async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
+  const containerEl = container.querySelector('.container');
+  
+  // Form toggle functionality
+  const loginBtn = container.querySelector('.login-btn');
+  const registerBtn = container.querySelector('.register-btn');
+  
+  loginBtn?.addEventListener('click', () => {
+    containerEl?.classList.remove('active');
+  });
+  
+  registerBtn?.addEventListener('click', () => {
+    containerEl?.classList.add('active');
+  });
+  
+  // Form submission handlers
+  const loginForm = container.querySelector('#login-form');
+  const registerForm = container.querySelector('#register-form');
+  
+  loginForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    // Here you would typically validate credentials
+    // For demo purposes, we'll simulate successful login
+    handleSuccessfulAuth(container);
+  });
+  
+  registerForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    // Here you would typically create new account
+    // For demo purposes, we'll simulate successful registration
+    handleSuccessfulAuth(container);
+  });
+
+  // Initialize Google Sign-In
   try {
     await loadGoogleSignInService();
 
@@ -340,15 +453,19 @@ async function initializeGoogleSignIn(container: HTMLElement): Promise<void> {
     }
     
     if (!clientId) {
-      console.log(clientId)
       console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
       return;
     }
 
-    // Initialize Google Sign-In
+    // Initialize Google Sign-In with custom callback
     google.accounts.id.initialize({
       client_id: clientId,
-      callback: handleCredentialResponse,
+      callback: (response: any) => {
+        // Handle Google sign-in response
+        handleCredentialResponse(response);
+        // Trigger welcome screen
+        handleSuccessfulAuth(container);
+      },
       auto_select: false,
       cancel_on_tap_outside: true
     });
@@ -378,7 +495,7 @@ async function initializeGoogleSignIn(container: HTMLElement): Promise<void> {
   } catch (err) {
     console.error('Failed to load/initialize Google Sign-In:', err);
     
-    // Show fallback Google icons with retro styling if Google Sign-In fails
+    // Show fallback Google icons
     const placeholders = container.querySelectorAll('.google-signin-placeholder');
     placeholders.forEach(placeholder => {
       placeholder.innerHTML = `
@@ -387,8 +504,40 @@ async function initializeGoogleSignIn(container: HTMLElement): Promise<void> {
         </div>
       `;
       placeholder.addEventListener('click', () => {
-        console.warn('Google Sign-In not available');
+        console.warn('Google Sign-In not available - simulating success for demo');
+        handleSuccessfulAuth(container);
       });
     });
   }
+}
+
+// Handle successful authentication
+function handleSuccessfulAuth(container: HTMLElement): void {
+  const containerEl = container.querySelector('.container');
+  
+  // Show welcome screen
+  containerEl?.classList.add('welcome');
+  
+  // After 3 seconds, start zoom transition to navigation
+  setTimeout(() => {
+    containerEl?.classList.add('navigating');
+    
+    // After zoom animation completes, navigate to next page
+    setTimeout(() => {
+      // Here you would typically navigate to your main app/game page
+      // For example: window.location.href = '/game' or call your router
+      console.log('Navigating to main application...');
+      
+      // Example of how you might trigger navigation in your app:
+      // if (window.navigateToGame) {
+      //   window.navigateToGame();
+      // }
+      
+      // Or dispatch a custom event that your router can listen for:
+      window.dispatchEvent(new CustomEvent('authComplete', {
+        detail: { action: 'navigateToGame' }
+      }));
+      
+    }, 1500); // Wait for zoom animation to complete
+  }, 5000); // Show welcome message for 3 seconds
 }
