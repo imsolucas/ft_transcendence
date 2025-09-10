@@ -8,6 +8,9 @@ all: up
 up:
 	docker compose -f $(FILE) up -d --build
 
+stop:
+	docker compose -f $(FILE) stop
+
 down:
 	docker compose -f $(FILE) down
 
