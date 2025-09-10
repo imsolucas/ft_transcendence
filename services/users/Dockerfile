@@ -1,6 +1,17 @@
-FROM alpine:3.22.1
+FROM node:lts-trixie
 
-RUN apk update && apk add sqlite
-WORKDIR /db
+RUN apt-get update && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT [ "sqlite3" ]
+WORKDIR /usr/src/app/
+
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
+COPY . .
+
+EXPOSE 3000
+
+ENTRYPOINT [ "npm", "run" ]
+CMD [ "dev" ]

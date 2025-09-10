@@ -1,0 +1,13 @@
+{
+    "name": "users",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "echo dev",
+        "build": "echo build"
+    },
+    "devDependencies": {
+        "better-sqlite3": "^12.2.0"
+    }
+}

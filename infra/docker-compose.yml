@@ -21,8 +21,32 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  users:
+    container_name: users
+    image: users
+    build:
+      context: ../services/users/
+      dockerfile: Dockerfile
+    ports:
+      - "${USERS_PORT}"
+    volumes:
+      - ../services/users/:/usr/src/app/:rw
+      - users_db:/usr/src/app/db/
+      - users_node_modules:/usr/src/app/node_modules/
+    networks:
+      - devnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS ${FRONTEND_HEALTH_HOST} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
 volumes:
   frontend_node_modules:
+  users_db:
+  users_node_modules:
 
 networks:
   devnet:
