@@ -21,8 +21,26 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  backend:
+    build:
+      context: ../services/backend/
+      args: 
+        PORT: ${BACKEND_PORT:-3001}
+    image: backend
+    container_name: backend
+    command: ["${BACKEND_CMD:-dev}"]
+    ports:
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
+    networks:
+      - devnet
+    volumes:
+      - ../services/backend:/usr/src/app:rw
+      - backend_node_modules:/usr/src/app/node_modules/
+    restart: unless-stopped
+
 volumes:
   frontend_node_modules:
+  backend_node_modules:
 
 networks:
   devnet:
