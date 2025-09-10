@@ -6,13 +6,13 @@ all: up
 
 # basic lifecycle
 up:
-	docker compose -f $(FILE) up -d --build
+	docker compose -f $(FILE) up -d --build $(SERVICE)
 
 down:
 	docker compose -f $(FILE) down
 
 build:
-	docker compose -f $(FILE) build
+	docker compose -f $(FILE) build $(SERVICE)
 
 # logs / status
 logs:
