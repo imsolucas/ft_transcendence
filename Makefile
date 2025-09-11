@@ -1,6 +1,6 @@
 FILE=infra/docker-compose.yml
 
-.PHONY: all up down build logs ps clean-volumes inspect-health
+.PHONY: all up down build re logs ps clean-volumes inspect-health
 
 all: up
 
@@ -16,6 +16,8 @@ down:
 
 build:
 	docker compose -f $(FILE) build
+
+re: down up
 
 # logs / status
 logs:
