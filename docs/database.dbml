@@ -4,7 +4,7 @@ Table Users {
     email varchar
     display_name varchar
     avatar varchar
-    status varchar [note: 'online | offline']
+    status varchar [note: 'online | offline | in game']
     created_at timestamp
     last_updated timestamp
 }
