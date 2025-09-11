@@ -1,5 +1,95 @@
+import { ProfileData } from '../components/ProfileData';
+
 export function ProfilePage(): HTMLElement {
-	  const container = document.createElement('div');
-	  container.className = 'relative min-h-screen flex items-center justify-center overflow-hidden';
-	  return container;
+  const container = document.createElement('div');
+  container.className = 'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] to-[#F3796A] font-poppins text-white';
+
+  const mainContent = document.createElement('main');
+  mainContent.className = 'container mx-auto px-4 py-16';
+  
+  mainContent.appendChild(ProfileData());
+
+  container.appendChild(mainContent);
+
+  // Add styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .grid-pattern {
+      background-image: 
+        linear-gradient(rgba(0,255,255,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,255,0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+      width: 100%;
+      height: 100%;
+    }
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      position: relative;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tab-btn:after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: transparent;
+      transition: background 0.3s ease;
+    }
+    .tab-btn.active {
+      color: #ff1493; /* Deep Pink */
+    }
+    .tab-btn.active:after {
+      background: #ff1493;
+      box-shadow: 0 0 10px #ff1493;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 768px) {
+      .grid-cols-1.md\:grid-cols-3 {
+        grid-template-columns: 1fr;
+      }
+      .md\:col-span-1,
+      .md\:col-span-2 {
+        grid-column: span 1 / span 1;
+      }
+      .p-8.md\:p-12 {
+        padding: 1.5rem;
+      }
+      .text-3xl {
+        font-size: 1.875rem;
+      }
+      .w-40 {
+        width: 8rem;
+      }
+      .h-40 {
+        height: 8rem;
+      }
+      .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+      }
+    }
+  `;
+  container.appendChild(style);
+
+  return container;
 }

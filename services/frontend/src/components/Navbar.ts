@@ -139,7 +139,7 @@ export function createNavbar(): HTMLElement {
 		dropdown.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 		
 		dropdown.innerHTML = `
-	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
+	  <a href="#" data-link="profile" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
 		Profile
 	  </a>
 	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
@@ -228,9 +228,12 @@ export function createNavbar(): HTMLElement {
 		dropdownItems.forEach(item => {
 			item.addEventListener('click', (e) => {
 				e.preventDefault();
+				const link = e.currentTarget as HTMLAnchorElement;
+				const screen = link.dataset.link;
+				if (screen) {
+					navigate(screen as Screen);
+				}
 				closeDropdown();
-				// Add your navigation logic here based on the clicked item
-				console.log('Dropdown item clicked:', item.textContent?.trim());
 			});
 		});
 
