@@ -7,6 +7,7 @@ WORKDIR /usr/src/app/
 
 COPY package.json package-lock.json ./
 
+ENV NODE_ENV=$MODE_ENV
 RUN npm ci
 
 COPY . .
