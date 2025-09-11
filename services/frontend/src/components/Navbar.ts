@@ -142,11 +142,11 @@ export function createNavbar(): HTMLElement {
 	  <a href="#" data-link="profile" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
 		Profile
 	  </a>
-	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		Game History
+	  <a href="#" data-link="profile" data-tab="friends" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
+		Friends
 	  </a>
-	  <a href="#" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		Settings
+	  <a href="#" data-link="profile" data-tab="match-history" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
+		Game History
 	  </a>
 	  <hr class="my-1">
 	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-[#2BD2FF] hover:bg-red-50/80 transition-colors">
@@ -230,8 +230,9 @@ export function createNavbar(): HTMLElement {
 				e.preventDefault();
 				const link = e.currentTarget as HTMLAnchorElement;
 				const screen = link.dataset.link;
+				const tab = link.dataset.tab;
 				if (screen) {
-					navigate(screen as Screen);
+					navigate(screen as Screen, tab);
 				}
 				closeDropdown();
 			});

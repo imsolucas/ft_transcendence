@@ -7,9 +7,17 @@ import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/au
 export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification";
 
 let currentScreen: Screen | null = null;
+let activeTab: string | undefined;
 
-export function navigate(screen: Screen) {
+export function navigate(screen: Screen, tab?: string) {
+  activeTab = tab;
   renderPage(screen);
+}
+
+export function getActiveTab() {
+  const tab = activeTab;
+  activeTab = undefined;
+  return tab;
 }
 
 export function renderPage(screen: Screen) {

@@ -113,3 +113,14 @@ export const fetchFriends = async (userId: string) => {
     }
   ];
 };
+
+export const uploadProfilePicture = async (userId: string, file: File) => {
+  // const formData = new FormData();
+  // formData.append('file', file);
+  // return apiFetch(`${API_URL}/users/${userId}/upload-picture`, {
+  //   method: 'POST',
+  //   body: formData,
+  // });
+  console.log(userId, file);
+  return { picture: '/images/f1intro.jpg' };
+};

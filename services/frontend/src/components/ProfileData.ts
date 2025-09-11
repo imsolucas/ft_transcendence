@@ -1,10 +1,11 @@
 
-import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends } from '../utils/api';
+import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture } from '../utils/api';
 import { getCurrentUser } from '../utils/auth-script';
+import { getActiveTab } from '../router';
 
 export function ProfileData() {
   const container = document.createElement('div');
-  container.className = 'relative max-w-5xl mx-auto bg-gray-900/80 backdrop-blur-md rounded-3xl shadow-[0_0_50px_rgba(255,20,147,0.4)] overflow-hidden border-2 border-pink-400/30';
+  container.className = 'relative w-full md:w-[800px] h-full md:h-[800px] mx-auto bg-gray-900/80 backdrop-blur-md rounded-3xl shadow-[0_0_50px_rgba(255,20,147,0.4)] overflow-hidden border-2 border-pink-400/30';
 
   const user = getCurrentUser();
 
@@ -54,13 +55,13 @@ export function ProfileData() {
       <div class="absolute top-8 right-8 w-10 h-10 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_20px_#00ffff]"></div>
       <div class="absolute bottom-8 left-8 w-8 h-8 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_#ff1493] animation-delay-500"></div>
 
-      <div class="relative z-10 p-8 md:p-12">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="relative z-10 p-8 md:p-12 h-full overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Left Column: User Info -->
-          <div class="md:col-span-1 text-center flex flex-col items-center">
+          <div class="text-center flex flex-col items-center">
             <div class="relative mb-6">
               <img src="${profileData.picture || '/images/pong.png'}" alt="User Avatar" class="w-40 h-40 rounded-full border-4 border-cyan-400 shadow-[0_0_30px_rgba(0,255,255,0.6)] object-cover">
-              <button class="absolute bottom-0 right-0 w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center border-2 border-gray-900 hover:bg-pink-600 transition-all transform hover:scale-110">
+              <button id="camera-button" class="absolute bottom-0 right-0 w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center border-2 border-gray-900 hover:bg-pink-600 transition-all transform hover:scale-110">
                 <i class="bx bxs-camera text-xl"></i>
               </button>
             </div>
@@ -87,24 +88,25 @@ export function ProfileData() {
           </div>
 
           <!-- Right Column: Tabs -->
-          <div class="md:col-span-2">
+          <div>
             <div class="tabs-container">
               <div class="flex border-b border-pink-400/30 mb-6">
-                <button class="tab-btn active" data-tab="match-history">Match History</button>
-                <button class="tab-btn" data-tab="profile-settings">Profile Settings</button>
+                <button class="tab-btn active" data-tab="profile-settings">Profile Settings</button>
                 <button class="tab-btn" data-tab="friends">Friends</button>
+                <button class="tab-btn" data-tab="match-history">Match History</button>
               </div>
 
-              <div class="tab-content active" id="match-history">
+              <div class="tab-content" id="match-history">
                 <h2 class="text-2xl font-bold mb-4 text-cyan-300">Recent Matches</h2>
                 <div class="space-y-4">
                   <!-- Match Items will be dynamically inserted here -->
                 </div>
               </div>
 
-              <div class="tab-content" id="profile-settings">
+              <div class="tab-content active" id="profile-settings">
                 <h2 class="text-2xl font-bold mb-6 text-cyan-300">Profile Settings</h2>
                 <form id="profile-form">
+                  <input type="file" id="photo-upload" class="hidden" accept="image/*">
                   <div class="mb-6">
                     <label for="username" class="block text-pink-300 mb-2">Username</label>
                     <input type="text" id="username" name="username" class="w-full py-3 px-5 bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all" value="${profileData.username || ''}">
@@ -136,6 +138,18 @@ export function ProfileData() {
     // Tab functionality
     const tabButtons = container.querySelectorAll('.tab-btn');
     const tabContents = container.querySelectorAll('.tab-content');
+
+    const activeTab = getActiveTab();
+    if (activeTab) {
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+
+      const button = container.querySelector(`[data-tab="${activeTab}"]`);
+      const content = container.querySelector(`#${activeTab}`);
+
+      if (button) button.classList.add('active');
+      if (content) content.classList.add('active');
+    }
 
     tabButtons.forEach(button => {
       button.addEventListener('click', () => {
@@ -170,6 +184,29 @@ export function ProfileData() {
         } catch (error) {
           console.error('Failed to update profile:', error);
           // Show an error message to the user
+        }
+      });
+    }
+
+    // Handle photo upload
+    const cameraButton = container.querySelector('#camera-button');
+    const photoUploadInput = container.querySelector('#photo-upload') as HTMLInputElement;
+
+    if (cameraButton && photoUploadInput) {
+      cameraButton.addEventListener('click', () => {
+        photoUploadInput.click();
+      });
+
+      photoUploadInput.addEventListener('change', async () => {
+        const file = photoUploadInput.files?.[0];
+        if (file) {
+          try {
+            await uploadProfilePicture(user.id, file);
+            loadProfileData();
+          } catch (error) {
+            console.error('Failed to upload profile picture:', error);
+            // Show an error message to the user
+          }
         }
       });
     }
