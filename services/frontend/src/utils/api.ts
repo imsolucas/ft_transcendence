@@ -1,6 +1,4 @@
-
-import { getCurrentUser } from './auth-script';
-
+/*
 const API_URL = 'http://localhost:3000/api'; // Replace with your actual backend URL
 
 // Function to get the JWT token from local storage
@@ -28,6 +26,10 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
 
   return response.json();
 };
+*/
+
+import { getCurrentUser } from './auth-script';
+
 
 export const fetchUserProfile = async (userId: string) => {
   // return apiFetch(`${API_URL}/users/${userId}`);

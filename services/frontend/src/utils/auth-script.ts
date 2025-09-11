@@ -22,6 +22,7 @@ interface AuthResponse {
     id: string;
     username: string;
     email: string;
+    picture?: string;
   };
 }
 
