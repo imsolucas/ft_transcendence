@@ -21,26 +21,26 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  backend:
+  game:
     build:
-      context: ../services/backend/
+      context: ../services/game/
       args: 
-        PORT: ${BACKEND_PORT:-3001}
-    image: backend
-    container_name: backend
-    command: ["${BACKEND_CMD:-dev}"]
+        PORT: ${GAME_PORT:-3001}
+    image: game
+    container_name: game
+    command: ["${GAME_CMD:-dev}"]
     ports:
-      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
+      - "${GAME_PORT:-3001}:${GAME_PORT:-3001}"
     networks:
       - devnet
     volumes:
-      - ../services/backend:/usr/src/app:rw
-      - backend_node_modules:/usr/src/app/node_modules/
+      - ../services/game:/usr/src/app:rw
+      - game_node_modules:/usr/src/app/node_modules/
     restart: unless-stopped
 
 volumes:
   frontend_node_modules:
-  backend_node_modules:
+  game_node_modules:
 
 networks:
   devnet:
