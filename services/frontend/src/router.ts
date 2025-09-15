@@ -1,6 +1,7 @@
 import { LandingPage } from "./pages/landingPage";
 import { AuthPage } from "./pages/authPage"; // Renamed from landing
 import { MainPage } from "./pages/main";
+import { GamePage, cleanupGamePage } from "./pages/gampage";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
 
 export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification";
@@ -43,6 +44,10 @@ export function renderPage(screen: Screen) {
       // Main dashboard - only for authenticated users
       container.appendChild(MainPage());
       break;
+    case "game":
+      // Game page, should be for authenticated users
+      container.appendChild(GamePage());
+      break;
   }
   
   currentScreen = screen;
@@ -52,7 +57,7 @@ function checkAuthAndRedirect(requestedScreen: Screen): Screen {
   const isLoggedIn = isAuthenticated();
   
   // Define which screens require authentication
-  const protectedScreens: Screen[] = ["main", "game", "profile"];
+  const protectedScreens: Screen[] = ["main", "profile"];
   
   // Define which screens are only for non-authenticated users
   const guestOnlyScreens: Screen[] = ["auth"];
@@ -83,6 +88,9 @@ function cleanup(screen: Screen | null) {
   switch (screen) {
     case "auth":
       cleanupAuthPage();
+      break;
+    case "game":
+      cleanupGamePage();
       break;
   }
 }

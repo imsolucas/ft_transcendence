@@ -165,10 +165,11 @@ export function LandingPage(): HTMLElement {
     
     playNowBtn?.addEventListener('click', () => {
       // Navigate to auth page if not logged in, or main if logged in
+      console.log('setting game page event listener');
       if (isAuthenticated()) {
-        navigate('main');
+        navigate('game');
       } else {
-        navigate('auth');
+        navigate('game');
       }
     });
     
