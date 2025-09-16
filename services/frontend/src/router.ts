@@ -1,7 +1,7 @@
 import { LandingPage } from "./pages/landingPage";
 import { AuthPage } from "./pages/authPage"; // Renamed from landing
 import { MainPage } from "./pages/main";
-import { GamePage, cleanupGamePage } from "./pages/gampage";
+import { GamePage, cleanupGamePage } from "./pages/gamPage";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
 
 export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification";
