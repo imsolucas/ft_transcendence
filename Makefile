@@ -34,4 +34,4 @@ inspect-health:
 	docker inspect --format '{{json .State.Health}}' $(SERVICE) || true
 
 prune-cache:
-	docker build prune --all
+	docker builder prune --all
