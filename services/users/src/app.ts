@@ -1,5 +1,6 @@
-import express, { Application, Request, Response } from "express";
-import userRoutes from "./routes/userRoutes.ts";
+import express from "express";
+import type { Application, Response, Request} from "express";
+import userRoutes from "./routes/userRoutes.js";
 
 const app: Application = express();
 
