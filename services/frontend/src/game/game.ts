@@ -1,5 +1,6 @@
-import { Player } from "./player";
-import { __speed__ } from "./definitions";
+import Player from "./entities/player";
+import { __speed__, PLAYER_WIDTH} from "./definitions";
+import Ball from "./entities/ball";
 
 export class Game {
     #canvas: HTMLCanvasElement;
@@ -84,12 +85,12 @@ export class Game {
         this.#player2.draw(this.#ctx);
     }
 
-    #tick(): void {
-        this.#player1.move(this.#keys.w, this.#keys.s);
-        this.#player1.tick();
+    #tick(deltaTime: number): void {
+        this.#player1.key(this.#keys.w, this.#keys.s);
+        this.#player1.tick(deltaTime, this.#canvas);
 
-        this.#player2.move(this.#keys.up, this.#keys.down);
-        this.#player2.tick();
+        this.#player2.key(this.#keys.up, this.#keys.down);
+        this.#player2.tick(deltaTime, this.#canvas);
     }
 
     #loop (timestamp: number) : void {
@@ -100,6 +101,7 @@ export class Game {
         // Clear screen
         this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
 
+        this.#tick(deltaTime);
         this.#render();
         this.#tick();
         requestAnimationFrame(this.#loop.bind(this));
