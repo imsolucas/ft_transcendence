@@ -1,6 +1,7 @@
 import Player from "./entities/player";
-import { __speed__, PLAYER_WIDTH} from "./definitions";
+import { PLAYER_SPEED, PLAYER_WIDTH} from "./definitions";
 import Ball from "./entities/ball";
+import type Entity from "./entities/entity";
 
 export class Game {
     #canvas: HTMLCanvasElement;
@@ -47,7 +48,8 @@ export class Game {
     #initEntities():void {
         this.#player1 = new Player ({x: 50,y: 200}, "#ffffff");
         this.#player2 = new Player ({x: this.#canvas.width - PLAYER_WIDTH - 50,y: 200}, "#ffffff");
-        this.#ball = new Ball({x: this.#canvas.width, y: 500}, "#ffffff")
+        this.#ball = new Ball({x: this.#canvas.width / 2, y: this.#canvas.height / 2}, "#ffffff")
+        // this.#ball.setVelocity({x: 5, y:0})
     }
 
     #initEvents(): void {
@@ -91,6 +93,7 @@ export class Game {
     #render(): void {
         this.#player1.draw(this.#ctx);
         this.#player2.draw(this.#ctx);
+        this.#ball.draw(this.#ctx);
     }
 
     #tick(deltaTime: number): void {
@@ -99,19 +102,26 @@ export class Game {
 
         this.#player2.key(this.#keys.up, this.#keys.down);
         this.#player2.tick(deltaTime, this.#canvas);
+
+        this.#ball.tick(deltaTime, this.#canvas);
     }
 
     #loop (timestamp: number) : void {
-        if (!this.#isRunning) return;
-        // Calulate deltaTime
+        if (!this.#isRunning) 
+            return;
         let deltaTime = timestamp - this.#previousTime;
         this.#previousTime = timestamp;
-        // Clear screen
         this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
 
         this.#tick(deltaTime);
         this.#render();
-        this.#tick();
         requestAnimationFrame(this.#loop.bind(this));
     }
 }
+
+// class EntityManager {
+//     entities: Entity<Circle>[] = []
+//     constructor() {
+
+//     }
+// }

@@ -1,13 +1,11 @@
-import type { Circle, Rectangle, Vector } from "../definitions";
-import { drawCircle, drawRectangle } from "../utils/drawUtils";
+import type {  Vector } from "../definitions";
 
-export default abstract class Entity <T extends Rectangle | Circle> {
-    protected velocity: Vector = {x:0, y: 0};
+export default abstract class Entity {
 
     constructor (
         protected pos: Vector,
-        protected shape: T,
         protected color: string,
+        protected velocity: Vector = {x:0, y:0}
     ) {}
 
     public setVelocity(velocity: Vector): void {
@@ -30,13 +28,7 @@ export default abstract class Entity <T extends Rectangle | Circle> {
         this.pos.x += pos.x;
         this.pos.y += pos.y;
     }
-
-    public draw(ctx: CanvasRenderingContext2D): void {
-        if ('radius' in this.shape)
-            drawCircle(this.pos, this.shape, this.color, ctx);
-        else
-            drawRectangle(this.pos, this.shape, this.color, ctx);
-    }
-
+    
+    public abstract draw(ctx: CanvasRenderingContext2D): void
     public abstract tick(deltaTime: number, canvas: HTMLCanvasElement): void
 }
