@@ -70,8 +70,13 @@ export class Game {
     }   
 
     #fillWindow(): void {
+        const navbar = document.querySelector('nav');
+        const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
+        
         this.#canvas.width = window.innerWidth;
-        this.#canvas.height = window.innerHeight;
+        this.#canvas.height = window.innerHeight - navbarHeight;
+        
+        this.#canvas.style.marginTop = `${navbarHeight}px`;
     }
 
     #render(): void {
