@@ -5,11 +5,12 @@ import Ball from "./entities/ball";
 export class Game {
     #canvas: HTMLCanvasElement;
     #ctx: CanvasRenderingContext2D;
-    #animationId: number | null
+    #animationId: number | null;
     #isRunning = false;
     #previousTime: number;
-    #player1 = new Player ({x: 50,y: 200}, "#ffffff");
-    #player2 = new Player ({x: 1000,y: 200}, "#ffffff");
+    #player1!: Player;
+    #player2!: Player;
+    #ball!: Ball;
     #keys = {
         w: false,
         s: false,
@@ -25,6 +26,7 @@ export class Game {
         this.#ctx = canvas.getContext('2d')!;
         this.#fillWindow();
         this.#initEvents();
+        this.#initEntities();
     }
 
     public start(): void {
@@ -40,6 +42,12 @@ export class Game {
             cancelAnimationFrame(this.#animationId);
             this.#animationId = null;
         }
+    }
+
+    #initEntities():void {
+        this.#player1 = new Player ({x: 50,y: 200}, "#ffffff");
+        this.#player2 = new Player ({x: this.#canvas.width - PLAYER_WIDTH - 50,y: 200}, "#ffffff");
+        this.#ball = new Ball({x: this.#canvas.width, y: 500}, "#ffffff")
     }
 
     #initEvents(): void {
