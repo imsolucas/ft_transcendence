@@ -6,9 +6,12 @@ let currentGame: Game | null = null;
 export function GamePage(): HTMLElement {
     const container = document.createElement('div');
     container.className = 'fixed inset-0 overflow-hidden';
-    
+
+    // const navbar = document.querySelector('nav')
+    // const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
+
     const canvas = document.createElement('canvas');
-    canvas.className = 'block w-full h-full';
+    canvas.className = 'block w-full flex-1';
     canvas.style.background = "#000000";
 
     container.appendChild(canvas);
