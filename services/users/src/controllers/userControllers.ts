@@ -1,5 +1,5 @@
-import type { Request, Response } from "express";
+import type { FastifyRequest, FastifyReply } from "fastify";
 
-export const getUsers = (req: Request, res: Response) => {
-  res.json([{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]);
+export const getUsers = (req: FastifyRequest, res: FastifyReply) => {
+  return res.send([{ id: 1, name: "Alice" }, { id: 2, name: "Bob" }]);
 };

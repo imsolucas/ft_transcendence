@@ -1,18 +1,11 @@
-import express from "express";
-import type { Application, Response, Request} from "express";
+import Fastify, { FastifyInstance } from "fastify";
 import userRoutes from "./routes/userRoutes.js";
 
-const app: Application = express();
+export async function buildApp(): Promise<FastifyInstance> {
+  const app = Fastify({ logger: true });
 
-// Middleware
-app.use(express.json());
+  await app.register(userRoutes, { prefix: "/users"});
+  app.get("/", async () => "Hello TypeScript + Fastify! 🟦");
 
-// Routes
-app.use("/users", userRoutes);
-
-// Health check
-app.get("/", (req: Request, res: Response) => {
-  res.send("Hello TypeScript + Node.js! 🟦");
-});
-
-export default app;
+  return app;
+};

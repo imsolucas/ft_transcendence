@@ -1,8 +1,6 @@
-import { Router } from "express";
+import { FastifyInstance } from "fastify";
 import { getUsers } from "../controllers/userControllers.js";
 
-const router = Router();
-
-router.get("/", getUsers);
-
-export default router;
+export default async function userRoutes(fastify: FastifyInstance) {
+  fastify.get("/", getUsers);
+};
