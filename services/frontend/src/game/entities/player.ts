@@ -37,7 +37,7 @@ export default class Player extends Entity {
         drawRectangle(this.pos, this.#size, this.color, ctx);
     }
 
-    key(up: boolean, down: boolean): void {
+    input(up: boolean, down: boolean): void {
         if (up)
             this.velocity.y = -PLAYER_SPEED;
         if (down)

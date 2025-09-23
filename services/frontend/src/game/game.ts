@@ -1,14 +1,11 @@
 import Player from "./entities/player";
-import { PLAYER_SPEED, PLAYER_WIDTH, type Vector} from "./definitions";
+import { PLAYER_HEIGHT, PLAYER_WIDTH, type Vector} from "./definitions";
 import Ball from "./entities/ball";
 import type Entity from "./entities/entity";
 
 export class Game {
     #canvas: HTMLCanvasElement;
     #ctx: CanvasRenderingContext2D;
-    #player1!: Player;
-    #player2!: Player;
-    #ball!: Ball;
     #entityManager: EntityManager = new EntityManager;
     #animationId: number | null = null;
     #isRunning = false;
@@ -46,9 +43,9 @@ export class Game {
 
     #initEntities():void {
 
-        this.#entityManager.newPlayer(new Player ({x: 50,y: 200}, "#ffffff"));
-        this.#entities.push(new Player ({x: this.#canvas.width - PLAYER_WIDTH - 50,y: 200}, "#ffffff"));
-        this.#balls.push(new Ball({x: this.#canvas.width / 2, y: this.#canvas.height / 2}, "#ffffff"));
+        this.#entityManager.newPlayer({x: 50,y: this.#canvas.height / 2 - PLAYER_HEIGHT / 2}, "#ffffff");
+        this.#entityManager.newPlayer({x: this.#canvas.width - PLAYER_WIDTH - 50,y: this.#canvas.height / 2 - PLAYER_HEIGHT / 2}, "#ffffff");
+        this.#entityManager.newBall({x: this.#canvas.width / 2, y: this.#canvas.height / 2}, "#ffffff");
     }
 
     #initEvents(): void {
@@ -90,19 +87,12 @@ export class Game {
     }
 
     #render(): void {
-        this.#player1.draw(this.#ctx);
-        this.#player2.draw(this.#ctx);
-        this.#ball.draw(this.#ctx);
+        this.#entityManager.drawEntities(this.#ctx);
     }
 
     #tick(deltaTime: number): void {
-        this.#player1.key(this.#keys.w, this.#keys.s);
-        this.#player1.tick(deltaTime, this.#canvas);
-
-        this.#player2.key(this.#keys.up, this.#keys.down);
-        this.#player2.tick(deltaTime, this.#canvas);
-
-        this.#ball.tick(deltaTime, this.#canvas);
+        this.#entityManager.tickEntities(deltaTime, this.#canvas);
+        this.#entityManager.playerInputs(this.#keys);
     }
 
     #loop (timestamp: number) : void {
@@ -125,10 +115,34 @@ class EntityManager {
 
     constructor() {}
 
-    newPlayer(player: Player): void;
-    newPlayer(test: Player, pos?: Vector, color?: string, size?: Vector): void {
-        if (player === undefined)
-            var newPlayer = new Player(pos, color, size);
+    playerInputs(keys: {w: boolean, s: boolean, up: boolean, down: boolean}):void {
+        this.#players[0].input(keys.w, keys.s);
+        this.#players[1].input(keys.up, keys.down);
+    }
+
+    tickEntities(deltaTime: number, canvas: HTMLCanvasElement): void {
+        for (var entity of this.#entities) {
+            entity.tick(deltaTime, canvas);
+        }
+    }
+
+    drawEntities(ctx: CanvasRenderingContext2D): void {
+        for (var entity of this.#entities)
+            entity.draw(ctx);
+    }
+
+    addPlayer(player: Player): void {
+        this.#entities.push(player);
+        this.#players.push(player);
+    }
+
+    addBall(ball: Ball): void {
+        this.#entities.push(ball);
+        this.#balls.push(ball);
+    }
+
+    newPlayer(pos: Vector, color: string, size?: Vector): void {
+        var player = new Player(pos, color, size);
 
         this.#entities.push(player);
         this.#players.push(player);
