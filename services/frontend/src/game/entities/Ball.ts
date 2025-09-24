@@ -1,13 +1,21 @@
-import { BALL_SIZE, type Vector } from "../definitions";
+import { constants, type Vector } from "../definitions";
 import { drawCircle } from "../utils/drawUtils";
-import Entity  from "./entity";
+import Entity  from "./Entity";
 
 export default class Ball extends Entity {
     #radius: number;
 
-    constructor (pos: Vector, color: string, radius: number = BALL_SIZE) {
+    constructor (color: string, pos: Vector = {x:0, y:0}, radius: number = constants.BALL_SIZE) {
         super(pos, color);
         this.#radius = radius;
+    }
+
+    public randomVelocity(): void {
+        const max = 7;
+        const min = 5;
+        this.pos = {
+            x:(Math.random() * (max - min) + min),
+            y:(Math.random() * (max - min) + min)};
     }
 
     public draw(ctx: CanvasRenderingContext2D): void {

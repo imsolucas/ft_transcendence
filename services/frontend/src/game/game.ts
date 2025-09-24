@@ -1,7 +1,7 @@
-import Player from "./entities/player";
-import { PLAYER_HEIGHT, PLAYER_WIDTH, type Vector} from "./definitions";
-import Ball from "./entities/ball";
-import type Entity from "./entities/entity";
+import Player from "./entities/Player";
+import SquareBall from "./entities/SquareBall";
+import EntityManager from "./EntityManager";
+import { constants, eGameState} from "./definitions";
 
 export class Game {
     #canvas: HTMLCanvasElement;
@@ -10,6 +10,8 @@ export class Game {
     #animationId: number | null = null;
     #isRunning = false;
     #previousTime: number = 0;
+    #state: number = eGameState.START_ROUND
+    #waitFrames: number = 0;
     #keys = {
         w: false,
         s: false,
@@ -42,10 +44,9 @@ export class Game {
     }
 
     #initEntities():void {
-
-        this.#entityManager.newPlayer({x: 50,y: this.#canvas.height / 2 - PLAYER_HEIGHT / 2}, "#ffffff");
-        this.#entityManager.newPlayer({x: this.#canvas.width - PLAYER_WIDTH - 50,y: this.#canvas.height / 2 - PLAYER_HEIGHT / 2}, "#ffffff");
-        this.#entityManager.newBall({x: this.#canvas.width / 2, y: this.#canvas.height / 2}, "#ffffff");
+        this.#entityManager.addPlayer(new Player("#ffffff"));
+        this.#entityManager.addPlayer(new Player("#ffffff"));
+        this.#entityManager.addSquareBall(new SquareBall("#ffffff"));
     }
 
     #initEvents(): void {
@@ -58,6 +59,10 @@ export class Game {
     }
     
     #handleKeyInput(ev: KeyboardEvent, keyDown: boolean): void {
+        // if (this.#state == eGameState.PAUSE)
+        //     this.#state = eGameState.PLAYING
+        if (this.#state != eGameState.PLAYING)
+            return ;
         switch(ev.key){
             case ("w"):
                 this.#keys.w = keyDown;
@@ -71,8 +76,8 @@ export class Game {
             case("ArrowUp"):
                 this.#keys.up = keyDown;
                 break;
-            default:
-                break;
+            // case("Escape"):
+            //     this.#state = eGameState.PAUSE
         }
     }   
 
@@ -92,7 +97,19 @@ export class Game {
 
     #tick(deltaTime: number): void {
         this.#entityManager.tickEntities(deltaTime, this.#canvas);
-        this.#entityManager.playerInputs(this.#keys);
+        this.#entityManager.checkCollisions();
+    }
+
+    #resetPos(): void {
+        this.#entityManager.getPlayer(0).setPos({
+            x: 50,
+            y: this.#canvas.height / 2 - constants.PLAYER_HEIGHT / 2
+        })
+        this.#entityManager.getPlayer(1).setPos({
+            x: this.#canvas.width - constants.PLAYER_WIDTH - 50,
+            y: this.#canvas.height / 2 - constants.PLAYER_HEIGHT / 2
+        })
+        this.#entityManager.getSquareBall().reset(this.#canvas)
     }
 
     #loop (timestamp: number) : void {
@@ -102,65 +119,24 @@ export class Game {
         this.#previousTime = timestamp;
         this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
 
+        switch (this.#state){
+            case (eGameState.START_ROUND):
+                this.#resetPos();
+                this.#state = eGameState.STARTING_ROUND
+                break;
+            case (eGameState.STARTING_ROUND):
+                if (this.#waitFrames != 60)
+                    this.#waitFrames++;
+                else{
+                    this.#waitFrames = 0
+                    this.#state = eGameState.PLAYING
+                    this.#entityManager.getSquareBall().randomVelocity();
+                }
+                break;
+        }
         this.#tick(deltaTime);
+        this.#entityManager.playerInputs(this.#keys);
         this.#render();
         requestAnimationFrame(this.#loop.bind(this));
     }
-}
-
-class EntityManager {
-    #entities: Entity[] = []
-    #players: Player[] = []
-    #balls: Ball[] = []
-
-    constructor() {}
-
-    playerInputs(keys: {w: boolean, s: boolean, up: boolean, down: boolean}):void {
-        this.#players[0].input(keys.w, keys.s);
-        this.#players[1].input(keys.up, keys.down);
-    }
-
-    tickEntities(deltaTime: number, canvas: HTMLCanvasElement): void {
-        for (var entity of this.#entities) {
-            entity.tick(deltaTime, canvas);
-        }
-    }
-
-    drawEntities(ctx: CanvasRenderingContext2D): void {
-        for (var entity of this.#entities)
-            entity.draw(ctx);
-    }
-
-    addPlayer(player: Player): void {
-        this.#entities.push(player);
-        this.#players.push(player);
-    }
-
-    addBall(ball: Ball): void {
-        this.#entities.push(ball);
-        this.#balls.push(ball);
-    }
-
-    newPlayer(pos: Vector, color: string, size?: Vector): void {
-        var player = new Player(pos, color, size);
-
-        this.#entities.push(player);
-        this.#players.push(player);
-    }
-
-    newBall(pos: Vector, color: string, radius ? : number ): void {
-        const ball = new Ball(pos, color, radius);
-
-        this.#entities.push(ball);
-        this.#balls.push(ball);
-    }
-
-    removePlayer(index: number): void {
-        this.#players.splice(index, 1);
-    }
-
-    removeBall(index: number): void {
-        this.#balls.splice(index, 1);
-    }
-
 }

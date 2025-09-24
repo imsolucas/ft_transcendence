@@ -1,17 +1,17 @@
 import type { Vector, Border } from "../definitions";
-import Entity from "./entity";
-import { PLAYER_FRICTION, PLAYER_SPEED, PLAYER_HEIGHT, PLAYER_WIDTH } from "../definitions";
+import Entity from "./Entity";
+import { constants } from "../definitions";
 import { drawRectangle } from "../utils/drawUtils";
 
 export default class Player extends Entity {
     #size: Vector;
 
-    constructor(pos: Vector, color: string, size: Vector = {x: PLAYER_WIDTH, y: PLAYER_HEIGHT}) {
+    constructor(color: string, pos: Vector = {x:0, y:0}, size: Vector = {x: constants.PLAYER_WIDTH, y: constants.PLAYER_HEIGHT}) {
         super(pos, color);
         this.#size = size;
     }
 
-    border(): Border{
+    getBorder(): Border{
         return {
             top: this.pos.y,
             bottom: this.pos.y + this.#size.y,
@@ -21,7 +21,7 @@ export default class Player extends Entity {
     }
 
     tick(deltaTime: number , canvas: HTMLCanvasElement): void {
-        const border = this.border();
+        const border = this.getBorder();
 
         if (border.top + this.velocity.y < 0 )
             this.pos.y = 0;
@@ -29,7 +29,7 @@ export default class Player extends Entity {
             this.pos.y = canvas.height - this.#size.y;
         else {
             this.pos.y += this.velocity.y;
-            this.velocity.y *= PLAYER_FRICTION;
+            this.velocity.y *= constants.PLAYER_FRICTION;
         }
     }
 
@@ -39,8 +39,8 @@ export default class Player extends Entity {
 
     input(up: boolean, down: boolean): void {
         if (up)
-            this.velocity.y = -PLAYER_SPEED;
+            this.velocity.y = -constants.PLAYER_SPEED;
         if (down)
-            this.velocity.y = PLAYER_SPEED;
+            this.velocity.y = constants.PLAYER_SPEED;
     }
 }
