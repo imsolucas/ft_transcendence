@@ -8,6 +8,9 @@ all: up
 up:
 	docker compose -f $(FILE) up -d --build
 
+start:
+	docker compose -f $(FILE) start
+
 stop:
 	docker compose -f $(FILE) stop
 
@@ -18,6 +21,8 @@ build:
 	docker compose -f $(FILE) build
 
 re: down up
+
+rebuild: down clean-volumes prune-cache up
 
 # logs / status
 logs:
