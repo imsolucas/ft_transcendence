@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "nodemon --watch src -e ts --exec \"node --loader ts-node/esm ./src/server.ts\"",
+        "dev": "nodemon --watch src -e ts --exec ts-node-esm src/server.ts",
         "build": "tsc",
         "start": "node dist/server.js"
     },
@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "better-sqlite3": "^12.2.0",
-        "fastify": "^5.6.0"
+        "fastify": "^5.6.0",
+        "fastify-plugin": "^5.1.0"
     }
 }
