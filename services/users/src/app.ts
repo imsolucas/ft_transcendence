@@ -1,13 +1,12 @@
-import Fastify, { FastifyInstance } from "fastify";
-import Database from "better-sqlite3";
-import userRoutes from "./routes/userRoutes.js";
+import Fastify  from "fastify";
+import type { FastifyInstance } from "fastify";
+import dbPlugin from "./db/plugin.ts";
+import userRoutes from "./routes/userRoutes.ts";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
 
-  const db = new Database("./db/data.sqlite");
-  db.pragma("journal_mode = WAL");
-  app.decorate("db", db);
+  await app.register(dbPlugin);
 
   await app.register(userRoutes, { prefix: "/users"});
   app.get("/", async () => "Hello TypeScript + Fastify! 🟦");
