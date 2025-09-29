@@ -1,7 +1,8 @@
-import { buildApp } from "./app.js";
+import { buildApp } from "./app.ts";
 
 const PORT = process.env.PORT || 4000;
 const HOST = "0.0.0.0";
+
 
 (async () => {
   const app = await buildApp();
