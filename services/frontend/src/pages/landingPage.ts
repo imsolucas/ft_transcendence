@@ -153,7 +153,7 @@ titleSection.innerHTML = `
   mainContent.appendChild(titleSection);
   mainContent.appendChild(videoSection);
   mainContent.appendChild(ctaSection);
-  mainContent.appendChild(featuresSection);
+//   mainContent.appendChild(featuresSection);
   
   heroSection.appendChild(backgroundElements);
   heroSection.appendChild(mainContent);

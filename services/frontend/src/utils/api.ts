@@ -38,7 +38,7 @@ export const fetchUserProfile = async (userId: string) => {
   return {
     username: user?.username || 'Lucas',
     email: user?.email || 'lucas@example.com',
-    picture: user?.picture || '/images/pong.png',
+    picture: user?.picture,
     level: 10,
     wins: 15,
     losses: 5,

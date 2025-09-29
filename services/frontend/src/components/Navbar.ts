@@ -82,8 +82,8 @@ export function createNavbar(): HTMLElement {
 		window.open('https://youtube.com', '_blank');
 	});
 
-	socialContainer.appendChild(discordButton);
-	socialContainer.appendChild(twitterButton);
+	// socialContainer.appendChild(discordButton);
+	// socialContainer.appendChild(twitterButton);
 
 	// Auth Section
 	const authSection = document.createElement('div');
@@ -99,11 +99,18 @@ export function createNavbar(): HTMLElement {
 
 		// Use Google profile picture if available
 		let profileImg: HTMLElement;
+		console.log(user?.picture);
 		if (user?.picture) {
 			const img = document.createElement('img');
 			img.src = user.picture;
-			img.alt = user.username || 'Profile';
+			img.alt = user.username?.charAt(0).toUpperCase() || 'P';
 			img.className = 'w-8 h-8 rounded-full object-cover';
+			img.onerror = () => {
+				const div = document.createElement('div');
+				div.className = 'w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold';
+				div.textContent = user?.username?.charAt(0).toUpperCase() || 'U';
+				img.replaceWith(div);
+			};
 			profileImg = img;
 		} else {
 			const div = document.createElement('div');

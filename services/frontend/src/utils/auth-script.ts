@@ -248,8 +248,7 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
       user: {
         id: "1",
         username: credentials.username,
-        email: "demo@example.com",
-        picture: "https://lh3.googleusercontent.com/a/ACg8ocK_x-0_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p_p-c-k-c0x00000000-cc-rp-mo-ba4"
+        email: "demo@example.com"
       }
     };
   } else {
