@@ -1,8 +1,6 @@
 import SquareBall from "./entities/SquareBall";
 import Player from "./entities/Player";
 import Entity from "./entities/Entity";
-import { squaresAreColliding } from "./utils/collisionUtils";
-import type { CollisionResult } from "./definitions";
 
 export default class EntityManager {
     #entities: Entity[] = []
@@ -19,11 +17,8 @@ export default class EntityManager {
 
     checkCollisions(): void {
         for (var player of this.#players){
-            let result = squaresAreColliding(player.getBorder(), this.#squareball.getBorder());
-            if (result.isColliding){
-                this.#squareball.onCollision(result);
-                return; 
-            }
+            this.#squareball.collision(player.getBorder(), player.getOldBorder())
+            player.collision(this.#squareball.getBorder(), this.#squareball.getOldBorder());
         }
     }
 
