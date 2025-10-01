@@ -23,3 +23,12 @@ export function drawRectangle(pos: Vector, size: Vector, color: string, ctx: Can
         size.y,
     )
 }
+
+export function drawVector(pos: Vector, vector :Vector, color: string, ctx: CanvasRenderingContext2D): void {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 10;
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(pos.x + vector.x, pos.y + vector.y);
+    ctx.stroke();   
+}
