@@ -1,9 +1,10 @@
 export namespace constants {
-    export const PLAYER_SPEED = 5;
+    export const PLAYER_SPEED = 9;
     export const PLAYER_FRICTION = 0.1;
     export const PLAYER_HEIGHT = 150
-    export const PLAYER_WIDTH = 25
+    export const PLAYER_WIDTH = 100
     export const BALL_SIZE = 25
+    export const BALL_SPEED = 25
 }
 
 export interface Vector {
@@ -16,6 +17,12 @@ export interface Border{
     bottom: number;
     left: number;
     right: number;
+}
+
+export interface CollisionResult {
+    isColliding: boolean;
+    side?: "top" | "bottom" | "left" | "right";
+    position?: Border;
 }
 
 export enum eGameState {

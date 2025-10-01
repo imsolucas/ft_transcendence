@@ -1,6 +1,6 @@
 import type { Border, Vector } from "../definitions";
 import { drawRectangle } from "../utils/drawUtils";
-import { constants } from "../definitions";
+import { constants, type CollisionResult} from "../definitions";
 import Entity from "./Entity";
 
 export default class SquareBall extends Entity {
@@ -27,25 +27,34 @@ export default class SquareBall extends Entity {
     }
 
     public randomVelocity(): void {
-        const max = 7;
-        const min = 5;
+        const max = 10;
+        const min = 7;
         this.velocity = {
             x:(Math.random() * (max - min) + min),
             y:(Math.random() * (max - min) + min)};
     }
 
     public tick(deltaTime: number, canvas: HTMLCanvasElement): void {
-        if (this.pos.y + this.#size.y + this.velocity.y < 0 ||
-            this.pos.y + this.#size.y + this.velocity.y > canvas.height){
-                this.velocity.y *= -1;
-            }
-        if (this.pos.x + this.#size.x + this.velocity.x < 0 ||
-            this.pos.x + this.#size.x + this.velocity.x > canvas.width){
-                // this.#destroyed = true;
-                this.velocity.x *= -1;
-            }
 
-        
+        let new_y = this.pos.y + this.velocity.y;
+        let new_x = this.pos.x + this.velocity.x;
+    
+        if (new_y < 0 || new_y + this.#size.y > canvas.height) {
+            this.velocity.y *= -1;
+            if (new_y < 0)
+                this.pos.y = 0;
+            else
+                this.pos.y = canvas.height - this.#size.y;
+        }
+        else if (new_x < 0 || new_x + this.#size.x > canvas.width) {
+            // this.#destroyed = true;
+            this.velocity.x *= -1;
+            if (new_x < 0)
+                this.pos.x = 0;
+            else
+                this.pos.x = canvas.width - this.#size.x;
+        }
+
         this.pos.y += this.velocity.y;
         this.pos.x += this.velocity.x;
     }
@@ -62,8 +71,20 @@ export default class SquareBall extends Entity {
         drawRectangle(this.pos, this.#size, this.color, ctx);
     }
 
-    public onCollision(): void {
-        this.velocity.x *= -1
-        this.color = "#fff3a32"
+    public onCollision(collision: CollisionResult): void {
+        if (collision.side == "top" || collision.side == "bottom"){
+            this.velocity.y *= -1
+            if (collision.side == "top")
+                this.pos.y = collision.position?.top! - this.#size.y;
+            else
+                this.pos.y = collision.position?.bottom!;
+        }
+        {
+            this.velocity.x *= -1
+            if (collision.side == "left")
+                this.pos.x = collision.position?.right!;
+            if (collision.side == "right")
+                this.pos.x = collision.position?.left!;
+        }
     }
 }
