@@ -2,6 +2,7 @@ import Player from "./entities/Player";
 import SquareBall from "./entities/SquareBall";
 import EntityManager from "./EntityManager";
 import { constants, eGameState} from "./definitions";
+import { drawRectangle } from "./utils/drawUtils";
 
 export class Game {
     #canvas: HTMLCanvasElement;
@@ -93,6 +94,19 @@ export class Game {
 
     #render(): void {
         this.#entityManager.drawEntities(this.#ctx);
+        this.#drawUi();
+    }
+
+    #drawUi(): void {
+        const line_size = this.#canvas.height / constants.BALL_SIZE;
+        let i = 0;
+        
+        while (i < line_size)
+        {
+            if (i % 2 == 0  )
+                drawRectangle({x: this.#canvas.width / 2, y: i * constants.BALL_SIZE}, {x: constants.BALL_SIZE, y:constants.BALL_SIZE}, "white", this.#ctx);
+            i++;
+        }
     }
 
     #tick(deltaTime: number): void {
