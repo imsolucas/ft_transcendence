@@ -1,17 +1,16 @@
 import fp from "fastify-plugin";
 import type { FastifyInstance } from "fastify";
-import Database from "better-sqlite3";
+import { PrismaClient } from "@prisma/client";
 
 async function dbPlugin(fastify: FastifyInstance) {
-  const db = new Database("./db/data.sqlite");
-  db.pragma("journal_mode = WAL");
+  const prisma = new PrismaClient();
 
-  fastify.decorate("db", db);
+  fastify.decorate("db", prisma);
 
   fastify.addHook("onClose", async (instance) => {
     try {
-      instance.db.close();
-      fastify.log.info("SQLite database closed");
+      await instance.db.$disconnect();
+      fastify.log.info("Prisma client disconnected");
     } catch (err) {
       fastify.log.error(err);
     }
