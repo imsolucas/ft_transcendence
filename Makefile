@@ -22,7 +22,7 @@ build:
 
 re: down up
 
-rebuild: down clean-volumes prune-cache up
+rebuild: fclean up
 
 # logs / status
 logs:
@@ -32,6 +32,10 @@ ps:
 	docker compose -f $(FILE) ps
 
 # cleanup / inspect
+clean: down clean-volumes
+
+fclean: clean prune-cache
+
 clean-volumes:
 	docker compose -f $(FILE) down -v --remove-orphans
 
