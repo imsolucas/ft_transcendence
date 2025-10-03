@@ -102,13 +102,12 @@ export default class SquareBall extends Entity {
         if (border.left <= other.right && old_border.left >= old_other.right){
             this.pos.x = other.right;
         }
-
         if (border.top <= other.bottom && old_border.top >= old_other.bottom){
-            this.velocity.y *= -1;
+            this.velocity.y = Math.abs(this.velocity.y);
             this.pos.y = other.bottom;
         }
         if (border.bottom >= other.top && old_border.bottom <= old_other.top){
-            this.velocity.y *= -1;
+            this.velocity.y = -Math.abs(this.velocity.y);
             this.pos.y = other.top - this.#size.y;
         }
         return true;
