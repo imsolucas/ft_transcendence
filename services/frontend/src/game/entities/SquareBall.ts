@@ -16,20 +16,20 @@ export default class SquareBall extends Entity {
 
     public getOldBorder () {
         return {
-        top: this.#oldpos.y,
-        bottom: this.#oldpos.y + this.#size.y,
-        left: this.#oldpos.x,
-        right: this.#oldpos.x + this.#size.x    
+            top: this.#oldpos.y - this.#size.y / 2,
+            bottom: this.#oldpos.y + this.#size.y / 2,
+            left: this.#oldpos.x - this.#size.x / 2,
+            right: this.#oldpos.x + this.#size.x - this.#size.x / 2
         }
     }
 
     public getBorder(): Border {
         return {
-            top: this.pos.y,
-            bottom: this.pos.y + this.#size.y,
-            left: this.pos.x,
-            right: this.pos.x + this.#size.x
-        };
+            top: this.pos.y - this.#size.y / 2,
+            bottom: this.pos.y + this.#size.y / 2,
+            left: this.pos.x - this.#size.x / 2,
+            right: this.pos.x + this.#size.x - this.#size.x / 2
+        }
     }
 
     public isDestroyed(): boolean {
@@ -97,18 +97,18 @@ export default class SquareBall extends Entity {
         
         this.velocity.x *= -1;
         if (border.right >= other.left && old_border.right <= old_other.left){
-            this.pos.x = other.left - this.#size.x;
+            this.pos.x = other.left - this.#size.x / 2;
         }
         if (border.left <= other.right && old_border.left >= old_other.right){
-            this.pos.x = other.right;
+            this.pos.x = other.right + this.#size.x / 2;
         }
         if (border.top <= other.bottom && old_border.top >= old_other.bottom){
             this.velocity.y = Math.abs(this.velocity.y);
-            this.pos.y = other.bottom;
+            this.pos.y = other.bottom + this.#size.y / 2;
         }
         if (border.bottom >= other.top && old_border.bottom <= old_other.top){
             this.velocity.y = -Math.abs(this.velocity.y);
-            this.pos.y = other.top - this.#size.y;
+            this.pos.y = other.top - this.#size.y / 2;
         }
         return true;
     }

@@ -116,12 +116,12 @@ export class Game {
 
     #resetPos(): void {
         this.#entityManager.getPlayer(0).setPos({
-            x: 50,
-            y: this.#canvas.height / 2 - constants.PLAYER_HEIGHT / 2
+            x: 50 + constants.PLAYER_WIDTH / 2,
+            y: this.#canvas.height / 2
         })
         this.#entityManager.getPlayer(1).setPos({
-            x: this.#canvas.width - constants.PLAYER_WIDTH - 50,
-            y: this.#canvas.height / 2 - constants.PLAYER_HEIGHT / 2
+            x: this.#canvas.width - constants.PLAYER_WIDTH / 2 - 50,
+            y: this.#canvas.height / 2
         })
         this.#entityManager.getSquareBall().reset(this.#canvas)
     }
