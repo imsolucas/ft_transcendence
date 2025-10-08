@@ -1,6 +1,7 @@
 import SquareBall from "./entities/SquareBall";
 import Player from "./entities/Player";
 import Entity from "./entities/Entity";
+import type { PlayerInputs } from "./definitions";
 
 export default class EntityManager {
     #entities: Entity[] = []
@@ -10,9 +11,11 @@ export default class EntityManager {
 
     constructor() {}
 
-    playerInputs(keys: {w: boolean, s: boolean, up: boolean, down: boolean}):void {
-        this.#players[0].input(keys.w, keys.s);
-        this.#players[1].input(keys.up, keys.down);
+    // Takes in player inputs in an array
+    playerInputs(inputs: PlayerInputs[]):void {
+        for (let i in this.#players){
+            this.#players[i].input(inputs[i]);
+        }
     }
 
     checkCollisions(): void {

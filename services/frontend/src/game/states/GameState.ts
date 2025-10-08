@@ -5,26 +5,23 @@ export interface GameContext {
 		canvas: HTMLCanvasElement;
 		ctx: CanvasRenderingContext2D;
 		entityManager: EntityManager;
-		keys: {
-			w: boolean;
-			s: boolean;
-			up: boolean;
-			down: boolean;
-		};
+		previousState?: StateName
 }
+
+export type StateName = "PausedState" | "PlayingState" | "ScoredState"
 
 // What states can "return" to communicate with StateManager
 export interface StateResult {
-		nextState?: string; // Name of the next state to transition to
+		nextState?: StateName; // Name of the next state to transition to
 		shouldExit?: boolean; // Whether the current state should exit
 }
 
 // Abstract base class for all game states
 export abstract class GameState {
 		protected context: GameContext;
-		protected stateName: string;
+		protected stateName: StateName;
 
-		constructor(context: GameContext, stateName: string) {
+		constructor(context: GameContext, stateName: StateName) {
 			this.context = context;
 			this.stateName = stateName;
 		}
@@ -47,15 +44,18 @@ export abstract class GameState {
 			return this.context.ctx;
 		}
 
-		protected getKeys(): GameContext["keys"] {
-			return this.context.keys;
-		}
-
 		protected getEntityManager(): EntityManager {
 			return this.context.entityManager;
 		}
 
-		getName(): string {
+		protected getPreviousState(): StateName | null {
+			if (this.context.previousState === undefined)
+				return (null)
+			else
+				return (this.context.previousState)
+		}
+
+		getName(): StateName {
 			return this.stateName;
 		}
 }

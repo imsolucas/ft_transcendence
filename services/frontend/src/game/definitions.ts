@@ -25,6 +25,13 @@ export interface CollisionResult {
     position?: Border;
 }
 
+export interface PlayerInputs {
+    up: boolean,
+    down: boolean,
+    left: boolean,
+    right: boolean,
+}
+
 export enum eGameState {
     PAUSE,
     START_ROUND,

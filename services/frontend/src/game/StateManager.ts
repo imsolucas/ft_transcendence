@@ -1,17 +1,17 @@
-import { GameState, type GameContext, type StateResult } from "./states/GameState";
+import { GameState, type GameContext, type StateResult, type StateName } from "./states/GameState";
 
 type StateConstructor = new (context: GameContext, stateName: string) => GameState;
 
 export class StateManager {
 		private context: GameContext;																// Shared context for all states
 		private currentState: GameState | null = null;							// Currently active state
-		private states: Map<string, StateConstructor> = new Map();	// Registry of available states
+		private states: Map<StateName, StateConstructor> = new Map();	// Registry of available states
 
 		constructor(context: GameContext) {
 			this.context = context;
 		}
 
-		registerState(stateName: string, StateClass: StateConstructor): void {
+		registerState(stateName: StateName, StateClass: StateConstructor): void {
 				// Check if already registered
 				if (this.states.has(stateName)) {
 						console.warn(`State '${stateName}' is already registered. Overwriting.`);
@@ -20,7 +20,7 @@ export class StateManager {
 				console.log(`Registered state: ${stateName}`);
 		}
 
-		transitionTo(stateName: string): void {
+		transitionTo(stateName: StateName): void {
 				const StateClass = this.states.get(stateName);
 				if (!StateClass) {
 						console.error(`State '${stateName}' not registered`);

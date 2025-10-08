@@ -1,7 +1,7 @@
-import type { Vector, Border } from "../definitions";
+import type { Vector, Border, PlayerInputs } from "../definitions";
 import Entity from "./Entity";
 import { constants } from "../definitions";
-import { drawRectangle, drawVector } from "../utils/drawUtils";
+import { drawRectangle} from "../utils/drawUtils";
 
 export default class Player extends Entity {
     #size: Vector;
@@ -69,10 +69,10 @@ export default class Player extends Entity {
         return true;
     }
 
-    input(up: boolean, down: boolean): void {
-        if (up)
+    input(input: PlayerInputs): void {
+        if (input.up)
             this.velocity.y = -constants.PLAYER_SPEED;
-        if (down)
+        if (input.down)
             this.velocity.y = constants.PLAYER_SPEED;
     }
 }
