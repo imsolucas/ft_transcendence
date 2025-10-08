@@ -5,6 +5,7 @@ import Entity from "./Entity";
 
 export default class SquareBall extends Entity {
     #size: Vector;
+    #scoringPlayer: number = -1;
     #oldpos!: Vector;
     #destroyed: boolean = false;
 
@@ -36,6 +37,10 @@ export default class SquareBall extends Entity {
         return this.#destroyed;
     }
 
+    public getScoringPlayer(): number {
+        return this.#scoringPlayer;
+    }
+
     public randomVelocity(): void {
         const max = 10;
         const min = 7;
@@ -59,11 +64,6 @@ export default class SquareBall extends Entity {
         }
         else if (new_x < 0 || new_x + this.#size.x > canvas.width) {
             this.#destroyed = true;
-            this.velocity.x *= -1;
-            if (new_x < 0)
-                this.pos.x = 0;
-            else
-                this.pos.x = canvas.width - this.#size.x;
         }
 
         this.pos.y += this.velocity.y;

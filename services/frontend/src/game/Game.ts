@@ -8,6 +8,8 @@ import type { GameContext } from "./states/GameState";
 import PausedState from "./states/PausedState";
 import ScoredState from "./states/ScoredState";
 import { classicPongUi } from "./utils/drawUtils";
+import GameOverState from "./states/GameOverState";
+import GameStartState from "./states/GameStartState";
 
 export class Game {
     #context: GameContext;
@@ -31,7 +33,7 @@ export class Game {
             ctx: this.#ctx,
             entityManager: this.#entityManager,
             playerScore: this.#playerScores,
-            currentUi: classicPongUi
+            currentUi: classicPongUi,
         }
         this.#stateManager = new StateManager(this.#context);
         this.#fillWindow();
@@ -59,8 +61,10 @@ export class Game {
         this.#stateManager.registerState("PlayingState", PlayingState)
         this.#stateManager.registerState("PausedState", PausedState)
         this.#stateManager.registerState("ScoredState", ScoredState)
+        this.#stateManager.registerState("GameOverState", GameOverState)
+        this.#stateManager.registerState("GameStartState", GameStartState)
 
-        this.#stateManager.transitionTo("PlayingState");
+        this.#stateManager.transitionTo("GameStartState");
     }
 
     #initEntities():void {

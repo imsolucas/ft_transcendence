@@ -10,7 +10,7 @@ export interface GameContext {
 		previousState?: StateName
 }
 
-export type StateName = "PausedState" | "PlayingState" | "ScoredState"
+export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOverState" | "GameStartState"
 
 // What states can "return" to communicate with StateManager
 export interface StateResult {
@@ -33,9 +33,12 @@ export abstract class GameState {
 		abstract enter(): void;
 		abstract exit(): void;
 
+		render(ctx: CanvasRenderingContext2D): void {
+			this.context.entityManager.drawEntities(this.context.ctx);
+			this.drawCurrentUi();
+		}
 		// core game loop methods to be implemented by each state
 		abstract update(deltaTime: number): StateResult | null;
-		abstract render(ctx: CanvasRenderingContext2D): void;
 		abstract handleInput(event: KeyboardEvent, keyDown: boolean): void;
 
 		// helper methods to access context
@@ -60,6 +63,10 @@ export abstract class GameState {
 
 		protected drawCurrentUi(): void {
 			this.context.currentUi(this.context);
+		}
+
+		protected getPlayerScore(): number[] {
+			return this.context.playerScore;
 		}
 
 		getName(): StateName {

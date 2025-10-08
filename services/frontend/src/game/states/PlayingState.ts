@@ -12,14 +12,6 @@ export default class PlayingState extends GameState {
     }
 
     enter(): void {
-        this.getEntityManager().getPlayer(0).setPos({
-            x: 50 + constants.PLAYER_WIDTH / 2,
-            y: this.getCanvas().height / 2
-        })
-        this.getEntityManager().getPlayer(1).setPos({
-            x: this.getCanvas().width - constants.PLAYER_WIDTH / 2 - 50,
-            y: this.getCanvas().height / 2
-        })
         this.getEntityManager().getSquareBall().reset(this.getCanvas())
         this.getEntityManager().getSquareBall().randomVelocity();
     }
@@ -36,13 +28,10 @@ export default class PlayingState extends GameState {
         if (this.#paused)
             return ({nextState: "PausedState"})
         if (this.getEntityManager().getSquareBall().isDestroyed())
+        {
             return ({nextState: "ScoredState"})
+        }
         return (null)
-    }
-    
-    render(ctx: CanvasRenderingContext2D): void {
-        this.getEntityManager().drawEntities(ctx);
-        this.drawCurrentUi()
     }
 
     handleInput(event: KeyboardEvent, keyDown: boolean): void {

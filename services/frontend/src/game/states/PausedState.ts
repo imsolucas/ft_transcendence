@@ -1,3 +1,4 @@
+import { drawString } from "../utils/drawUtils";
 import { GameState, type GameContext, type StateResult } from "./GameState";
 
 export default class PausedState extends GameState {
@@ -14,12 +15,13 @@ export default class PausedState extends GameState {
     exit(): void {
         
     }
-
+    
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx);
-        this.drawCurrentUi()
+        this.drawCurrentUi();
+        drawString("PAUSED", {x: this.getCanvas().width / 2, y: this.getCanvas().height / 2}, "GREY", "100px 'Courier New', monospace", ctx);
     }
-    
+
     update(deltaTime: number): StateResult | null {
         if (this.#paused)
             return (null)
