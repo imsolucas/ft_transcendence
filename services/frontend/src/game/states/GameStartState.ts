@@ -2,6 +2,7 @@ import { drawString } from "../utils/drawUtils";
 import { constants } from "../definitions";
 import { GameState, type GameContext, type StateResult } from "./GameState";
 
+// State for when the game starts, awaits input from the player to start the game (should probably be a nicer menu in the future)
 export default class GameStartState extends GameState{
     #start = false;
 

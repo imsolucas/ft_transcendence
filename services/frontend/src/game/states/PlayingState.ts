@@ -1,6 +1,7 @@
 import { GameState, type GameContext, type StateResult } from "./GameState";
 import { constants, type PlayerInputs } from "../definitions";
 
+// This is the state where the pong gameplay happens, players can control the paddles and score
 export default class PlayingState extends GameState {
     #playerInputs: PlayerInputs[] = []
     #paused = false;

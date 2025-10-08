@@ -1,6 +1,7 @@
 import { drawString } from "../utils/drawUtils";
 import { GameState, type GameContext, type StateResult } from "./GameState";
 
+// State that pauses the game
 export default class PausedState extends GameState {
     #paused = true;
 

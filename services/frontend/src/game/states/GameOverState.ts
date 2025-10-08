@@ -1,6 +1,7 @@
 import { drawString } from "../utils/drawUtils";
 import { GameState, type GameContext, type StateResult } from "./GameState";
 
+// State for when either player wins by reaching the required point limit, player should be promted to play again or go to menu (when that is implemented)
 export default class GameOverState extends GameState {
     #playAgain = false
     #menu = false

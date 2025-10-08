@@ -6,8 +6,8 @@ export interface GameContext {
 		ctx: CanvasRenderingContext2D;
 		entityManager: EntityManager;
 		playerScore: number[];
-		currentUi: (context: GameContext) => void
-		previousState?: StateName
+		currentUi: (context: GameContext) => void // Function for drawing the game UI
+		previousState?: StateName // The state previous to the current one
 }
 
 export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOverState" | "GameStartState"
@@ -15,7 +15,7 @@ export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOv
 // What states can "return" to communicate with StateManager
 export interface StateResult {
 		nextState?: StateName; // Name of the next state to transition to
-		shouldEnter?: boolean; // Whether the current state should exit
+		shouldEnter?: boolean; // Whether the enter() method of the next state should be called
 		shouldExit?: boolean; // Whether the current state should exit
 }
 
@@ -33,6 +33,7 @@ export abstract class GameState {
 		abstract enter(): void;
 		abstract exit(): void;
 
+		// Base implementation for rendering, for states that dont render anything special
 		render(ctx: CanvasRenderingContext2D): void {
 			this.context.entityManager.drawEntities(this.context.ctx);
 			this.drawCurrentUi();

@@ -1,6 +1,7 @@
 import { constants } from "../definitions";
 import { GameState, type GameContext, type StateResult } from "./GameState";
 
+// State for when any of the players scores a point, 
 export default class ScoredState extends GameState {
     #waitFrames: number = 0;
 
