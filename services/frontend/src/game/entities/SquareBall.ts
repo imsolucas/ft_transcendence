@@ -58,7 +58,7 @@ export default class SquareBall extends Entity {
                 this.pos.y = canvas.height - this.#size.y;
         }
         else if (new_x < 0 || new_x + this.#size.x > canvas.width) {
-            // this.#destroyed = true;
+            this.#destroyed = true;
             this.velocity.x *= -1;
             if (new_x < 0)
                 this.pos.x = 0;
@@ -72,14 +72,15 @@ export default class SquareBall extends Entity {
 
     public reset(canvas: HTMLCanvasElement): void {
         this.pos = {
-                    x: canvas.width / 2 - constants.BALL_SIZE,
-                    y: canvas.height / 2 - constants.BALL_SIZE
+                    x: canvas.width / 2,
+                    y: canvas.height / 2
         }
         this.#destroyed = false
     }
 
     public draw(ctx: CanvasRenderingContext2D): void {
-        drawRectangle(this.pos, this.#size, this.color, ctx);
+        if (!this.#destroyed)
+            drawRectangle(this.pos, this.#size, this.color, ctx);
         // drawVector(this.pos, this.velocity, "red", ctx);
     }
 

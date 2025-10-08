@@ -8,7 +8,11 @@ export default class ScoredState extends GameState {
     }
 
     enter(): void {
-
+        if (!this.getEntityManager().getSquareBall().getPos())
+            this.context.playerScore[0]++;
+        else
+            this.context.playerScore[1]++;
+        this.getEntityManager().getSquareBall().reset(this.getCanvas());
     }
 
     exit(): void {
@@ -17,6 +21,7 @@ export default class ScoredState extends GameState {
 
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx);
+        this.drawCurrentUi()
     }
 
     update(deltaTime: number): StateResult | null {
@@ -25,7 +30,7 @@ export default class ScoredState extends GameState {
             return (null)
         }
         else {
-            return({nextState: "PlayingState"})
+            return({nextState: "PlayingState", shouldEnter: false})
         }
             
     }

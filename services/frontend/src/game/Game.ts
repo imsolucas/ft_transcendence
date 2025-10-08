@@ -6,6 +6,8 @@ import { StateManager } from "./StateManager";
 import PlayingState from "./states/PlayingState";
 import type { GameContext } from "./states/GameState";
 import PausedState from "./states/PausedState";
+import ScoredState from "./states/ScoredState";
+import { classicPongUi } from "./utils/drawUtils";
 
 export class Game {
     #context: GameContext;
@@ -16,15 +18,20 @@ export class Game {
     #animationId: number | null = null;
     #isRunning = false;
     #previousTime: number = 0;
+    #playerScores: number[] = []
 
     constructor (canvas: HTMLCanvasElement)
     {  
         this.#canvas = canvas;
         this.#ctx = canvas.getContext('2d')!;
+        this.#playerScores[0] = 0;
+        this.#playerScores[1] = 0;
         this.#context = {
             canvas: canvas,
             ctx: this.#ctx,
             entityManager: this.#entityManager,
+            playerScore: this.#playerScores,
+            currentUi: classicPongUi
         }
         this.#stateManager = new StateManager(this.#context);
         this.#fillWindow();
@@ -51,6 +58,7 @@ export class Game {
     #initStates():void {
         this.#stateManager.registerState("PlayingState", PlayingState)
         this.#stateManager.registerState("PausedState", PausedState)
+        this.#stateManager.registerState("ScoredState", ScoredState)
 
         this.#stateManager.transitionTo("PlayingState");
     }

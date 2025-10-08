@@ -5,6 +5,8 @@ export interface GameContext {
 		canvas: HTMLCanvasElement;
 		ctx: CanvasRenderingContext2D;
 		entityManager: EntityManager;
+		playerScore: number[];
+		currentUi: (context: GameContext) => void
 		previousState?: StateName
 }
 
@@ -54,6 +56,10 @@ export abstract class GameState {
 				return (null)
 			else
 				return (this.context.previousState)
+		}
+
+		protected drawCurrentUi(): void {
+			this.context.currentUi(this.context);
 		}
 
 		getName(): StateName {

@@ -1,4 +1,4 @@
-import { GameState, type GameContext, type StateResult, type StateName } from "./states/GameState";
+import { GameState, type GameContext, type StateName } from "./states/GameState";
 
 type StateConstructor = new (context: GameContext, stateName: string) => GameState;
 

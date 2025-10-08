@@ -1,5 +1,4 @@
 import { GameState, type GameContext, type StateResult } from "./GameState";
-import { drawRectangle } from "../utils/drawUtils";
 import { constants, type PlayerInputs } from "../definitions";
 
 export default class PlayingState extends GameState {
@@ -43,7 +42,7 @@ export default class PlayingState extends GameState {
     
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx);
-        this.#drawUi(this.getCanvas());
+        this.drawCurrentUi()
     }
 
     handleInput(event: KeyboardEvent, keyDown: boolean): void {
@@ -67,15 +66,4 @@ export default class PlayingState extends GameState {
 
     }
 
-    #drawUi(canvas: HTMLCanvasElement): void {
-        const line_size = canvas.height / constants.BALL_SIZE;
-        let i = 0;
-        
-        while (i < line_size)
-        {
-            if (i % 2 == 0)
-                drawRectangle({x: canvas.width / 2, y: i * constants.BALL_SIZE}, {x: constants.BALL_SIZE, y:constants.BALL_SIZE}, "white", this.getCtx());
-            i++;
-        }
-    }
 }

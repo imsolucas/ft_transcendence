@@ -1,4 +1,5 @@
-import type { Vector } from "../definitions";
+import { type Vector, constants } from "../definitions";
+import type { GameContext } from "../states/GameState";
 
 export function drawCircle(pos: Vector, radius: number, color: string, ctx: CanvasRenderingContext2D): void{
     ctx.beginPath()
@@ -31,4 +32,18 @@ export function drawVector(pos: Vector, vector :Vector, color: string, ctx: Canv
     ctx.moveTo(pos.x, pos.y);
     ctx.lineTo(pos.x + vector.x, pos.y + vector.y);
     ctx.stroke();   
+}
+
+export function classicPongUi(context: GameContext): void {
+    const line_size = context.canvas.height / constants.BALL_SIZE;
+    let i = 0;
+    
+    while (i < line_size)
+    {
+        if (i % 2 == 0)
+            drawRectangle({x: context.canvas.width / 2, y: i * constants.BALL_SIZE}, {x: constants.BALL_SIZE, y:constants.BALL_SIZE}, "white", context.ctx);
+        i++;
+    }
+
+
 }

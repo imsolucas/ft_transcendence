@@ -17,6 +17,7 @@ export default class PausedState extends GameState {
 
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx);
+        this.drawCurrentUi()
     }
     
     update(deltaTime: number): StateResult | null {
