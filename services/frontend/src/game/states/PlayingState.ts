@@ -4,6 +4,7 @@ import { constants, type PlayerInputs } from "../definitions";
 
 export default class PlayingState extends GameState {
     #playerInputs: PlayerInputs[] = []
+    #paused = false;
 
     constructor (context: GameContext) {
         super(context, "PlayingState")
@@ -33,6 +34,10 @@ export default class PlayingState extends GameState {
         this.getEntityManager().checkCollisions();
         this.getEntityManager().playerInputs(this.#playerInputs);
 
+        if (this.#paused)
+            return ({nextState: "PausedState"})
+        if (this.getEntityManager().getSquareBall().isDestroyed())
+            return ({nextState: "ScoredState"})
         return (null)
     }
     
@@ -42,6 +47,9 @@ export default class PlayingState extends GameState {
     }
 
     handleInput(event: KeyboardEvent, keyDown: boolean): void {
+
+        if (event.key == "Escape" && !keyDown)
+            this.#paused = true;
         switch(event.key){
             case ("w"):
                 this.#playerInputs[0].up = keyDown;

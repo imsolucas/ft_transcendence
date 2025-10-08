@@ -1,5 +1,4 @@
 import { GameState, type GameContext, type StateResult } from "./GameState";
-import { constants } from "../definitions";
 
 export default class ScoredState extends GameState {
     #waitFrames: number = 0;
@@ -26,7 +25,7 @@ export default class ScoredState extends GameState {
             return (null)
         }
         else {
-            return({nextState: "PlayingState", shouldExit: true})
+            return({nextState: "PlayingState"})
         }
             
     }

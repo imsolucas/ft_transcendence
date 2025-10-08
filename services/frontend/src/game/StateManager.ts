@@ -20,7 +20,7 @@ export class StateManager {
 				console.log(`Registered state: ${stateName}`);
 		}
 
-		transitionTo(stateName: StateName): void {
+		transitionTo(stateName: StateName, shouldEnter: boolean = true): void {
 				const StateClass = this.states.get(stateName);
 				if (!StateClass) {
 						console.error(`State '${stateName}' not registered`);
@@ -29,9 +29,11 @@ export class StateManager {
 				try {
 						if (this.currentState) {
 								this.currentState.exit();
+								this.context.previousState = this.currentState!.getName();
 						}
 						const newState = new StateClass(this.context, stateName);
-						newState.enter();
+						if (shouldEnter)
+							newState.enter();
 						this.currentState = newState;
 						console.log(`Transitioned to state: ${stateName}`);
 				} catch (error) {
@@ -47,7 +49,7 @@ export class StateManager {
 			const result = this.currentState.update(deltaTime);
 
 			if (result?.nextState) {
-				this.transitionTo(result.nextState);
+				this.transitionTo(result.nextState, result.shouldEnter);
 			}
 			if (result?.shouldExit) {
 				this.currentState.exit();

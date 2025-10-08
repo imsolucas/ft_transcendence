@@ -1,4 +1,4 @@
-import { GameState, type GameContext, type StateResult, type State } from "./GameState";
+import { GameState, type GameContext, type StateResult } from "./GameState";
 
 export default class PausedState extends GameState {
     #paused = true;
@@ -23,11 +23,11 @@ export default class PausedState extends GameState {
         if (this.#paused)
             return (null)
         else
-            return ({nextState: this.getPreviousState()!})
+            return ({nextState: this.getPreviousState()!, shouldEnter: false})
     }
 
     handleInput(event: KeyboardEvent, keyDown: boolean): void {
-        if (event.key == "Escape")
-            this.#paused = false
+        if (event.key == "Escape" && !keyDown)
+            this.#paused = false;
     }
 }

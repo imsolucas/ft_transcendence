@@ -13,6 +13,7 @@ export type StateName = "PausedState" | "PlayingState" | "ScoredState"
 // What states can "return" to communicate with StateManager
 export interface StateResult {
 		nextState?: StateName; // Name of the next state to transition to
+		shouldEnter?: boolean; // Whether the current state should exit
 		shouldExit?: boolean; // Whether the current state should exit
 }
 
