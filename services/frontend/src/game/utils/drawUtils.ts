@@ -38,7 +38,12 @@ export function drawString(txt: string, pos: Vector, color: string,style: string
     ctx.fillStyle = color;
     ctx.font = style;
     ctx.textAlign = "center"
-    ctx.fillText(txt, pos.x, pos.y);
+
+    const lines = txt.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], pos.x, pos.y + i * ctx.measureText(lines[i]).fontBoundingBoxAscent);
+    }
 }
 
 export function classicPongUi(context: GameContext): void {

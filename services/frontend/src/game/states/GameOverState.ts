@@ -1,9 +1,11 @@
+import { constants } from "../definitions";
 import { drawString } from "../utils/drawUtils";
 import { GameState, type GameContext, type StateResult } from "./GameState";
 
 // State for when either player wins by reaching the required point limit, player should be promted to play again or go to menu (when that is implemented)
 export default class GameOverState extends GameState {
     #playAgain = false
+    #winningPlayer = -1
     #menu = false
 
     constructor(context: GameContext) {
@@ -11,6 +13,11 @@ export default class GameOverState extends GameState {
     }
 
     enter(): void {
+        let i = 0; 
+        while(this.getPlayerScore()[i] < constants.WIN_POINT) {
+            i++;
+        }
+        this.#winningPlayer = i + 1;
         
     }
 
@@ -22,7 +29,8 @@ export default class GameOverState extends GameState {
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx);
         this.drawCurrentUi();
-        drawString("PRESS SPACE TO PLAY AGAIN", {x: this.getCanvas().width / 2, y: this.getCanvas().height / 2}, "GREY", "100px 'Courier New', monospace", ctx);
+            
+        drawString(`PLAYER ${this.#winningPlayer} WINS\nPRESS SPACE TO PLAY AGAIN`, {x: this.getCanvas().width / 2, y: this.getCanvas().height / 2}, "GREY", "100px 'Courier New', monospace", ctx);
     }
 
     update(deltaTime: number): StateResult | null {
