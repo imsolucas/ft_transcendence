@@ -22,6 +22,8 @@ export default class GameStartState extends GameState{
         this.getEntityManager().getSquareBall().reset(this.getCanvas());
         for (let i in this.getPlayerScore())
             this.getPlayerScore()[i] = 0;
+        this.getEntityManager().getSquareBall().reset(this.getCanvas())
+        this.getEntityManager().getSquareBall().randomVelocity();
     }
 
     exit(): void {

@@ -13,8 +13,7 @@ export default class PlayingState extends GameState {
     }
 
     enter(): void {
-        this.getEntityManager().getSquareBall().reset(this.getCanvas())
-        this.getEntityManager().getSquareBall().randomVelocity();
+        
     }
 
     exit(): void {

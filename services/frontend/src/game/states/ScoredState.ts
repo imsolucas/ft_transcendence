@@ -32,7 +32,7 @@ export default class ScoredState extends GameState {
             return (null)
         }
         else {
-            return({nextState: "PlayingState", shouldEnter: false})
+            return({nextState: "PlayingState"})
         }
             
     }
