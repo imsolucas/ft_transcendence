@@ -42,8 +42,8 @@ export default class SquareBall extends Entity {
     }
 
     public randomVelocity(): void {
-        const max = 10;
-        const min = 7;
+        const max = constants.BALL_SPEED_MAX;
+        const min = constants.BALL_SPEED_MIN;
         this.velocity = {
             x:(Math.random() * (max - min) + min),
             y:(Math.random() * (max - min) + min)};
@@ -51,23 +51,26 @@ export default class SquareBall extends Entity {
 
     public tick(deltaTime: number, canvas: HTMLCanvasElement): void {
 
-        let new_y = this.pos.y + this.velocity.y;
-        let new_x = this.pos.x + this.velocity.x;
+        const border = this.getBorder();
+        const cur_vel_y = this.velocity.y * deltaTime;
+        const cur_vel_x = this.velocity.x * deltaTime;
         
         this.#oldpos = { ...this.pos };
-        if (new_y < 0 || new_y + this.#size.y > canvas.height) {
-            this.velocity.y *= -1;
-            if (new_y < 0)
-                this.pos.y = 0;
-            else
-                this.pos.y = canvas.height - this.#size.y;
+        if (border.bottom + cur_vel_y <= 0)
+        {
+            this.velocity.y = Math.abs(this.velocity.y)
+            this.pos.y = this.#size.y / 2;
         }
-        else if (new_x < 0 || new_x + this.#size.x > canvas.width) {
-            this.#destroyed = true;
+        else if (border.top + cur_vel_y >= canvas.height)
+        {
+            this.velocity.y = -Math.abs(this.velocity.y)
+            this.pos.y = canvas.height - this.#size.y / 2;
         }
-
-        this.pos.y += this.velocity.y;
-        this.pos.x += this.velocity.x;
+        else if (border.right <= 0 || border.left >= canvas.width) {
+            this.#destroyed = true
+        }
+        this.pos.y += cur_vel_y;
+        this.pos.x += cur_vel_x ;
     }
 
     public reset(canvas: HTMLCanvasElement): void {

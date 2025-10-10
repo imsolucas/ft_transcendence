@@ -99,7 +99,7 @@ export class Game {
     #loop (timestamp: number) : void {
         if (!this.#isRunning) 
             return;
-        let deltaTime = timestamp - this.#previousTime;
+        let deltaTime = (timestamp - this.#previousTime) / 1000 ;
         this.#previousTime = timestamp;
         this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
         this.#stateManager.update(deltaTime);

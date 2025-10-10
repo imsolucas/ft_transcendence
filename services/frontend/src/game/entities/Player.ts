@@ -32,15 +32,16 @@ export default class Player extends Entity {
 
     tick(deltaTime: number , canvas: HTMLCanvasElement): void {
         const border = this.getBorder();
+        const cur_vel_y = this.velocity.y * deltaTime;
 
         this.#oldpos = { ...this.pos };
-        if (border.top + this.velocity.y < 0 )
+        if (border.top + cur_vel_y < 0 )
             this.pos.y = this.#size.y / 2;
-        else if (border.bottom + this.velocity.y > canvas.height)
+        else if (border.bottom + cur_vel_y > canvas.height)
             this.pos.y = canvas.height - this.#size.y / 2;
         else {
-            this.pos.y += this.velocity.y;
-            this.velocity.y *= constants.PLAYER_FRICTION;
+            this.pos.y += cur_vel_y;
+            this.velocity.y *= constants.PLAYER_FRICTION
         }
     }
 
