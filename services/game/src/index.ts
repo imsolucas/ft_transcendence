@@ -1,6 +1,9 @@
 import fastify from 'fastify'
+import ws from '@fastify/websocket'
 
 const server = fastify()
+
+server.register(ws);
 
 server.addHook('onRequest', async (request, reply) => {
   reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -11,6 +14,14 @@ server.addHook('onRequest', async (request, reply) => {
 server.get('/ping', async (request, reply) => {
   return 'pong\n';
 })
+
+server.get('/', { websocket: true }, (socket /* WebSocket */, req /* FastifyRequest */) => {
+  socket.on('message', message => {
+    // message.toString() === 'hi from client'
+    socket.send('hi from server')
+  })
+})
+
 
 server.listen({ port: 3001, host: '0.0.0.0'}, (err, address) => {
   if (err) {
