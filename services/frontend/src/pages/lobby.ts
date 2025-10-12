@@ -59,6 +59,7 @@ export function MainPage(): HTMLElement {
     }
     .animate-ping-slow {
       animation: ping-slow 3s linear infinite;
+	  
     }
   `;
   document.head.appendChild(pongBall);
