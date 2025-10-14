@@ -1,72 +1,69 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 
-type User = { id: number; name: string };
-
-let users: User[] = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" },
-];
-let nextId = 3;
-
-export const getUsers = (req: FastifyRequest, res: FastifyReply) => {
+export const getUsers = async (req: FastifyRequest, res: FastifyReply) => {
+  const users = await req.server.db.user.findMany();
   return res.send(users);
 };
 
-export const getUserById = (
+export const getUserById = async (
   req: FastifyRequest<{ Params: { id: string } }>,
   res: FastifyReply
 ) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
 
-  const user = users.find((u) => u.id === id);
+  const user = await req.server.db.user.findUnique({ where: {id} });
   if (!user) return res.code(404).send({ error: "User not found" });
 
   return res.send(user);
 };
 
-export const createUser = (
-  req: FastifyRequest<{ Body: { name?: string } }>,
-  res: FastifyReply
-) => {
-  const name = req.body?.name;
-  if (!name || typeof name !== "string")
-    return res.code(400).send({ error: "Missing or invalid 'name' in body" });
+// export const createUser = async (
+//   req: FastifyRequest<{
+//      Body: { name?: string }
+//   }>,
+//   res: FastifyReply
+// ) => {
+//   const name = req.body?.name;
+//   if (!name || typeof name !== "string")
+//     return res.code(400).send({ error: "Missing or invalid 'name' in body" });
 
-  const newUser: User = { id: nextId++, name };
-  users.push(newUser);
-  return res.code(201).send(newUser);
-};
+//   const newUser: User = await req.server.db.user.create({
 
-export const updateUser = (
-  req: FastifyRequest<{ Params: { id: string }; Body: { name?: string } }>,
-  res: FastifyReply
-) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
+//   })
+//   users.push(newUser);
+//   return res.code(201).send(newUser);
+// };
 
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return res.code(404).send({ error: "User not found" });
+// export const updateUser = async (
+//   req: FastifyRequest<{ Params: { id: string }; Body: { name?: string } }>,
+//   res: FastifyReply
+// ) => {
+//   const id = Number(req.params.id);
+//   if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
 
-  const name = req.body?.name;
-  if (name !== undefined && typeof name !== "string")
-    return res.code(400).send({ error: "Invalid 'name' in body" });
+//   const idx = users.findIndex((u) => u.id === id);
+//   if (idx === -1) return res.code(404).send({ error: "User not found" });
 
-  if (name !== undefined) users[idx].name = name;
+//   const name = req.body?.name;
+//   if (name !== undefined && typeof name !== "string")
+//     return res.code(400).send({ error: "Invalid 'name' in body" });
 
-  return res.send(users[idx]);
-};
+//   if (name !== undefined) users[idx].name = name;
 
-export const deleteUser = (
-  req: FastifyRequest<{ Params: { id: string } }>,
-  res: FastifyReply
-) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
+//   return res.send(users[idx]);
+// };
 
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return res.code(404).send({ error: "User not found" });
+// export const deleteUser = async (
+//   req: FastifyRequest<{ Params: { id: string } }>,
+//   res: FastifyReply
+// ) => {
+//   const id = Number(req.params.id);
+//   if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
 
-  users.splice(idx, 1);
-  return res.code(204).send();
-};
+//   const idx = users.findIndex((u) => u.id === id);
+//   if (idx === -1) return res.code(404).send({ error: "User not found" });
+
+//   users.splice(idx, 1);
+//   return res.code(204).send();
+// };

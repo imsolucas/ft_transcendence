@@ -9,7 +9,7 @@ mkdir -p db
 
 # default DATABASE_URL if not provided
 if [ -z "${DATABASE_URL:-}" ]; then
-  export DATABASE_URL="file:$(pwd)/db/data.sqlite"
+  export DATABASE_URL="file:$(pwd)/db/users.sqlite"
   echo "DATABASE_URL not set, using: $DATABASE_URL"
 fi
 
