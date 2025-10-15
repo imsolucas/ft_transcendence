@@ -15,9 +15,8 @@ server.get('/ping', async (request, reply) => {
   return 'pong\n';
 })
 
-server.get('/was/game', { websocket: true }, (socket /* WebSocket */, req /* FastifyRequest */) => {
+server.get('/ws/game', { websocket: true }, (socket /* WebSocket */, req /* FastifyRequest */) => {
   socket.on('message', message => {
-    // message.toString() === 'hi from client'
     socket.send('hi from server')
   })
 })
