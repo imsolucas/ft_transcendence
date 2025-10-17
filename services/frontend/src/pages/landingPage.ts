@@ -167,9 +167,9 @@ export function LandingPage(): HTMLElement {
       // Navigate to auth page if not logged in, or main if logged in
       console.log('setting game page event listener');
       if (isAuthenticated()) {
-        navigate('game');
+        navigate('lobby');
       } else {
-        navigate('game');
+        navigate('lobby');
       }
     });
     

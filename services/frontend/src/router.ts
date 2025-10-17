@@ -2,9 +2,10 @@ import { LandingPage } from "./pages/landingPage";
 import { AuthPage } from "./pages/authPage"; // Renamed from landing
 import { MainPage } from "./pages/main";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
+import { LobbyPage } from "./pages/lobbyPage";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
 
-export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification";
+export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification" | "lobby";
 
 let currentScreen: Screen | null = null;
 
@@ -47,6 +48,8 @@ export function renderPage(screen: Screen) {
     case "game":
       // Game page, should be for authenticated users
       container.appendChild(GamePage());
+    case "lobby":
+      container.appendChild(LobbyPage());
       break;
   }
   
