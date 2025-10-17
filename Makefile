@@ -1,6 +1,6 @@
 FILE=infra/docker-compose.yml
 
-.PHONY: all up down build logs ps clean-volumes inspect-health
+.PHONY: all up down build logs ps clean-volumes inspect-health re
 
 all: up
 
@@ -9,7 +9,9 @@ up:
 	docker compose -f $(FILE) up -d --build $(SERVICE)
 
 down:
-	docker compose -f $(FILE) down
+	docker compose -f $(FILE) down $(SERVICE)
+
+re: down up
 
 build:
 	docker compose -f $(FILE) build $(SERVICE)
