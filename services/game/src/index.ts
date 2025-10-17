@@ -8,6 +8,7 @@ import type {
 } from './types/protocol.types.js';
 import type { Player } from './types/player.types.js';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
+import { doesNotMatch } from 'assert';
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
@@ -18,6 +19,7 @@ server.addHook('onRequest', async (request, reply) => {
   reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
   reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   reply.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  console.log('Incoming request:', request.method, request.url);
 })
 
 server.get('/ping', async (request, reply) => {
