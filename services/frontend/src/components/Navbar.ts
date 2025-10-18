@@ -438,16 +438,6 @@ function toggleMobileMenu(): void {
 				console.log('Navigate to play game');
 				closeMobileMenu();
 			}},
-			{ text: 'Leaderboard', action: () => {
-				// Add your leaderboard navigation here
-				console.log('Navigate to leaderboard');
-				closeMobileMenu();
-			}},
-			{ text: 'Statistics', action: () => {
-				// Add your statistics navigation here
-				console.log('Navigate to statistics');
-				closeMobileMenu();
-			}}
 		] : [])
 	];
 
