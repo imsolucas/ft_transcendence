@@ -1,5 +1,115 @@
 import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
 
+// Types for API requests/responses
+interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+interface AuthResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  user?: {
+    id: string;
+    username: string;
+    email: string;
+    picture?: string;
+  };
+}
+
+// API Functions
+async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
+  // Mock API call - simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Mock successful response - only allow demo/password combination
+  if (credentials.username === "demo" && credentials.password === "password") {
+    return {
+      success: true,
+      message: "Login successful",
+      token: "mock-jwt-token-" + Date.now(),
+      user: {
+        id: "1",
+        username: credentials.username,
+        email: "demo@example.com"
+      }
+    };
+  } else {
+    return {
+      success: false,
+      message: "Invalid username or password"
+    };
+  }
+}
+
+async function apiRegister(userData: RegisterRequest): Promise<AuthResponse> {
+  // Mock API call - simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // Mock validation
+  if (userData.username.length < 3) {
+    return {
+      success: false,
+      message: "Username must be at least 3 characters long"
+    };
+  }
+  
+  // Mock successful response
+  return {
+    success: true,
+    message: "Registration successful! Please check your email to verify your account.",
+    token: "mock-jwt-token-" + Date.now(),
+    user: {
+      id: "2",
+      username: userData.username,
+      email: userData.email
+    }
+  };
+}
+
+// Utility function to show notifications
+function showNotification(message: string, type: 'success' | 'error' | 'info'): void {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
+  
+  // Set notification style based on type
+  switch (type) {
+    case 'success':
+      notification.className += ' bg-green-500 text-white';
+      break;
+    case 'error':
+      notification.className += ' bg-red-500 text-white';
+      break;
+    case 'info':
+      notification.className += ' bg-blue-500 text-white';
+      break;
+  }
+  
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => {
+    notification.classList.remove('translate-x-full');
+  }, 100);
+  
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    notification.classList.add('translate-x-full');
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 300);
+  }, 3000);
+}
+
 export function AuthPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen flex justify-center items-center font-poppins';
@@ -55,6 +165,11 @@ export function AuthPage(): HTMLElement {
             <a href="#" class="text-sm text-pink-300 hover:text-pink-400 hover:drop-shadow-[0_0_5px_rgba(255,20,147,0.8)] transition-all font-poppins">FORGOT PASSWORD?</a>
           </div>
           
+          <!-- Error message display -->
+          <div id="login-error" class="error-message hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins">
+            <span class="error-text"></span>
+          </div>
+          
           <button type="submit" class="btn login-submit-btn w-full h-12 rounded-lg border-2 border-cyan-400 cursor-pointer text-base text-white font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all font-poppins bg-gradient-to-r from-cyan-500/20 to-pink-500/20 backdrop-blur-sm uppercase tracking-wider">
             ► LOGIN
           </button>
@@ -89,6 +204,11 @@ export function AuthPage(): HTMLElement {
           <div class="input-box relative my-6">
             <input type="password" placeholder="PASSWORD" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
+          </div>
+          
+          <!-- Error message display -->
+          <div id="register-error" class="error-message hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins">
+            <span class="error-text"></span>
           </div>
           
           <button type="submit" class="btn register-submit-btn w-full h-12 rounded-lg border-2 border-pink-400 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/20 to-cyan-500/20 backdrop-blur-sm uppercase tracking-wider">
@@ -397,6 +517,26 @@ export function AuthPage(): HTMLElement {
         pointer-events: none;
         z-index: 100;
       }
+      
+      /* Error message styling */
+      .error-message {
+        animation: slideIn 0.3s ease-out;
+      }
+      
+      .error-message.hidden {
+        display: none;
+      }
+      
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
     </style>
   `;
 
@@ -426,18 +566,14 @@ async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
   const loginForm = container.querySelector('#login-form');
   const registerForm = container.querySelector('#register-form');
   
-  loginForm?.addEventListener('submit', (e) => {
+  loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    // Here you would typically validate credentials
-    // For demo purposes, we'll simulate successful login
-    handleSuccessfulAuth(container);
+    await handleLoginSubmit(container);
   });
   
-  registerForm?.addEventListener('submit', (e) => {
+  registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    // Here you would typically create new account
-    // For demo purposes, we'll simulate successful registration
-    handleSuccessfulAuth(container);
+    await handleRegisterSubmit(container);
   });
 
   // Initialize Google Sign-In
@@ -509,6 +645,149 @@ async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
       });
     });
   }
+}
+
+// Helper function to show error message
+function showError(container: HTMLElement, formType: 'login' | 'register', message: string): void {
+  const errorElement = container.querySelector(`#${formType}-error`) as HTMLElement;
+  const errorText = errorElement?.querySelector('.error-text') as HTMLElement;
+  
+  if (errorElement && errorText) {
+    errorText.textContent = message;
+    errorElement.classList.remove('hidden');
+    
+    // Auto-hide error after 5 seconds
+    setTimeout(() => {
+      errorElement.classList.add('hidden');
+    }, 5000);
+  }
+}
+
+// Helper function to hide error message
+function hideError(container: HTMLElement, formType: 'login' | 'register'): void {
+  const errorElement = container.querySelector(`#${formType}-error`) as HTMLElement;
+  if (errorElement) {
+    errorElement.classList.add('hidden');
+  }
+}
+
+// Handle login form submission
+async function handleLoginSubmit(container: HTMLElement): Promise<void> {
+  const usernameInput = container.querySelector('.form-box.login input[type="text"]') as HTMLInputElement;
+  const passwordInput = container.querySelector('.form-box.login input[type="password"]') as HTMLInputElement;
+  const loginBtn = container.querySelector('.login-submit-btn') as HTMLButtonElement;
+  
+  const username = usernameInput?.value.trim();
+  const password = passwordInput?.value.trim();
+
+  // Hide any previous errors
+  hideError(container, 'login');
+
+  if (!username || !password) {
+    showError(container, 'login', 'Please fill in all fields');
+    return;
+  }
+
+  // Show loading state
+  const originalText = loginBtn.textContent;
+  loginBtn.textContent = 'LOGGING IN...';
+  loginBtn.disabled = true;
+
+  try {
+    const response = await apiLogin({ username, password });
+    
+    if (response.success) {
+      // Store auth token
+      if (response.token) {
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      showNotification('Login successful!', 'success');
+      handleSuccessfulAuth(container);
+    } else {
+      // Reset button state immediately on error
+      loginBtn.textContent = originalText;
+      loginBtn.disabled = false;
+      showError(container, 'login', response.message || 'Invalid username or password');
+      return; // Exit early to prevent finally block from running
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    // Reset button state immediately on error
+    loginBtn.textContent = originalText;
+    loginBtn.disabled = false;
+    showError(container, 'login', 'Network error. Please try again.');
+    return; // Exit early to prevent finally block from running
+  }
+  
+  // Only reset button state here if login was successful (but we won't reach here due to early returns)
+  loginBtn.textContent = originalText;
+  loginBtn.disabled = false;
+}
+
+// Handle registration form submission
+async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
+  const usernameInput = container.querySelector('.form-box.register input[type="text"]') as HTMLInputElement;
+  const emailInput = container.querySelector('.form-box.register input[type="email"]') as HTMLInputElement;
+  const passwordInput = container.querySelector('.form-box.register input[type="password"]') as HTMLInputElement;
+  const registerBtn = container.querySelector('.register-submit-btn') as HTMLButtonElement;
+  
+  const username = usernameInput?.value.trim();
+  const email = emailInput?.value.trim();
+  const password = passwordInput?.value.trim();
+
+  // Hide any previous errors
+  hideError(container, 'register');
+
+  if (!username || !email || !password) {
+    showError(container, 'register', 'Please fill in all fields');
+    return;
+  }
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showError(container, 'register', 'Please enter a valid email address');
+    return;
+  }
+
+  // Show loading state
+  const originalText = registerBtn.textContent;
+  registerBtn.textContent = 'REGISTERING...';
+  registerBtn.disabled = true;
+
+  try {
+    const response = await apiRegister({ username, email, password });
+    
+    if (response.success) {
+      // Store auth token
+      if (response.token) {
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      showNotification('Registration successful!', 'success');
+      handleSuccessfulAuth(container);
+    } else {
+      // Reset button state immediately on error
+      registerBtn.textContent = originalText;
+      registerBtn.disabled = false;
+      showError(container, 'register', response.message || 'Registration failed');
+      return; // Exit early to prevent finally block from running
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    // Reset button state immediately on error
+    registerBtn.textContent = originalText;
+    registerBtn.disabled = false;
+    showError(container, 'register', 'Network error. Please try again.');
+    return; // Exit early to prevent finally block from running
+  }
+  
+  // Only reset button state here if registration was successful (but we won't reach here due to early returns)
+  registerBtn.textContent = originalText;
+  registerBtn.disabled = false;
 }
 
 // Handle successful authentication
