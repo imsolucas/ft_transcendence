@@ -77,11 +77,11 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
       // Show success notification
       showNotification('Google Sign-In successful!', 'success');
       
-      // Update navbar and navigate to main page
+      // Update navbar and navigate to lobby page
       updateNavbar();
       
       setTimeout(() => {
-        navigate('main');
+        navigate('lobby');
       }, 1500);
     }
   } catch (error) {

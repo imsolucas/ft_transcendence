@@ -803,9 +803,9 @@ function handleSuccessfulAuth(container: HTMLElement): void {
     
     // After zoom animation completes, navigate to next page
     setTimeout(() => {
-      // Here you would typically navigate to your main app/game page
+      // Here you would typically navigate to your lobby app/game page
       // For example: window.location.href = '/game' or call your router
-      console.log('Navigating to main application...');
+      console.log('Navigating to lobby application...');
       
       // Example of how you might trigger navigation in your app:
       // if (window.navigateToGame) {

@@ -1,4 +1,4 @@
-export function MainPage(): HTMLElement {
+export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
 	container.className =
 		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16 overflow-hidden';
