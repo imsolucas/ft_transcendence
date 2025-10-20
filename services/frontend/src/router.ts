@@ -2,6 +2,7 @@ import { LandingPage } from "./pages/landingPage";
 import { AuthPage } from "./pages/authPage";
 import { MainPage } from "./pages/lobby";
 import { ProfilePage } from "./pages/profilePage";
+import { LoadingPong } from "./components/loadingGame";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
 
 export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification";

@@ -129,14 +129,6 @@ export function MainPage(): HTMLElement {
 							<button class="neon-button w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#872481] to-[#DC25A3]">
 								🌐 MULTIPLAYER
 							</button>
-							
-							<button class="neon-button w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#DC25A3] to-[#F34C94]">
-								⚙️ SETTINGS
-							</button>
-							
-							<button class="neon-button w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#F34C94] to-[#F3796A]">
-								🏆 LEADERBOARD
-							</button>
 						</div>
 
 						<!-- Quick Stats -->
@@ -200,25 +192,6 @@ export function MainPage(): HTMLElement {
 									<div class="text-center">
 										<div class="font-['Press_Start_2P'] text-2xl text-[#F34C94]">0</div>
 										<div class="font-['Orbitron'] text-xs text-gray-400">PLAYER 2</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Leaderboard Preview -->
-							<div class="bg-gray-900 border border-[#F34C94] rounded-lg p-4">
-								<h3 class="font-['Orbitron'] text-lg mb-3 text-[#F34C94]">Top Players</h3>
-								<div class="space-y-2">
-									<div class="flex justify-between items-center">
-										<div class="font-['Press_Start_2P'] text-xs text-white">1. ArcadeMaster</div>
-										<div class="text-[#F34C94]">2,847</div>
-									</div>
-									<div class="flex justify-between items-center">
-										<div class="font-['Press_Start_2P'] text-xs text-white">2. PongLegend</div>
-										<div class="text-[#F34C94]">2,156</div>
-									</div>
-									<div class="flex justify-between items-center">
-										<div class="font-['Press_Start_2P'] text-xs text-white">3. RetroGamer</div>
-										<div class="text-[#F34C94]">1,923</div>
 									</div>
 								</div>
 							</div>
