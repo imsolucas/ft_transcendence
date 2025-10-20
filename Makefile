@@ -1,6 +1,6 @@
 FILE=infra/docker-compose.yml
 
-.PHONY: all up down build logs ps clean-volumes inspect-health
+.PHONY: all up down build logs ps clean-volumes inspect-health restart reset
 
 all: up
 
@@ -27,3 +27,13 @@ clean-volumes:
 
 inspect-health:
 	docker inspect --format '{{json .State.Health}}' $(SERVICE) || true
+
+restart:
+	docker compose -f $(FILE) down && docker compose -f $(FILE) up -d --build
+
+reset:
+	@docker compose -f $(FILE) down
+	@docker compose -f $(FILE) down -v --remove-orphans
+	@docker system prune -af
+	@docker compose -f $(FILE) up -d --build
+	
