@@ -7,7 +7,7 @@ import { GamePage, cleanupGamePage } from "./pages/gamePage";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
 
 // Define all possible screen names
-export type Screen = "landing" | "auth" | "lobby" | "game" | "profile" | "email-verification";
+export type Screen = "landing" | "auth" | "lobby" | "game" | "localgame" | "profile" | "email-verification";
 
 // Track which screen we're currently showing
 let currentScreen: Screen | null = null;
@@ -70,6 +70,10 @@ export function renderPage(screen: Screen) {
 
     case "game":
       container.appendChild(LoadingPong());
+      break;
+
+    case "localgame":
+      container.appendChild(GamePage());
       break;
 
     default:

@@ -1,3 +1,5 @@
+import { navigate } from "../router";
+
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
 	container.className =
@@ -233,6 +235,7 @@ export function LobbyPage(): HTMLElement {
 
 		localGame?.addEventListener('click', () => {
 			console.log("Hello");
+			navigate('localgame');
 		});
 	}, 0);
 
