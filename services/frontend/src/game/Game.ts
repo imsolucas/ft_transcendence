@@ -92,6 +92,9 @@ export class Game {
         
         this.#canvas.width = window.innerWidth;
         this.#canvas.height = window.innerHeight - navbarHeight;
+
+        constants.SCALE_X = this.#canvas.width / constants.COURT_WIDTH;
+        constants.SCALE_Y = this.#canvas.height / constants.COURT_HEIGHT;
         
         this.#canvas.style.marginTop = `${navbarHeight}px`;
     }

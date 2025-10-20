@@ -16,7 +16,7 @@ export function drawCircle(pos: Vector, radius: number, color: string, ctx: Canv
 
 export function drawRectangle(pos: Vector, size: Vector, color: string, ctx: CanvasRenderingContext2D): void{
     ctx.beginPath()
-    ctx.fillStyle = color,
+    ctx.fillStyle = color
     ctx.fillRect(
         pos.x - size.x / 2,
         pos.y - size.y / 2,

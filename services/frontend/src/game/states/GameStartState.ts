@@ -12,14 +12,13 @@ export default class GameStartState extends GameState{
 
     enter(): void {
         this.getEntityManager().getPlayer(0).setPos({
-            x: 50 + constants.PLAYER_WIDTH / 2,
-            y: this.getCanvas().height / 2
+            x: constants.PLAYER_WIDTH,
+            y: constants.COURT_HEIGHT / 2
         })
         this.getEntityManager().getPlayer(1).setPos({
-            x: this.getCanvas().width - constants.PLAYER_WIDTH / 2 - 50,
-            y: this.getCanvas().height / 2
+            x: constants.COURT_WIDTH - constants.PLAYER_WIDTH,
+            y: constants.COURT_HEIGHT / 2
         })
-        this.getEntityManager().getSquareBall().reset(this.getCanvas());
         for (let i in this.getPlayerScore())
             this.getPlayerScore()[i] = 0;
         this.getEntityManager().getSquareBall().reset(this.getCanvas())
@@ -33,7 +32,7 @@ export default class GameStartState extends GameState{
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx)
         this.drawCurrentUi()
-        drawString("PRESS SPACE TO PLAY", {x: this.getCanvas().width / 2, y: this.getCanvas().height / 2}, "grey", "100px 'Courier New', monospace", ctx);
+        drawString("PRESS SPACE TO PLAY", {x: constants.COURT_SIZE / 2 * ctx.canvas.width, y: constants.COURT_SIZE / 2 * ctx.canvas.height}, "grey", "100px 'Courier New', monospace", ctx);
     }
 
     update(deltaTime: number): StateResult | null {

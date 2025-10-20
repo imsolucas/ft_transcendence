@@ -37,7 +37,7 @@ export default class Player extends Entity {
         this.#oldpos = { ...this.pos };
         if (border.top + cur_vel_y < 0 )
             this.pos.y = this.#size.y / 2;
-        else if (border.bottom + cur_vel_y > canvas.height)
+        else if (border.bottom + cur_vel_y > 1)
             this.pos.y = canvas.height - this.#size.y / 2;
         else {
             this.pos.y += cur_vel_y;
@@ -46,7 +46,11 @@ export default class Player extends Entity {
     }
 
     draw(ctx: CanvasRenderingContext2D): void{
-        drawRectangle(this.pos, this.#size, this.color, ctx);
+        let drawpos: Vector = {x: this.pos.x * constants.SCALE_X, y:this.pos.y * constants.SCALE_Y}
+        let drawsize: Vector = {x: this.#size.x * constants.SCALE_X, y:this.#size.y * constants.SCALE_Y}
+        drawRectangle(drawpos, drawsize, this.color, ctx);
+        console.log("drawpos:", drawpos);
+        console.log("drawsize", drawsize);
     }
 
     collision(other: Border, old_other: Border): boolean {
