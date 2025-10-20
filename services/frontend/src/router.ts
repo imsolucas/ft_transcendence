@@ -88,7 +88,7 @@ function checkAuthAndRedirect(requestedScreen: Screen): Screen {
   const isLoggedIn = isAuthenticated();
 
   // Public pages
-  const publicScreens: Screen[] = ["landing", "auth"];
+  const publicScreens: Screen[] = ["landing", "auth", "game", "localgame","lobby"];
 
   if (!isLoggedIn && !publicScreens.includes(requestedScreen)) {
     // ❌ Not logged in and trying to access a private page
