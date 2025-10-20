@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { FastifyRequest, FastifyReply } from "fastify";
 
 export const getUsers = async (req: FastifyRequest, res: FastifyReply) => {
@@ -18,22 +19,45 @@ export const getUserById = async (
   return res.send(user);
 };
 
-// export const createUser = async (
-//   req: FastifyRequest<{
-//      Body: { name?: string }
-//   }>,
-//   res: FastifyReply
-// ) => {
-//   const name = req.body?.name;
-//   if (!name || typeof name !== "string")
-//     return res.code(400).send({ error: "Missing or invalid 'name' in body" });
+export const createUser = async (
+  req: FastifyRequest<{
+     Body: {
+      username?: string;
+      email?: string;
+      avatar?: string;
+     }
+  }>,
+  res: FastifyReply
+) => {
+  const username = req.body?.username;
+  if (!username || typeof username !== "string")
+    return res.code(400).send({ error: "Missing or invalid 'username' in body" });
 
-//   const newUser: User = await req.server.db.user.create({
+  const email = req.body?.email;
+  if (!email || typeof email !== "string")
+    return res.code(400).send({ error: "Missing or invalid 'email' in body"})
 
-//   })
-//   users.push(newUser);
-//   return res.code(201).send(newUser);
-// };
+  const avatar = req.body?.avatar;
+  if (!avatar || typeof avatar !== "string")
+    return res.code(400).send({ error: "Missing or invalid 'avatar' in body"})
+
+  try {
+    const newUser: User = await req.server.db.user.create({
+      data: {
+        username,
+        email,
+        avatar
+      }
+    })
+    return res.code(201).send(newUser);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code == "P2002") {
+      return res.code(409).send({ error: "Email is already in use" })
+    }
+
+    return res.code(500).send({ error: "Internal Server Error" })
+  }
+};
 
 // export const updateUser = async (
 //   req: FastifyRequest<{ Params: { id: string }; Body: { name?: string } }>,
