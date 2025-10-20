@@ -434,7 +434,7 @@ function toggleMobileMenu(): void {
 		...(isAuthenticated() ? [
 			{ text: 'Play Game', action: () => {
 				// Add your play game navigation here
-				navigate('main' as Screen);
+				navigate('lobby' as Screen);
 				console.log('Navigate to play game');
 				closeMobileMenu();
 			}},

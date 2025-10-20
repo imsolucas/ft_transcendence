@@ -144,9 +144,9 @@ async function handleLogin(): Promise<void> {
       // Update navbar to show logged-in state
       updateNavbar();
       
-      // Navigate to main page after successful login
+      // Navigate to lobby page after successful login
       setTimeout(() => {
-        navigate('main' as Screen);
+        navigate('lobby' as Screen);
       }, 1500);
     } else {
       showNotification(response.message || 'Login failed', 'error');

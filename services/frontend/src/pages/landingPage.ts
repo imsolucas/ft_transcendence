@@ -1,4 +1,3 @@
-import { isAuthenticated } from '../utils/auth-script';
 import { navigate } from '../router';
 
 export function LandingPage(): HTMLElement {
@@ -124,11 +123,7 @@ export function LandingPage(): HTMLElement {
     const playNowBtn = container.querySelector('.play-now-btn');
 
     playNowBtn?.addEventListener('click', () => {
-      if (isAuthenticated()) {
-        navigate('main');
-      } else {
-        navigate('auth');
-      }
+      navigate('auth');
     });
 
   }, 0);
