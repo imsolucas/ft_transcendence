@@ -9,7 +9,9 @@ mkdir -p db
 
 # if first arg is "dev" use test DB
 if [ "${1:-}" = "dev" ]; then
-  rm db/test.sqlite
+  if [ -f db/test.sqlite ]; then
+    rm db/test.sqlite
+  fi
   echo "Initializing test DB (dev mode)..."
   export DATABASE_URL="file:$(pwd)/db/test.sqlite"
   echo "Using DATABASE_URL=$DATABASE_URL"
