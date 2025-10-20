@@ -1,5 +1,5 @@
 meta {
-  name: user-by-valid-id
+  name: valid-id
   type: http
   seq: 1
 }
@@ -11,9 +11,9 @@ get {
 }
 
 params:path {
-  id: NaN
+  id: 1
 }
 
 assert {
-  res.status: eq 400
+  res.status: eq 200
 }
