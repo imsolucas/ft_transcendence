@@ -78,16 +78,27 @@ export const createUser = async (
 //   return res.send(users[idx]);
 // };
 
-// export const deleteUser = async (
-//   req: FastifyRequest<{ Params: { id: string } }>,
-//   res: FastifyReply
-// ) => {
-//   const id = Number(req.params.id);
-//   if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
+export const deleteUser = async (
+  req: FastifyRequest<{ Params: { id: string } }>,
+  res: FastifyReply
+) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.code(400).send({ error: "Invalid id" });
+  }
 
-//   const idx = users.findIndex((u) => u.id === id);
-//   if (idx === -1) return res.code(404).send({ error: "User not found" });
+  try {
+    const deletedUser = await req.server.db.user.delete({
+      where: { id },
+    });
 
-//   users.splice(idx, 1);
-//   return res.code(204).send();
-// };
+    return res.code(204).send(); // No content response
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      // Handle case where user does not exist
+      return res.code(404).send({ error: "User not found" });
+    }
+
+    return res.code(500).send({ error: "Internal Server Error" });
+  }
+};
