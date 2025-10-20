@@ -3,7 +3,7 @@ import {
   getUsers,
   getUserById,
   createUser,
-  // updateUser,
+  updateUser,
   deleteUser,
 } from "../controllers/userControllers.ts";
 
@@ -17,9 +17,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
   // Create user
   fastify.post("/", createUser);
 
-  // // Update user (replace or partial)
-  // fastify.put<{ Params: { id: string }; Body: { name?: string } }>("/:id", updateUser);
-  // fastify.patch<{ Params: { id: string }; Body: { name?: string } }>("/:id", updateUser);
+  // Update user
+  fastify.patch<{ Params: { id: string }; Body: { name?: string; email?: string; avatar?: string } }>("/:id", updateUser);
 
   // Delete user
   fastify.delete<{ Params: { id: string } }>("/:id", deleteUser);

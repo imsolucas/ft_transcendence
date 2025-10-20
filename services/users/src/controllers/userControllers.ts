@@ -59,24 +59,51 @@ export const createUser = async (
   }
 };
 
-// export const updateUser = async (
-//   req: FastifyRequest<{ Params: { id: string }; Body: { name?: string } }>,
-//   res: FastifyReply
-// ) => {
-//   const id = Number(req.params.id);
-//   if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
+export const updateUser = async (
+  req: FastifyRequest<{
+    Params: { id: string };
+    Body: { username?: string; email?: string; avatar?: string };
+  }>,
+  res: FastifyReply
+) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.code(400).send({ error: "Invalid id" });
+  }
 
-//   const idx = users.findIndex((u) => u.id === id);
-//   if (idx === -1) return res.code(404).send({ error: "User not found" });
+  const { username, email, avatar } = req.body || {};
 
-//   const name = req.body?.name;
-//   if (name !== undefined && typeof name !== "string")
-//     return res.code(400).send({ error: "Invalid 'name' in body" });
+  // Validate fields if they are provided
+  if (username !== undefined && typeof username !== "string") {
+    return res.code(400).send({ error: "Invalid 'username' in body" });
+  }
+  if (email !== undefined && typeof email !== "string") {
+    return res.code(400).send({ error: "Invalid 'email' in body" });
+  }
+  if (avatar !== undefined && typeof avatar !== "string") {
+    return res.code(400).send({ error: "Invalid 'avatar' in body" });
+  }
 
-//   if (name !== undefined) users[idx].name = name;
+  try {
+    const updatedUser = await req.server.db.user.update({
+      where: { id },
+      data: {
+        ...(username !== undefined && { username }),
+        ...(email !== undefined && { email }),
+        ...(avatar !== undefined && { avatar }),
+      },
+    });
 
-//   return res.send(users[idx]);
-// };
+    return res.send(updatedUser);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      // Handle case where user does not exist
+      return res.code(404).send({ error: "User not found" });
+    }
+
+    return res.code(500).send({ error: "Internal Server Error" });
+  }
+};
 
 export const deleteUser = async (
   req: FastifyRequest<{ Params: { id: string } }>,
