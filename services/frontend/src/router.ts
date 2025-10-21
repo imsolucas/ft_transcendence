@@ -1,100 +1,127 @@
 import { LandingPage } from "./pages/landingPage";
-import { AuthPage } from "./pages/authPage"; // Renamed from landing
-import { MainPage } from "./pages/main";
-import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
+import { AuthPage } from "./pages/authPage";
+import { LobbyPage } from "./pages/lobby";
+import { ProfilePage } from "./pages/profilePage";
+import { LoadingPong } from "./components/loadingGame";
+import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
 
-export type Screen = "landing" | "auth" | "main" | "game" | "profile" | "email-verification";
+// Define all possible screen names
+export type Screen = "landing" | "auth" | "lobby" | "game" | "profile" | "email-verification";
 
+// Track which screen we're currently showing
 let currentScreen: Screen | null = null;
+let activeTab: string | undefined;
 
-export function navigate(screen: Screen) {
+// ✅ Simple navigation function
+export function navigate(screen: Screen, tab?: string) {
+  activeTab = tab;
+  const path = screen === "landing" ? "/" : `/${screen}`;
+
+  // Change URL only if it’s different
+  if (window.location.pathname !== path) {
+    history.pushState({ screen }, "", path);
+  }
+
   renderPage(screen);
 }
 
+// Used to get a one-time tab value (optional)
+export function getActiveTab() {
+  const tab = activeTab;
+  activeTab = undefined;
+  return tab;
+}
+
+// ✅ Main function that shows the correct page
 export function renderPage(screen: Screen) {
   const container = document.getElementById("page-container");
   if (!container) return;
-  
-  // Check authentication and redirect if necessary
+
+  // 🔒 Check if the user should be redirected based on login status
   const redirectedScreen = checkAuthAndRedirect(screen);
   if (redirectedScreen !== screen) {
-    screen = redirectedScreen;
+    navigate(redirectedScreen);
+    return;
   }
-  
-  // Cleanup previous page
+
+  // Clear the old page content
   cleanup(currentScreen);
-  
-  // Clear old page
   container.innerHTML = "";
-  
+
+  // 🧱 Render the correct screen
   switch (screen) {
     case "landing":
-      // New introduction page - accessible to everyone
       container.appendChild(LandingPage());
       break;
+
     case "auth":
-      // Login/Registration page - only for non-authenticated users
       container.appendChild(AuthPage());
-      setTimeout(() => {
-        initializeAuthPage();
-      }, 0);
+      setTimeout(() => initializeAuthPage(), 0);
       break;
-    case "main":
-      // Main dashboard - only for authenticated users
-      container.appendChild(MainPage());
+
+    case "lobby":
+      container.appendChild(LobbyPage());
       break;
+
+    case "profile":
+      container.appendChild(ProfilePage());
+      break;
+
+    case "game":
+      container.appendChild(LoadingPong());
+      break;
+
+    default:
+      container.appendChild(LandingPage());
   }
-  
+
   currentScreen = screen;
 }
 
+// ✅ Simpler redirect logic (easy version)
 function checkAuthAndRedirect(requestedScreen: Screen): Screen {
   const isLoggedIn = isAuthenticated();
-  
-  // Define which screens require authentication
-  const protectedScreens: Screen[] = ["main", "game", "profile"];
-  
-  // Define which screens are only for non-authenticated users
-  const guestOnlyScreens: Screen[] = ["auth"];
-  
-  // Landing page is accessible to everyone, no restrictions
-  
-  if (isLoggedIn) {
-    // User is logged in
-    if (guestOnlyScreens.includes(requestedScreen)) {
-      // Redirect logged-in users away from auth page
-      console.log(`Redirecting logged-in user from ${requestedScreen} to main`);
-      return "main";
-    }
-  } else {
-    // User is not logged in
-    if (protectedScreens.includes(requestedScreen)) {
-      // Redirect non-authenticated users to landing page
-      console.log(`Redirecting non-authenticated user from ${requestedScreen} to landing`);
-      return "landing";
-    }
+
+  // Public pages
+  const publicScreens: Screen[] = ["landing", "auth"];
+
+  if (!isLoggedIn && !publicScreens.includes(requestedScreen)) {
+    // ❌ Not logged in and trying to access a private page
+    console.log(`Redirecting guest from ${requestedScreen} to landing`);
+    return "landing";
   }
-  
-  // No redirection needed
+
+  if (isLoggedIn && requestedScreen === "auth") {
+    // 🧾 Logged in but trying to access login page
+    console.log(`Redirecting logged-in user from auth to lobby`);
+    return "lobby";
+  }
+
+  // ✅ Otherwise, let them visit
   return requestedScreen;
 }
 
+// Cleanup specific pages (auth only for now)
 function cleanup(screen: Screen | null) {
-  switch (screen) {
-    case "auth":
-      cleanupAuthPage();
-      break;
+  if (screen === "auth") {
+    cleanupAuthPage();
   }
 }
 
-// Function to get current screen
+// Used for debugging or other logic
 export function getCurrentScreen(): Screen | null {
   return currentScreen;
 }
 
-// Function to initialize the app with proper routing
+// Handle browser back/forward navigation
+function handleLocationChange() {
+  const path = window.location.pathname;
+  const screen = (path.substring(1) || "landing") as Screen;
+  renderPage(screen);
+}
+
+// Initialize app when it loads
 export function initializeApp(): void {
-  // Always start with the landing page (introduction)
-  // Users can navigate to auth or main from there
-  renderPage("landing");
+  window.addEventListener("popstate", handleLocationChange);
+  handleLocationChange(); // Handle first page load
 }

@@ -22,6 +22,7 @@ interface AuthResponse {
     id: string;
     username: string;
     email: string;
+    picture?: string;
   };
 }
 
@@ -125,7 +126,6 @@ async function handleLogin(): Promise<void> {
   }
 
   // Show loading state
-  const originalText = loginBtn.textContent;
   loginBtn.textContent = 'Logging in...';
   loginBtn.disabled = true;
 
@@ -144,9 +144,9 @@ async function handleLogin(): Promise<void> {
       // Update navbar to show logged-in state
       updateNavbar();
       
-      // Navigate to main page after successful login
+      // Navigate to lobby page after successful login
       setTimeout(() => {
-        navigate('main' as Screen);
+        navigate('lobby' as Screen);
       }, 1500);
     } else {
       showNotification(response.message || 'Login failed', 'error');
@@ -156,7 +156,7 @@ async function handleLogin(): Promise<void> {
     showNotification('Network error. Please try again.', 'error');
   } finally {
     // Reset button state
-    loginBtn.textContent = originalText;
+    loginBtn.textContent = "► LOGIN";
     loginBtn.disabled = false;
   }
 }
