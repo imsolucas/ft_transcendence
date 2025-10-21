@@ -90,11 +90,25 @@ export class Game {
         const navbar = document.querySelector('nav');
         const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
         
-        this.#canvas.width = window.innerWidth;
-        this.#canvas.height = window.innerHeight - navbarHeight;
-
+        let newWidth = window.innerWidth;
+        let newHeight = window.innerHeight - navbarHeight;
+        let newAspect = newWidth / newHeight;
+      
+        if (newAspect > constants.ASPECT_RATIO)
+        {
+            newWidth = newHeight * constants.ASPECT_RATIO;
+            this.#canvas.height = newHeight;
+            this.#canvas.width = newWidth;
+        }
+        else
+        {
+            newHeight = newWidth / constants.ASPECT_RATIO;
+            this.#canvas.height = newHeight;
+            this.#canvas.width = newWidth;
+        }
+      
         constants.SCALE_X = this.#canvas.width / constants.COURT_WIDTH;
-        constants.SCALE_Y = this.#canvas.height / constants.COURT_HEIGHT;
+        constants.SCALE_Y = this.#canvas.height / constants.COURT_HEIGHT;   
         
         this.#canvas.style.marginTop = `${navbarHeight}px`;
     }
