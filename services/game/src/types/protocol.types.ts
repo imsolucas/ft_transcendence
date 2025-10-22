@@ -1,3 +1,5 @@
+import { extname } from "path";
+
 export type GameMessage =
 | ConnectionMessage
 | ConnectionSuccessMessage
@@ -31,4 +33,19 @@ export interface ConnectionErrorMessage extends BaseMessage {
 		message: string;
 		code?: string;
 	};
+}
+
+export interface playerJoined extends BaseMessage {
+	type: 'playerJoined';
+	data: {
+		playerName: string;
+		position: number;
+	}
+}
+
+export interface playerLeft extends BaseMessage {
+	type: 'playerLeft';
+	data: {
+		playerName: string;
+	}
 }

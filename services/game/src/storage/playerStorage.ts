@@ -20,7 +20,7 @@ export class InMemoryPlayerStorage implements PlayerStorage {
 		return this.players.get(playerID);
 	}
 
-	getInRoom(roomID: string): number {
+	getPaxInRoom(roomID: string): number {
 		let count = 0;
 		for (const player of this.players.values()) {
 			if (player.roomID === roomID) {
@@ -28,5 +28,15 @@ export class InMemoryPlayerStorage implements PlayerStorage {
 			}
 		}
 		return count;
+	}
+
+	getPlayersInRoom(roomID: string): Player[] {
+		const playersInRoom: Player[] = [];
+		for (const player of this.players.values()) {
+			if (player.roomID === roomID) {
+				playersInRoom.push(player);
+			}
+		}
+		return playersInRoom;
 	}
 }
