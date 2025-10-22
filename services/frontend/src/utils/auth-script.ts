@@ -1,6 +1,7 @@
 import { navigate } from '../router';
 import type { Screen } from '../router';
 import { updateNavbar } from '../components/Navbar';
+import { fetchUserByUsername } from './api';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -334,10 +335,16 @@ export function getAuthToken(): string | null {
   return localStorage.getItem('authToken');
 }
 
-export function getCurrentUser(): any {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
-}
+export async function getCurrentUser(): Promise<any> {
+	try {
+	  const user = await fetchUserByUsername('bob');
+	  return user || null;
+	} catch (error) {
+	  console.error("Error fetching current user:", error);
+	  return null;
+	}
+  }
+  
 
 export function isAuthenticated(): boolean {
   return !!getAuthToken();

@@ -2,7 +2,7 @@ import { isAuthenticated, getCurrentUser, logout } from '../utils/auth-script';
 import { navigate } from '../router';
 import type { Screen } from '../router';
 
-export function createNavbar(): HTMLElement {
+export async function createNavbar(): Promise<HTMLElement> {
 	const navbar = document.createElement('nav');
 	// Remove bg-transparent and backdrop-blur-md, add fully transparent background
 	navbar.className = `
@@ -51,46 +51,14 @@ export function createNavbar(): HTMLElement {
 	const rightSection = document.createElement('div');
 	rightSection.className = 'flex items-center space-x-3';
 
-	// Social Media Buttons - updated hover colors for transparency
-	const socialContainer = document.createElement('div');
-	socialContainer.className = 'flex items-center space-x-2';
-
-	// Discord Button
-	// Discord Button
-	const discordButton = document.createElement('button');
-	discordButton.className = 'p-2 rounded-lg hover:bg-white/10 transition-colors duration-200 group bg-gradient-to-l from-[#F49752] to-[#F031A5]';
-	discordButton.innerHTML = `
-	<svg class="w-5 h-5 text-white/80 group-hover:text-[#5865F2] transition-colors" fill="currentColor" viewBox="0 0 24 24">
-	  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.197.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
-	</svg>
-  `;
-	discordButton.title = 'Join our Discord';
-	discordButton.addEventListener('click', () => {
-		window.open('https://youtube.com', '_blank');
-	});
-
-	// Twitter Button
-	const twitterButton = document.createElement('button');
-	twitterButton.className = 'p-2 rounded-lg hover:bg-white/10 transition-colors duration-200 group bg-gradient-to-l from-[#F49752] to-[#F031A5]';
-	twitterButton.innerHTML = `
-	<svg class="w-5 h-5 text-white/80 group-hover:text-[#1DA1F2] transition-colors" fill="currentColor" viewBox="0 0 24 24">
-	  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-	</svg>
-  `;
-	twitterButton.title = 'Follow us on Twitter';
-	twitterButton.addEventListener('click', () => {
-		window.open('https://youtube.com', '_blank');
-	});
-
-	// socialContainer.appendChild(discordButton);
-	// socialContainer.appendChild(twitterButton);
 
 	// Auth Section
 	const authSection = document.createElement('div');
 	authSection.className = 'flex items-center';
 
 	if (isAuthenticated()) {
-		const user = getCurrentUser();
+		const user = await getCurrentUser();
+		console.log("user:", user);
 		const profileContainer = document.createElement('div');
 		profileContainer.className = 'relative';
 
@@ -99,7 +67,6 @@ export function createNavbar(): HTMLElement {
 
 		// Use Google profile picture if available
 		let profileImg: HTMLElement;
-		console.log(user?.picture);
 		if (user?.picture) {
 			const img = document.createElement('img');
 			img.src = user.picture;
@@ -260,8 +227,6 @@ export function createNavbar(): HTMLElement {
 
 		authSection.appendChild(loginButton);
 	}
-
-	rightSection.appendChild(socialContainer);
 	rightSection.appendChild(authSection);
 
 	// Assemble navbar
@@ -500,16 +465,16 @@ function closeMobileMenu(): void {
 }
 
 // Function to update navbar when auth state changes
-export function updateNavbar(): void {
+export async function updateNavbar(): Promise<void> {
 	const existingNavbar = document.querySelector('nav');
 	if (existingNavbar) {
-		existingNavbar.replaceWith(createNavbar());
+		existingNavbar.replaceWith(await createNavbar());
 	}
 }
 
 // Initialize navbar
-export function initializeNavbar(): void {
-	const navbar = createNavbar();
+export async function initializeNavbar(): Promise<void> {
+	const navbar = await createNavbar();
 	document.body.insertBefore(navbar, document.body.firstChild);
 
 	// Remove fixed padding since navbar is now truly transparent

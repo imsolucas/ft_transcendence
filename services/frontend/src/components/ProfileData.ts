@@ -227,7 +227,7 @@ export function ProfileData() {
   const loadProfileData = async () => {
     renderLoading();
     try {
-      const profileData = await fetchUserProfile(user.id);
+      const profileData = await fetchUserProfile("bob");
       render(profileData);
     } catch (error) {
       renderError(error);
