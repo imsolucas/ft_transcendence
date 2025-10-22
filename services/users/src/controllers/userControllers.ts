@@ -6,17 +6,29 @@ export const getUsers = async (req: FastifyRequest, res: FastifyReply) => {
   return res.send(users);
 };
 
-export const getUserById = async (
-  req: FastifyRequest<{ Params: { id: string } }>,
+export const getUserByName = async (
+  req: FastifyRequest<{ Params: { name: string } }>,
   res: FastifyReply
 ) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) return res.code(400).send({ error: "Invalid id" });
+  const { name } = req.params;
 
-  const user = await req.server.db.user.findUnique({ where: {id} });
-  if (!user) return res.code(404).send({ error: "User not found" });
+  // Validate the 'name' parameter
+  if (!name || typeof name !== "string") {
+    return res.code(400).send({ error: "Invalid or missing 'name' parameter" });
+  }
 
-  return res.send(user);
+  try {
+    // Query the user by username
+    const user = await req.server.db.user.findUnique({ where: { username: name } });
+    if (!user) {
+      return res.code(404).send({ error: "User not found" });
+    }
+
+    return res.send(user);
+  } catch (error) {
+    console.error("Error fetching user by name:", error);
+    return res.code(500).send({ error: "Internal Server Error" });
+  }
 };
 
 export const createUser = async (
