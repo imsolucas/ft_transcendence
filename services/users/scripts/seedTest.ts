@@ -4,9 +4,9 @@ import { fileURLToPath } from "url";
 const db = new PrismaClient();
 
 const users = [
-  { username: "alice", email: "alice@example.com", avatar: "https://i.pravatar.cc/150?u=alice" },
-  { username: "bob",   email: "bob@example.com",   avatar: "https://i.pravatar.cc/150?u=bob" },
-  { username: "bruno", email: "bruno@example.com", avatar: "https://i.pravatar.cc/150?u=bruno" },
+  { username: "alice", email: "alice@example.com", password: "1111", avatar: "https://i.pravatar.cc/150?u=alice" },
+  { username: "bob",   email: "bob@example.com",   password: "2222", avatar: "https://i.pravatar.cc/150?u=bob" },
+  { username: "bruno", email: "bruno@example.com", password: "3333", avatar: "https://i.pravatar.cc/150?u=bruno" },
 ];
 
 export async function seed() {
