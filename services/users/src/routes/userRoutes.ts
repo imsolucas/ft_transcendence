@@ -6,6 +6,9 @@ import {
   updateUser,
   deleteUser,
 } from "../controllers/userControllers.ts";
+import {
+  getFriendships
+} from "../controllers/friendshipControllers.ts"
 
 export default async function userRoutes(fastify: FastifyInstance) {
   // List users
@@ -22,4 +25,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
   // Delete user
   fastify.delete<{ Params: { id: string } }>("/:id", deleteUser);
+
+  // List friends
+  fastify.get<{ Params: { id: string } }>("/:id/friends", getFriendships);
 };
