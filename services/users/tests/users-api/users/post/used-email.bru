@@ -1,0 +1,27 @@
+meta {
+  name: used-emali
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:4000/users
+  body: json
+  auth: none
+}
+
+headers {
+  ~Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "alice 1",
+    "email": "alice@example.com",
+    "avatar": "https://i.pravatar.cc/150?u=alice"
+  }
+}
+
+assert {
+  res.status: eq 409
+}

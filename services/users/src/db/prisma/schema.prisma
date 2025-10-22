@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  email        String     @unique
+  password     String
+  avatar       String
+  status       UserStatus @default(OFFLINE)
+  created_at   DateTime   @default(now())
+  last_updated DateTime   @updatedAt
+
+  sentFriendships     Friendship[] @relation("SentFriendships")
+  receivedFriendships Friendship[] @relation("ReceivedFriendships")
+
+  @@map("Users")
+}
+
+model Friendship {
+  id Int @id @default(autoincrement())
+
+  requesterId Int
+  addresseeId Int
+
+  requester User @relation("SentFriendships", fields: [requesterId], references: [id])
+  addressee User @relation("ReceivedFriendships", fields: [addresseeId], references: [id])
+
+  status     FriendshipStatus @default(PENDING)
+  created_at DateTime         @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@map("Friendships")
+}
+
+enum UserStatus {
+  ONLINE
+  OFFLINE
+  INGAME
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}

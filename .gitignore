@@ -25,3 +25,6 @@ dist-ssr
 
 # Credentials and secrets
 .env
+
+# Database
+*.sqlite

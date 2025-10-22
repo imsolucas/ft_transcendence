@@ -1,0 +1,19 @@
+meta {
+  name: nan-id
+  type: http
+  seq: 1
+}
+
+delete {
+  url: http://localhost:4000/users/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: NaN
+}
+
+assert {
+  res.status: eq 200
+}
