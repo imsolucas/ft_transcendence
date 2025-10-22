@@ -8,7 +8,6 @@ import type {
 } from './types/protocol.types.js';
 import type { Player } from './types/player.types.js';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
-import { doesNotMatch } from 'assert';
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
@@ -26,13 +25,18 @@ server.get('/ping', async (request, reply) => {
   return 'pong\n';
 })
 
-server.get('/ws/game', { websocket: true }, (socket: any, req: any) => {
-  console.log('New player connected!');
-  let currentPlayer: Player | null = null;
+server.register(async function (fastify) {
+  fastify.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
+    console.log('WebSocket connection established');
+    console.log('Connection type:', typeof connection);
+    console.log('Connection keys:', Object.keys(connection));
 
-  socket.on('message', (message: any) => {
-    // try catch for JSON parsing
-    try {
+    let currentPlayer: Player | null = null;
+
+    // Use 'connection' directly, not 'connection.socket'
+    connection.on('message', (message: any) => {
+      // try catch for JSON parsing
+      try {
       const data: GameMessage = JSON.parse(message.toString());
 
       switch (data.type) {
@@ -45,14 +49,14 @@ server.get('/ws/game', { websocket: true }, (socket: any, req: any) => {
           const newPlayer: Player = {
             id: playerID,
             name: data.data.playerName,
-            socket: socket,
+            socket: connection,
             roomID: 'default',
             connectedAt: Date.now()
           };
 
           // add to storage
           playerStorage.add(newPlayer);
-          currentPlayer = newPlayer; // Store reference for O(1) cleanup on disconnect
+          currentPlayer = newPlayer;
 
           // create connection success object
           const response: ConnectionSuccessMessage = {
@@ -66,23 +70,23 @@ server.get('/ws/game', { websocket: true }, (socket: any, req: any) => {
           };
 
           // send to client
-          socket.send(JSON.stringify(response));
+          connection.send(JSON.stringify(response));
           console.log(`Player "${data.data.playerName}": ${playerID} connected successfully.`);
           console.log(`Total players online: ${playerStorage.getInRoom('default')}`);
           break;
         default:
           const errorMsg = 'Unknown message type.';
-          sendError(socket, errorMsg);
+          sendError(connection, errorMsg);
           console.error(errorMsg);
       }
     } catch (error) {
       const errorMsg = 'JSON parse error.';
-      sendError(socket, errorMsg);
+      sendError(connection, errorMsg);
       console.error(errorMsg, error);
     }
   });
 
-  socket.on('close', () => {
+  connection.on('close', () => {
     if (currentPlayer) {
       playerStorage.remove(currentPlayer.id);
       console.log(`Player "${currentPlayer.name}" (${currentPlayer.id}) disconnected`);
@@ -92,6 +96,7 @@ server.get('/ws/game', { websocket: true }, (socket: any, req: any) => {
     }
     console.log(`Total players online: ${playerStorage.getInRoom('default')}`);
   });
+  })
 })
 
 server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {

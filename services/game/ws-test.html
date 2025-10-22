@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Learning Lab</h1>
+
+    <button onclick="connect()">Connect to Server</button>
+    <div id="status">Not Connected</div>
+
+    <script>
+        let socket = null;
+
+        function connect() {
+            console.log('Starting connection...');
+
+            // check if already connected
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                console.log('Already connected!');
+                return;
+            }
+
+            socket = new WebSocket('ws://localhost:3001/ws/game');
+            console.log('WebSocket created, readyState:', socket.readyState);
+
+            socket.onopen = function() {
+                console.log('WebSocket opened successfully');
+                document.getElementById('status').textContent = "Connected!";
+                console.log('Connected to server');
+            };
+
+            socket.onmessage = function(event) {
+                console.log('Message from server:', event.data);
+            };
+
+            socket.onclose = function(event) {
+                console.log('WebSocket closed. Code:', event.code, 'Reason:', event.reason);
+                document.getElementById('status').textContent = "Disconnected.";
+                console.log('Disconnected from server');
+            };
+
+            socket.onerror = function(error) {
+                console.log('WebSocket error:', error);
+                document.getElementById('status').textContent = "Connection Failed!";
+                console.log('Connection error:', error);
+            };
+        }
+    </script>
+</body>
+</html>
