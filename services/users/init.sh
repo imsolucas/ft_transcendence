@@ -31,11 +31,11 @@ npx prisma db push
 
 # run test seeder when in dev mode
 if [ "${1:-}" = "dev" ]; then
-  if [ -f ./scripts/seedTest.ts ]; then
+  if [ -f src/db/prisma/seeds/index.ts ]; then
     echo "Running test seeder..."
-    node ./scripts/seedTest.ts
+    node src/db/prisma/seeds/index.ts
   else
-    echo "No scripts/seedTest.ts found - skipping seeding"
+    echo "No src/db/prisma/seeds/index.ts found - skipping seeding"
   fi
 fi
 
