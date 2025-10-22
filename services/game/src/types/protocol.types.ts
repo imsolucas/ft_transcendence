@@ -3,7 +3,8 @@ import { extname } from "path";
 export type GameMessage =
 | ConnectionMessage
 | ConnectionSuccessMessage
-| ConnectionErrorMessage;
+| ConnectionErrorMessage
+| PlayerReadyMessage;
 
 export interface BaseMessage {
 	type: string;
@@ -35,7 +36,16 @@ export interface ConnectionErrorMessage extends BaseMessage {
 	};
 }
 
-export interface playerJoined extends BaseMessage {
+export interface PlayerReadyMessage extends BaseMessage {
+	type: 'playerReady';
+	data: {
+		playerName: string;
+		playerID: string;
+		ready: boolean;
+	};
+}
+
+export interface PlayerJoinedMessage extends BaseMessage {
 	type: 'playerJoined';
 	data: {
 		playerName: string;
@@ -43,9 +53,19 @@ export interface playerJoined extends BaseMessage {
 	}
 }
 
-export interface playerLeft extends BaseMessage {
+export interface PlayerLeftMessage extends BaseMessage {
 	type: 'playerLeft';
 	data: {
 		playerName: string;
+	}
+}
+
+export interface GameStartMessage extends BaseMessage {
+	type: 'gameStart';
+	data: {
+		player1Name: string;
+		player1Id: string;
+		player2Name: string;
+		player2Id: string;
 	}
 }

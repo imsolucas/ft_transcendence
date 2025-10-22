@@ -3,6 +3,7 @@ export interface Player {
 	name: string;
 	socket: WebSocket;
 	roomID: string;
+	position: number;
 	connectedAt: number;
 }
 

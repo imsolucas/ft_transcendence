@@ -2,9 +2,10 @@ import type {
   ConnectionMessage,
   ConnectionSuccessMessage,
   ConnectionErrorMessage,
-  GameMessage,
-  playerJoined,
-  playerLeft
+  PlayerReadyMessage,
+  PlayerJoinedMessage,
+  PlayerLeftMessage,
+  GameStartMessage
 } from '../types/protocol.types.js';
 import type { Player, PlayerStorage } from '../types/player.types.js';
 import { RoomManager } from '../game/roomManager.js';
@@ -38,6 +39,7 @@ export class MessageHandler {
       name: data.data.playerName,
       socket: connection,
       roomID: roomID,
+      position: position,
       connectedAt: Date.now()
     };
 
@@ -61,7 +63,7 @@ export class MessageHandler {
     connection.send(JSON.stringify(response));
 
     // broadcast to other players
-    const joinMessage: playerJoined = {
+    const joinMessage: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
         playerName: data.data.playerName,
@@ -77,9 +79,29 @@ export class MessageHandler {
     return newPlayer;
   }
 
+  handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
+    console.log(`Player "${player.name}" is ${data.data.ready ? 'ready' : 'not ready'}`);
+
+    // broadcast to other players in room
+    const readyMessage = {
+      type: 'playerReady',
+      data: {
+        playerName: player.name,
+        playerID: player.id,
+        ready: data.data.ready
+      },
+      timestamp: Date.now()
+    };
+
+    this.broadcaster.broadcastToRoom(player.roomID, readyMessage, player.id);
+
+    // check if both players are ready and start game
+    this.checkAndStartGame(player.roomID);
+  }
+
   handleDisconnection(player: Player): void {
     // broadcast leave message
-    const leaveMessage: playerLeft = {
+    const leaveMessage: PlayerLeftMessage = {
       type: 'playerLeft',
       data: {
         playerName: player.name
@@ -93,6 +115,47 @@ export class MessageHandler {
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
     this.roomManager.removePlayerFromRoom(player.id);
     console.log(`Total players online: ${this.playerStorage.getPaxInRoom('default')}`);
+  }
+
+  private checkAndStartGame(roomID: string): void {
+    const playersInRoom = this.playerStorage.getPlayersInRoom(roomID);
+
+    // need exactly 2 players to start
+    if (playersInRoom.length !== 2) {
+      return;
+    }
+
+    // find position 1 and position 2 players
+    let player1: Player | null = null;
+    let player2: Player | null = null;
+
+    for (const player of playersInRoom) {
+      if (player.position === 1) player1 = player;
+      if (player.position === 2) player2 = player;
+    }
+
+    // both positions must be filled
+    if (!player1 || !player2) {
+      return;
+    }
+
+    // for now, assume all connected players are ready
+    // later we'll track ready status properly
+    console.log('Both players connected - starting game!');
+
+    const startMessage: GameStartMessage = {
+      type: 'gameStart',
+      data: {
+        player1Id: player1.id,
+        player1Name: player1.name,
+        player2Id: player2.id,
+        player2Name: player2.name
+      },
+      timestamp: Date.now()
+    };
+
+    // broadcast to both players
+    this.broadcaster.broadcastToRoom(roomID, startMessage);
   }
 
   private sendError(connection: any, message: string): void {

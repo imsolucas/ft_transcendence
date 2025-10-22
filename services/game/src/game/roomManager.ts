@@ -4,17 +4,30 @@ export class RoomManager {
   constructor(private playerStorage: PlayerStorage) {}
 
   getPlayerPosition(roomID: string): number {
-    const playersCount = this.playerStorage.getPaxInRoom(roomID);
+    const playersInRoom = this.playerStorage.getPlayersInRoom(roomID);
 
-    if (playersCount === 0) return 1;
-    if (playersCount === 1) return 2;
+    // check which positions are taken
+    let position1Taken = false;
+    let position2Taken = false;
+
+    for (const player of playersInRoom) {
+      if (player.position === 1) {
+        position1Taken = true;
+      } else if (player.position === 2) {
+        position2Taken = true;
+      }
+    }
+
+    // return first available position
+    if (!position1Taken) return 1;
+    if (!position2Taken) return 2;
 
     // room is full
     return -1;
   }
 
   isRoomFull(roomID: string): boolean {
-    return this.playerStorage.getPaxInRoom(roomID) >= 2;
+    return this.getPlayerPosition(roomID) === -1;
   }
 
   addPlayerToRoom(player: Player): boolean {

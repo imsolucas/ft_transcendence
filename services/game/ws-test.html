@@ -16,8 +16,12 @@
     <button onclick="joinGame()">Working Join Game</button>
     <button onclick="faultyJoinGame()">Faulty Join Game</button>
 
+    <hr>
+    <button onclick="playerReady()">I'm Ready!</button>
+
     <script>
         let socket = null;
+        let currentPlayer = null; // store player info after joining
 
         function connect() {
             console.log('Starting connection...');
@@ -39,6 +43,23 @@
 
             socket.onmessage = function(event) {
                 console.log('Message from server:', event.data);
+
+                // parse and handle different message types
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'connectionSuccess') {
+                        // store player info when successfully joined
+                        currentPlayer = {
+                            name: document.getElementById('playerName').value,
+                            id: message.data.playerID,
+                            position: message.data.position,
+                            roomID: message.data.roomID
+                        };
+                        console.log('Joined as:', currentPlayer);
+                    }
+                } catch (error) {
+                    console.log('Could not parse message:', error);
+                }
             };
 
             socket.onclose = function(event) {
@@ -90,6 +111,33 @@
             socket.send(JSON.stringify(message));
 
             console.log(playerName, 'is requesting to join');
+        }
+
+        function playerReady() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                console.log('Not connected to server!');
+                return;
+            }
+
+            if (!currentPlayer) {
+                console.log('Need to join a game first!');
+                return;
+            }
+
+            console.log('Player changing ready status...');
+
+            const message = {
+                type: "playerReady",
+                data: {
+                    playerName: currentPlayer.name,
+                    playerID: currentPlayer.id,
+                    ready: true // for now always true, can add a toggle later
+                },
+                timestamp: Date.now()
+            };
+            socket.send(JSON.stringify(message));
+
+            console.log(currentPlayer.name, 'is ready!');
         }
     </script>
 </body>

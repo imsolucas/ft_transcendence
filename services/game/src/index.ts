@@ -40,6 +40,11 @@ server.register(async function (fastify) {
           case "connection":
             currentPlayer = messageHandler.handleConnection(data, connection);
             break;
+          case "playerReady":
+            if (currentPlayer) {
+              messageHandler.handlePlayerReady(data, currentPlayer);
+            }
+            break;
           default:
             console.error('Unknown message type:', data.type);
         }
