@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { FastifyRequest, FastifyReply } from "fastify";
+import bcrypt from "bcrypt";
 
 export const getUsers = async (req: FastifyRequest, res: FastifyReply) => {
   const users = await req.server.db.user.findMany();
@@ -36,6 +37,7 @@ export const createUser = async (
      Body: {
       username?: string;
       email?: string;
+      password?: string;
       avatar?: string;
      }
   }>,
@@ -49,16 +51,20 @@ export const createUser = async (
   if (!email || typeof email !== "string")
     return res.code(400).send({ error: "Missing or invalid 'email' in body"})
 
-  const avatar = req.body?.avatar;
-  if (!avatar || typeof avatar !== "string")
-    return res.code(400).send({ error: "Missing or invalid 'avatar' in body"})
+  const userAvatar = req.body?.avatar || "http://example.com/default-avatar.png";
+
+  const password = req.body?.password;
+  if (!password || typeof password !== "string")
+    return res.code(400).send({ error: "Missing or invalid 'password' in body"})
 
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser: User = await req.server.db.user.create({
       data: {
         username,
         email,
-        avatar
+        password: hashedPassword,
+        avatar: userAvatar
       }
     })
     return res.code(201).send(newUser);
@@ -67,6 +73,7 @@ export const createUser = async (
       return res.code(409).send({ error: "Email is already in use" })
     }
 
+    console.error("Error creating user:", error);
     return res.code(500).send({ error: "Internal Server Error" })
   }
 };
