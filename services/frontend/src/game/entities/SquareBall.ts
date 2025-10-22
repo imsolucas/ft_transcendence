@@ -9,7 +9,7 @@ export default class SquareBall extends Entity {
     #oldpos!: Vector;
     #destroyed: boolean = false;
 
-    constructor(color: string, pos: Vector = {x:0, y:0},size: Vector = {x: 25, y: 25}, velocity: Vector = {x:0, y:0})
+    constructor(color: string, pos: Vector = {x:0, y:0},size: Vector = {x: constants.BALL_SIZE, y: constants.BALL_SIZE}, velocity: Vector = {x:0, y:0})
     {
         super(pos, color, velocity)
         this.#size = size;
@@ -56,17 +56,17 @@ export default class SquareBall extends Entity {
         const cur_vel_x = this.velocity.x * deltaTime;
         
         this.#oldpos = { ...this.pos };
-        if (border.bottom + cur_vel_y <= 0)
+        if (border.top + cur_vel_y <= 0)
         {
             this.velocity.y = Math.abs(this.velocity.y)
             this.pos.y = this.#size.y / 2;
         }
-        else if (border.top + cur_vel_y >= canvas.height)
+        else if (border.bottom + cur_vel_y >= constants.COURT_HEIGHT)
         {
             this.velocity.y = -Math.abs(this.velocity.y)
-            this.pos.y = canvas.height - this.#size.y / 2;
+            this.pos.y = constants.COURT_HEIGHT - this.#size.y / 2;
         }
-        else if (border.right <= 0 || border.left >= canvas.width) {
+        else if (border.right <= 0 || border.left >= constants.COURT_WIDTH) {
             this.#destroyed = true
         }
         this.pos.y += cur_vel_y;
@@ -75,8 +75,8 @@ export default class SquareBall extends Entity {
 
     public reset(canvas: HTMLCanvasElement): void {
         this.pos = {
-                    x: canvas.width / 2,
-                    y: canvas.height / 2
+                    x: constants.COURT_WIDTH / 2,
+                    y: constants.COURT_HEIGHT / 2
         }
         this.#destroyed = false
     }

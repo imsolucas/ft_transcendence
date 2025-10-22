@@ -32,7 +32,7 @@ export default class GameStartState extends GameState{
     render(ctx: CanvasRenderingContext2D): void {
         this.getEntityManager().drawEntities(ctx)
         this.drawCurrentUi()
-        drawString("PRESS SPACE TO PLAY", {x: constants.COURT_SIZE / 2 * ctx.canvas.width, y: constants.COURT_SIZE / 2 * ctx.canvas.height}, "grey", "100px 'Courier New', monospace", ctx);
+        drawString("PRESS SPACE TO PLAY", {x: constants.COURT_WIDTH / 2, y: constants.COURT_HEIGHT / 2}, "grey", "10px 'Courier New', monospace", ctx);
     }
 
     update(deltaTime: number): StateResult | null {

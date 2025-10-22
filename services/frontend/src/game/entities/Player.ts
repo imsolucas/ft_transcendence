@@ -1,7 +1,7 @@
 import type { Vector, Border, PlayerInputs } from "../definitions";
 import Entity from "./Entity";
 import { constants } from "../definitions";
-import { drawRectangle} from "../utils/drawUtils";
+import { drawCircle, drawRectangle} from "../utils/drawUtils";
 
 export default class Player extends Entity {
     #size: Vector;
@@ -37,8 +37,8 @@ export default class Player extends Entity {
         this.#oldpos = { ...this.pos };
         if (border.top + cur_vel_y < 0 )
             this.pos.y = this.#size.y / 2;
-        else if (border.bottom + cur_vel_y > 1)
-            this.pos.y = canvas.height - this.#size.y / 2;
+        else if (border.bottom + cur_vel_y > constants.COURT_HEIGHT)
+            this.pos.y = constants.COURT_HEIGHT - this.#size.y / 2;
         else {
             this.pos.y += cur_vel_y;
             this.velocity.y *= constants.PLAYER_FRICTION
@@ -46,11 +46,12 @@ export default class Player extends Entity {
     }
 
     draw(ctx: CanvasRenderingContext2D): void{
-        let drawpos: Vector = {x: this.pos.x * constants.SCALE_X, y:this.pos.y * constants.SCALE_Y}
-        let drawsize: Vector = {x: this.#size.x * constants.SCALE_X, y:this.#size.y * constants.SCALE_Y}
+        let drawpos: Vector = {x: this.pos.x, y:this.pos.y}
+        let drawsize: Vector = {x: this.#size.x, y:this.#size.y}
         drawRectangle(drawpos, drawsize, this.color, ctx);
-        console.log("drawpos:", drawpos);
-        console.log("drawsize", drawsize);
+        drawCircle(this.pos, 0.1, "red", ctx);
+        // console.log("drawpos:", drawpos);
+        // console.log("drawsize", drawsize);
     }
 
     collision(other: Border, old_other: Border): boolean {

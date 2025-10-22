@@ -30,7 +30,7 @@ export default class GameOverState extends GameState {
         this.getEntityManager().drawEntities(ctx);
         this.drawCurrentUi();
             
-        drawString(`PLAYER ${this.#winningPlayer} WINS\nPRESS SPACE TO PLAY AGAIN`, {x: this.getCanvas().width / 2, y: this.getCanvas().height / 2}, "GREY", "100px 'Courier New', monospace", ctx);
+        drawString(`PLAYER ${this.#winningPlayer} WINS\nPRESS SPACE TO PLAY AGAIN`, {x: constants.COURT_WIDTH / 2, y: constants.COURT_HEIGHT / 2}, "GREY", "10px 'Courier New', monospace", ctx);
     }
 
     update(deltaTime: number): StateResult | null {
