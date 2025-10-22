@@ -9,7 +9,7 @@ up:
 	docker compose -f $(FILE) up -d --build $(SERVICE)
 
 down:
-	docker compose -f $(FILE) down
+	docker compose -f $(FILE) down $(SERVICE)
 
 build:
 	docker compose -f $(FILE) build $(SERVICE)

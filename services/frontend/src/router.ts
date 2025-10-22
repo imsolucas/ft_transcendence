@@ -4,7 +4,7 @@ import { LobbyPage } from "./pages/lobby";
 import { ProfilePage } from "./pages/profilePage";
 import { LoadingPong } from "./components/loadingGame";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
-import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
+import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
 
 // Define all possible screen names
 export type Screen = "landing" | "auth" | "lobby" | "game" | "localgame" | "profile" | "email-verification";
