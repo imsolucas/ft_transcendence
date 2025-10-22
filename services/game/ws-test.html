@@ -6,10 +6,15 @@
     <title>WebSocket Test</title>
 </head>
 <body>
-    <h1>WebSocket Learning Lab</h1>
+    <h1>WebSocket Test Page</h1>
 
     <button onclick="connect()">Connect to Server</button>
     <div id="status">Not Connected</div>
+
+    <hr>
+    <input type="text" id="playerName" placeholder="Enter your name">
+    <button onclick="joinGame()">Working Join Game</button>
+    <button onclick="faultyJoinGame()">Faulty Join Game</button>
 
     <script>
         let socket = null;
@@ -47,6 +52,44 @@
                 document.getElementById('status').textContent = "Connection Failed!";
                 console.log('Connection error:', error);
             };
+        }
+
+        function joinGame() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                console.log('Not connected to server!');
+                return;
+            }
+
+            console.log('Sending Join Request...');
+
+            const playerName = document.getElementById('playerName').value;
+            const message = {
+                type: "connection",
+                data: { playerName: playerName },
+                timestamp: Date.now()
+            };
+            socket.send(JSON.stringify(message));
+
+            console.log(playerName, 'is requesting to join');
+        }
+
+        function faultyJoinGame() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                console.log('Not connected to server!');
+                return;
+            }
+
+            console.log('Sending Join Request...');
+
+            const playerName = document.getElementById('playerName').value;
+            const message = {
+                type: "connectionSuccess",
+                data: { playerName: playerName },
+                timestamp: Date.now()
+            };
+            socket.send(JSON.stringify(message));
+
+            console.log(playerName, 'is requesting to join');
         }
     </script>
 </body>
