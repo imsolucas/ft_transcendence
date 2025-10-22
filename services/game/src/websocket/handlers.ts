@@ -5,78 +5,125 @@ import type {
   PlayerReadyMessage,
   PlayerJoinedMessage,
   PlayerLeftMessage,
-  GameStartMessage
+  GameStartMessage,
+  JoinRoomMessage,
+  CreateRoomMessage
 } from '../types/protocol.types.js';
-import type { Player, PlayerStorage } from '../types/player.types.js';
+import type { Player } from '../types/player.types.js';
+import type { Room } from '../types/room.types.js';
 import { RoomManager } from '../game/roomManager.js';
 import { MessageBroadcaster } from './broadcaster.js';
+import { randomUUID } from 'crypto';
 
 export class MessageHandler {
   constructor(
     private roomManager: RoomManager,
     private broadcaster: MessageBroadcaster,
-    private playerStorage: PlayerStorage
   ) {}
 
   handleConnection(data: ConnectionMessage, connection: any): Player | null {
     console.log(`Player "${data.data.playerName}" wants to connect.`);
 
-    const playerID = 'player_' + Math.random().toString(36).substring(2, 5);
-    const roomID = "default";
-
-    // check room capacity BEFORE adding player
-    const position = this.roomManager.getPlayerPosition(roomID);
-    if (position === -1) {
-      console.log(`Room ${roomID} is full`);
-      // for now, reject the connection if room is full, maybe we can do spectator mode??
-      this.sendError(connection, "Room is full");
-      return null;
-    }
+    const playerId = 'player_' + randomUUID().substring(0, 8).toLowerCase();
+    const roomId = "0";
+    const position = 0;
 
     // make new player object
     const newPlayer: Player = {
-      id: playerID,
+      id: playerId,
       name: data.data.playerName,
       socket: connection,
-      roomID: roomID,
+      roomId: roomId,
       position: position,
-      connectedAt: Date.now()
+      connectedAt: Date.now(),
+      isReady: false
     };
-
-    // add to storage
-    if (!this.roomManager.addPlayerToRoom(newPlayer)) {
-      this.sendError(connection, "Failed to join room");
-      return null;
-    }
 
     // create connection success object
     const response: ConnectionSuccessMessage = {
       type: 'connectionSuccess',
       data: {
-        playerID: playerID,
-        roomID: roomID,
-        position: position
+        playerId: playerId,
       },
       timestamp: Date.now()
     };
     // send to client
     connection.send(JSON.stringify(response));
+    return newPlayer;
+  }
 
-    // broadcast to other players
-    const joinMessage: PlayerJoinedMessage = {
+  handleJoinRoom(data: JoinRoomMessage, connection: any): Room | null {
+    console.log(`Requesting to join room', "$(data.data.roomId)" `);
+
+    const roomId = data.data.roomId;
+    const playerId = data.data.playerId;
+    const room = this.roomManager.getRoom(roomId);
+
+    if (!room) {
+      this.sendError(connection, "Room not found");
+      return null;
+    }
+
+    if (this.roomManager.isRoomFull(roomId)) {
+      this.sendError(connection, "Room is full");
+      return null;
+    }
+
+    const player = this.roomManager.getPlayer(playerId);
+    if (!player) {
+      this.sendError(connection, "Player not found");
+      return null;
+    }
+
+    const position = this.roomManager.getPlayerPosition(roomId);
+    player.position = position;
+    this.roomManager.addPlayerToRoom(roomId, player);
+
+    const response: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
-        playerName: data.data.playerName,
+        playerId: playerId,
+        roomId: roomId,
         position: position
       },
       timestamp: Date.now()
-    };
-    this.broadcaster.broadcastToRoom(roomID, joinMessage, playerID);
+    }
+    connection.send(JSON.stringify(response));
 
-    console.log(`Player "${data.data.playerName}": ${playerID} connected successfully.`);
-    console.log(`Total players online: ${this.playerStorage.getPaxInRoom('default')}`);
+    return room;
+  }
 
-    return newPlayer;
+  handleCreateRoom(data: CreateRoomMessage, connection: any): Room | null {
+    console.log(`Requesting to create room', "$(data.data.roomId)"`);
+
+    const playerId = data.data.playerId;
+    const player = this.roomManager.getPlayer(playerId);
+
+    if (!player) {
+      this.sendError(connection, "Player not found");
+      return null;
+    }
+
+    const room = this.roomManager.createRoom();
+    const roomId = room.id;
+    const position = 1;
+    player.roomId = roomId;
+    player.position = position;
+    this.roomManager.addPlayerToRoom(player, room);
+
+    const response: PlayerJoinedMessage = {
+      type: 'playerJoined',
+      data: {
+        playerId: playerId,
+        roomId: roomId,
+        position: position
+      },
+      timestamp: Date.now()
+    }
+    connection.send(JSON.stringify(response));
+
+    return room;
+
   }
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
@@ -87,16 +134,17 @@ export class MessageHandler {
       type: 'playerReady',
       data: {
         playerName: player.name,
-        playerID: player.id,
+        playerId: player.id,
         ready: data.data.ready
       },
       timestamp: Date.now()
     };
 
-    this.broadcaster.broadcastToRoom(player.roomID, readyMessage, player.id);
+    player.isReady = data.data.ready;
+    this.broadcaster.broadcastToRoom(player.roomId, readyMessage, player.id);
 
     // check if both players are ready and start game
-    this.checkAndStartGame(player.roomID);
+    this.checkAndStartGame(player.roomId);
   }
 
   handleDisconnection(player: Player): void {
@@ -110,15 +158,14 @@ export class MessageHandler {
     };
 
     // broadcast BEFORE removing the player, so others get notified
-    this.broadcaster.broadcastToRoom(player.roomID, leaveMessage, player.id);
+    this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
 
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
-    this.roomManager.removePlayerFromRoom(player.id);
-    console.log(`Total players online: ${this.playerStorage.getPaxInRoom('default')}`);
+    this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
 
-  private checkAndStartGame(roomID: string): void {
-    const playersInRoom = this.playerStorage.getPlayersInRoom(roomID);
+  private checkAndStartGame(roomId: string): void {
+    const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
     // need exactly 2 players to start
     if (playersInRoom.length !== 2) {
@@ -134,28 +181,26 @@ export class MessageHandler {
       if (player.position === 2) player2 = player;
     }
 
-    // both positions must be filled
-    if (!player1 || !player2) {
+    // both positions must be filled and both players must be ready
+    if (!player1 || !player2 || !player1.isReady || !player2.isReady) {
       return;
     }
 
-    // for now, assume all connected players are ready
-    // later we'll track ready status properly
-    console.log('Both players connected - starting game!');
+    console.log('Both players are ready - starting game!');
 
     const startMessage: GameStartMessage = {
       type: 'gameStart',
       data: {
-        player1Id: player1.id,
+        player1id: player1.id,
         player1Name: player1.name,
-        player2Id: player2.id,
+        player2id: player2.id,
         player2Name: player2.name
       },
       timestamp: Date.now()
     };
 
     // broadcast to both players
-    this.broadcaster.broadcastToRoom(roomID, startMessage);
+    this.broadcaster.broadcastToRoom(roomId, startMessage);
   }
 
   private sendError(connection: any, message: string): void {

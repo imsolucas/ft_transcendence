@@ -4,7 +4,9 @@ export type GameMessage =
 | ConnectionMessage
 | ConnectionSuccessMessage
 | ConnectionErrorMessage
-| PlayerReadyMessage;
+| PlayerReadyMessage
+| CreateRoomMessage
+| JoinRoomMessage;
 
 export interface BaseMessage {
 	type: string;
@@ -22,9 +24,7 @@ export interface ConnectionMessage extends BaseMessage {
 export interface ConnectionSuccessMessage extends BaseMessage {
 	type: 'connectionSuccess';
 	data: {
-		playerID: string;
-		roomID: string;
-		position: number; // p1 or p2
+		playerId: string;
 	};
 }
 
@@ -40,7 +40,7 @@ export interface PlayerReadyMessage extends BaseMessage {
 	type: 'playerReady';
 	data: {
 		playerName: string;
-		playerID: string;
+		playerId: string;
 		ready: boolean;
 	};
 }
@@ -48,7 +48,8 @@ export interface PlayerReadyMessage extends BaseMessage {
 export interface PlayerJoinedMessage extends BaseMessage {
 	type: 'playerJoined';
 	data: {
-		playerName: string;
+		playerId: string;
+		roomId: string;
 		position: number;
 	}
 }
@@ -64,8 +65,24 @@ export interface GameStartMessage extends BaseMessage {
 	type: 'gameStart';
 	data: {
 		player1Name: string;
-		player1Id: string;
+		player1id: string;
 		player2Name: string;
-		player2Id: string;
+		player2id: string;
+	}
+}
+
+export interface CreateRoomMessage extends BaseMessage {
+	type: 'createRoom';
+	data: {
+		playerId: string;
+		roomId: string;
+	}
+}
+
+export interface JoinRoomMessage extends BaseMessage {
+	type: 'joinRoom';
+	data: {
+		roomId: string;
+		playerId: string;
 	}
 }

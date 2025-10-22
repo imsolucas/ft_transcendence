@@ -1,14 +1,14 @@
-import type { PlayerStorage } from '../types/player.types.js';
+import type { RoomManager } from '../game/roomManager.js';
 
 export class MessageBroadcaster {
-  constructor(private playerStorage: PlayerStorage) {}
+  constructor(private roomManager: RoomManager) {}
 
-  broadcastToRoom(roomID: string, message: any, excludePlayerID?: string): void {
-    const playersInRoom = this.playerStorage.getPlayersInRoom(roomID);
+  broadcastToRoom(roomId: string, message: any, excludePlayerid?: string): void {
+    const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
     for (const player of playersInRoom) {
       // skip the excluded player if specified
-      if (excludePlayerID && player.id === excludePlayerID) {
+      if (excludePlayerid && player.id === excludePlayerid) {
         continue;
       }
 
@@ -16,6 +16,6 @@ export class MessageBroadcaster {
       player.socket.send(JSON.stringify(message));
     }
 
-    console.log(`Broadcasted to ${playersInRoom.length} players in room ${roomID}`);
+    console.log(`Broadcasted to ${playersInRoom.length} players in room ${roomId}`);
   }
 }

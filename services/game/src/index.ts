@@ -40,6 +40,16 @@ server.register(async function (fastify) {
           case "connection":
             currentPlayer = messageHandler.handleConnection(data, connection);
             break;
+          case "joinRoom":
+            if (currentPlayer) {
+              messageHandler.handleJoinRoom(data, connection);
+            }
+            break;
+          case "createRoom":
+            if (currentPlayer) {
+              messageHandler.handleCreateRoom(data, connection);
+            }
+            break;
           case "playerReady":
             if (currentPlayer) {
               messageHandler.handlePlayerReady(data, currentPlayer);

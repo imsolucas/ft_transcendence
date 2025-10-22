@@ -1,45 +1,138 @@
 import type { Player, PlayerStorage } from '../types/player.types.js';
+import type { Room, RoomStorage } from '../types/room.types.js';
 
 export class RoomManager {
-  constructor(private playerStorage: PlayerStorage) {}
+  constructor(
+    private playerStorage: PlayerStorage,
+    private roomStorage: RoomStorage
+  ) {}
 
-  getPlayerPosition(roomID: string): number {
-    const playersInRoom = this.playerStorage.getPlayersInRoom(roomID);
-
-    // check which positions are taken
-    let position1Taken = false;
-    let position2Taken = false;
-
-    for (const player of playersInRoom) {
-      if (player.position === 1) {
-        position1Taken = true;
-      } else if (player.position === 2) {
-        position2Taken = true;
-      }
-    }
-
-    // return first available position
-    if (!position1Taken) return 1;
-    if (!position2Taken) return 2;
-
-    // room is full
-    return -1;
+  addPlayer(player: Player): void {
+    return this.playerStorage.add(player);
   }
 
-  isRoomFull(roomID: string): boolean {
-    return this.getPlayerPosition(roomID) === -1;
+  removePlayer(playerId: string): Player | undefined {
+    return this.playerStorage.remove(playerId);
   }
 
-  addPlayerToRoom(player: Player): boolean {
-    if (this.isRoomFull(player.roomID)) {
+  getPlayer(playerId: string): Player | undefined {
+    return this.playerStorage.get(playerId);
+  }
+
+
+  // Create a new room
+  createRoom(): Room {
+    return this.roomStorage.createRoom();
+  }
+
+  // Remove a room
+  removeRoom(roomId: string): Room | undefined {
+    return this.roomStorage.removeRoom(roomId);
+  }
+
+  // Get a room by id
+  getRoom(roomId: string): Room | undefined {
+    return this.roomStorage.getRoom(roomId);
+  }
+
+  // Get all rooms
+  getAllRooms(): Room[] {
+    return this.roomStorage.getAllRooms();
+  }
+
+  // Get available rooms (not full)
+  getAvailableRooms(): Room[] {
+    return this.roomStorage.getAvailableRooms();
+  }
+
+  // Add a player to a room
+  addPlayerToRoom(roomId: string, player: Player): boolean {
+    const room = this.roomStorage.getRoom(roomId);
+    if (!room)
       return false;
-    }
+    if (room.playerIds.length >= 2)
+      return false;
+    if (room.playerIds.includes(player.id))
+      return false;
 
+    // Assign position
+    const position = this.getPlayerPosition(roomId);
+    player.roomId = roomId;
+    player.position = position;
+    room.playerIds.push(player.id);
+    if (room.playerIds.length === 2)
+      room.status = 'full';
     this.playerStorage.add(player);
     return true;
   }
 
-  removePlayerFromRoom(playerID: string): Player | undefined {
-    return this.playerStorage.remove(playerID);
+  // Remove a player from a room
+  removePlayerFromRoom(roomId: string, playerId: string): boolean {
+    const room = this.roomStorage.getRoom(roomId);
+    if (!room)
+      return false;
+
+    const idx = room.playerIds.indexOf(playerId);
+    if (idx === -1)
+      return false;
+    room.playerIds.splice(idx, 1);
+    if (room.status === 'full')
+      room.status = 'waiting';
+    if (room.playerIds.length === 0)
+      this.roomStorage.removeRoom(roomId);
+    this.playerStorage.remove(playerId);
+    return true;
+  }
+
+  // Get all players in a room
+  getPlayersInRoom(roomId: string): Player[] {
+    const room = this.roomStorage.getRoom(roomId);
+    if (!room)
+      return [];
+    const players: Player[] = [];
+    for (const playerId of room.playerIds) {
+      const player = this.playerStorage.get(playerId);
+      if (player) {
+        players.push(player);
+      }
+    }
+    return players;
+  }
+
+  // Get first available position in a room
+  getPlayerPosition(roomId: string): number {
+    const players = this.getPlayersInRoom(roomId);
+    let position1Taken = false;
+    let position2Taken = false;
+    for (const player of players) {
+      if (player.position === 1) position1Taken = true;
+      if (player.position === 2) position2Taken = true;
+    }
+    if (!position1Taken) return 1;
+    if (!position2Taken) return 2;
+    return -1;
+  }
+
+  // Check if room is full
+  isRoomFull(roomId: string): boolean {
+    const room = this.getRoom(roomId);
+    if (!room)
+      return false;
+    return room.playerIds.length >= 2;
+  }
+
+    // Get all players in a room
+  getPaxInRoom(roomId: string): number {
+    const room = this.roomStorage.getRoom(roomId);
+    if (!room)
+      return 0;
+    let count = 0;
+    for (const playerId of room.playerIds) {
+      const player = this.playerStorage.get(playerId);
+      if (player) {
+        count++;
+      }
+    }
+    return count;
   }
 }

@@ -8,23 +8,32 @@
 <body>
     <h1>WebSocket Test Page</h1>
 
+    <input type="text" id="playerName" placeholder="Enter your name">
     <button onclick="connect()">Connect to Server</button>
     <div id="status">Not Connected</div>
 
     <hr>
-    <input type="text" id="playerName" placeholder="Enter your name">
-    <button onclick="joinGame()">Working Join Game</button>
-    <button onclick="faultyJoinGame()">Faulty Join Game</button>
+    <input type="text" id="roomId" placeholder="Room ID (leave blank to create)">
+    <button onclick="joinGame()">Join/Create Game</button>
 
     <hr>
-    <button onclick="playerReady()">I'm Ready!</button>
+    <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
 
     <script>
         let socket = null;
         let currentPlayer = null; // store player info after joining
+        let isReady = false; // track ready state
+        let connectionEstablished = false;
 
         function connect() {
             console.log('Starting connection...');
+
+            const playerName = document.getElementById('playerName').value;
+            if (!playerName) {
+                console.log('Error: No Name');
+                document.getElementById('status').textContent = "Provide a Name!";
+                return;
+            }
 
             // check if already connected
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -37,8 +46,18 @@
 
             socket.onopen = function() {
                 console.log('WebSocket opened successfully');
+
+                // send connection request immediately
+                const message = {
+                    type: "connection",
+                    data: { playerName: playerName },
+                    timestamp: Date.now()
+                };
+                socket.send(JSON.stringify(message));
+
+                console.log('Sent connection request for', playerName);
                 document.getElementById('status').textContent = "Connected!";
-                console.log('Connected to server');
+                connectionEstablished = true;
             };
 
             socket.onmessage = function(event) {
@@ -51,11 +70,14 @@
                         // store player info when successfully joined
                         currentPlayer = {
                             name: document.getElementById('playerName').value,
-                            id: message.data.playerID,
-                            position: message.data.position,
-                            roomID: message.data.roomID
+                            id: message.data.playerId,
                         };
-                        console.log('Joined as:', currentPlayer);
+                        console.log('Player registered:', currentPlayer);
+                    } else if (message.type === 'roomJoined') {
+                        // Room join confirmation
+                        currentPlayer.roomId = message.data.roomId;
+                        currentPlayer.position = message.data.position;
+                        console.log('Joined room:', currentPlayer.roomId, 'as position', currentPlayer.position);
                     }
                 } catch (error) {
                     console.log('Could not parse message:', error);
@@ -66,6 +88,8 @@
                 console.log('WebSocket closed. Code:', event.code, 'Reason:', event.reason);
                 document.getElementById('status').textContent = "Disconnected.";
                 console.log('Disconnected from server');
+                connectionEstablished = false;
+                socket = null;
             };
 
             socket.onerror = function(error) {
@@ -80,64 +104,64 @@
                 console.log('Not connected to server!');
                 return;
             }
-
-            console.log('Sending Join Request...');
-
-            const playerName = document.getElementById('playerName').value;
-            const message = {
-                type: "connection",
-                data: { playerName: playerName },
-                timestamp: Date.now()
-            };
+            if (!connectionEstablished) {
+                console.log('Player not registered yet!');
+                return;
+            }
+            const roomId = document.getElementById('roomId').value.substring(0, 8);
+            let message;
+            if (roomId) {
+                // Join existing room
+                message = {
+                    type: "joinRoom",
+                    data: { roomId: roomId, playerId: currentPlayer.id },
+                    timestamp: Date.now()
+                };
+                console.log('Requesting to join room:', roomId);
+            } else {
+                // Create new room
+                message = {
+                    type: "createRoom",
+                    data: { playerId: currentPlayer.id },
+                    timestamp: Date.now()
+                };
+                console.log('Requesting to create new room');
+            }
             socket.send(JSON.stringify(message));
-
-            console.log(playerName, 'is requesting to join');
         }
 
-        function faultyJoinGame() {
+        function togglePlayerReady() {
             if (!socket || socket.readyState !== WebSocket.OPEN) {
                 console.log('Not connected to server!');
                 return;
             }
-
-            console.log('Sending Join Request...');
-
-            const playerName = document.getElementById('playerName').value;
-            const message = {
-                type: "connectionSuccess",
-                data: { playerName: playerName },
-                timestamp: Date.now()
-            };
-            socket.send(JSON.stringify(message));
-
-            console.log(playerName, 'is requesting to join');
-        }
-
-        function playerReady() {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                console.log('Not connected to server!');
+            if (!currentPlayer || !currentPlayer.roomId) {
+                console.log('Need to join a game/room first!');
                 return;
             }
-
-            if (!currentPlayer) {
-                console.log('Need to join a game first!');
-                return;
-            }
-
             console.log('Player changing ready status...');
 
+            // toggle ready state
+            isReady = !isReady;
             const message = {
                 type: "playerReady",
                 data: {
                     playerName: currentPlayer.name,
-                    playerID: currentPlayer.id,
-                    ready: true // for now always true, can add a toggle later
+                    playerId: currentPlayer.id,
+                    roomId: currentPlayer.roomId,
+                    ready: isReady
                 },
                 timestamp: Date.now()
             };
             socket.send(JSON.stringify(message));
-
-            console.log(currentPlayer.name, 'is ready!');
+            const readyButton = document.getElementById('readyButton');
+            if (isReady) {
+                readyButton.textContent = 'Cancel Ready';
+                console.log(currentPlayer.name, 'is ready!');
+            } else {
+                readyButton.textContent = 'I\'m Ready!';
+                console.log(currentPlayer.name, 'is not ready');
+            }
         }
     </script>
 </body>

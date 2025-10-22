@@ -2,9 +2,10 @@ export interface Player {
 	id: string;
 	name: string;
 	socket: WebSocket;
-	roomID: string;
+	roomId: string;
 	position: number;
 	connectedAt: number;
+	isReady: boolean;
 }
 
 export interface PlayerStorage {
@@ -16,5 +17,5 @@ export interface PlayerStorage {
 
 	//useful queries for multiplayer
 	getPaxInRoom(roomId: string): number;
-	getPlayersInRoom(roomID: string): Player[];
+	getPlayersInRoom(roomId: string): Player[];
 }
