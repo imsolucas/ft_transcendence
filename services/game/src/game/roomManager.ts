@@ -59,10 +59,11 @@ export class RoomManager {
     const position = this.getPlayerPosition(roomId);
     player.roomId = roomId;
     player.position = position;
+    this.playerStorage.add(player);
     room.playerIds.push(player.id);
     if (room.playerIds.length === 2)
       room.status = 'full';
-    this.playerStorage.add(player);
+    console.log("Player added to room");
     return true;
   }
 
@@ -86,17 +87,7 @@ export class RoomManager {
 
   // Get all players in a room
   getPlayersInRoom(roomId: string): Player[] {
-    const room = this.roomStorage.getRoom(roomId);
-    if (!room)
-      return [];
-    const players: Player[] = [];
-    for (const playerId of room.playerIds) {
-      const player = this.playerStorage.get(playerId);
-      if (player) {
-        players.push(player);
-      }
-    }
-    return players;
+    return this.playerStorage.getPlayersInRoom(roomId);
   }
 
   // Get first available position in a room
@@ -121,18 +112,8 @@ export class RoomManager {
     return room.playerIds.length >= 2;
   }
 
-    // Get all players in a room
+  // Get number of players in a room
   getPaxInRoom(roomId: string): number {
-    const room = this.roomStorage.getRoom(roomId);
-    if (!room)
-      return 0;
-    let count = 0;
-    for (const playerId of room.playerIds) {
-      const player = this.playerStorage.get(playerId);
-      if (player) {
-        count++;
-      }
-    }
-    return count;
+    return this.playerStorage.getPaxInRoom(roomId);
   }
 }

@@ -8,7 +8,7 @@ export class InMemoryRoomStorage implements RoomStorage {
 	private rooms = new Map<string, Room>();
 
 	createRoom(): Room {
-		const roomId = 'room_' + randomUUID().substring(0, 8).toLowerCase();
+		const roomId = randomUUID().substring(0, 8).toLowerCase();
 
 		const newRoom: Room = {
 			id: roomId,

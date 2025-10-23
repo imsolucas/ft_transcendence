@@ -47,13 +47,16 @@ export class MessageHandler {
       },
       timestamp: Date.now()
     };
-    // send to client
-    connection.send(JSON.stringify(response));
-    return newPlayer;
+  // store the player so future lookups succeed
+  this.roomManager.addPlayer(newPlayer);
+
+  // send to client
+  connection.send(JSON.stringify(response));
+  return newPlayer;
   }
 
   handleJoinRoom(data: JoinRoomMessage, connection: any): Room | null {
-    console.log(`Requesting to join room', "$(data.data.roomId)" `);
+    console.log(`Requesting to join room', "${data.data.roomId}" `);
 
     const roomId = data.data.roomId;
     const playerId = data.data.playerId;
@@ -75,9 +78,8 @@ export class MessageHandler {
       return null;
     }
 
-    const position = this.roomManager.getPlayerPosition(roomId);
-    player.position = position;
     this.roomManager.addPlayerToRoom(roomId, player);
+    const position = player.position;
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
@@ -90,14 +92,18 @@ export class MessageHandler {
     }
     connection.send(JSON.stringify(response));
 
+    console.log(`Player "${player.name}" joined room "${roomId}"`);
+
     return room;
   }
 
   handleCreateRoom(data: CreateRoomMessage, connection: any): Room | null {
-    console.log(`Requesting to create room', "$(data.data.roomId)"`);
+    console.log(`"${data.data.playerId}", Requesting to create room`);
 
     const playerId = data.data.playerId;
     const player = this.roomManager.getPlayer(playerId);
+    if (player)
+      console.log(`"${player.name}", Requesting to create room`);
 
     if (!player) {
       this.sendError(connection, "Player not found");
@@ -106,10 +112,9 @@ export class MessageHandler {
 
     const room = this.roomManager.createRoom();
     const roomId = room.id;
-    const position = 1;
     player.roomId = roomId;
-    player.position = position;
-    this.roomManager.addPlayerToRoom(player, room);
+    this.roomManager.addPlayerToRoom(roomId, player);
+    const position = player.position;
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
@@ -122,8 +127,9 @@ export class MessageHandler {
     }
     connection.send(JSON.stringify(response));
 
-    return room;
+    console.log(`Player "${player.name}" created room "${player.roomId}"`);
 
+    return room;
   }
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {

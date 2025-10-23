@@ -73,7 +73,7 @@
                             id: message.data.playerId,
                         };
                         console.log('Player registered:', currentPlayer);
-                    } else if (message.type === 'roomJoined') {
+                    } else if (message.type === 'playerJoined') {
                         // Room join confirmation
                         currentPlayer.roomId = message.data.roomId;
                         currentPlayer.position = message.data.position;
@@ -117,7 +117,7 @@
                     data: { roomId: roomId, playerId: currentPlayer.id },
                     timestamp: Date.now()
                 };
-                console.log('Requesting to join room:', roomId);
+                console.log('HTML requesting to join room:', roomId);
             } else {
                 // Create new room
                 message = {
@@ -125,7 +125,7 @@
                     data: { playerId: currentPlayer.id },
                     timestamp: Date.now()
                 };
-                console.log('Requesting to create new room');
+                console.log('HTML requesting to create new room');
             }
             socket.send(JSON.stringify(message));
         }
@@ -135,7 +135,11 @@
                 console.log('Not connected to server!');
                 return;
             }
-            if (!currentPlayer || !currentPlayer.roomId) {
+            if (!currentPlayer) {
+                console.log('No Player Object Detected')
+                return;
+            }
+            else if (!currentPlayer.roomId){
                 console.log('Need to join a game/room first!');
                 return;
             }

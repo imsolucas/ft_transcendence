@@ -3,15 +3,17 @@ import ws from '@fastify/websocket'
 import type { GameMessage } from './types/protocol.types.js';
 import type { Player } from './types/player.types.js';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
+import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
 import { MessageHandler } from './websocket/handlers.js';
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
-const broadcaster = new MessageBroadcaster(playerStorage);
-const roomManager = new RoomManager(playerStorage);
-const messageHandler = new MessageHandler(roomManager, broadcaster, playerStorage);
+const roomStorage = new InMemoryRoomStorage();
+const roomManager = new RoomManager(playerStorage, roomStorage);
+const broadcaster = new MessageBroadcaster(roomManager);
+const messageHandler = new MessageHandler(roomManager, broadcaster);
 
 server.register(ws);
 

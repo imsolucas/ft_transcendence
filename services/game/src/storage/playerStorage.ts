@@ -19,4 +19,20 @@ export class InMemoryPlayerStorage implements PlayerStorage {
 	get(playerId: string): Player | undefined {
 		return this.players.get(playerId);
 	}
+
+	getPaxInRoom(roomId: string): number {
+		let count = 0;
+		for (const player of this.players.values()) {
+			if (player.roomId === roomId) count++;
+		}
+		return count;
+	}
+
+	getPlayersInRoom(roomId: string): Player[] {
+		const players: Player[] = [];
+		for (const player of this.players.values()) {
+			if (player.roomId === roomId) players.push(player);
+		}
+		return players;
+	}
 }
