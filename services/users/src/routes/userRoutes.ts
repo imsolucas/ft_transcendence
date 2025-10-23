@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import {
   getUsers,
-  getUserById,
+  getUserByName,
   createUser,
   updateUser,
   deleteUser,
@@ -14,8 +14,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
   // List users
   fastify.get("/", getUsers);
 
-  // Get single user by id
-  fastify.get<{ Params: { id: string } }>("/:id", getUserById);
+  // Get single user by name
+  fastify.get<{ Params: { name: string } }>("/:name", getUserByName);
 
   // Create user
   fastify.post("/", createUser);
