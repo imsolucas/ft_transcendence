@@ -42,16 +42,15 @@ server.register(async function (fastify) {
           case "connection":
             currentPlayer = messageHandler.handleConnection(data, connection);
             break;
-          case "joinRoom":
+          case "joinQueue":
             if (currentPlayer) {
-              messageHandler.handleJoinRoom(data, connection);
+              messageHandler.handleJoinQueue(data, connection);
             }
             break;
-          case "createRoom":
+          case "leaveRoom":
             if (currentPlayer) {
-              messageHandler.handleCreateRoom(data, connection);
+              messageHandler.handleDisconnection(currentPlayer);
             }
-            break;
           case "playerReady":
             if (currentPlayer) {
               messageHandler.handlePlayerReady(data, currentPlayer);
@@ -68,6 +67,7 @@ server.register(async function (fastify) {
     connection.on('close', () => {
       if (currentPlayer) {
         messageHandler.handleDisconnection(currentPlayer);
+        roomManager.removePlayer(currentPlayer.id);
         currentPlayer = null;
       } else {
         console.log('Unknown player disconnected');

@@ -11,8 +11,9 @@ export type GameMessage =
 export interface BaseMessage {
 	type: string;
 	timestamp: number;
-	id?: string;
 }
+
+// from client
 
 export interface ConnectionMessage extends BaseMessage {
 	type: 'connection';
@@ -20,6 +21,33 @@ export interface ConnectionMessage extends BaseMessage {
 		playerName: string;
 	} ;
 }
+
+export interface PlayerReadyMessage extends BaseMessage {
+	type: 'playerReady';
+	data: {
+		playerName: string;
+		playerId: string;
+		ready: boolean;
+	};
+}
+
+export interface JoinQueueMessage extends BaseMessage {
+	type: 'joinQueue';
+	data: {
+		playerId: string;
+		roomId?: string;
+	}
+}
+
+export interface LeaveRoomMessage extends BaseMessage {
+	type: 'leaveRoom';
+	data: {
+		playerID: string;
+	}
+}
+
+
+// from server
 
 export interface ConnectionSuccessMessage extends BaseMessage {
 	type: 'connectionSuccess';
@@ -33,15 +61,6 @@ export interface ConnectionErrorMessage extends BaseMessage {
 	data: {
 		message: string;
 		code?: string;
-	};
-}
-
-export interface PlayerReadyMessage extends BaseMessage {
-	type: 'playerReady';
-	data: {
-		playerName: string;
-		playerId: string;
-		ready: boolean;
 	};
 }
 
@@ -68,21 +87,5 @@ export interface GameStartMessage extends BaseMessage {
 		player1id: string;
 		player2Name: string;
 		player2id: string;
-	}
-}
-
-export interface CreateRoomMessage extends BaseMessage {
-	type: 'createRoom';
-	data: {
-		playerId: string;
-		roomId: string;
-	}
-}
-
-export interface JoinRoomMessage extends BaseMessage {
-	type: 'joinRoom';
-	data: {
-		roomId: string;
-		playerId: string;
 	}
 }
