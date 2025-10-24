@@ -72,6 +72,11 @@ export class RoomManager {
     const room = this.roomStorage.getRoom(roomId);
     if (!room)
       return false;
+    const player = this.getPlayer(playerId);
+    if (player) {
+      player.roomId = "";
+      player.position = 0;
+    }
 
     const idx = room.playerIds.indexOf(playerId);
     if (idx === -1)
@@ -81,7 +86,6 @@ export class RoomManager {
       room.status = 'waiting';
     if (room.playerIds.length === 0)
       this.roomStorage.removeRoom(roomId);
-    this.playerStorage.remove(playerId);
     return true;
   }
 

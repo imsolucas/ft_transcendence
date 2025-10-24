@@ -13,8 +13,9 @@
     <div id="status">Not Connected</div>
 
     <hr>
-    <input type="text" id="roomId" placeholder="Room ID (leave blank to create)">
-    <button onclick="joinGame()">Join/Create Game</button>
+    <input type="text" id="roomId" placeholder="Room ID">
+    <button onclick="joinQueue()">Play</button>
+    <button onclick="leaveRoom()">Leave</button>
 
     <hr>
     <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
@@ -99,7 +100,7 @@
             };
         }
 
-        function joinGame() {
+        function joinQueue() {
             if (!socket || socket.readyState !== WebSocket.OPEN) {
                 console.log('Not connected to server!');
                 return;
@@ -109,25 +110,46 @@
                 return;
             }
             const roomId = document.getElementById('roomId').value.substring(0, 8);
-            let message;
-            if (roomId) {
-                // Join existing room
-                message = {
-                    type: "joinRoom",
-                    data: { roomId: roomId, playerId: currentPlayer.id },
-                    timestamp: Date.now()
-                };
-                console.log('HTML requesting to join room:', roomId);
-            } else {
-                // Create new room
-                message = {
-                    type: "createRoom",
-                    data: { playerId: currentPlayer.id },
-                    timestamp: Date.now()
-                };
-                console.log('HTML requesting to create new room');
+            if (roomId === "") {
+                let message = {
+                    type: "joinQueue",
+                    data: {
+                        playerId: currentPlayer.id,
+                    }
+                }
+                console.log('Client requesting to join queue');
+                socket.send(JSON.stringify(message));
             }
+            else {
+                let message = {
+                    type: "joinQueue",
+                    data: {
+                        roomId: roomId,
+                        playerId: currentPlayer.id,
+                    }
+                };
+                console.log('Client requesting to join room:', roomId);
+                socket.send(JSON.stringify(message));
+            }
+        }
+
+        function leaveRoom() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                console.log('Not connected to server!');
+                return;
+            }
+            if (!connectionEstablished) {
+                console.log('Player not registered yet!');
+                return;
+            }
+            let message = {
+                type: "leaveRoom",
+                data: {
+                    playerId: currentPlayer.id,
+                }
+            };
             socket.send(JSON.stringify(message));
+            console.log('Client requesting to leave room');
         }
 
         function togglePlayerReady() {
