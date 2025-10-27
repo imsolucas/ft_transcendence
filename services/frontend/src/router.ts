@@ -7,7 +7,7 @@ import { GamePage, cleanupGamePage } from "./pages/gamePage";
 import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
 
 // Define all possible screen names
-export type Screen = "landing" | "auth" | "lobby" | "game" | "localgame" | "profile" | "email-verification";
+export type Screen = "landing" | "auth" | "lobby" | "game" | "game" | "profile" | "email-verification" | "loading";
 
 // Track which screen we're currently showing
 let currentScreen: Screen | null = null;
@@ -68,11 +68,11 @@ export function renderPage(screen: Screen) {
       container.appendChild(ProfilePage());
       break;
 
-    case "game":
+    case "loading":
       container.appendChild(LoadingPong());
       break;
 
-    case "localgame":
+    case "game":
       container.appendChild(GamePage());
       break;
 
@@ -88,7 +88,7 @@ function checkAuthAndRedirect(requestedScreen: Screen): Screen {
   const isLoggedIn = isAuthenticated();
 
   // Public pages
-  const publicScreens: Screen[] = ["landing", "auth", "game", "localgame","lobby"];
+  const publicScreens: Screen[] = ["landing", "auth", "game", "game", "lobby", "loading"];
 
   if (!isLoggedIn && !publicScreens.includes(requestedScreen)) {
     // ❌ Not logged in and trying to access a private page
