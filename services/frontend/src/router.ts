@@ -1,6 +1,6 @@
 import { LandingPage } from "./pages/landingPage";
 import { AuthPage } from "./pages/authPage";
-import { LobbyPage } from "./pages/lobby";
+import { LobbyPage } from "./pages/lobbyPage";
 import { ProfilePage } from "./pages/profilePage";
 import { LoadingPong } from "./components/loadingGame";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
