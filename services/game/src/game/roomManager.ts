@@ -45,22 +45,24 @@ export class RoomManager {
     return this.roomStorage.getAvailableRooms();
   }
 
-  // Add a player to a room
-  addPlayerToRoom(roomId: string, player: Player): boolean {
+  // Add a player to a room by playerId
+  addPlayerToRoom(roomId: string, playerId: string): boolean {
     const room = this.roomStorage.getRoom(roomId);
     if (!room)
       return false;
     if (room.playerIds.length >= 2)
       return false;
-    if (room.playerIds.includes(player.id))
+    if (room.playerIds.includes(playerId))
       return false;
 
-    // Assign position
+    // Fetch player and assign position/room
+    const player = this.getPlayer(playerId);
+    if (!player) return false;
     const position = this.getPlayerPosition(roomId);
     player.roomId = roomId;
     player.position = position;
     this.playerStorage.add(player);
-    room.playerIds.push(player.id);
+    room.playerIds.push(playerId);
     if (room.playerIds.length === 2)
       room.status = 'full';
     console.log("Player added to room");

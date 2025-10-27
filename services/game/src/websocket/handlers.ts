@@ -59,22 +59,18 @@ export class MessageHandler {
     console.log(`"${data.data.playerId}", Requesting to join queue`);
 
     const playerId = data.data.playerId;
-    const player = this.roomManager.getPlayer(playerId);
-    if (player) {
-      console.log(`"${player.name}", Requesting to join queue`);
-    }
-    else {
+    if (!this.roomManager.getPlayer(playerId)) {
       this.sendError(connection, "Player not found");
       return null;
     }
 
     if (data.data.roomId)
-      return (this.joinRoom(player, data, connection));
+      return (this.joinRoom(playerId, data, connection));
     else
-      return (this.joinQueue(player, data, connection));
+      return (this.joinQueue(playerId, data, connection));
   }
 
-  joinRoom(player: Player, data: JoinQueueMessage, connection: any): Room | null {
+  joinRoom(playerId: string, data: JoinQueueMessage, connection: any): Room | null {
     const roomId = data.data.roomId;
 
     if (!roomId) {
@@ -94,63 +90,65 @@ export class MessageHandler {
       return null;
     }
 
-    this.roomManager.addPlayerToRoom(roomId, player);
-    const position = player.position;
+    this.roomManager.addPlayerToRoom(roomId, playerId);
+    const player = this.roomManager.getPlayer(playerId);
+    const position = player ? player.position : 0;
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
-        playerId: player.id,
+        playerId: playerId,
         roomId: roomId,
         position: position
       },
       timestamp: Date.now()
     }
     connection.send(JSON.stringify(response));
-    console.log(`Player "${player.name}" joined room "${roomId}"`);
+    console.log(`Player "${player ? player.name : playerId}" joined room "${roomId}"`);
 
     return room || null;
   }
 
-  joinQueue(player: Player, data: JoinQueueMessage, connection: any) {
+  joinQueue(playerId: string, data: JoinQueueMessage, connection: any) {
     const availableRooms = this.roomManager.getAvailableRooms() || [];
     if (availableRooms[0]) {
       const firstRoom = availableRooms[0].id;
-      this.roomManager.addPlayerToRoom(firstRoom, player);
-      const position = player.position;
+      this.roomManager.addPlayerToRoom(firstRoom, playerId);
+      const player = this.roomManager.getPlayer(playerId);
+      const position = player ? player.position : 0;
 
       const response: PlayerJoinedMessage = {
         type: 'playerJoined',
         data: {
-          playerId: player.id,
+          playerId: playerId,
           roomId: firstRoom,
           position: position
         },
         timestamp: Date.now()
       };
       connection.send(JSON.stringify(response));
-      console.log(`Player "${player.name}" joined room "${firstRoom}"`);
+      console.log(`Player "${player ? player.name : playerId}" joined room "${firstRoom}"`);
       const room = this.roomManager.getRoom(firstRoom);
       return room || null;
     }
     else {
       const room = this.roomManager.createRoom();
       const roomId = room.id;
-      player.roomId = roomId;
-      this.roomManager.addPlayerToRoom(roomId, player);
-      const position = player.position;
+      this.roomManager.addPlayerToRoom(roomId, playerId);
+      const player = this.roomManager.getPlayer(playerId);
+      const position = player ? player.position : 0;
 
       const response: PlayerJoinedMessage = {
         type: 'playerJoined',
         data: {
-          playerId: player.id,
+          playerId: playerId,
           roomId: roomId,
           position: position
         },
         timestamp: Date.now()
       };
       connection.send(JSON.stringify(response));
-      console.log(`Player "${player.name}" created room "${player.roomId}"`);
+      console.log(`Player "${player ? player.name : playerId}" created room "${roomId}"`);
       return room;
     }
   }
