@@ -1,4 +1,7 @@
+import { LoadingPong } from "../components/loadingGame";
 import { navigate } from "../router";
+
+export var socket: WebSocket;
 
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
@@ -231,16 +234,78 @@ export function LobbyPage(): HTMLElement {
 	});
 
 	setTimeout(() => {
-		const localGame = container.querySelector('.localBtn');
-		const onlineGame = container.querySelector('.onlineBtn');
+    const localGame = container.querySelector('.localBtn');
+    const onlineGame = container.querySelector('.onlineBtn');
 
-		localGame?.addEventListener('click', () => {
-			navigate('game');
-		});
-		onlineGame?.addEventListener('click', () => {
-			navigate('game');
-		})
-	}, 0);
+    localGame?.addEventListener('click', () => {
+        navigate('game');
+    });
+    
+    onlineGame?.addEventListener('click', () => {
+        // Create the loading component with event handlers
+		try {
+			socket = new WebSocket("ws/localhost:3001/ws/game");
+			console.log("connected to game socket");
+		}
+		catch(error) {
+			console.log("could not connect to game websocket", error);
+		}
+
+        const loadingComponent = LoadingPong({
+
+            onMatchFound: (opponent, matchId) => {
+                console.log('Match found:', opponent, matchId);
+                // You can update UI or prepare for game start
+            },
+            onMatchReady: (matchId) => {
+                console.log('Match ready:', matchId);
+                // Navigate to game or start game logic
+                navigate('game'); // Or however you start the actual game
+            },
+            onMatchError: (error) => {
+                console.error('Matchmaking error:', error);
+                // Handle error - maybe show a toast or alert
+            },
+            onCancel: () => {
+                console.log('Matchmaking cancelled');
+                // Remove the loading component and return to lobby
+                loadingComponent.remove();
+            }
+        });
+
+        // Style the component as a full-screen overlay
+        loadingComponent.style.position = 'fixed';
+        loadingComponent.style.top = '0';
+        loadingComponent.style.left = '0';
+        loadingComponent.style.width = '100vw';
+        loadingComponent.style.height = '100vh';
+        loadingComponent.style.zIndex = '9999';
+
+        // Add to body or container
+        document.body.appendChild(loadingComponent);
+
+        // Optional: Simulate finding a match after 3 seconds for testing
+        setTimeout(() => {
+            const mockOpponent = {
+                id: '2',
+                username: 'CoolPlayer42',
+                picture: '/images/default-avatar.png',
+                level: 12,
+                wins: 23,
+                losses: 8,
+                winRate: '74%'
+            };
+            
+            // Use the exposed method to update the component
+            (loadingComponent as any).setOpponent(mockOpponent, 'match-123');
+        }, 3000);
+
+        // Optional: Simulate error for testing
+        // setTimeout(() => {
+        //     (loadingComponent as any).setError('Connection failed. Please try again.');
+        // }, 5000);
+    });
+}, 0);
 
 
 	return container;
