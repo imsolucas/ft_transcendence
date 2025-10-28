@@ -1,5 +1,5 @@
-import type { Player, PlayerStorage } from '../types/player.types.js';
-import type { Room, RoomStorage } from '../types/room.types.js';
+import type { Player, PlayerStorage } from '../../../shared/types/player.types.js';
+import type { Room, RoomStorage } from '../../../shared/types/room.types.js';
 
 export class RoomManager {
   constructor(
