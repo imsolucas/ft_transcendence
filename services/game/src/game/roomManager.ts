@@ -45,6 +45,11 @@ export class RoomManager {
     return this.roomStorage.getAvailableRooms();
   }
 
+  // Get active rooms (playing)
+  getActiveRooms(): Room[] {
+    return this.roomStorage.getActiveRooms();
+  }
+
   // Add a player to a room by playerId
   addPlayerToRoom(roomId: string, playerId: string): boolean {
     const room = this.roomStorage.getRoom(roomId);

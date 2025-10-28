@@ -11,5 +11,5 @@ export interface RoomStorage {
 	removeRoom(roomId: string): Room | undefined;
 	getAllRooms(): Room[];
 	getAvailableRooms(): Room[];
-
+	getActiveRooms(): Room[];
 }

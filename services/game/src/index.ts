@@ -8,6 +8,7 @@ import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
 import { MessageHandler } from './websocket/handlers.js';
 
+
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
 const roomStorage = new InMemoryRoomStorage();
@@ -75,6 +76,36 @@ server.register(async function (fastify) {
     });
   })
 })
+
+
+// Holds the interval ID so we can clear it later
+let tickInterval: NodeJS.Timeout | null = null;
+
+function startTickSystem(roomManager: RoomManager): void {
+  const TICK_RATE = 60; // ticks per second
+  const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
+
+  // If already running, stop the previous interval
+  if (tickInterval)
+    clearInterval(tickInterval);
+
+  tickInterval = setInterval(() => {
+    for (const room of roomManager.getActiveRooms()) {
+      room.tick();
+    }
+  }, TICK_INTERVAL);
+}
+
+
+//Call this to pause the game loop or during server shutdown/tests.
+function stopTickSystem(): void {
+  if (tickInterval) {
+    clearInterval(tickInterval);
+    tickInterval = null;
+  }
+}
+
+startTickSystem(roomManager);
 
 server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {
