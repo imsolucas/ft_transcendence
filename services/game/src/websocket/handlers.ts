@@ -7,9 +7,9 @@ import {
   type PlayerLeftMessage,
   type GameStartMessage,
   type JoinQueueMessage
-} from '../types/protocol.types.js';
-import type { Player } from '../types/player.types.js';
-import type { Room } from '../types/room.types.js';
+} from 'shared';
+import type { Player } from 'shared';
+import type { Room } from 'shared';
 import { RoomManager } from '../game/roomManager.js';
 import { MessageBroadcaster } from './broadcaster.js';
 import { randomUUID } from 'crypto';

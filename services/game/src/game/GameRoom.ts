@@ -1,5 +1,5 @@
 import type { RoomManager } from "./roomManager.js";
-import type { Room } from '../types/room.types.js';
+import type { Room } from 'shared';
 
 export class GameRoom {
   id: string;

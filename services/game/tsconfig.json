@@ -36,6 +36,16 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
-  }
+    "skipLibCheck": false,
+    "esModuleInterop": true,
+    "paths": {
+      "shared/*": ["../../shared/*", "../shared/*"],
+      "shared": ["../../shared/index.ts", "../shared/index.ts"]
+    }
+  },
+  "references": [
+    {
+      "path": "../../shared"
+    }
+  ]
 }

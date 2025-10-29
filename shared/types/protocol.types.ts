@@ -1,5 +1,3 @@
-import { extname } from "path";
-
 export type GameMessage =
 | ConnectionMessage
 | ConnectionSuccessMessage
@@ -7,6 +5,21 @@ export type GameMessage =
 | PlayerReadyMessage
 | JoinQueueMessage
 | LeaveRoomMessage;
+
+export type GameServerMessage = 
+| 'connectionSuccess'
+| 'connectionError'
+| 'playerJoined'
+| 'playerLeft'
+| 'gameStart'
+
+export type GameClientMessage = 
+| 'connection'
+| 'playerReady'
+| 'joinQueue'
+| 'leaveRoom'
+
+export type GameMessageType = GameClientMessage | GameServerMessage
 
 export interface BaseMessage {
 	type: string;
@@ -34,6 +47,7 @@ export interface PlayerReadyMessage extends BaseMessage {
 export interface JoinQueueMessage extends BaseMessage {
 	type: 'joinQueue';
 	data: {
+		playerName:	 string;
 		playerId: string;
 		roomId?: string;
 	}

@@ -1,4 +1,4 @@
-import type { Room } from '../types/room.types.js';
+import type { Room } from 'shared';
 import { GameRoom } from './GameRoom.js';
 
 export class GameRoomManager {

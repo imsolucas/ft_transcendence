@@ -1,7 +1,7 @@
 import fastify from 'fastify';
 import ws from '@fastify/websocket';
-import type { GameMessage } from './types/protocol.types.js';
-import type { Player } from './types/player.types.js';
+import type { GameMessage } from 'shared';
+import type { Player } from 'shared';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/broadcaster.js';
