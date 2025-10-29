@@ -42,10 +42,5 @@
       "shared/*": ["../../shared/*", "../shared/*"],
       "shared": ["../../shared/index.ts", "../shared/index.ts"]
     }
-  },
-  "references": [
-    {
-      "path": "../../shared"
-    }
-  ]
+  }
 }

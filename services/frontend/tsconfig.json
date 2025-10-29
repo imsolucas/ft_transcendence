@@ -18,7 +18,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "shared/*": ["../../shared/*", "../shared/*"],
+      "shared": ["../../shared/index.ts", "../shared/index.ts"]
+    }
   },
   "include": ["src"]
 }
