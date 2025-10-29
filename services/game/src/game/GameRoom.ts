@@ -1,5 +1,5 @@
 import type { RoomManager } from "./roomManager.js";
-import type { Room } from '../../../shared/types/room.types.js';
+import type { Room } from '../types/room.types.js';
 
 export class GameRoom {
   id: string;
@@ -22,6 +22,11 @@ export class GameRoom {
     // 3. Check for win/lose conditions
     // 4. Broadcast state to players (if needed)
     // For now, just log to show it's running:
-    console.log(`Tick for room ${this.id}`);
+    console.log(`Tick for room ${this.id} (status: ${this.status})`);
+    // Example: if game ends, update status
+    // if (gameOverCondition) {
+    //   this.status = 'finished';
+    //   // You should also update the Room status in storage via RoomManager
+    // }
   }
 }

@@ -1,11 +1,12 @@
-import fastify from 'fastify'
-import ws from '@fastify/websocket'
-import type { GameMessage } from '../../../shared/types/protocol.types.js';
-import type { Player } from '../../../shared/types/player.types.js';
+import fastify from 'fastify';
+import ws from '@fastify/websocket';
+import type { GameMessage } from './types/protocol.types.js';
+import type { Player } from './types/player.types.js';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
+import { GameRoomManager } from './game/GameRoomManager.js';
 import { MessageHandler } from './websocket/handlers.js';
 
 
@@ -13,23 +14,35 @@ const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
 const roomStorage = new InMemoryRoomStorage();
 const roomManager = new RoomManager(playerStorage, roomStorage);
+const gameRoomManager = new GameRoomManager();
+roomManager.setGameRoomManager(gameRoomManager);
 const broadcaster = new MessageBroadcaster(roomManager);
 const messageHandler = new MessageHandler(roomManager, broadcaster);
 
 server.register(ws);
 
-server.addHook('onRequest', async (request, reply) => {
+// --- DEV ONLY: Create a test room in 'playing' state with 2 players so tick is always visible ---
+// const testRoom = roomStorage.createRoom();
+// testRoom.status = 'playing';
+// testRoom.playerIds = ['p1', 'p2'];
+// const dummySocket = {} as WebSocket;
+// const now = Date.now();
+// playerStorage.add({ id: 'p1', name: 'TestPlayer1', roomId: testRoom.id, position: 1, socket: dummySocket, connectedAt: now, isReady: true });
+// playerStorage.add({ id: 'p2', name: 'TestPlayer2', roomId: testRoom.id, position: 2, socket: dummySocket, connectedAt: now, isReady: true });
+// --- END DEV ONLY ---
+
+server.addHook('onRequest', async (request: any, reply: any) => {
   reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
   reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   reply.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   console.log('Incoming request:', request.method, request.url);
-})
+});
 
-server.get('/ping', async (request, reply) => {
+server.get('/ping', async (request: any, reply: any) => {
   return 'pong\n';
-})
+});
 
-server.register(async function (fastify) {
+server.register(async function (fastify: any) {
   fastify.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
     console.log('WebSocket connection established');
 
@@ -52,8 +65,9 @@ server.register(async function (fastify) {
             if (currentPlayer) {
               messageHandler.handleDisconnection(currentPlayer);
             }
+            break;
           case "playerReady":
-            if (currentPlayer) {
+            if (currentPlayer && data.type === "playerReady") {
               messageHandler.handlePlayerReady(data, currentPlayer);
             }
             break;
@@ -74,14 +88,14 @@ server.register(async function (fastify) {
         console.log('Unknown player disconnected');
       }
     });
-  })
-})
+  });
+});
 
 
 // Holds the interval ID so we can clear it later
 let tickInterval: NodeJS.Timeout | null = null;
 
-function startTickSystem(roomManager: RoomManager): void {
+function startTickSystem(roomManager: RoomManager, gameRoomManager: GameRoomManager): void {
   const TICK_RATE = 60; // ticks per second
   const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
 
@@ -90,8 +104,10 @@ function startTickSystem(roomManager: RoomManager): void {
     clearInterval(tickInterval);
 
   tickInterval = setInterval(() => {
-    for (const room of roomManager.getActiveRooms()) {
-      room.tick();
+    const activeRooms = roomManager.getActiveRooms();
+    const activeGameRooms = gameRoomManager.getActiveGameRooms(activeRooms);
+    for (const gameRoom of activeGameRooms) {
+      gameRoom.tick();
     }
   }, TICK_INTERVAL);
 }
@@ -105,7 +121,7 @@ function stopTickSystem(): void {
   }
 }
 
-startTickSystem(roomManager);
+startTickSystem(roomManager, gameRoomManager);
 
 server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {

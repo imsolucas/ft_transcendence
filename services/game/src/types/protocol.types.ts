@@ -89,3 +89,4 @@ export interface GameStartMessage extends BaseMessage {
 		player2id: string;
 	}
 }
+

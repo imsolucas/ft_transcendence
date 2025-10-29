@@ -1,11 +1,19 @@
-import type { Player, PlayerStorage } from '../../../shared/types/player.types.js';
-import type { Room, RoomStorage } from '../../../shared/types/room.types.js';
+
+import type { Player, PlayerStorage } from '../types/player.types.js';
+import type { Room, RoomStorage } from '../types/room.types.js';
+import type { GameRoomManager } from './GameRoomManager.js';
 
 export class RoomManager {
+  private gameRoomManager?: GameRoomManager;
+
   constructor(
     private playerStorage: PlayerStorage,
     private roomStorage: RoomStorage
   ) {}
+
+  setGameRoomManager(gameRoomManager: GameRoomManager) {
+    this.gameRoomManager = gameRoomManager;
+  }
 
   addPlayer(player: Player): void {
     return this.playerStorage.add(player);
@@ -19,7 +27,6 @@ export class RoomManager {
     return this.playerStorage.get(playerId);
   }
 
-
   // Create a new room
   createRoom(): Room {
     return this.roomStorage.createRoom();
@@ -27,7 +34,11 @@ export class RoomManager {
 
   // Remove a room
   removeRoom(roomId: string): Room | undefined {
-    return this.roomStorage.removeRoom(roomId);
+    const removed = this.roomStorage.removeRoom(roomId);
+    if (removed && this.gameRoomManager) {
+      this.gameRoomManager.remove(roomId);
+    }
+    return removed;
   }
 
   // Get a room by id
@@ -68,8 +79,13 @@ export class RoomManager {
     player.position = position;
     this.playerStorage.add(player);
     room.playerIds.push(playerId);
-    if (room.playerIds.length === 2)
+    if (room.playerIds.length === 2) {
       room.status = 'full';
+      if (this.gameRoomManager) {
+        const gameRoom = this.gameRoomManager.getOrCreate(room);
+        gameRoom.status = 'full';
+      }
+    }
     console.log("Player added to room");
     return true;
   }
@@ -89,10 +105,17 @@ export class RoomManager {
     if (idx === -1)
       return false;
     room.playerIds.splice(idx, 1);
-    if (room.status === 'full')
+
+    if (room.playerIds.length > 0) {
       room.status = 'waiting';
-    if (room.playerIds.length === 0)
-      this.roomStorage.removeRoom(roomId);
+      if (this.gameRoomManager) {
+        const gameRoom = this.gameRoomManager.getOrCreate(room);
+        gameRoom.status = 'waiting';
+      }
+    }
+    if (room.playerIds.length === 0) {
+      this.removeRoom(roomId);
+    }
     return true;
   }
 

@@ -18,12 +18,17 @@
     <button onclick="leaveRoom()">Leave</button>
 
     <hr>
-    <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
 
+    <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
     <script>
+        let isReady = false;
+        window.addEventListener('DOMContentLoaded', () => {
+            isReady = false;
+            const readyButton = document.getElementById('readyButton');
+            if (readyButton) readyButton.textContent = "I'm Ready!";
+        });
         let socket = null;
         let currentPlayer = null; // store player info after joining
-        let isReady = false; // track ready state
         let connectionEstablished = false;
 
         function connect() {
@@ -150,6 +155,9 @@
             };
             socket.send(JSON.stringify(message));
             console.log('Client requesting to leave room');
+            isReady = false;
+            const readyButton = document.getElementById('readyButton');
+            if (readyButton) readyButton.textContent = "I'm Ready!";
         }
 
         function togglePlayerReady() {

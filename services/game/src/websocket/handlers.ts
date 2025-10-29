@@ -7,13 +7,14 @@ import {
   type PlayerLeftMessage,
   type GameStartMessage,
   type JoinQueueMessage
-} from '../../../shared/types/protocol.types.js';
-import type { Player } from '../../../shared/types/player.types.js';
-import type { Room } from '../../../shared/types/room.types.js';
+} from '../types/protocol.types.js';
+import type { Player } from '../types/player.types.js';
+import type { Room } from '../types/room.types.js';
 import { RoomManager } from '../game/roomManager.js';
 import { MessageBroadcaster } from './broadcaster.js';
 import { randomUUID } from 'crypto';
 import { platform } from 'os';
+import { GameRoom } from '../game/GameRoom.js';
 
 export class MessageHandler {
   constructor(
@@ -213,6 +214,16 @@ export class MessageHandler {
       return;
     }
 
+    // Set room and GameRoom status to 'playing'
+    const room = this.roomManager.getRoom(roomId);
+    if (room) {
+      room.status = 'playing';
+      if ((this.roomManager as any).gameRoomManager) {
+        const gameRoom = (this.roomManager as any).gameRoomManager.getOrCreate(room);
+        gameRoom.status = 'playing';
+      }
+    }
+
     console.log('Both players are ready - starting game!');
 
     const startMessage: GameStartMessage = {
@@ -228,6 +239,8 @@ export class MessageHandler {
 
     // broadcast to both players
     this.broadcaster.broadcastToRoom(roomId, startMessage);
+
+    // (No longer resetting isReady or sending resetReady; let users control their ready state)
   }
 
   private sendError(connection: any, message: string): void {

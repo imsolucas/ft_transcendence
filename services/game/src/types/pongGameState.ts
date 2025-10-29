@@ -14,3 +14,4 @@ export interface PongGameState {
 	isPlaying: boolean;
 	lastUpdate: number;
 }
+

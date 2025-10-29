@@ -1,7 +1,7 @@
 import {
 	type Player,
 	type PlayerStorage
-} from '../../../shared/types/player.types.js';
+} from '../types/player.types.js';
 
 export class InMemoryPlayerStorage implements PlayerStorage {
 	private players = new Map<string, Player>();

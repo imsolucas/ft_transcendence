@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import {
 	type Room,
 	type RoomStorage
-} from '../../../shared/types/room.types.js';
+} from '../types/room.types.js';
 
 export class InMemoryRoomStorage implements RoomStorage {
 	private rooms = new Map<string, Room>();
