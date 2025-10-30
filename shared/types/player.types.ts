@@ -1,12 +1,18 @@
-export interface Player {
+export interface serializablePlayer {
 	id: string;
 	name: string;
-	socket: WebSocket;
 	roomId: string;
 	position: number;
 	connectedAt: number;
 	isReady: boolean;
 }
+
+export interface Player extends serializablePlayer {
+	socket?: WebSocket;
+}
+
+// Create interface for player that is compatible with JSON.serialize
+// export type serializablePlayer = Omit<Player, "socket">
 
 export interface PlayerStorage {
 

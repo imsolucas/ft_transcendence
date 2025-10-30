@@ -13,7 +13,7 @@ export class MessageBroadcaster {
       }
 
       // send message to this player's socket
-      player.socket.send(JSON.stringify(message));
+      player.socket!.send(JSON.stringify(message));
     }
 
     console.log(`Broadcasted to ${playersInRoom.length} players in room ${roomId}`);
