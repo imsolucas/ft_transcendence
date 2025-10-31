@@ -18,8 +18,12 @@
     <button onclick="leaveRoom()">Leave</button>
 
     <hr>
-
     <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
+
+    <hr>
+    <h2>Game State</h2>
+    <pre id="gameStateDisplay">No game state yet</pre>
+
     <script>
         let isReady = false;
         window.addEventListener('DOMContentLoaded', () => {
@@ -84,6 +88,9 @@
                         currentPlayer.roomId = message.data.roomId;
                         currentPlayer.position = message.data.position;
                         console.log('Joined room:', currentPlayer.roomId, 'as position', currentPlayer.position);
+                    } else if (message.type === "gameState") {
+                        // game tick
+                        document.getElementById('gameStateDisplay').textContent = JSON.stringify(message.data, null, 2);
                     }
                 } catch (error) {
                     console.log('Could not parse message:', error);
@@ -197,6 +204,25 @@
                 console.log(currentPlayer.name, 'is not ready');
             }
         }
+
+        document.addEventListener('keydown', function(event) {
+            if (!socket || socket.readyState !== WebSocket.OPEN || !currentPlayer || !currentPlayer.roomId) return;
+            let move = null;
+            if (event.key === 'w') move = 'up';
+            if (event.key === "s") move = 'down';
+            if (event.key === 'ArrowUp') move = 'up';
+            if (event.key === 'ArrowDown') move = 'down';
+            if (!move) return;
+            socket.send(JSON.stringify({
+                type: 'paddleMove',
+                data: {
+                    playerId: currentPlayer.id,
+                    roomId: currentPlayer.roomId,
+                    direction: move
+                },
+                timestamp: Date.now()
+            }));
+        })
     </script>
 </body>
 </html>

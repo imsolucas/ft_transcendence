@@ -6,30 +6,21 @@ import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
-import { GameRoomManager } from './game/GameRoomManager.js';
+// Removed GameRoomManager import
 import { MessageHandler } from './websocket/handlers.js';
+import type { PongSession } from './game/pongSession.js';
 
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
 const roomStorage = new InMemoryRoomStorage();
 const roomManager = new RoomManager(playerStorage, roomStorage);
-const gameRoomManager = new GameRoomManager();
-roomManager.setGameRoomManager(gameRoomManager);
+// Removed GameRoomManager instance and setGameRoomManager
 const broadcaster = new MessageBroadcaster(roomManager);
 const messageHandler = new MessageHandler(roomManager, broadcaster);
+export const pongSessions = new Map<string, PongSession>();
 
 server.register(ws);
-
-// --- DEV ONLY: Create a test room in 'playing' state with 2 players so tick is always visible ---
-// const testRoom = roomStorage.createRoom();
-// testRoom.status = 'playing';
-// testRoom.playerIds = ['p1', 'p2'];
-// const dummySocket = {} as WebSocket;
-// const now = Date.now();
-// playerStorage.add({ id: 'p1', name: 'TestPlayer1', roomId: testRoom.id, position: 1, socket: dummySocket, connectedAt: now, isReady: true });
-// playerStorage.add({ id: 'p2', name: 'TestPlayer2', roomId: testRoom.id, position: 2, socket: dummySocket, connectedAt: now, isReady: true });
-// --- END DEV ONLY ---
 
 server.addHook('onRequest', async (request: any, reply: any) => {
   reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -67,8 +58,13 @@ server.register(async function (fastify: any) {
             }
             break;
           case "playerReady":
-            if (currentPlayer && data.type === "playerReady") {
+            if (currentPlayer) {
               messageHandler.handlePlayerReady(data, currentPlayer);
+            }
+            break;
+          case "paddleMove":
+            if (currentPlayer) {
+              messageHandler.handlePaddleMove(data, currentPlayer);
             }
             break;
           default:
@@ -95,8 +91,8 @@ server.register(async function (fastify: any) {
 // Holds the interval ID so we can clear it later
 let tickInterval: NodeJS.Timeout | null = null;
 
-function startTickSystem(roomManager: RoomManager, gameRoomManager: GameRoomManager): void {
-  const TICK_RATE = 60; // ticks per second
+function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, PongSession>): void {
+  const TICK_RATE = 1; // ticks per second
   const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
 
   // If already running, stop the previous interval
@@ -104,10 +100,13 @@ function startTickSystem(roomManager: RoomManager, gameRoomManager: GameRoomMana
     clearInterval(tickInterval);
 
   tickInterval = setInterval(() => {
+    // For each active room, tick its PongSession if it exists
     const activeRooms = roomManager.getActiveRooms();
-    const activeGameRooms = gameRoomManager.getActiveGameRooms(activeRooms);
-    for (const gameRoom of activeGameRooms) {
-      gameRoom.tick();
+    for (const room of activeRooms) {
+      const session = pongSessions.get(room.id);
+      if (session) {
+        session.tick();
+      }
     }
   }, TICK_INTERVAL);
 }
@@ -121,7 +120,7 @@ function stopTickSystem(): void {
   }
 }
 
-startTickSystem(roomManager, gameRoomManager);
+startTickSystem(roomManager, pongSessions);
 
 server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {

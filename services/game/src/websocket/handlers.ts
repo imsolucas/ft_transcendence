@@ -8,13 +8,15 @@ import {
   type GameStartMessage,
   type JoinQueueMessage
 } from 'shared';
-import type { Player } from 'shared';
+import type { PaddleMoveMessage, Player } from 'shared';
 import type { Room } from 'shared';
 import { RoomManager } from '../game/roomManager.js';
+import { pongSessions } from '../index.js';
 import { MessageBroadcaster } from './broadcaster.js';
 import { randomUUID } from 'crypto';
 import { platform } from 'os';
-import { GameRoom } from '../game/GameRoom.js';
+import { PongSession } from '../game/pongSession.js';
+import { createInitialGameState } from '../utils/gameUtils.js';
 
 export class MessageHandler {
   constructor(
@@ -218,10 +220,8 @@ export class MessageHandler {
     const room = this.roomManager.getRoom(roomId);
     if (room) {
       room.status = 'playing';
-      if ((this.roomManager as any).gameRoomManager) {
-        const gameRoom = (this.roomManager as any).gameRoomManager.getOrCreate(room);
-        gameRoom.status = 'playing';
-      }
+      // GameRoomManager removed, just create PongSession
+      pongSessions.set(roomId, new PongSession(room, createInitialGameState(), this.broadcaster));
     }
 
     console.log('Both players are ready - starting game!');
@@ -239,8 +239,6 @@ export class MessageHandler {
 
     // broadcast to both players
     this.broadcaster.broadcastToRoom(roomId, startMessage);
-
-    // (No longer resetting isReady or sending resetReady; let users control their ready state)
   }
 
   private sendError(connection: any, message: string): void {
@@ -250,5 +248,25 @@ export class MessageHandler {
       timestamp: Date.now()
     };
     connection.send(JSON.stringify(errorResponse));
+  }
+
+  handlePaddleMove(data: PaddleMoveMessage, player: Player) {
+    const room = this.roomManager.getRoom(data.data.roomId);
+    if (!room) return;
+
+    const session = pongSessions.get(room.id);
+    if (!session) return;
+
+    const paddleIndex = player.position === 1 ? 0 : 1;
+    const paddle = session.gameState.paddles[paddleIndex];
+    if (!paddle) return;
+
+    const step = 10;
+    if (data.data.direction === "up") {
+      paddle.y = Math.max(0, paddle.y - step);
+    }
+    else if (data.data.direction === "down") {
+      paddle.y = Math.min(600 - paddle.height, paddle.y + step);
+    }
   }
 }

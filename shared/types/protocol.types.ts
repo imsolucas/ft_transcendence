@@ -4,20 +4,22 @@ export type GameMessage =
 | ConnectionErrorMessage
 | PlayerReadyMessage
 | JoinQueueMessage
-| LeaveRoomMessage;
+| LeaveRoomMessage
+| PaddleMoveMessage;
 
-export type GameServerMessage = 
+export type GameServerMessage =
 | 'connectionSuccess'
 | 'connectionError'
 | 'playerJoined'
 | 'playerLeft'
 | 'gameStart'
 
-export type GameClientMessage = 
+export type GameClientMessage =
 | 'connection'
 | 'playerReady'
 | 'joinQueue'
 | 'leaveRoom'
+| 'paddleMove'
 
 export type GameMessageType = GameClientMessage | GameServerMessage
 
@@ -57,6 +59,15 @@ export interface LeaveRoomMessage extends BaseMessage {
 	type: 'leaveRoom';
 	data: {
 		playerID: string;
+	}
+}
+
+export interface PaddleMoveMessage extends BaseMessage {
+	type: 'paddleMove';
+	data: {
+		playerId: string;
+		roomId: string;
+		direction: string;
 	}
 }
 
