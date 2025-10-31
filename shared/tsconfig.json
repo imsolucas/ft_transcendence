@@ -6,11 +6,13 @@
     "sourceMap": true,
 
     "strict": true,
-    "emitDeclarationOnly": true,
+    "skipDefaultLibCheck": true,
+    // "emitDeclarationOnly": true,
     "moduleResolution": "node",
 
     "rootDir": ".",
     "outDir": "./dist",
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

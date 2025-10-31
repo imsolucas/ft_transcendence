@@ -1,18 +1,24 @@
-export interface serializablePlayer {
+import { omitKeys } from "../utils/type.utils";
+
+export interface Player {
 	id: string;
 	name: string;
 	roomId: string;
 	position: number;
 	connectedAt: number;
 	isReady: boolean;
+	socket: WebSocket;
 }
 
-export interface Player extends serializablePlayer {
-	socket?: WebSocket;
-}
 
 // Create interface for player that is compatible with JSON.serialize
-// export type serializablePlayer = Omit<Player, "socket">
+export const NON_SERIALIZABLE_PLAYER_KEYS = ['socket'] as const
+export type serializablePlayer = Omit<Player, typeof NON_SERIALIZABLE_PLAYER_KEYS[number]>
+
+export function toSerializablePlayer(player: Player): serializablePlayer {
+    return omitKeys(player, NON_SERIALIZABLE_PLAYER_KEYS);
+}
+
 
 export interface PlayerStorage {
 

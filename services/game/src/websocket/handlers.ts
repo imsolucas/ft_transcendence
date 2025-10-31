@@ -6,8 +6,9 @@ import {
   type PlayerJoinedMessage,
   type PlayerLeftMessage,
   type GameStartMessage,
-  type JoinQueueMessage
+  type JoinQueueMessage,
 } from 'shared';
+import { toSerializablePlayer } from 'shared';
 import type { Player } from 'shared';
 import type { Room } from 'shared';
 import { RoomManager } from '../game/roomManager.js';
@@ -139,7 +140,7 @@ export class MessageHandler {
         playerId: playerId,
         roomId: room.id,
         position: player.position,
-        playersInRoom: this.roomManager.getPlayersInRoom(room.id).map(({socket, ...rest})=> rest)
+        playersInRoom: this.roomManager.getPlayersInRoom(room.id).map(toSerializablePlayer)
       },
       timestamp: Date.now()
     };
@@ -149,9 +150,14 @@ export class MessageHandler {
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
     console.log(`Player "${player.name}" is ${data.data.ready ? 'ready' : 'not ready'}`);
+    
+    if (this.roomManager.getPlayersInRoom(player.roomId).includes(player)){
+      this.sendError(player.socket, `Unable to ready: Player "${player.name}" not in room "${player.roomId}"`);
+      return ;
+    }
 
     // broadcast to other players in room
-    const readyMessage = {
+    const readyMessage: PlayerReadyMessage = {
       type: 'playerReady',
       data: {
         playerName: player.name,
