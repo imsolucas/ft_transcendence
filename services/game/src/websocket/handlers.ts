@@ -237,7 +237,7 @@ export class MessageHandler {
     // (No longer resetting isReady or sending resetReady; let users control their ready state)
   }
 
-  private sendError(connection: any, message: string): void {
+  private sendError(connection: WebSocket, message: string): void {
     const errorResponse: ConnectionErrorMessage = {
       type: 'connectionError',
       data: { message },
