@@ -5,10 +5,14 @@
     "declarationMap": true,
     "sourceMap": true,
 
+    "module": "nodenext"  ,
     "strict": true,
     "skipDefaultLibCheck": true,
     // "emitDeclarationOnly": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
 
     "rootDir": ".",
     "outDir": "./dist",

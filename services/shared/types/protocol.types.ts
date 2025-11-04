@@ -1,4 +1,4 @@
-import { Player, serializablePlayer } from "./player.types";
+import type { Player, serializablePlayer } from "./player.types.js";
 
 export type GameMessage =
 | ConnectionMessage

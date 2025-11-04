@@ -1,4 +1,4 @@
-import { omitKeys } from "../utils/type.utils";
+import { omitKeys } from "../utils/type.utils.js";
 
 export interface Player {
 	id: string;
