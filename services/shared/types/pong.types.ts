@@ -20,5 +20,7 @@ export interface PlayerInputs {
     up: boolean
     down: boolean,
     left: boolean,
-    right: boolean
+    right: boolean,
+    action_1: boolean,
+    action_2: boolean
 }
