@@ -5,7 +5,7 @@ export function omitKeys<T extends object, K extends keyof T>
     const ret = {} as Omit<T, K>;
 
     for (const key in obj){
-        if ((!keysToOmit as any).includes(key as any)){
+        if (!keysToOmit.includes(key as any)){
             (ret as any)[key] = obj[key];
         }
     }
