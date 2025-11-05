@@ -8,7 +8,7 @@ import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
 // Removed GameRoomManager import
 import { MessageHandler } from './websocket/handlers.js';
-import type { PongSession } from './game/pongSession.js';
+import type { GameServer } from './game/GameServer.js';
 
 
 const server = fastify()
@@ -18,7 +18,7 @@ const roomManager = new RoomManager(playerStorage, roomStorage);
 // Removed GameRoomManager instance and setGameRoomManager
 const broadcaster = new MessageBroadcaster(roomManager);
 const messageHandler = new MessageHandler(roomManager, broadcaster);
-export const pongSessions = new Map<string, PongSession>();
+export const pongSessions = new Map<string, GameServer>();
 
 server.register(ws);
 
@@ -62,9 +62,9 @@ server.register(async function (fastify: any) {
               messageHandler.handlePlayerReady(data, currentPlayer);
             }
             break;
-          case "paddleMove":
+          case 'playerInput':
             if (currentPlayer) {
-              messageHandler.handlePaddleMove(data, currentPlayer);
+              messageHandler.handlePlayerInput(data, currentPlayer);
             }
             break;
           default:
@@ -91,7 +91,7 @@ server.register(async function (fastify: any) {
 // Holds the interval ID so we can clear it later
 let tickInterval: NodeJS.Timeout | null = null;
 
-function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, PongSession>): void {
+function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, GameServer>): void {
   const TICK_RATE = 1; // ticks per second
   const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
 

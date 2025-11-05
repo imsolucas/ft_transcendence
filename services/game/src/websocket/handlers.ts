@@ -8,7 +8,7 @@ import {
   type GameStartMessage,
   type JoinQueueMessage,
 } from 'shared';
-import type { PaddleMoveMessage, Player } from 'shared';
+import type { PlayerInputMessage, Player } from 'shared';
 import { toSerializablePlayer } from 'shared';
 import type { Room } from 'shared';
 import { RoomManager } from '../game/roomManager.js';
@@ -16,7 +16,7 @@ import { pongSessions } from '../index.js';
 import { MessageBroadcaster } from './broadcaster.js';
 import { randomUUID } from 'crypto';
 import { platform } from 'os';
-import { PongSession } from '../game/pongSession.js';
+import { GameServer } from '../game/GameServer.js';
 import { createInitialGameState } from '../utils/gameUtils.js';
 
 export class MessageHandler {
@@ -221,7 +221,7 @@ export class MessageHandler {
     if (room) {
       room.status = 'playing';
       // GameRoomManager removed, just create PongSession
-      pongSessions.set(roomId, new PongSession(room, createInitialGameState(), this.broadcaster));
+      pongSessions.set(roomId, new GameServer(room, this.broadcaster));
     }
 
     console.log('Both players are ready - starting game!');
@@ -250,23 +250,16 @@ export class MessageHandler {
     connection.send(JSON.stringify(errorResponse));
   }
 
-  handlePaddleMove(data: PaddleMoveMessage, player: Player) {
+  handlePlayerInput(data: PlayerInputMessage, player: Player) {
     const room = this.roomManager.getRoom(data.data.roomId);
     if (!room) return;
 
     const session = pongSessions.get(room.id);
     if (!session) return;
 
-    const paddleIndex = player.position === 1 ? 0 : 1;
-    const paddle = session.gameState.paddles[paddleIndex];
-    if (!paddle) return;
-
-    const step = 10;
-    if (data.data.direction === "up") {
-      paddle.y = Math.max(0, paddle.y - step);
-    }
-    else if (data.data.direction === "down") {
-      paddle.y = Math.min(600 - paddle.height, paddle.y + step);
-    }
+    if (room.playerIds[0] == player.id)
+      session.input(data.data.inputs, undefined);
+    else
+      session.input(undefined, data.data.inputs);
   }
 }

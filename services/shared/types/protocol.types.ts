@@ -1,4 +1,5 @@
 import type { Player, serializablePlayer } from "./player.types.js";
+import type { PlayerInputs } from "./pong.types.js";
 
 export type GameMessage =
 | ConnectionMessage
@@ -7,7 +8,7 @@ export type GameMessage =
 | PlayerReadyMessage
 | JoinQueueMessage
 | LeaveRoomMessage
-| PaddleMoveMessage;
+| PlayerInputMessage;
 
 export type GameServerMessage =
 | 'connectionSuccess'
@@ -21,7 +22,7 @@ export type GameClientMessage =
 | 'playerReady'
 | 'joinQueue'
 | 'leaveRoom'
-| 'paddleMove'
+| 'playerInput'
 
 export type GameMessageType = GameClientMessage | GameServerMessage
 
@@ -64,15 +65,14 @@ export interface LeaveRoomMessage extends BaseMessage {
 	}
 }
 
-export interface PaddleMoveMessage extends BaseMessage {
-	type: 'paddleMove';
+export interface PlayerInputMessage extends BaseMessage {
+	type: 'playerInput';
 	data: {
 		playerId: string;
 		roomId: string;
-		direction: string;
+		inputs: PlayerInputs
 	}
 }
-
 
 // from server
 
