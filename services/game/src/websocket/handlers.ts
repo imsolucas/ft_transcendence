@@ -6,9 +6,10 @@ import {
   type PlayerJoinedMessage,
   type PlayerLeftMessage,
   type GameStartMessage,
-  type JoinQueueMessage
+  type JoinQueueMessage,
 } from 'shared';
 import type { PaddleMoveMessage, Player } from 'shared';
+import { toSerializablePlayer } from 'shared';
 import type { Room } from 'shared';
 import { RoomManager } from '../game/roomManager.js';
 import { pongSessions } from '../index.js';
@@ -95,18 +96,21 @@ export class MessageHandler {
 
     this.roomManager.addPlayerToRoom(roomId, playerId);
     const player = this.roomManager.getPlayer(playerId);
+    const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
     const position = player ? player.position : 0;
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
+        playerName: player?.name!,
         playerId: playerId,
         roomId: roomId,
-        position: position
+        position: position,
+        playersInRoom: playersInRoom
       },
       timestamp: Date.now()
     }
-    connection.send(JSON.stringify(response));
+    this.broadcaster.broadcastToRoom(roomId, response);
     console.log(`Player "${player ? player.name : playerId}" joined room "${roomId}"`);
 
     return room || null;
@@ -114,53 +118,48 @@ export class MessageHandler {
 
   joinQueue(playerId: string, data: JoinQueueMessage, connection: any) {
     const availableRooms = this.roomManager.getAvailableRooms() || [];
-    if (availableRooms[0]) {
-      const firstRoom = availableRooms[0].id;
-      this.roomManager.addPlayerToRoom(firstRoom, playerId);
-      const player = this.roomManager.getPlayer(playerId);
-      const position = player ? player.position : 0;
-
-      const response: PlayerJoinedMessage = {
-        type: 'playerJoined',
-        data: {
-          playerId: playerId,
-          roomId: firstRoom,
-          position: position
-        },
-        timestamp: Date.now()
-      };
-      connection.send(JSON.stringify(response));
-      console.log(`Player "${player ? player.name : playerId}" joined room "${firstRoom}"`);
-      const room = this.roomManager.getRoom(firstRoom);
-      return room || null;
+    const player = this.roomManager.getPlayer(playerId);
+    let room: Room;
+  
+    if (!player){
+      console.error(`Player with id: ${playerId} not found`);
+      return null;
     }
+
+    if (availableRooms[0])
+      room = availableRooms[0]
     else {
-      const room = this.roomManager.createRoom();
-      const roomId = room.id;
-      this.roomManager.addPlayerToRoom(roomId, playerId);
-      const player = this.roomManager.getPlayer(playerId);
-      const position = player ? player.position : 0;
-
-      const response: PlayerJoinedMessage = {
-        type: 'playerJoined',
-        data: {
-          playerId: playerId,
-          roomId: roomId,
-          position: position
-        },
-        timestamp: Date.now()
-      };
-      connection.send(JSON.stringify(response));
-      console.log(`Player "${player ? player.name : playerId}" created room "${roomId}"`);
-      return room;
+      room = this.roomManager.createRoom();
+      console.log(`Player "${player.name}" created room "${room.id}"`);
     }
+    this.roomManager.addPlayerToRoom(room.id, playerId);
+    console.log(`Player "${player.name}" joined room "${room.id}"`);
+
+    const response: PlayerJoinedMessage = {
+      type: 'playerJoined',
+      data: {
+        playerName: player.name,
+        playerId: playerId,
+        roomId: room.id,
+        position: player.position,
+        playersInRoom: this.roomManager.getPlayersInRoom(room.id).map(toSerializablePlayer)
+      },
+      timestamp: Date.now()
+    };
+    this.broadcaster.broadcastToRoom(room.id, response);
+    return room;
   }
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
     console.log(`Player "${player.name}" is ${data.data.ready ? 'ready' : 'not ready'}`);
+    
+    if (this.roomManager.getPlayersInRoom(player.roomId).includes(player)){
+      this.sendError(player.socket, `Unable to ready: Player "${player.name}" not in room "${player.roomId}"`);
+      return ;
+    }
 
     // broadcast to other players in room
-    const readyMessage = {
+    const readyMessage: PlayerReadyMessage = {
       type: 'playerReady',
       data: {
         playerName: player.name,
@@ -190,6 +189,7 @@ export class MessageHandler {
     // broadcast BEFORE removing the player, so others get notified
     this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
 
+    player.roomId = "";
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
     this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
@@ -241,7 +241,7 @@ export class MessageHandler {
     this.broadcaster.broadcastToRoom(roomId, startMessage);
   }
 
-  private sendError(connection: any, message: string): void {
+  private sendError(connection: WebSocket, message: string): void {
     const errorResponse: ConnectionErrorMessage = {
       type: 'connectionError',
       data: { message },

@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "dev": "npx tsx watch src/index.ts"
-
+    "dev": "(cd ../shared && npm run dev &) && npx tsx watch src/index.ts"
   },
   "keywords": [],
   "author": "",

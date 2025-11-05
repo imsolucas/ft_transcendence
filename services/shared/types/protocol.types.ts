@@ -1,3 +1,5 @@
+import type { Player, serializablePlayer } from "./player.types.js";
+
 export type GameMessage =
 | ConnectionMessage
 | ConnectionSuccessMessage
@@ -92,9 +94,11 @@ export interface ConnectionErrorMessage extends BaseMessage {
 export interface PlayerJoinedMessage extends BaseMessage {
 	type: 'playerJoined';
 	data: {
+		playerName: string
 		playerId: string;
 		roomId: string;
 		position: number;
+		playersInRoom: serializablePlayer[]
 	}
 }
 
