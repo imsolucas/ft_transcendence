@@ -1,7 +1,7 @@
-import Ball from "./entities/Ball.js";
-import Paddle from "./entities/Paddle.js";
-import Entity from "./entities/Entity.js";
-import type { PlayerInputs } from "../types/pong.types.js";
+import Ball from "../entities/Ball.js";
+import Paddle from "../entities/Paddle.js";
+import Entity from "../entities/Entity.js";
+import type { PlayerInputs } from "../../types/pong.types.js";
 
 export default class EntityManager {
     #entities: Entity[] = []
@@ -11,21 +11,22 @@ export default class EntityManager {
     constructor() {}
 
     // Takes in paddle inputs in an array
-    playerInputs(inputs: PlayerInputs[]):void {
-        for (let i in this.#paddles){
-            this.#paddles[i].input(inputs[i]);
-        }
+    playerInputs(p1?: PlayerInputs, p2?: PlayerInputs):void {
+        if (p1)
+            this.#paddles[0].input(p1)
+        if (p2)
+            this.#paddles[1].input(p2)
     }
 
     checkCollisions(): void {
-        for (var player of this.#paddles){
+        for (const player of this.#paddles){
             this.#ball.collision(player.getBorder(), player.getOldBorder())
             player.collision(this.#ball.getBorder(), this.#ball.getOldBorder());
         }
     }
 
     tickEntities(deltaTime: number): void {
-        for (var entity of this.#entities) {
+        for (const entity of this.#entities) {
             entity.tick(deltaTime);
         }
     }

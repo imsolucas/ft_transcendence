@@ -1,4 +1,5 @@
-import { BaseGameState, type GameContext, type StateName } from "./states/BaseGameState.js";
+import type { PlayerInputs } from "../../types/pong.types.js";
+import { BaseGameState, type GameContext, type StateName } from "../states/BaseGameState.js";
 
 type StateConstructor = new (context: GameContext, stateName: string) => BaseGameState;
 
@@ -29,7 +30,7 @@ export class StateManager {
 				try {
 						if (this.currentState) {
 								this.currentState.exit();
-								this.context.previousState = this.currentState!.getName();
+								this.context.previousState = this.currentState.getName();
 						}
 						const newState = new StateClass(this.context, stateName);
 						if (shouldEnter)
@@ -58,9 +59,9 @@ export class StateManager {
 			}
 		}
 
-		handleInput(event: KeyboardEvent, keyDown: boolean): void {
+		handleInput(p1?: PlayerInputs, p2?: PlayerInputs): void {
 			if (this.currentState) {
-				this.currentState.handleInput(event, keyDown);
+				this.currentState.handleInput(p1, p2);
 			}
 		}
 }

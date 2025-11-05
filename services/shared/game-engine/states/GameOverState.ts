@@ -1,5 +1,5 @@
+import type { PlayerInputs } from "../../types/pong.types.js";
 import { constants } from "../constants.js";
-import { drawString } from "../utils/drawUtils.js";
 import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
 
 // State for when either player wins by reaching the required point limit, player should be promted to play again or go to menu (when that is implemented)
@@ -32,8 +32,10 @@ export default class GameOverState extends BaseGameState {
         return (null)
     }
 
-    handleInput(event: KeyboardEvent, keyDown: boolean): void {
-        if (event.key == " " && !keyDown)
+    handleInput(inputs: PlayerInputs): void {
+        if (inputs.action_2)
+            this.#menu = true;
+        if (inputs.action_1)
             this.#playAgain = true;
     }
 }

@@ -17,10 +17,6 @@ export default class ScoredState extends BaseGameState {
         this.getEntityManager().getBall().reset();
     }
 
-    exit(): void {
-        
-    }
-
     update(deltaTime: number): StateResult | null {
         for (let i in this.getPlayerScore()){
             if (this.getPlayerScore()[i] >= constants.WIN_POINT)
@@ -36,9 +32,4 @@ export default class ScoredState extends BaseGameState {
         }
             
     }
-
-    handleInput(event: KeyboardEvent, keyDown: boolean): void {
-        
-    }
-
 }

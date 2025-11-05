@@ -1,4 +1,5 @@
-import type EntityManager from "../EntityManager.js";
+import type { PlayerInputs } from "../../types/pong.types.js";
+import type EntityManager from "../managers/EntityManager.js";
 
 // Shared context passed to each state
 export interface GameContext {
@@ -26,13 +27,13 @@ export abstract class BaseGameState {
 			this.stateName = stateName;
 		}
 
-		// contract methods all states must implement
-		abstract enter(): void;
-		abstract exit(): void;
+		// Methods states can override if something needs to be done on enter
+		enter(): void {}
+		exit(): void {}
 
-		// core game loop methods to be implemented by each state
+		// core game loop methods
 		abstract update(deltaTime: number): StateResult | null;
-		abstract handleInput(event: KeyboardEvent, keyDown: boolean): void;
+		handleInput(p1?: PlayerInputs, p2?: PlayerInputs): void {}
 
 		// helper methods to access context
 

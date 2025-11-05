@@ -1,16 +1,13 @@
-import Paddle from "./entities/Paddle.js";
+import type { PlayerInputs } from "../types/pong.types.js";
 import Ball from "./entities/Ball.js";
-import EntityManager from "./EntityManager.js";
-import { constants } from "./constants.js";
-import { StateManager } from "./StateManager.js";
-import PlayingState from "./states/PlayingState.js";
+import Paddle from "./entities/Paddle.js";
+import EntityManager from "./managers/EntityManager.js";
+import { StateManager } from "./managers/StateManager.js";
 import type { GameContext } from "./states/BaseGameState.js";
-import PausedState from "./states/PausedState.js";
-import ScoredState from "./states/ScoredState.js";
-import { classicPongUi } from "./utils/drawUtils.js";
 import GameOverState from "./states/GameOverState.js";
 import GameStartState from "./states/GameStartState.js";
-import type { GameState } from "../types/pong.types.js";
+import PlayingState from "./states/PlayingState.js";
+import ScoredState from "./states/ScoredState.js";
 
 export class GameEngine {
     #context: GameContext;
@@ -31,8 +28,8 @@ export class GameEngine {
     }
 
     #initStates():void {
+        // Init the Base States
         this.#stateManager.registerState("PlayingState", PlayingState)
-        this.#stateManager.registerState("PausedState", PausedState)
         this.#stateManager.registerState("ScoredState", ScoredState)
         this.#stateManager.registerState("GameOverState", GameOverState)
         this.#stateManager.registerState("GameStartState", GameStartState)
@@ -44,6 +41,10 @@ export class GameEngine {
         this.#entityManager.addPlayer(new Paddle("#ffffff"));
         this.#entityManager.addPlayer(new Paddle("#ffffff"));
         this.#entityManager.addBall(new Ball("#ffffff"));
+    }
+
+    input(p1?: PlayerInputs, p2?: PlayerInputs): void {
+        this.#stateManager.handleInput(p1, p2);
     }
 
     // Moves the game one tick forwards

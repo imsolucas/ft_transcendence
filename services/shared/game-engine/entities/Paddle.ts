@@ -1,9 +1,8 @@
 import type { PlayerInputs } from "../../types/pong.types.js";
-import type { Vector } from "../components/Vector.js";
 import type { Border } from "../components/Hitbox.js";
-import Entity from "./Entity.js";
+import type { Vector } from "../components/Vector.js";
 import { constants } from "../constants.js";
-import { drawCircle, drawRectangle} from "../utils/drawUtils.js";
+import Entity from "./Entity.js";
 
 export default class Paddle extends Entity {
     #size: Vector;

@@ -1,6 +1,5 @@
+import type { Border } from "../components/Hitbox.js";
 import type { Vector } from "../components/Vector.js";
-import { drawRectangle,  drawVector } from "../utils/drawUtils.js";
-import type { Hitbox, Border, CollisionResult } from "../components/Hitbox.js";
 import { constants } from "../constants.js";
 import Entity from "./Entity.js";
 

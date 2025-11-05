@@ -3,30 +3,14 @@ import type { PlayerInputs } from "../../types/pong.types.js";
 
 // This is the state where the pong gameplay happens, players can control the paddles and score
 export default class PlayingState extends BaseGameState {
-    #playerInputs: PlayerInputs[] = []
-    #paused = false;
-
     constructor (context: GameContext) {
         super(context, "PlayingState")
-        this.#playerInputs.push({up: false, down: false, left: false, right: false})
-        this.#playerInputs.push({up: false, down: false, left: false, right: false})
-    }
-
-    enter(): void {
-        
-    }
-
-    exit(): void {
-        
     }
 
     update(deltaTime: number): StateResult | null {
         this.getEntityManager().tickEntities(deltaTime);
         this.getEntityManager().checkCollisions();
-        this.getEntityManager().playerInputs(this.#playerInputs);
 
-        if (this.#paused)
-            return ({nextState: "PausedState"})
         if (this.getEntityManager().getBall().isDestroyed())
         {
             return ({nextState: "ScoredState"})
@@ -34,25 +18,7 @@ export default class PlayingState extends BaseGameState {
         return (null)
     }
 
-    handleInput(event: KeyboardEvent, keyDown: boolean): void {
-
-        if (event.key == "Escape" && !keyDown)
-            this.#paused = true;
-        switch(event.key){
-            case ("w"):
-                this.#playerInputs[0].up = keyDown;
-                break;
-            case("s"):
-                this.#playerInputs[0].down = keyDown;
-                break;
-            case("ArrowDown"):
-                this.#playerInputs[1].down = keyDown;
-                break;
-            case("ArrowUp"):
-                this.#playerInputs[1].up = keyDown;
-                break;
-        }
-
+    handleInput(p1: PlayerInputs, p2: PlayerInputs): void {
+        this.getEntityManager().playerInputs(p1, p2)
     }
-
 }

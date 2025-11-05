@@ -1,4 +1,4 @@
-import { drawString } from "../utils/drawUtils.js";
+import type { PlayerInputs } from "../../types/pong.types.js";
 import { constants } from "../constants.js";
 import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
 
@@ -25,18 +25,9 @@ export default class GameStartState extends BaseGameState{
         this.getEntityManager().getBall().randomVelocity();
     }
 
-    exit(): void {
-        
-    }
-
     update(deltaTime: number): StateResult | null {
         if (this.#start)
             return ({nextState: "PlayingState"});
         return (null)
-    }
-
-    handleInput(event: KeyboardEvent, keyDown: boolean): void {
-        if (event.key == " " && !keyDown)
-            this.#start = true;
     }
 }
