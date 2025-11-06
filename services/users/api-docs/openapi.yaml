@@ -1,0 +1,110 @@
+openapi: 3.1.0
+info:
+  title: User Management System
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4000
+
+paths:
+  /auth/signup:
+    post:
+      summary: User signup
+      description: Create a new user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: Alice
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SuperSecret123
+      responses:
+        '201':
+          description: User created successfully.
+        '400':
+          description: Invalid input.
+
+  /auth/login:
+    post:
+      summary: User login
+      description: Login to user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - password
+              properties:
+                name:
+                  type: string
+                  example: Alice
+                password:
+                  type: string
+                  format: password
+                  example: SuperSecret123
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      username:
+                        type: string
+                        example: Alice
+                      email:
+                        type: string
+                        format: email
+                        example: alice@example.com
+                      avatar:
+                        type: string
+                        format: uri
+                        example: https://example.com/avatar.png
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid username or password
+  # /user:
+  #   post:
+  #   patch:
+  # /friends:
+  #   get:
+  # /friend-request:
+  #   post:
+  # /match-history:
+  #   get:
+  #   post:
