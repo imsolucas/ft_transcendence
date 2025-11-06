@@ -207,14 +207,19 @@
 
         document.addEventListener('keydown', function(event) {
             if (!socket || socket.readyState !== WebSocket.OPEN || !currentPlayer || !currentPlayer.roomId) return;
-            let move = null;
-            if (event.key === 'w') move = 'up';
-            if (event.key === "s") move = 'down';
-            if (event.key === 'ArrowUp') move = 'up';
-            if (event.key === 'ArrowDown') move = 'down';
+            let move = {
+                up: false,
+                down: false,
+                left: false,
+                right: false,
+                action_1: false,
+                action_2: false
+            }
+            if (event.key === 'w') move.up == true;
+            if (event.key === "s") move.down == true;
             if (!move) return;
             socket.send(JSON.stringify({
-                type: 'paddleMove',
+                type: 'playerInput',
                 data: {
                     playerId: currentPlayer.id,
                     roomId: currentPlayer.roomId,
