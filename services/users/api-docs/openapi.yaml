@@ -98,9 +98,65 @@ paths:
                   error:
                     type: string
                     example: Invalid username or password
-  # /user:
-  #   post:
-  #   patch:
+
+  /user/profile:
+    patch:
+      summary: Update user profile
+      description: |
+        Updates the profile information of the authenticated user. This endpoint allows partial updates to user profile fields such as username, avatar, or other customizable attributes.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Alice
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                avatar:
+                  type: string
+                  format: uri
+                  example: https://example.com/avatar.png;
+      responses:
+        '200':
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  username:
+                    type: string
+                    example: Alice
+                  email:
+                    type: string
+                    format: email
+                    example: alice@example.com
+                  avatar:
+                    type: string
+                    format: uri
+                    example: https://example.com/avatar.png
+        '400':
+          description: Invalid fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid fields.
+
   # /friends:
   #   get:
   # /friend-request:
@@ -108,3 +164,10 @@ paths:
   # /match-history:
   #   get:
   #   post:
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
