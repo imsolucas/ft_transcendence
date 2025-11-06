@@ -38,6 +38,8 @@ paths:
           description: User created successfully.
         '400':
           description: Invalid input.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /auth/login:
     post:
@@ -98,8 +100,42 @@ paths:
                   error:
                     type: string
                     example: Invalid username or password
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /user/profile:
+    get:
+      summary: Get user profile
+      description: Retrieves the profile information of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  username:
+                    type: string
+                    example: Alice
+                  email:
+                    type: string
+                    format: email
+                    example: alice@example.com
+                  avatar:
+                    type: string
+                    format: uri
+                    example: https://example.com/avatar.png
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
     patch:
       summary: Update user profile
       description: |
@@ -156,9 +192,16 @@ paths:
                   error:
                     type: string
                     example: Invalid fields.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   # /friends:
   #   get:
+  #     summary: Get friend list
+  #     description:
+
   # /friend-request:
   #   post:
   # /match-history:
@@ -171,3 +214,26 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Unauthorized
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Internal Server Error
