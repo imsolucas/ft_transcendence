@@ -197,10 +197,40 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # /friends:
-  #   get:
-  #     summary: Get friend list
-  #     description:
+  /user/friends:
+    get:
+      summary: Get friend list
+      description: Retrieves the friend list of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Friend list retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                      example: Bob
+                    avatar:
+                      type: string
+                      format: uri
+                      example: https://example.com/avatar2.png
+                    status:
+                      type: string
+                      enum:
+                      - ONLINE
+                      - OFFLINE
+                      - INGAME
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 
   # /friend-request:
   #   post:
