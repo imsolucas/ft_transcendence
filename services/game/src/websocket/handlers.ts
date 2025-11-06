@@ -8,6 +8,7 @@ import {
   type GameStartMessage,
   type JoinQueueMessage,
 } from 'shared';
+
 import type { PlayerInputMessage, Player } from 'shared';
 import { toSerializablePlayer } from 'shared';
 import type { Room } from 'shared';
@@ -15,9 +16,7 @@ import { RoomManager } from '../game/roomManager.js';
 import { pongSessions } from '../index.js';
 import { MessageBroadcaster } from './broadcaster.js';
 import { randomUUID } from 'crypto';
-import { platform } from 'os';
 import { GameServer } from '../game/GameServer.js';
-import { createInitialGameState } from '../utils/gameUtils.js';
 
 export class MessageHandler {
   constructor(
@@ -124,8 +123,13 @@ export class MessageHandler {
     if (!player){
       console.error(`Player with id: ${playerId} not found`);
       return null;
-    }
+    } 
 
+    if (this.roomManager.getRoom(player.roomId)){
+      this.sendError(player.socket, "Player Already in room");
+      console.error(`Player "${player.id}" already in room ${player.roomId}`);
+      return null;
+    }
     if (availableRooms[0])
       room = availableRooms[0]
     else {
@@ -175,30 +179,13 @@ export class MessageHandler {
     // check if both players are ready and start game
     this.checkAndStartGame(player.roomId);
   }
-
-  handleDisconnection(player: Player): void {
-    // broadcast leave message
-    const leaveMessage: PlayerLeftMessage = {
-      type: 'playerLeft',
-      data: {
-        playerName: player.name
-      },
-      timestamp: Date.now()
-    };
-
-    // broadcast BEFORE removing the player, so others get notified
-    this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
-
-    player.roomId = "";
-    console.log(`Player "${player.name}" (${player.id}) disconnected`);
-    this.roomManager.removePlayerFromRoom(player.roomId, player.id);
-  }
-
+  
   private checkAndStartGame(roomId: string): void {
     const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
     // need exactly 2 players to start
     if (playersInRoom.length !== 2) {
+      console.log(`Cannot start game, room length: ${playersInRoom.length }`)
       return;
     }
 
@@ -213,6 +200,7 @@ export class MessageHandler {
 
     // both positions must be filled and both players must be ready
     if (!player1 || !player2 || !player1.isReady || !player2.isReady) {
+      console.log("Not all players ready");
       return;
     }
 
@@ -239,6 +227,24 @@ export class MessageHandler {
 
     // broadcast to both players
     this.broadcaster.broadcastToRoom(roomId, startMessage);
+  }
+
+  handleDisconnection(player: Player): void {
+    // broadcast leave message
+    const leaveMessage: PlayerLeftMessage = {
+      type: 'playerLeft',
+      data: {
+        playerName: player.name
+      },
+      timestamp: Date.now()
+    };
+
+    // broadcast BEFORE removing the player, so others get notified
+    this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
+
+    player.roomId = "";
+    console.log(`Player "${player.name}" (${player.id}) disconnected`);
+    this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
 
   private sendError(connection: WebSocket, message: string): void {
