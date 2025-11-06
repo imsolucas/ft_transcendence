@@ -231,9 +231,14 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # /user/friend-request:
-  #   post:
-  #   get:
+  /user/friend-request:
+    post:
+      summary: Send a friend request
+      description: |
+        Sends a friend request from the authenticated user to another user.
+        The target user's identifier (such as username or user must be provided in the request body.)
+
+    get:
 
   /user/friend-request/{requestId}:
     patch:
@@ -270,7 +275,6 @@ paths:
           description: Friend request not found.
         '500':
           $ref: '#/components/responses/InternalServerError'
-
 
   # /match-history:
   #   get:
