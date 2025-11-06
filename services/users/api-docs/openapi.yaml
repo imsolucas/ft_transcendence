@@ -283,7 +283,53 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-    # get:
+    get:
+      summary: Retrieve friend requests
+      description: |
+        Retrieves the list of friend requests for the authenticated user.
+        You can filter requests by direction using the `direction` query parameter (`sent` or `received`).
+        - `sent`: Friend requests sent by the authenticated user.
+        - `received`: Friend requests received by the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: direction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [sent, received]
+          description: Filter by sent or received friend requests.
+      responses:
+        '200':
+          description: Friend requests retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    fromId:
+                      type: integer
+                      example: 1
+                    toId:
+                      type: integer
+                      example: 2
+                    status:
+                      type: string
+                      enum: [PENDING, ACCEPTED, REJECTED]
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2025-11-06T10:30:00Z"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /user/friend-request/{requestId}:
     patch:
