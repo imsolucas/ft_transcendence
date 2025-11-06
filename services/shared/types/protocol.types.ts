@@ -10,25 +10,10 @@ export type GameMessage =
 | LeaveRoomMessage
 | PlayerInputMessage;
 
-export type GameServerMessage =
-| 'connectionSuccess'
-| 'connectionError'
-| 'playerJoined'
-| 'playerLeft'
-| 'gameStart'
-
-export type GameClientMessage =
-| 'connection'
-| 'playerReady'
-| 'joinQueue'
-| 'leaveRoom'
-| 'playerInput'
-
-export type GameMessageType = GameClientMessage | GameServerMessage
-
 export interface BaseMessage {
 	type: string;
 	timestamp: number;
+	data: any;
 }
 
 // from client
