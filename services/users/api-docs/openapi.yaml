@@ -236,9 +236,54 @@ paths:
       summary: Send a friend request
       description: |
         Sends a friend request from the authenticated user to another user.
-        The target user's identifier (such as username or user must be provided in the request body.)
+        The target user's identifier (such as username must be provided in the request body.)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: Bob
+      responses:
+        '201':
+          description: Friend request sent successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  fromId:
+                    type: integer
+                    example: 1
+                  toId:
+                    type: integer
+                    example: 2
+                  status:
+                    type: string
+                    enum:
+                      - PENDING
+                      - ACCEPTED
+                      - REJECTED
+        '400':
+          description: Invalid input or already friends.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Target user not found.
+        '409':
+          description: Friend request already exists.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
-    get:
+    # get:
 
   /user/friend-request/{requestId}:
     patch:
