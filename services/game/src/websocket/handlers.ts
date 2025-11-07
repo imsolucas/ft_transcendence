@@ -157,7 +157,7 @@ export class MessageHandler {
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
     console.log(`Player "${player.name}" is ${data.data.ready ? 'ready' : 'not ready'}`);
     
-    if (this.roomManager.getPlayersInRoom(player.roomId).includes(player)){
+    if (!this.roomManager.getPlayersInRoom(player.roomId).includes(player)){
       this.sendError(player.socket, `Unable to ready: Player "${player.name}" not in room "${player.roomId}"`);
       return ;
     }
@@ -243,6 +243,7 @@ export class MessageHandler {
     this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
 
     player.roomId = "";
+    if (this.)
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
     this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
