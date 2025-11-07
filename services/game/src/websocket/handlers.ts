@@ -11,7 +11,7 @@ import {
 
 import type { PlayerInputMessage, Player } from 'shared';
 import { toSerializablePlayer } from 'shared';
-import type { Room } from 'shared';
+import type { Room } from '../types/room.types.js';
 import { RoomManager } from '../game/roomManager.js';
 import { pongSessions } from '../index.js';
 import { MessageBroadcaster } from './broadcaster.js';
