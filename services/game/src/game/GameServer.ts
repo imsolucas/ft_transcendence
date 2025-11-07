@@ -1,6 +1,7 @@
 
 import type { PlayerInputMessage, PlayerInputs } from 'shared';
-import { GameEngine, type Room } from 'shared';
+import { GameEngine } from 'shared';
+import type { Room } from '../types/room.types.js';
 import { MessageBroadcaster } from "../websocket/broadcaster.js";
 
 export class GameServer {

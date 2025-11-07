@@ -1,7 +1,7 @@
 
 import type { Player, PlayerStorage } from 'shared';
-import type { Room, RoomStorage } from 'shared';
-import type { GameRoomManager } from './GameRoomManager.js';
+import type { Room, RoomStorage } from '../types/room.types.js';
+import type { GameServer } from './GameServer.js';
 
 export class RoomManager {
   private gameRoomManager?: GameRoomManager;

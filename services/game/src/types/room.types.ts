@@ -1,8 +1,11 @@
+import { GameServer } from "../game/GameServer.js";
+
 export interface Room {
 	id: string;
 	playerIds: string[]; //indexes 0 and 1 will be considered as player 1 and 2 respectively
 	status: 'waiting' | 'full' | 'playing' | 'finished';
 	createdAt: number;
+	gameServer?: GameServer
 }
 
 export interface RoomStorage {
