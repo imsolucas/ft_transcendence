@@ -419,8 +419,99 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # /game/match-history:
-    # post:
+  /game/match-history:
+    post:
+      summary: Upload match history
+      description: |
+        Uploads a completed match record from the Game service.
+        The request should include both player IDs, scores, display names, and match timestamps.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - player1Id
+                - player2Id
+                - player1Score
+                - player2Score
+                - player1DisplayName
+                - player2DisplayName
+                - played_at
+                - end_at
+              properties:
+                player1Id:
+                  type: integer
+                  example: 1
+                player2Id:
+                  type: integer
+                  example: 2
+                player1Score:
+                  type: integer
+                  example: 10
+                player2Score:
+                  type: integer
+                  example: 8
+                player1DisplayName:
+                  type: string
+                  example: Alice
+                player2DisplayName:
+                  type: string
+                  example: Bob
+                played_at:
+                  type: string
+                  format: date-time
+                  example: "2025-11-06T10:30:00Z"
+                end_at:
+                  type: string
+                  format: date-time
+                  example: "2025-11-06T10:40:00Z"
+      responses:
+        '201':
+          description: Match record created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matchId:
+                    type: integer
+                    example: 42
+                  player1Id:
+                    type: integer
+                    example: 1
+                  player2Id:
+                    type: integer
+                    example: 2
+                  player1Score:
+                    type: integer
+                    example: 10
+                  player2Score:
+                    type: integer
+                    example: 8
+                  player1DisplayName:
+                    type: string
+                    example: Alice
+                  player2DisplayName:
+                    type: string
+                    example: Bob
+                  played_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-06T10:30:00Z"
+                  end_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-06T10:40:00Z"
+        '400':
+          description: Invalid input.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
 components:
   securitySchemes:
