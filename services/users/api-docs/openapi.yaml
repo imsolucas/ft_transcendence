@@ -372,7 +372,7 @@ paths:
       summary: Retrieve match history of authenticated user
       description: |
         Retrieves the match history for the authenticated user.
-        Returns a list of matches the user has participated in, including details such as opponent, result, score, start time and end time.
+        Returns a list of matches the user has participated in, including details such as opponent, scores, display names, start time and end time.
       security:
         - bearerAuth: []
       responses:
@@ -388,20 +388,29 @@ paths:
                     matchId:
                       type: integer
                       example: 42
-                    opponent:
+                    player1Id:
+                      type: integer
+                      example: 1
+                    player2Id:
+                      type: integer
+                      example: 2
+                    player1DisplayName:
+                      type: string
+                      example: Alice
+                    player2DisplayName:
                       type: string
                       example: Bob
-                    result:
-                      type: string
-                      enum: [WIN, LOSS, DRAW]
-                    score:
-                      type: string
-                      example: "10-8"
-                    start:
+                    player1Score:
+                      type: integer
+                      example: 10
+                    player2Score:
+                      type: integer
+                      example: 8
+                    played_at:
                       type: string
                       format: date-time
                       example: "2025-11-06T10:30:00Z"
-                    end:
+                    end_at:
                       type: string
                       format: date-time
                       example: "2025-11-06T10:40:00Z"
@@ -410,7 +419,8 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  #   post:
+  # /game/match-history:
+    # post:
 
 components:
   securitySchemes:
