@@ -115,22 +115,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    example: 1
-                  username:
-                    type: string
-                    example: Alice
-                  email:
-                    type: string
-                    format: email
-                    example: alice@example.com
-                  avatar:
-                    type: string
-                    format: uri
-                    example: https://example.com/avatar.png
+                $ref: '#/components/schemas/UserProfile'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
@@ -166,22 +151,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    example: 1
-                  username:
-                    type: string
-                    example: Alice
-                  email:
-                    type: string
-                    format: email
-                    example: alice@example.com
-                  avatar:
-                    type: string
-                    format: uri
-                    example: https://example.com/avatar.png
+                $ref: '#/components/schemas/UserProfile'
         '400':
           description: Invalid fields.
           content:
@@ -255,23 +225,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    example: 1
-                  fromId:
-                    type: integer
-                    example: 1
-                  toId:
-                    type: integer
-                    example: 2
-                  status:
-                    type: string
-                    enum:
-                      - PENDING
-                      - ACCEPTED
-                      - REJECTED
+                $ref: '#/components/schemas/FriendRequest'
         '400':
           description: Invalid input or already friends.
         '401':
@@ -308,24 +262,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                      example: 1
-                    fromId:
-                      type: integer
-                      example: 1
-                    toId:
-                      type: integer
-                      example: 2
-                    status:
-                      type: string
-                      enum: [PENDING, ACCEPTED, REJECTED]
-                    createdAt:
-                      type: string
-                      format: date-time
-                      example: "2025-11-06T10:30:00Z"
+                  $ref: '#/components/schemas/FriendRequest'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
@@ -342,7 +279,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       requestBody:
         required: true
         content:
@@ -383,37 +320,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    matchId:
-                      type: integer
-                      example: 42
-                    player1Id:
-                      type: integer
-                      example: 1
-                    player2Id:
-                      type: integer
-                      example: 2
-                    player1DisplayName:
-                      type: string
-                      example: Alice
-                    player2DisplayName:
-                      type: string
-                      example: Bob
-                    player1Score:
-                      type: integer
-                      example: 10
-                    player2Score:
-                      type: integer
-                      example: 8
-                    played_at:
-                      type: string
-                      format: date-time
-                      example: "2025-11-06T10:30:00Z"
-                    end_at:
-                      type: string
-                      format: date-time
-                      example: "2025-11-06T10:40:00Z"
+                  $ref: '#/components/schemas/MatchHistory'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
@@ -475,37 +382,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  matchId:
-                    type: integer
-                    example: 42
-                  player1Id:
-                    type: integer
-                    example: 1
-                  player2Id:
-                    type: integer
-                    example: 2
-                  player1Score:
-                    type: integer
-                    example: 10
-                  player2Score:
-                    type: integer
-                    example: 8
-                  player1DisplayName:
-                    type: string
-                    example: Alice
-                  player2DisplayName:
-                    type: string
-                    example: Bob
-                  played_at:
-                    type: string
-                    format: date-time
-                    example: "2025-11-06T10:30:00Z"
-                  end_at:
-                    type: string
-                    format: date-time
-                    example: "2025-11-06T10:40:00Z"
+                $ref: '#/components/schemas/MatchHistory'
         '400':
           description: Invalid input.
         '401':
@@ -519,6 +396,37 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        username: { type: string, example: Alice }
+        email: { type: string, format: email, example: alice@example.com }
+        avatar: { type: string, format: uri, example: https://example.com/avatar.png }
+
+    FriendRequest:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        fromId: { type: integer, example: 1 }
+        toId: { type: integer, example: 2 }
+        status: { type: string, enum: [PENDING, ACCEPTED, REJECTED] }
+        created_at: { type: string, format: date-time, example: "2025-11-06T10:30:00Z" }
+
+    MatchHistory:
+      type: object
+      properties:
+        matchId: { type: integer, example: 42 }
+        player1Id: { type: integer, example: 1 }
+        player2Id: { type: integer, example: 2 }
+        player1DisplayName: { type: string, example: Alice }
+        player2DisplayName: { type: string, example: Bob }
+        player1Score: { type: integer, example: 10 }
+        player2Score: { type: integer, example: 8 }
+        played_at: { type: string, format: date-time, example: "2025-11-06T10:30:00Z" }
+        end_at: { type: string, format: date-time, example: "2025-11-06T10:40:00Z" }
 
   responses:
     UnauthorizedError:
