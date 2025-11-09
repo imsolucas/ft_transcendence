@@ -1,14 +1,11 @@
-import { FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient, UserStatus, FriendshipStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // Get user profile
 export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
-  // Debug log to check if req.user is set
-  console.log("req.user:", req.user);
-  // Assume user id is available via JWT auth (e.g., req.user.id)
-  const userId = (req.user as any)?.id;
+  const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -24,7 +21,7 @@ export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
 
 // Update user profile
 export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply) {
-  const userId = (req.user as any)?.id;
+  const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
   const { name, email, avatar } = req.body as { name?: string; email?: string; avatar?: string };
@@ -51,10 +48,9 @@ export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply
 
 // Get friend list
 export async function getFriends(req: FastifyRequest, reply: FastifyReply) {
-  const userId = (req.user as any)?.id;
+  const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-  // Find accepted friendships where user is requester or addressee
   const friendships = await prisma.friendship.findMany({
     where: {
       status: FriendshipStatus.ACCEPTED,
@@ -69,7 +65,6 @@ export async function getFriends(req: FastifyRequest, reply: FastifyReply) {
     }
   });
 
-  // Map to friend objects (exclude self)
   const friends = friendships.map(f => {
     const friend =
       f.requesterId === userId ? f.addressee : f.requester;
@@ -85,7 +80,7 @@ export async function getFriends(req: FastifyRequest, reply: FastifyReply) {
 
 // Send a friend request
 export async function sendFriendRequest(req: FastifyRequest, reply: FastifyReply) {
-  const userId = (req.user as any)?.id;
+  const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
   const { username } = req.body as { username: string };
@@ -95,7 +90,6 @@ export async function sendFriendRequest(req: FastifyRequest, reply: FastifyReply
   if (!target) return reply.code(404).send({ error: "Target user not found." });
   if (target.id === userId) return reply.code(400).send({ error: "Cannot send friend request to yourself." });
 
-  // Check if already friends or request exists
   const existing = await prisma.friendship.findFirst({
     where: {
       OR: [
@@ -130,7 +124,7 @@ export async function sendFriendRequest(req: FastifyRequest, reply: FastifyReply
 
 // Retrieve friend requests
 export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply) {
-  const userId = (req.user as any)?.id;
+  const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
   const direction = (req.query as any)?.direction ?? "received";
@@ -155,7 +149,7 @@ export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply
 
 // Accept or reject a friend request
 export async function updateFriendRequest(req: FastifyRequest, reply: FastifyReply) {
-  const userId = (req.user as any)?.id;
+  const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
   const { requestId } = req.params as { requestId: number };

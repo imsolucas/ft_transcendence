@@ -1,8 +1,8 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/gameControllers.ts";
 
 export default async function registerGameRoutes(app: FastifyInstance) {
-  // Match history (GET /user/match-history)
+  // GET /user/match-history
   app.get("/user/match-history", {
     schema: {
       summary: "Retrieve match history of authenticated user",
@@ -21,7 +21,7 @@ export default async function registerGameRoutes(app: FastifyInstance) {
     }
   }, controllers.getMatchHistory);
 
-  // Game service: upload match history (POST /game/match-history)
+  // POST /game/match-history
   app.post("/game/match-history", {
     schema: {
       summary: "Upload match history",
@@ -41,14 +41,14 @@ export default async function registerGameRoutes(app: FastifyInstance) {
           "end_at"
         ],
         properties: {
-          player1Id: { type: "integer", example: 1 },
-          player2Id: { type: "integer", example: 2 },
-          player1Score: { type: "integer", example: 10 },
-          player2Score: { type: "integer", example: 8 },
-          player1DisplayName: { type: "string", example: "Alice" },
-          player2DisplayName: { type: "string", example: "Bob" },
-          played_at: { type: "string", format: "date-time", example: "2025-11-06T10:30:00Z" },
-          end_at: { type: "string", format: "date-time", example: "2025-11-06T10:40:00Z" }
+          player1Id: { type: "integer" },
+          player2Id: { type: "integer" },
+          player1Score: { type: "integer" },
+          player2Score: { type: "integer" },
+          player1DisplayName: { type: "string" },
+          player2DisplayName: { type: "string" },
+          played_at: { type: "string", format: "date-time" },
+          end_at: { type: "string", format: "date-time" }
         }
       },
       response: {

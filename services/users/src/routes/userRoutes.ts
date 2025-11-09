@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/userControllers.ts";
 
 export default async function registerUserRoutes(app: FastifyInstance) {
@@ -29,9 +29,9 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       body: {
         type: "object",
         properties: {
-          name: { type: "string", example: "Alice" },
-          email: { type: "string", format: "email", example: "alice@example.com" },
-          avatar: { type: "string", format: "uri", example: "https://example.com/avatar.png" }
+          name: { type: "string" },
+          email: { type: "string", format: "email" },
+          avatar: { type: "string", format: "uri" }
         }
       },
       response: {
@@ -40,7 +40,7 @@ export default async function registerUserRoutes(app: FastifyInstance) {
           description: "Invalid fields.",
           type: "object",
           properties: {
-            error: { type: "string", example: "Invalid fields." }
+            error: { type: "string" }
           }
         },
         401: { $ref: "UnauthorizedError#" },
@@ -63,8 +63,8 @@ export default async function registerUserRoutes(app: FastifyInstance) {
           items: {
             type: "object",
             properties: {
-              username: { type: "string", example: "Bob" },
-              avatar: { type: "string", format: "uri", example: "https://example.com/avatar2.png" },
+              username: { type: "string" },
+              avatar: { type: "string", format: "uri" },
               status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] }
             }
           }
@@ -85,7 +85,7 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       body: {
         type: "object",
         properties: {
-          username: { type: "string", example: "Bob" }
+          username: { type: "string" }
         }
       },
       response: {

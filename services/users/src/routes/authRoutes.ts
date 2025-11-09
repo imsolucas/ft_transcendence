@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/authControllers.ts";
 
 export default async function registerAuthRoutes(app: FastifyInstance) {
@@ -11,9 +11,9 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
         type: "object",
         required: ["name", "email", "password"],
         properties: {
-          name: { type: "string", example: "Alice" },
-          email: { type: "string", format: "email", example: "alice@example.com" },
-          password: { type: "string", format: "password", example: "SuperSecret123" }
+          name: { type: "string" },
+          email: { type: "string", format: "email" },
+          password: { type: "string", format: "password" }
         }
       },
       response: {
@@ -39,8 +39,8 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
         type: "object",
         required: ["name", "password"],
         properties: {
-          name: { type: "string", example: "Alice" },
-          password: { type: "string", format: "password", example: "SuperSecret123" }
+          name: { type: "string" },
+          password: { type: "string", format: "password" }
         }
       },
       response: {
@@ -48,14 +48,14 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
           description: "OK",
           type: "object",
           properties: {
-            token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+            token: { type: "string" },
             user: {
               type: "object",
               properties: {
-                id: { type: "integer", example: 1 },
-                username: { type: "string", example: "Alice" },
-                email: { type: "string", format: "email", example: "alice@example.com" },
-                avatar: { type: "string", format: "uri", example: "https://example.com/avatar.png" }
+                id: { type: "integer" },
+                username: { type: "string" },
+                email: { type: "string", format: "email" },
+                avatar: { type: "string", format: "uri" }
               }
             }
           }
@@ -64,7 +64,7 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
           description: "Invalid username or password",
           type: "object",
           properties: {
-            error: { type: "string", example: "Invalid username or password" }
+            error: { type: "string" }
           }
         },
         500: {
