@@ -9,6 +9,7 @@ const HOST = "0.0.0.0";
   try {
     await app.listen({ port: Number(PORT), host: HOST });
     console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`Documentation available on http://localhost:${PORT}/docs`)
   } catch (err) {
     app.log?.error?.(err);
     process.exit(1);
