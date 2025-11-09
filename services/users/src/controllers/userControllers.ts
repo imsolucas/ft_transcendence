@@ -24,15 +24,15 @@ export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply
   const userId = req.user?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-  const { name, email, avatar } = req.body as { name?: string; email?: string; avatar?: string };
-  if (!name && !email && !avatar) {
+  const { username, email, avatar } = req.body as { username?: string; email?: string; avatar?: string };
+  if (!username && !email && !avatar) {
     return reply.code(400).send({ error: "Invalid fields." });
   }
 
   const updated = await prisma.user.update({
     where: { id: userId },
     data: {
-      ...(name && { username: name }),
+      ...(username && { username: username }),
       ...(email && { email }),
       ...(avatar && { avatar }),
     },
