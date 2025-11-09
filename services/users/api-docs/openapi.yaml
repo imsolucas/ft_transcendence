@@ -144,7 +144,7 @@ paths:
                 avatar:
                   type: string
                   format: uri
-                  example: https://example.com/avatar.png;
+                  example: https://example.com/avatar.png
       responses:
         '200':
           description: Profile updated successfully.
@@ -298,7 +298,7 @@ paths:
         '400':
           description: Invalid request.
         '401':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Friend request not found.
         '500':
