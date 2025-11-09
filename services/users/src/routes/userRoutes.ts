@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import * as controllers from "../controllers";
+import * as controllers from "../controllers/userControllers.ts";
 
 export default async function registerUserRoutes(app: FastifyInstance) {
   // User profile

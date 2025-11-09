@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import * as controllers from "../controllers";
+import * as controllers from "../controllers/gameControllers.ts";
 
 export default async function registerGameRoutes(app: FastifyInstance) {
   // Match history (GET /user/match-history)

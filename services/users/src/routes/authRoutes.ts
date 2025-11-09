@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import * as controllers from "../controllers";
+import * as controllers from "../controllers/authControllers.ts";
 
 export default async function registerAuthRoutes(app: FastifyInstance) {
   // Auth signup
