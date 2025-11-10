@@ -215,8 +215,8 @@
                 action_1: false,
                 action_2: false
             }
-            if (event.key === 'w') move.up == true;
-            if (event.key === "s") move.down == true;
+            if (event.key === 'w') move.up = true;
+            if (event.key === "s") move.down = true;
             if (!move) return;
             socket.send(JSON.stringify({
                 type: 'playerInput',
