@@ -3,7 +3,7 @@ import type { GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputM
 import { drawCircle, drawRectangle, drawString, drawVector } from "./utils/drawUtils";
 import { constants } from "shared";
 
-const ASPECT_RATIO = 16 / 9;
+const ASPECT_RATIO = constants.COURT_WIDTH / constants.COURT_HEIGHT;
 
 export class GameClient {
     private canvas: HTMLCanvasElement;
@@ -12,7 +12,6 @@ export class GameClient {
     private isRunning = false;
     private previousTime: number = 0;
     private playerInputs: PlayerInputs[]
-    private playerScores: number[] = []
     private gameEngine?: GameEngine;
     private gameState!: GameState;
     private config: GameConfig;
@@ -30,7 +29,6 @@ export class GameClient {
         this.ctx = canvas.getContext('2d')!;
         const inputs: PlayerInputs = {up: false, down: false, left: false, right: false, action_1: false, action_2: false}
         this.playerInputs = [{...inputs}, {...inputs}]
-        this.playerScores = [0, 0];
         if (this.socket)
             this.initSocket();
         this.fillWindow();
