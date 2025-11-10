@@ -17,6 +17,7 @@ import { pongSessions } from '../index.js';
 import { MessageBroadcaster } from './broadcaster.js';
 import { randomUUID } from 'crypto';
 import { GameServer } from '../game/GameServer.js';
+import { json } from 'stream/consumers';
 
 export class MessageHandler {
   constructor(
@@ -266,6 +267,8 @@ export class MessageHandler {
     const room = this.roomManager.getRoom(player.roomId);
     if (!room) return;
 
+    console.log(`Input from player ${player.name}`)
+    console.log(JSON.stringify(data.data));
     const session = pongSessions.get(room.id);
     if (!session) return;
 
