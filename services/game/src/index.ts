@@ -6,7 +6,6 @@ import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
-// Removed GameRoomManager import
 import { MessageHandler } from './websocket/handlers.js';
 import type { GameServer } from './game/GameServer.js';
 
@@ -15,7 +14,6 @@ const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
 const roomStorage = new InMemoryRoomStorage();
 const roomManager = new RoomManager(playerStorage, roomStorage);
-// Removed GameRoomManager instance and setGameRoomManager
 const broadcaster = new MessageBroadcaster(roomManager);
 const messageHandler = new MessageHandler(roomManager, broadcaster);
 export const pongSessions = new Map<string, GameServer>();
@@ -43,33 +41,20 @@ server.register(async function (fastify: any) {
       try {
         const data: GameMessage = JSON.parse(message.toString());
 
-        switch (data.type) {
-          case "connection":
-            currentPlayer = messageHandler.handleConnection(data, connection);
-            break;
-          case "joinQueue":
-            if (currentPlayer) {
-              messageHandler.handleJoinQueue(data, connection);
-            }
-            break;
-          case "leaveRoom":
-            if (currentPlayer) {
-              messageHandler.handleDisconnection(currentPlayer);
-            }
-            break;
-          case "playerReady":
-            if (currentPlayer) {
-              messageHandler.handlePlayerReady(data, currentPlayer);
-            }
-            break;
-          case 'playerInput':
-            if (currentPlayer) {
-              messageHandler.handlePlayerInput(data, currentPlayer);
-            }
-            break;
-          default:
-            console.error('Unknown message type:', data.type);
+        // Handle connection separately to establish player
+        if (data.type === "connection") {
+          currentPlayer = messageHandler.handleConnection(data, connection);
+          return;
         }
+
+        // For all other messages, check if player exists once
+        if (!currentPlayer) {
+          console.error('No player associated with connection');
+          return;
+        }
+
+        // Use unified message router - single entry point for all authenticated messages
+        messageHandler.routeMessage(data, currentPlayer);
       } catch (error) {
         console.error('JSON parse error:', error);
       }
