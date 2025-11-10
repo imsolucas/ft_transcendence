@@ -210,7 +210,7 @@
             }
         }
 
-        document.addEventListener('keydown', function(event) {
+        function sendInput(event, keydown) {
             if (!socket || socket.readyState !== WebSocket.OPEN || !currentPlayer || !currentPlayer.roomId) return;
             let move = {
                 up: false,
@@ -220,19 +220,26 @@
                 action_1: false,
                 action_2: false
             }
-            if (event.key === 'w') move.up = true;
-            if (event.key === "s") move.down = true;
-            if (!move) return;
+            switch (event.key) {
+                case 'w':
+                    move.up = keydown
+                    break;
+                case 's':
+                    move.down = keydown
+                default:
+                    return;
+            }
             socket.send(JSON.stringify({
                 type: 'playerInput',
                 data: {
-                    playerId: currentPlayer.id,
-                    roomId: currentPlayer.roomId,
-                    direction: move
+                    inputs: move
                 },
                 timestamp: Date.now()
             }));
-        })
+        }
+
+        document.addEventListener('keydown', (event) => sendInput(event, true))
+        document.addEventListener('keyup', (event) => sendInput(event, false))
     </script>
 </body>
 </html>
