@@ -1,4 +1,4 @@
-import { Game } from "../game/Game"
+import { Game } from "../game/GameClient"
 
 let currentGame: Game | null = null;
 

@@ -1,7 +1,9 @@
-import { Game } from "../game/Game"
+import type { GameConfig, BallConfig, PlayerConfig} from "shared/index";
+import { GameClient } from "../game/GameClient"
+import { socket } from "./lobbyPage";
+import { default_config } from "../game/default_configs";
 
-let currentGame: Game | null = null;
-
+let currentGame: GameClient | null = null;
 
 export function GamePage(): HTMLElement {
     const container = document.createElement('div');
@@ -9,6 +11,12 @@ export function GamePage(): HTMLElement {
 
     // const navbar = document.querySelector('nav')
     // const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
+
+    const config: GameConfig = {
+        playerConfigs: [default_config.player, default_config.player],
+        ballConfig: default_config.ball,
+        background: "#ae0909"
+    }
 
     const canvas = document.createElement('canvas');
     canvas.className = '';
@@ -20,9 +28,10 @@ export function GamePage(): HTMLElement {
     document.body.style.margin = '0';
     document.body.style.padding = '0';
 
+
     setTimeout(() => {
-        currentGame = new Game(canvas);
-        currentGame.start();
+        currentGame = new GameClient(canvas, config, socket);
+        currentGame.start()
     }, 0);
 
     return container;

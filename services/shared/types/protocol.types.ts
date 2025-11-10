@@ -1,5 +1,5 @@
 import type { Player, serializablePlayer } from "./player.types.js";
-import type { PlayerInputs } from "./pong.types.js";
+import type { GameState, PlayerInputs } from "./pong.types.js";
 
 export type GameMessage =
 | ConnectionMessage
@@ -8,6 +8,7 @@ export type GameMessage =
 | PlayerReadyMessage
 | JoinQueueMessage
 | LeaveRoomMessage
+| GameStateMessage
 | PlayerInputMessage;
 
 export interface BaseMessage {
@@ -97,3 +98,9 @@ export interface GameStartMessage extends BaseMessage {
 	}
 }
 
+export interface GameStateMessage extends BaseMessage {
+	type: 'gameState';
+	data: {
+		gameState: GameState
+	}
+}

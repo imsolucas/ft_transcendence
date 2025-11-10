@@ -4,7 +4,8 @@ import { BaseGameState, type GameContext, type StateResult } from "./BaseGameSta
 
 // State for when the game starts, awaits input from the player to start the game (should probably be a nicer menu in the future)
 export default class GameStartState extends BaseGameState{
-    #start = false;
+    #waitedTime = 0
+    #TimeToWait = 2
 
     constructor(context: GameContext) {
         super(context, "GameStartState")
@@ -22,11 +23,13 @@ export default class GameStartState extends BaseGameState{
         for (let i in this.getPlayerScore())
             this.getPlayerScore()[i] = 0;
         this.getEntityManager().getBall().reset()
-        this.getEntityManager().getBall().randomVelocity();
+        this.getEntityManager().getBall().randomVelocity();     
     }
 
     update(deltaTime: number): StateResult | null {
-        if (this.#start)
+        this.#waitedTime += deltaTime;
+
+        if (this.#waitedTime >= this.#TimeToWait)
             return ({nextState: "PlayingState"});
         return (null)
     }

@@ -42,7 +42,6 @@ export default class Paddle extends Entity {
             this.pos.y = constants.COURT_HEIGHT - this.#size.y / 2;
         else {
             this.pos.y += cur_vel_y;
-            this.velocity.y *= constants.PLAYER_FRICTION
         }
     }
 
@@ -68,6 +67,8 @@ export default class Paddle extends Entity {
     }
 
     input(input: PlayerInputs): void {
+        this.velocity.y = 0
+
         if (input.up)
             this.velocity.y = -constants.PLAYER_SPEED;
         if (input.down)

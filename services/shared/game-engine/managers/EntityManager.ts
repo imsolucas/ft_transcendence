@@ -3,6 +3,8 @@ import Paddle from "../entities/Paddle.js";
 import Entity from "../entities/Entity.js";
 import type { PlayerInputs } from "../../types/pong.types.js";
 
+type EntityConstructor<T extends Entity> = new (...args: any[]) => T;
+
 export default class EntityManager {
     #entities: Entity[] = []
     #paddles: Paddle[] = []
@@ -25,9 +27,17 @@ export default class EntityManager {
         }
     }
 
-    tickEntities(deltaTime: number): void {
-        for (const entity of this.#entities) {
-            entity.tick(deltaTime);
+    tickEntities<T extends Entity>(deltaTime: number, entityType?: EntityConstructor<T>): void {
+        if (!entityType) {
+            for (const entity of this.#entities) {
+                entity.tick(deltaTime);
+            }
+        } else {
+            for (const entity of this.#entities) {
+                if (entity instanceof entityType) {
+                    entity.tick(deltaTime);
+                }
+            }
         }
     }
 

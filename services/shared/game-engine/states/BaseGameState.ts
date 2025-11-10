@@ -6,9 +6,10 @@ export interface GameContext {
 		entityManager: EntityManager;
 		playerScore: number[];
 		previousState?: StateName // The state previous to the current one
+		socket?: WebSocket //Websocket for if the game is in listening mode
 }
 
-export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOverState" | "GameStartState"
+export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOverState" | "GameStartState" | "ListenState"
 
 // What states can "return" to communicate with StateManager
 export interface StateResult {

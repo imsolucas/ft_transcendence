@@ -11,6 +11,10 @@ export class StateManager {
 		constructor(context: GameContext) {
 			this.context = context;
 		}
+		
+		getName(): StateName {
+			return this.currentState!.getName();
+		}
 
 		registerState(stateName: StateName, StateClass: StateConstructor): void {
 				// Check if already registered

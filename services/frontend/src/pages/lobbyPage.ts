@@ -1,7 +1,7 @@
 import { LoadingPong } from "../components/loadingGame";
 import { navigate } from "../router";
 
-export var socket: WebSocket;
+export var socket: WebSocket | undefined
 
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
@@ -238,7 +238,7 @@ export function LobbyPage(): HTMLElement {
     const onlineGame = container.querySelector('.onlineBtn');
 
     localGame?.addEventListener('click', () => {
-        navigate('game');
+		navigate('game');
     });
     
     onlineGame?.addEventListener('click', () => {
