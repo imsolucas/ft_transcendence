@@ -38,6 +38,7 @@ export interface JoinQueueMessage extends BaseMessage {
 	type: 'joinQueue';
 	data: {
 		roomId?: string;
+		roomType: 'standard' | 'tournament';
 	}
 }
 

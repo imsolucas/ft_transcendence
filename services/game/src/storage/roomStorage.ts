@@ -42,8 +42,9 @@ export class InMemoryRoomStorage implements RoomStorage {
 	getAvailableRooms(): Room[] {
 		const availableRooms: Room[] = [];
 		for (const room of this.rooms.values()) {
-			// A room is available if it has less than 2 players and is waiting
-			if (room.playerIds.length < 2 && room.status === 'waiting') {
+			let maxPlayers = room.type === 'standard' ? 2 : 8;
+			// A room is available if it has less than maxPlayers and is waiting
+			if (room.playerIds.length < maxPlayers && room.status === 'waiting') {
 				availableRooms.push(room);
 			}
 		}

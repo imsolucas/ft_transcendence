@@ -14,7 +14,8 @@
 
     <hr>
     <input type="text" id="roomId" placeholder="Room ID">
-    <button onclick="joinQueue()">Play</button>
+    <button onclick="joinRoom('standard')">Play Standard</button>
+    <button onclick="joinRoom('tournament')">Tournament</button>
     <button onclick="leaveRoom()">Leave</button>
 
     <hr>
@@ -112,7 +113,7 @@
             };
         }
 
-        function joinQueue() {
+        function joinRoom(roomType) {
             if (!socket || socket.readyState !== WebSocket.OPEN) {
                 console.log('Not connected to server!');
                 return;
@@ -122,27 +123,28 @@
                 return;
             }
             const roomId = document.getElementById('roomId').value.substring(0, 8);
+            let message;
             if (roomId === "") {
-                let message = {
+                message = {
                     type: "joinQueue",
                     data: {
                         playerId: currentPlayer.id,
+                        roomType: roomType
                     }
-                }
-                console.log('Client requesting to join queue');
-                socket.send(JSON.stringify(message));
-            }
-            else {
-                let message = {
+                };
+                console.log(`Client requesting to join ${roomType} queue`);
+            } else {
+                message = {
                     type: "joinQueue",
                     data: {
                         roomId: roomId,
                         playerId: currentPlayer.id,
+                        roomType: roomType
                     }
                 };
-                console.log('Client requesting to join room:', roomId);
-                socket.send(JSON.stringify(message));
+                console.log(`Client requesting to join ${roomType} room:`, roomId);
             }
+            socket.send(JSON.stringify(message));
         }
 
         function leaveRoom() {
@@ -207,19 +209,14 @@
 
         document.addEventListener('keydown', function(event) {
             if (!socket || socket.readyState !== WebSocket.OPEN || !currentPlayer || !currentPlayer.roomId) return;
-            let move = {
-                up: false,
-                down: false,
-                left: false,
-                right: false,
-                action_1: false,
-                action_2: false
-            }
-            if (event.key === 'w') move.up == true;
-            if (event.key === "s") move.down == true;
+            let move = null;
+            if (event.key === 'w') move = 'up';
+            if (event.key === "s") move = 'down';
+            if (event.key === 'ArrowUp') move = 'up';
+            if (event.key === 'ArrowDown') move = 'down';
             if (!move) return;
             socket.send(JSON.stringify({
-                type: 'playerInput',
+                type: 'paddleMove',
                 data: {
                     playerId: currentPlayer.id,
                     roomId: currentPlayer.roomId,

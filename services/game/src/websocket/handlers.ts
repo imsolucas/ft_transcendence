@@ -30,9 +30,6 @@ export class MessageHandler {
       case "joinQueue":
         this.handleJoinQueue(data as JoinQueueMessage, player);
         break;
-      case "joinTournament":
-        this.handleJoinTournament(data as JoinQueueMessage, player);
-        break;
       case "leaveRoom":
         this.handleDisconnection(player);
         break;
@@ -86,17 +83,10 @@ export class MessageHandler {
 
     if (data.data.roomId)
       return (this.joinRoom(player, data));
+    else if (data.data.roomType == 'tournament')
+      return (this.joinTournament(player, data));
     else
       return (this.joinQueue(player, data));
-  }
-
-  handleJoinTournament(data: JoinQueueMessage, player: Player): Room | null {
-    console.log(`"${player.id}", Requesting to join tournament`);
-
-    if (data.data.roomId)
-      return (this.joinRoom(player, data));
-    else
-      return (this.joinTournament(player, data));
   }
 
   joinRoom(player: Player, data: JoinQueueMessage): Room | null {
@@ -241,12 +231,24 @@ export class MessageHandler {
   }
 
   private checkAndStartGame(roomId: string): void {
+    const room = this.roomManager.getRoom(roomId);
+    if (!room) return;
+
     const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
-    // need between 2 and 8 players to start
-    if (playersInRoom.length < 2 || playersInRoom.length > 8) {
-      console.log(`Cannot start game, room length: ${playersInRoom.length}`);
-      return;
+    // Check minimum and maximum players based on room type
+    if (room.type === 'standard') {
+      // Standard rooms need exactly 2 players
+      if (playersInRoom.length !== 2) {
+        console.log(`Cannot start standard game, need 2 players, have ${playersInRoom.length}`);
+        return;
+      }
+    } else {
+      // Tournament rooms need 2-8 players
+      if (playersInRoom.length < 2 || playersInRoom.length > 8) {
+        console.log(`Cannot start tournament game, need 2-8 players, have ${playersInRoom.length}`);
+        return;
+      }
     }
 
     // all players must be ready
@@ -257,11 +259,8 @@ export class MessageHandler {
     }
 
     // Set room status to 'playing'
-    const room = this.roomManager.getRoom(roomId);
-    if (room) {
-      room.status = 'playing';
-      pongSessions.set(roomId, new GameServer(room, this.broadcaster));
-    }
+    room.status = 'playing';
+    pongSessions.set(roomId, new GameServer(room, this.broadcaster));
 
     console.log('All players are ready - starting game!');
 
