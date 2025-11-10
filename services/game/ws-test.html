@@ -16,6 +16,7 @@
     <input type="text" id="roomId" placeholder="Room ID">
     <button onclick="joinQueue()">Play</button>
     <button onclick="leaveRoom()">Leave</button>
+    <div id="room">Room: None</div>
 
     <hr>
     <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
@@ -88,6 +89,8 @@
                         currentPlayer.roomId = message.data.roomId;
                         currentPlayer.position = message.data.position;
                         console.log('Joined room:', currentPlayer.roomId, 'as position', currentPlayer.position);
+                        const room = document.getElementById('room');
+                        room.innerText = `Room: ${currentPlayer.roomId}`
                     } else if (message.type === "gameState") {
                         // game tick
                         document.getElementById('gameStateDisplay').textContent = JSON.stringify(message.data, null, 2);
@@ -163,6 +166,8 @@
             socket.send(JSON.stringify(message));
             console.log('Client requesting to leave room');
             isReady = false;
+            const room = document.getElementById('room');
+            room.innerText = "Room: None"
             const readyButton = document.getElementById('readyButton');
             if (readyButton) readyButton.textContent = "I'm Ready!";
         }
