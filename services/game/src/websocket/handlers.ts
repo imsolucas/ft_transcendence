@@ -24,6 +24,26 @@ export class MessageHandler {
     private broadcaster: MessageBroadcaster,
   ) {}
 
+  // Unified message router - single entry point for all authenticated messages
+  routeMessage(data: any, player: Player): void {
+    switch (data.type) {
+      case "joinQueue":
+        this.handleJoinQueue(data as JoinQueueMessage, player);
+        break;
+      case "leaveRoom":
+        this.handleDisconnection(player);
+        break;
+      case "playerReady":
+        this.handlePlayerReady(data as PlayerReadyMessage, player);
+        break;
+      case "playerInput":
+        this.handlePlayerInput(data as PlayerInputMessage, player);
+        break;
+      default:
+        console.error('Unknown message type:', data.type);
+    }
+  }
+
   handleConnection(data: ConnectionMessage, connection: any): Player | null {
     console.log(`Player "${data.data.playerName}" wants to connect.`);
 
@@ -58,51 +78,44 @@ export class MessageHandler {
   return newPlayer;
   }
 
-  handleJoinQueue(data: JoinQueueMessage, connection: any): Room | null {
-    console.log(`"${data.data.playerId}", Requesting to join queue`);
-
-    const playerId = data.data.playerId;
-    if (!this.roomManager.getPlayer(playerId)) {
-      this.sendError(connection, "Player not found");
-      return null;
-    }
+  handleJoinQueue(data: JoinQueueMessage, player: Player): Room | null {
+    console.log(`"${player.id}", Requesting to join queue`);
 
     if (data.data.roomId)
-      return (this.joinRoom(playerId, data, connection));
+      return (this.joinRoom(player, data));
     else
-      return (this.joinQueue(playerId, data, connection));
+      return (this.joinQueue(player, data));
   }
 
-  joinRoom(playerId: string, data: JoinQueueMessage, connection: any): Room | null {
+  joinRoom(player: Player, data: JoinQueueMessage): Room | null {
     const roomId = data.data.roomId;
 
     if (!roomId) {
-      this.sendError(connection, "Room ID is required");
+      this.sendError(player.socket, "Room ID is required");
       return null;
     }
 
     const room = this.roomManager.getRoom(roomId);
 
     if (!room) {
-      this.sendError(connection, "Room not found");
+      this.sendError(player.socket, "Room not found");
       return null;
     }
 
     if (this.roomManager.isRoomFull(roomId)) {
-      this.sendError(connection, "Room is full");
+      this.sendError(player.socket, "Room is full");
       return null;
     }
 
-    this.roomManager.addPlayerToRoom(roomId, playerId);
-    const player = this.roomManager.getPlayer(playerId);
+    this.roomManager.addPlayerToRoom(roomId, player.id);
     const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
     const position = player ? player.position : 0;
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
-        playerName: player?.name!,
-        playerId: playerId,
+        playerName: player.name,
+        playerId: player.id,
         roomId: roomId,
         position: position,
         playersInRoom: playersInRoom
@@ -110,20 +123,14 @@ export class MessageHandler {
       timestamp: Date.now()
     }
     this.broadcaster.broadcastToRoom(roomId, response);
-    console.log(`Player "${player ? player.name : playerId}" joined room "${roomId}"`);
+    console.log(`Player "${player.name}" joined room "${roomId}"`);
 
     return room || null;
   }
 
-  joinQueue(playerId: string, data: JoinQueueMessage, connection: any) {
+  joinQueue(player: Player, data: JoinQueueMessage): Room | null {
     const availableRooms = this.roomManager.getAvailableRooms() || [];
-    const player = this.roomManager.getPlayer(playerId);
     let room: Room;
-  
-    if (!player){
-      console.error(`Player with id: ${playerId} not found`);
-      return null;
-    } 
 
     if (this.roomManager.getRoom(player.roomId)){
       this.sendError(player.socket, "Player Already in room");
@@ -136,14 +143,14 @@ export class MessageHandler {
       room = this.roomManager.createRoom();
       console.log(`Player "${player.name}" created room "${room.id}"`);
     }
-    this.roomManager.addPlayerToRoom(room.id, playerId);
+    this.roomManager.addPlayerToRoom(room.id, player.id);
     console.log(`Player "${player.name}" joined room "${room.id}"`);
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
         playerName: player.name,
-        playerId: playerId,
+        playerId: player.id,
         roomId: room.id,
         position: player.position,
         playersInRoom: this.roomManager.getPlayersInRoom(room.id).map(toSerializablePlayer)
@@ -156,7 +163,7 @@ export class MessageHandler {
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
     console.log(`Player "${player.name}" is ${data.data.ready ? 'ready' : 'not ready'}`);
-    
+
     if (!this.roomManager.getPlayersInRoom(player.roomId).includes(player)){
       this.sendError(player.socket, `Unable to ready: Player "${player.name}" not in room "${player.roomId}"`);
       return ;
@@ -179,7 +186,7 @@ export class MessageHandler {
     // check if both players are ready and start game
     this.checkAndStartGame(player.roomId);
   }
-  
+
   private checkAndStartGame(roomId: string): void {
     const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
@@ -242,7 +249,6 @@ export class MessageHandler {
     // broadcast BEFORE removing the player, so others get notified
     this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
 
-    player.roomId = "";
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
     this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
@@ -257,7 +263,7 @@ export class MessageHandler {
   }
 
   handlePlayerInput(data: PlayerInputMessage, player: Player) {
-    const room = this.roomManager.getRoom(data.data.roomId);
+    const room = this.roomManager.getRoom(player.roomId);
     if (!room) return;
 
     const session = pongSessions.get(room.id);

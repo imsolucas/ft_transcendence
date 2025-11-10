@@ -28,8 +28,8 @@ export interface ConnectionMessage extends BaseMessage {
 export interface PlayerReadyMessage extends BaseMessage {
 	type: 'playerReady';
 	data: {
-		playerName: string;
-		playerId: string;
+		playerName?: string;
+		playerId?: string;
 		ready: boolean;
 	};
 }
@@ -37,24 +37,17 @@ export interface PlayerReadyMessage extends BaseMessage {
 export interface JoinQueueMessage extends BaseMessage {
 	type: 'joinQueue';
 	data: {
-		playerName:	 string;
-		playerId: string;
 		roomId?: string;
 	}
 }
 
 export interface LeaveRoomMessage extends BaseMessage {
 	type: 'leaveRoom';
-	data: {
-		playerID: string;
-	}
 }
 
 export interface PlayerInputMessage extends BaseMessage {
 	type: 'playerInput';
 	data: {
-		playerId: string;
-		roomId: string;
 		inputs: PlayerInputs
 	}
 }

@@ -4,16 +4,11 @@ import type { Room, RoomStorage } from '../types/room.types.js';
 import type { GameServer } from './GameServer.js';
 
 export class RoomManager {
-  private gameRoomManager?: GameRoomManager;
 
   constructor(
     private playerStorage: PlayerStorage,
     private roomStorage: RoomStorage
   ) {}
-
-  setGameRoomManager(gameRoomManager: GameRoomManager) {
-    this.gameRoomManager = gameRoomManager;
-  }
 
   addPlayer(player: Player): void {
     return this.playerStorage.add(player);
@@ -35,9 +30,6 @@ export class RoomManager {
   // Remove a room
   removeRoom(roomId: string): Room | undefined {
     const removed = this.roomStorage.removeRoom(roomId);
-    if (removed && this.gameRoomManager) {
-      this.gameRoomManager.remove(roomId);
-    }
     return removed;
   }
 
@@ -81,10 +73,6 @@ export class RoomManager {
     room.playerIds.push(playerId);
     if (room.playerIds.length === 2) {
       room.status = 'full';
-      if (this.gameRoomManager) {
-        const gameRoom = this.gameRoomManager.getOrCreate(room);
-        gameRoom.status = 'full';
-      }
     }
     console.log("Player added to room");
     return true;
@@ -108,10 +96,6 @@ export class RoomManager {
 
     if (room.playerIds.length > 0) {
       room.status = 'waiting';
-      if (this.gameRoomManager) {
-        const gameRoom = this.gameRoomManager.getOrCreate(room);
-        gameRoom.status = 'waiting';
-      }
     }
     if (room.playerIds.length === 0) {
       this.removeRoom(roomId);
