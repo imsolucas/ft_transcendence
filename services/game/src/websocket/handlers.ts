@@ -243,7 +243,6 @@ export class MessageHandler {
     this.broadcaster.broadcastToRoom(player.roomId, leaveMessage, player.id);
 
     player.roomId = "";
-    if (this.)
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
     this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
