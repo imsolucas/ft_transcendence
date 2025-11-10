@@ -34,7 +34,7 @@ export class GameEngine {
         this.#stateManager.registerState("GameOverState", GameOverState)
         this.#stateManager.registerState("GameStartState", GameStartState)
 
-        this.#stateManager.transitionTo("GameStartState");
+        this.#stateManager.transitionTo("PlayingState");
     }
 
     #initEntities():void {
