@@ -90,10 +90,11 @@ export interface PlayerLeftMessage extends BaseMessage {
 export interface GameStartMessage extends BaseMessage {
 	type: 'gameStart';
 	data: {
-		player1Name: string;
-		player1id: string;
-		player2Name: string;
-		player2id: string;
+		players: Array<{
+			playerId: string;
+			playerName: string;
+			position?: number;
+		}>;
 	}
 }
 

@@ -23,8 +23,8 @@ export class RoomManager {
   }
 
   // Create a new room
-  createRoom(): Room {
-    return this.roomStorage.createRoom();
+  createRoom(type: 'standard' | 'tournament' = 'standard'): Room {
+    return this.roomStorage.createRoom(type);
   }
 
   // Remove a room
@@ -127,7 +127,10 @@ export class RoomManager {
     const room = this.getRoom(roomId);
     if (!room)
       return false;
-    return room.playerIds.length >= 2;
+    if (room.type = 'standard')
+      return room.playerIds.length >= 2;
+    else
+      return room.playerIds.length >= 8;
   }
 
   // Get number of players in a room

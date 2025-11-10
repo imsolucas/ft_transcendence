@@ -4,11 +4,12 @@ import type { Room, RoomStorage } from '../types/room.types.js';
 export class InMemoryRoomStorage implements RoomStorage {
 	private rooms = new Map<string, Room>();
 
-	createRoom(): Room {
+	createRoom(type: 'standard' | 'tournament' = 'standard'): Room {
 		const roomId = randomUUID().substring(0, 8).toLowerCase();
 
 		const newRoom: Room = {
 			id: roomId,
+			type: type,
 			playerIds: [], // Empty array - no players yet
 			status: 'waiting',
 			createdAt: Date.now()
