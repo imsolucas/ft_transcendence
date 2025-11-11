@@ -2,6 +2,8 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
+import { error } from "console";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret";
@@ -70,4 +72,38 @@ export async function login(req: FastifyRequest, reply: FastifyReply) {
       avatar: user.avatar,
     },
   });
+}
+
+// Google Auth Controller
+
+const client = new OAuth2Client();
+
+export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
+  const { idToken } = req.body as { idToken: string };
+
+  if (!idToken) {
+    return reply.code(400).send({ error: "Missing Google ID token" });
+  }
+
+  try {
+    // Verify the token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID, // Your Google Client ID
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      return reply.code(400).send({ error: "Invalid Google token" });
+    }
+
+    // Extract user info from payload
+    const { email, name, picture, sub } = payload;
+
+    // Continue with your user lookup/creation logic...
+    // e.g., find or create user in your DB, then issue JWT
+
+  } catch (err) {
+    return reply.code(400).send({ error: "Invalid Google token" });
+  }
 }
