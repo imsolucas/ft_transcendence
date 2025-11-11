@@ -73,4 +73,41 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.login);
+
+  // Google auth
+  app.post("/auth/google", {
+    schema: {
+      summary: "Sign in or sign up with Google",
+      description: "Authenticates a user using a Google account. The frontend should send a Google ID token in the request body. If the user does not exist, a new account will be created. On success, returns an application JWT token and user profile.",
+      body: {
+        type: "object",
+        required: ["idToken"],
+        properties: {
+          idToken: { type: "string" }
+        }
+      },
+      response: {
+        200: {
+          description: "Google sign-in or sign-up successful.",
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            user: {
+              $ref: "UserProfile#"
+            }
+          }
+        },
+        400: {
+          description: "Invalid Google token.",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          $ref: "InternalServerError#"
+        }
+      }
+    }
+  }, controllers.googleAuth);
 }
