@@ -1,0 +1,452 @@
+openapi: 3.1.0
+info:
+  title: User Management System
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4000
+
+paths:
+  /auth/signup:
+    post:
+      summary: User signup
+      description: Create a new user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: Alice
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SuperSecret123
+      responses:
+        '201':
+          description: User created successfully.
+        '400':
+          description: Invalid input.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      summary: User login
+      description: Login to user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - password
+              properties:
+                name:
+                  type: string
+                  example: Alice
+                password:
+                  type: string
+                  format: password
+                  example: SuperSecret123
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      username:
+                        type: string
+                        example: Alice
+                      email:
+                        type: string
+                        format: email
+                        example: alice@example.com
+                      avatar:
+                        type: string
+                        format: uri
+                        example: https://example.com/avatar.png
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid username or password
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /user/profile:
+    get:
+      summary: Get user profile
+      description: Retrieves the profile information of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      summary: Update user profile
+      description: |
+        Updates the profile information of the authenticated user. This endpoint allows partial updates to user profile fields such as username, avatar, or other customizable attributes.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Alice
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                avatar:
+                  type: string
+                  format: uri
+                  example: https://example.com/avatar.png
+      responses:
+        '200':
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid fields.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /user/friends:
+    get:
+      summary: Get friend list
+      description: Retrieves the friend list of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Friend list retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                      example: Bob
+                    avatar:
+                      type: string
+                      format: uri
+                      example: https://example.com/avatar2.png
+                    status:
+                      type: string
+                      enum:
+                      - ONLINE
+                      - OFFLINE
+                      - INGAME
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /user/friend-request:
+    post:
+      summary: Send a friend request
+      description: |
+        Sends a friend request from the authenticated user to another user.
+        The target user's identifier (such as username must be provided in the request body.)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: Bob
+      responses:
+        '201':
+          description: Friend request sent successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequest'
+        '400':
+          description: Invalid input or already friends.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Target user not found.
+        '409':
+          description: Friend request already exists.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      summary: Retrieve friend requests
+      description: |
+        Retrieves the list of friend requests for the authenticated user.
+        You can filter requests by direction using the `direction` query parameter (`sent` or `received`).
+        - `sent`: Friend requests sent by the authenticated user.
+        - `received`: Friend requests received by the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: direction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [sent, received]
+          description: Filter by sent or received friend requests.
+      responses:
+        '200':
+          description: Friend requests retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FriendRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /user/friend-request/{requestId}:
+    patch:
+      summary: Accept or reject a friend request
+      description: Update the status of a friend request (accept or reject).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - ACCEPTED
+                    - REJECTED
+      responses:
+        '200':
+          description: Friend request updated successfully.
+        '400':
+          description: Invalid request.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Friend request not found.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /user/match-history:
+    get:
+      summary: Retrieve match history of authenticated user
+      description: |
+        Retrieves the match history for the authenticated user.
+        Returns a list of matches the user has participated in, including details such as opponent, scores, display names, start time and end time.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Match history retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchHistory'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /game/match-result:
+    post:
+      summary: Upload match result
+      description: |
+        Uploads a completed match record from the Game service.
+        The request should include both player IDs, scores, display names, and match timestamps.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - player1Id
+                - player2Id
+                - player1Score
+                - player2Score
+                - player1DisplayName
+                - player2DisplayName
+                - played_at
+                - end_at
+              properties:
+                player1Id:
+                  type: integer
+                  example: 1
+                player2Id:
+                  type: integer
+                  example: 2
+                player1Score:
+                  type: integer
+                  example: 10
+                player2Score:
+                  type: integer
+                  example: 8
+                player1DisplayName:
+                  type: string
+                  example: Alice
+                player2DisplayName:
+                  type: string
+                  example: Bob
+                played_at:
+                  type: string
+                  format: date-time
+                  example: "2025-11-06T10:30:00Z"
+                end_at:
+                  type: string
+                  format: date-time
+                  example: "2025-11-06T10:40:00Z"
+      responses:
+        '201':
+          description: Match record created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchHistory'
+        '400':
+          description: Invalid input.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        username: { type: string, example: Alice }
+        email: { type: string, format: email, example: alice@example.com }
+        avatar: { type: string, format: uri, example: https://example.com/avatar.png }
+
+    FriendRequest:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        fromId: { type: integer, example: 1 }
+        toId: { type: integer, example: 2 }
+        status: { type: string, enum: [PENDING, ACCEPTED, REJECTED] }
+        created_at: { type: string, format: date-time, example: "2025-11-06T10:30:00Z" }
+
+    MatchHistory:
+      type: object
+      properties:
+        matchId: { type: integer, example: 42 }
+        player1Id: { type: integer, example: 1 }
+        player2Id: { type: integer, example: 2 }
+        player1DisplayName: { type: string, example: Alice }
+        player2DisplayName: { type: string, example: Bob }
+        player1Score: { type: integer, example: 10 }
+        player2Score: { type: integer, example: 8 }
+        played_at: { type: string, format: date-time, example: "2025-11-06T10:30:00Z" }
+        end_at: { type: string, format: date-time, example: "2025-11-06T10:40:00Z" }
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Unauthorized
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Internal Server Error

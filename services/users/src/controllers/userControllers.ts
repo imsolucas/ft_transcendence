@@ -1,150 +1,173 @@
-import { Prisma } from "@prisma/client";
 import type { FastifyRequest, FastifyReply } from "fastify";
-import bcrypt from "bcrypt";
+import { PrismaClient, UserStatus, FriendshipStatus } from "@prisma/client";
 
-export const getUsers = async (req: FastifyRequest, res: FastifyReply) => {
-  const users = await req.server.db.user.findMany();
-  return res.send(users);
-};
+const prisma = new PrismaClient();
 
-export const getUserByName = async (
-  req: FastifyRequest<{ Params: { name: string } }>,
-  res: FastifyReply
-) => {
-  const { name } = req.params;
+// Get user profile
+export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-  // Validate the 'name' parameter
-  if (!name || typeof name !== "string") {
-    return res.code(400).send({ error: "Invalid or missing 'name' parameter" });
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return reply.code(404).send({ error: "User not found" });
+
+  return reply.send({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    avatar: user.avatar,
+  });
+}
+
+// Update user profile
+export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { username, email, avatar } = req.body as { username?: string; email?: string; avatar?: string };
+  if (!username && !email && !avatar) {
+    return reply.code(400).send({ error: "Invalid fields." });
   }
 
-  try {
-    // Query the user by username
-    const user = await req.server.db.user.findUnique({ where: { username: name } });
-    if (!user) {
-      return res.code(404).send({ error: "User not found" });
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(username && { username: username }),
+      ...(email && { email }),
+      ...(avatar && { avatar }),
+    },
+  });
+
+  return reply.send({
+    id: updated.id,
+    username: updated.username,
+    email: updated.email,
+    avatar: updated.avatar,
+  });
+}
+
+// Get friend list
+export async function getFriends(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      status: FriendshipStatus.ACCEPTED,
+      OR: [
+        { requesterId: userId },
+        { addresseeId: userId }
+      ]
+    },
+    include: {
+      requester: true,
+      addressee: true
     }
+  });
 
-    return res.send(user);
-  } catch (error) {
-    console.error("Error fetching user by name:", error);
-    return res.code(500).send({ error: "Internal Server Error" });
-  }
-};
+  const friends = friendships.map(f => {
+    const friend =
+      f.requesterId === userId ? f.addressee : f.requester;
+    return {
+      username: friend.username,
+      avatar: friend.avatar,
+      status: friend.status
+    };
+  });
 
-export const createUser = async (
-  req: FastifyRequest<{
-     Body: {
-      username?: string;
-      email?: string;
-      password?: string;
-      avatar?: string;
-     }
-  }>,
-  res: FastifyReply
-) => {
-  const username = req.body?.username;
-  if (!username || typeof username !== "string")
-    return res.code(400).send({ error: "Missing or invalid 'username' in body" });
+  return reply.send(friends);
+}
 
-  const email = req.body?.email;
-  if (!email || typeof email !== "string")
-    return res.code(400).send({ error: "Missing or invalid 'email' in body"})
+// Send a friend request
+export async function sendFriendRequest(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-  const userAvatar = req.body?.avatar || "http://example.com/default-avatar.png";
+  const { username } = req.body as { username: string };
+  if (!username) return reply.code(400).send({ error: "Invalid input." });
 
-  const password = req.body?.password;
-  if (!password || typeof password !== "string")
-    return res.code(400).send({ error: "Missing or invalid 'password' in body"})
+  const target = await prisma.user.findUnique({ where: { username } });
+  if (!target) return reply.code(404).send({ error: "Target user not found." });
+  if (target.id === userId) return reply.code(400).send({ error: "Cannot send friend request to yourself." });
 
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser: User = await req.server.db.user.create({
-      data: {
-        username,
-        email,
-        password: hashedPassword,
-        avatar: userAvatar
-      }
-    })
-    return res.code(201).send(newUser);
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code == "P2002") {
-      return res.code(409).send({ error: "Email is already in use" })
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { requesterId: userId, addresseeId: target.id },
+        { requesterId: target.id, addresseeId: userId }
+      ]
     }
-
-    console.error("Error creating user:", error);
-    return res.code(500).send({ error: "Internal Server Error" })
-  }
-};
-
-export const updateUser = async (
-  req: FastifyRequest<{
-    Params: { id: string };
-    Body: { username?: string; email?: string; avatar?: string };
-  }>,
-  res: FastifyReply
-) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    return res.code(400).send({ error: "Invalid id" });
+  });
+  if (existing) {
+    if (existing.status === FriendshipStatus.ACCEPTED)
+      return reply.code(400).send({ error: "Already friends." });
+    else
+      return reply.code(409).send({ error: "Friend request already exists." });
   }
 
-  const { username, email, avatar } = req.body || {};
-
-  // Validate fields if they are provided
-  if (username !== undefined && typeof username !== "string") {
-    return res.code(400).send({ error: "Invalid 'username' in body" });
-  }
-  if (email !== undefined && typeof email !== "string") {
-    return res.code(400).send({ error: "Invalid 'email' in body" });
-  }
-  if (avatar !== undefined && typeof avatar !== "string") {
-    return res.code(400).send({ error: "Invalid 'avatar' in body" });
-  }
-
-  try {
-    const updatedUser = await req.server.db.user.update({
-      where: { id },
-      data: {
-        ...(username !== undefined && { username }),
-        ...(email !== undefined && { email }),
-        ...(avatar !== undefined && { avatar }),
-      },
-    });
-
-    return res.send(updatedUser);
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      // Handle case where user does not exist
-      return res.code(404).send({ error: "User not found" });
+  const request = await prisma.friendship.create({
+    data: {
+      requesterId: userId,
+      addresseeId: target.id,
+      status: FriendshipStatus.PENDING
     }
+  });
 
-    return res.code(500).send({ error: "Internal Server Error" });
+  return reply.code(201).send({
+    id: request.id,
+    fromId: request.requesterId,
+    toId: request.addresseeId,
+    status: request.status,
+    created_at: request.created_at
+  });
+}
+
+// Retrieve friend requests
+export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const direction = (req.query as any)?.direction ?? "received";
+  let where;
+  if (direction === "sent") {
+    where = { requesterId: userId, status: FriendshipStatus.PENDING };
+  } else {
+    where = { addresseeId: userId, status: FriendshipStatus.PENDING };
   }
-};
 
-export const deleteUser = async (
-  req: FastifyRequest<{ Params: { id: string } }>,
-  res: FastifyReply
-) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    return res.code(400).send({ error: "Invalid id" });
+  const requests = await prisma.friendship.findMany({ where });
+  const result = requests.map(r => ({
+    id: r.id,
+    fromId: r.requesterId,
+    toId: r.addresseeId,
+    status: r.status,
+    created_at: r.created_at
+  }));
+
+  return reply.send(result);
+}
+
+// Accept or reject a friend request
+export async function updateFriendRequest(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { requestId } = req.params as { requestId: number };
+  const { status } = req.body as { status: "ACCEPTED" | "REJECTED" };
+
+  if (!["ACCEPTED", "REJECTED"].includes(status)) {
+    return reply.code(400).send({ error: "Invalid request." });
   }
 
-  try {
-    const deletedUser = await req.server.db.user.delete({
-      where: { id },
-    });
-
-    return res.code(204).send(); // No content response
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      // Handle case where user does not exist
-      return res.code(404).send({ error: "User not found" });
-    }
-
-    return res.code(500).send({ error: "Internal Server Error" });
+  const request = await prisma.friendship.findUnique({ where: { id: Number(requestId) } });
+  if (!request || request.addresseeId !== userId) {
+    return reply.code(404).send({ error: "Friend request not found." });
   }
-};
+
+  await prisma.friendship.update({
+    where: { id: Number(requestId) },
+    data: { status: status as FriendshipStatus }
+  });
+
+  return reply.send({ message: "Friend request updated successfully." });
+}
