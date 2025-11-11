@@ -21,10 +21,10 @@ export default async function registerGameRoutes(app: FastifyInstance) {
     }
   }, controllers.getMatchHistory);
 
-  // POST /game/match-history
-  app.post("/game/match-history", {
+  // POST /game/match-result
+  app.post("/game/match-result", {
     schema: {
-      summary: "Upload match history",
+      summary: "Upload match result",
       description: "Uploads a completed match record from the Game service. The request should include both player IDs, scores, display names, and match timestamps.",
       tags: ["game"],
       security: [{ bearerAuth: [] }],
