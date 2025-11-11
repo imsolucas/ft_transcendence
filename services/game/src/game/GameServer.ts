@@ -8,6 +8,7 @@ export class GameServer {
   readonly id: string;
   readonly playerIds: string[];
   readonly createdAt: number;
+  private lastTickTime: number = 0;
   private gameEngine = new GameEngine()
   private broadcaster: MessageBroadcaster;
 
@@ -23,14 +24,16 @@ export class GameServer {
   }
 
   // Called every tick by the tick system
-  tick(): void {
+  tick(): boolean {
     // 1. Process player inputs (if any)
-    // 2. Update game state (move ball, check collisions, etc)
+    // 2. Move game forwards by 1 frame
     // 3. Check for win/lose conditions
-    // 4. Broadcast state to players (if needed)
-    // For now, just log to show it's running:
+    // 4. Broadcast state to player
+    const currentTime = Date.now();
+    const deltaTime = (currentTime - this.lastTickTime) / 1000;
+    this.lastTickTime = currentTime
 
-    this.gameEngine.tick(1)
+    this.gameEngine.tick(deltaTime)
     
     const gameState = this.gameEngine.getGameState()
 
@@ -43,9 +46,7 @@ export class GameServer {
     }
 
     this.broadcaster.broadcastToRoom(this.id, message);
-    // Example: if game ends, update status
-    // if (gameOverCondition) {
-    //   this.roomManager.setRoomStatus(this.id, 'finished');
-    // }
+
+    return (gameState.name !== 'GameOverState');
   }
 }

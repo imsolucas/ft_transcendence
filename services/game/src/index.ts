@@ -77,7 +77,7 @@ server.register(async function (fastify: any) {
 let tickInterval: NodeJS.Timeout | null = null;
 
 function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, GameServer>): void {
-  const TICK_RATE = 1; // ticks per second
+  const TICK_RATE = 11; // ticks per second
   const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
 
   // If already running, stop the previous interval
@@ -90,7 +90,8 @@ function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, Gam
     for (const room of activeRooms) {
       const session = pongSessions.get(room.id);
       if (session) {
-        session.tick();
+        if (!session.tick())
+          room.status = 'finished';
       }
     }
   }, TICK_INTERVAL);
