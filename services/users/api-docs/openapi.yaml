@@ -326,9 +326,9 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /game/match-history:
+  /game/match-result:
     post:
-      summary: Upload match history
+      summary: Upload match result
       description: |
         Uploads a completed match record from the Game service.
         The request should include both player IDs, scores, display names, and match timestamps.
