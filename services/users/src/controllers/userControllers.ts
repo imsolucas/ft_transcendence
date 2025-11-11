@@ -1,0 +1,173 @@
+import type { FastifyRequest, FastifyReply } from "fastify";
+import { PrismaClient, UserStatus, FriendshipStatus } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+// Get user profile
+export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return reply.code(404).send({ error: "User not found" });
+
+  return reply.send({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    avatar: user.avatar,
+  });
+}
+
+// Update user profile
+export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { username, email, avatar } = req.body as { username?: string; email?: string; avatar?: string };
+  if (!username && !email && !avatar) {
+    return reply.code(400).send({ error: "Invalid fields." });
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(username && { username: username }),
+      ...(email && { email }),
+      ...(avatar && { avatar }),
+    },
+  });
+
+  return reply.send({
+    id: updated.id,
+    username: updated.username,
+    email: updated.email,
+    avatar: updated.avatar,
+  });
+}
+
+// Get friend list
+export async function getFriends(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      status: FriendshipStatus.ACCEPTED,
+      OR: [
+        { requesterId: userId },
+        { addresseeId: userId }
+      ]
+    },
+    include: {
+      requester: true,
+      addressee: true
+    }
+  });
+
+  const friends = friendships.map(f => {
+    const friend =
+      f.requesterId === userId ? f.addressee : f.requester;
+    return {
+      username: friend.username,
+      avatar: friend.avatar,
+      status: friend.status
+    };
+  });
+
+  return reply.send(friends);
+}
+
+// Send a friend request
+export async function sendFriendRequest(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { username } = req.body as { username: string };
+  if (!username) return reply.code(400).send({ error: "Invalid input." });
+
+  const target = await prisma.user.findUnique({ where: { username } });
+  if (!target) return reply.code(404).send({ error: "Target user not found." });
+  if (target.id === userId) return reply.code(400).send({ error: "Cannot send friend request to yourself." });
+
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { requesterId: userId, addresseeId: target.id },
+        { requesterId: target.id, addresseeId: userId }
+      ]
+    }
+  });
+  if (existing) {
+    if (existing.status === FriendshipStatus.ACCEPTED)
+      return reply.code(400).send({ error: "Already friends." });
+    else
+      return reply.code(409).send({ error: "Friend request already exists." });
+  }
+
+  const request = await prisma.friendship.create({
+    data: {
+      requesterId: userId,
+      addresseeId: target.id,
+      status: FriendshipStatus.PENDING
+    }
+  });
+
+  return reply.code(201).send({
+    id: request.id,
+    fromId: request.requesterId,
+    toId: request.addresseeId,
+    status: request.status,
+    created_at: request.created_at
+  });
+}
+
+// Retrieve friend requests
+export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const direction = (req.query as any)?.direction ?? "received";
+  let where;
+  if (direction === "sent") {
+    where = { requesterId: userId, status: FriendshipStatus.PENDING };
+  } else {
+    where = { addresseeId: userId, status: FriendshipStatus.PENDING };
+  }
+
+  const requests = await prisma.friendship.findMany({ where });
+  const result = requests.map(r => ({
+    id: r.id,
+    fromId: r.requesterId,
+    toId: r.addresseeId,
+    status: r.status,
+    created_at: r.created_at
+  }));
+
+  return reply.send(result);
+}
+
+// Accept or reject a friend request
+export async function updateFriendRequest(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { requestId } = req.params as { requestId: number };
+  const { status } = req.body as { status: "ACCEPTED" | "REJECTED" };
+
+  if (!["ACCEPTED", "REJECTED"].includes(status)) {
+    return reply.code(400).send({ error: "Invalid request." });
+  }
+
+  const request = await prisma.friendship.findUnique({ where: { id: Number(requestId) } });
+  if (!request || request.addresseeId !== userId) {
+    return reply.code(404).send({ error: "Friend request not found." });
+  }
+
+  await prisma.friendship.update({
+    where: { id: Number(requestId) },
+    data: { status: status as FriendshipStatus }
+  });
+
+  return reply.send({ message: "Friend request updated successfully." });
+}

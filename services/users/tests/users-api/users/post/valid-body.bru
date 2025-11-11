@@ -1,0 +1,27 @@
+meta {
+  name: valid-body
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:4000/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "John Doe",
+    "email": "johndoe@test.com",
+    "password": "4444"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

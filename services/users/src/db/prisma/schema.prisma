@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  email        String     @unique
+  password     String
+  avatar       String
+  status       UserStatus @default(OFFLINE)
+  created_at   DateTime   @default(now())
+  last_updated DateTime   @updatedAt
+
+  sentFriendships     Friendship[] @relation("SentFriendships")
+  receivedFriendships Friendship[] @relation("ReceivedFriendships")
+
+  matchesAsPlayer1 Match[] @relation("Player1Matches")
+  matchesAsPlayer2 Match[] @relation("Player2Matches")
+
+  @@map("Users")
+}
+
+model Friendship {
+  id Int @id @default(autoincrement())
+
+  requesterId Int
+  addresseeId Int
+
+  requester User @relation("SentFriendships", fields: [requesterId], references: [id])
+  addressee User @relation("ReceivedFriendships", fields: [addresseeId], references: [id])
+
+  status     FriendshipStatus @default(PENDING)
+  created_at DateTime         @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@map("Friendships")
+}
+
+model Match {
+  id           Int        @id @default(autoincrement())
+  player1Id    Int
+  player2Id    Int
+  player1      User       @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2      User       @relation("Player2Matches", fields: [player2Id], references: [id])
+  player1Score Int
+  player2Score Int
+  player1DisplayName String
+  player2DisplayName String
+  played_at    DateTime   @default(now())
+  end_at       DateTime
+
+  @@map("Matches")
+}
+
+enum UserStatus {
+  ONLINE
+  OFFLINE
+  INGAME
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}

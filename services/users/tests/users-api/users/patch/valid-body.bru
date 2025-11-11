@@ -1,0 +1,27 @@
+meta {
+  name: valid-body
+  type: http
+  seq: 1
+}
+
+patch {
+  url: http://localhost:4000/users/2
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "Bob 2",
+    "email": "bob2@test.com",
+    "avatar": "https://i.pravatar.cc/150?u=bob2"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

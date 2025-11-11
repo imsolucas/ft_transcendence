@@ -1,0 +1,25 @@
+meta {
+  name: valid-username
+  type: http
+  seq: 1
+}
+
+patch {
+  url: http://localhost:4000/users/2
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "Bob 3"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
