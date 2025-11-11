@@ -1,5 +1,9 @@
-import { LoadingPong } from "../components/loadingGame";
+import { LoadingPong, type MatchmakingState } from "../components/loadingGame";
+import { type PlayerInfo } from "../components/loadingGame";
+import { getCurrentUser } from "../utils/auth-script";
+import type { ConnectionErrorMessage, ConnectionMessage, ConnectionSuccessMessage, GameMessage, GameMessageType, GameServerMessage, JoinQueueMessage, PlayerJoinedMessage } from "../game/types/protocol.types";
 import { navigate } from "../router";
+import type { GameStartMessage, PlayerReadyMessage } from "shared/index";
 
 export var socket: WebSocket | undefined
 
@@ -242,33 +246,44 @@ export function LobbyPage(): HTMLElement {
     });
     
     onlineGame?.addEventListener('click', () => {
-        // Create the loading component with event handlers
 		try {
-			socket = new WebSocket("ws/localhost:3001/ws/game");
-			console.log("connected to game socket");
+			console.log("connecting to game socket");
+			socket = new WebSocket("ws://localhost:3001/ws/game");
 		}
 		catch(error) {
-			console.log("could not connect to game websocket", error);
+			console.error("could not connect to game websocket", error);
+			return ;
 		}
+		
+		var currentPlayer = {
+			playerId: "",
+			playerName: ""
+		};
+		var opponent = {
+			playerId: "",
+			playerName: ""
+		};
 
-        const loadingComponent = LoadingPong({
+		const loadingComponent = LoadingPong({
 
             onMatchFound: (opponent, matchId) => {
                 console.log('Match found:', opponent, matchId);
-                // You can update UI or prepare for game start
             },
             onMatchReady: (matchId) => {
                 console.log('Match ready:', matchId);
-                // Navigate to game or start game logic
-                navigate('game'); // Or however you start the actual game
+				const message: PlayerReadyMessage = {
+					type: 'playerReady',
+					data: {ready: true},
+					timestamp: Date.now()
+				}
+				socket?.send(JSON.stringify(message));
             },
             onMatchError: (error) => {
                 console.error('Matchmaking error:', error);
-                // Handle error - maybe show a toast or alert
             },
             onCancel: () => {
                 console.log('Matchmaking cancelled');
-                // Remove the loading component and return to lobby
+				socket!.close(undefined, "Player cancelled matchmaking");
                 loadingComponent.remove();
             }
         });
@@ -284,21 +299,120 @@ export function LobbyPage(): HTMLElement {
         // Add to body or container
         document.body.appendChild(loadingComponent);
 
-        // Optional: Simulate finding a match after 3 seconds for testing
-        setTimeout(() => {
-            const mockOpponent = {
-                id: '2',
-                username: 'CoolPlayer42',
-                picture: '/images/default-avatar.png',
-                level: 12,
-                wins: 23,
-                losses: 8,
-                winRate: '74%'
-            };
+		socket.onopen = () => {
+			//TODO imeplement getCurrent user
+			const connectionMsg:ConnectionMessage = {
+				type: 'connection',
+				data: { playerName: "pringles" },
+				timestamp: Date.now()
+			}
+
+			socket!.send(JSON.stringify(connectionMsg));
+			console.log("Sent connectionmsg to socket");
+		}
+
+		socket.onmessage = (ev: MessageEvent) => {
+			const message: GameMessage = JSON.parse(ev.data.toString()) as GameMessage;
+			switch (message.type) {
+				case 'connectionSuccess': 
+					console.log("successfully connected to server");
+					const connectionSuccessMsg = message as ConnectionSuccessMessage;
+					currentPlayer.playerId = connectionSuccessMsg.data.playerId
+					const response: JoinQueueMessage = {
+						type : "joinQueue",
+						data : { playerId: connectionSuccessMsg.data.playerId, playerName: "Player"},
+						timestamp: Date.now()
+					}
+					socket!.send(JSON.stringify(response));
+					break;
+				case 'playerJoined':
+					const playerJoinedMsg = message as PlayerJoinedMessage;
+					console.log(`playerJoinedMessage`, playerJoinedMsg)
+					if (playerJoinedMsg.data.playerId == currentPlayer.playerId){
+						currentPlayer.playerName = playerJoinedMsg.data.playerName
+						if (playerJoinedMsg.data.playersInRoom.length >= 2) {
+							const opponentData = playerJoinedMsg.data.playersInRoom[0];
+							(loadingComponent as any).setOpponent({ 
+								id: opponentData.id || '0',
+								username: opponentData.name,
+								picture: opponentData.picture || '/images/pong.png',
+								level: opponentData.level || 1,
+								wins: opponentData.wins || 0,
+								losses: opponentData.losses || 0,
+								winRate: opponentData.winRate || '0%'
+							}, playerJoinedMsg.data.roomId)
+						}
+						console.log("joined room: ", playerJoinedMsg.data.roomId);
+						break;
+					}
+					try{
+						console.log("opponent joined", opponent);
+						// Get opponent info from the message
+						const opponentInfo = playerJoinedMsg.data.playersInRoom.find(
+							p => p.id !== currentPlayer.playerId
+						);
+						if (opponentInfo) {
+							(loadingComponent as any).setOpponent({
+								id: opponentInfo.id || '0',
+								username: opponentInfo.name,
+								picture: opponentInfo.picture || '/images/pong.png',
+								level: opponentInfo.level || 1,
+								wins: opponentInfo.wins || 0,
+								losses: opponentInfo.losses || 0,
+								winRate: opponentInfo.winRate || '0%'
+							}, playerJoinedMsg.data.roomId)
+						}
+					}
+					catch(error){
+						console.error("Unable to use loadingComponent method", error);
+					}
+					break;
+				case 'connectionError':
+					const connectionErrorMsg = message as ConnectionErrorMessage;
+					console.error("connection error", connectionErrorMsg);
+					break;
+				case 'playerReady':
+					break;
+				case 'gameStart':
+					loadingComponent.remove();
+					navigate('game');
+					break
+				default:
+					console.error("Server sent invalid message", message);
+			}
+		}
+
+		socket.onclose = (ev: CloseEvent) => {
+			console.log("Game socket closed", ev);
+            // Clean up the loading component if it still exists
+            if (loadingComponent.parentElement) {
+                loadingComponent.remove();
+            }
+		}
+
+        socket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            // Clean up the loading component on error
+            if (loadingComponent.parentElement) {
+                loadingComponent.remove();
+            }
+        }
+		
+		// setup mock opponent for testing
+        // setTimeout(() => {
+        //     const mockOpponent = {
+        //         id: '2',
+        //         username: 'CoolPlayer42',
+        //         picture: '/images/default-avatar.png',
+        //         level: 12,
+        //         wins: 23,
+        //         losses: 8,
+        //         winRate: '74%'
+        //     };
             
-            // Use the exposed method to update the component
-            (loadingComponent as any).setOpponent(mockOpponent, 'match-123');
-        }, 3000);
+        //     // Use the exposed method to update the component
+        //     (loadingComponent as any).setOpponent(mockOpponent, 'match-123');
+        // }, 3000);
 
         // Optional: Simulate error for testing
         // setTimeout(() => {

@@ -44,6 +44,7 @@ export class GameClient {
 
     public stop(): void {
         this.isRunning = false;
+        this.socket?.close()
         if (this.animationId){
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
@@ -52,12 +53,13 @@ export class GameClient {
 
     private initSocket(): void {
         this.socket!.onmessage = (event: MessageEvent) => {
-            const message: GameMessage = (JSON.parse(event.data.to_string())) as GameMessage;
+            const message: GameMessage = (JSON.parse(event.data.toString())) as GameMessage;
 
             switch (message.type) {
                 case 'gameState':
                     const gameStateMessage = (message as GameStateMessage)
                     this.gameState = gameStateMessage.data.gameState
+                    console.log("Recieved game state", this.gameState);
                     break;
                 default:
                     break;
@@ -190,8 +192,11 @@ export class GameClient {
             this.gameEngine!.tick(deltaTime);
             this.gameState = this.gameEngine!.getGameState()
         }
-        this.render_ui();
-        this.render_game_state();
+        // console.log("Game State: ", this.gameState);
+        if (this.gameState){
+            this.render_ui();
+            this.render_game_state();
+        }
         requestAnimationFrame(this.loop.bind(this));
     }
 }

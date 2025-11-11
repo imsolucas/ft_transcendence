@@ -1,27 +1,27 @@
 import { getCurrentUser } from '../utils/auth-script';
 
 // Types for matchmaking
-interface Player {
+export interface PlayerInfo {
 	id: string;
 	username: string;
 	picture?: string;
-	level: number;
-	wins: number;
-	losses: number;
-	winRate: string;
+	level?: number;
+	wins?: number;
+	losses?: number;
+	winRate?: string;
 }
 
-interface MatchmakingState {
+export interface MatchmakingState {
 	status: 'searching' | 'found' | 'ready' | 'error';
-	currentUser: Player | null;
-	opponent: Player | null;
+	currentUser: PlayerInfo | null;
+	opponent: PlayerInfo | null;
 	matchId?: string;
 	error?: string;
 }
 
 // WebSocket integration interface
 interface MatchmakingEvents {
-	onMatchFound: (opponent: Player, matchId: string) => void;
+	onMatchFound: (opponent: PlayerInfo, matchId: string) => void;
 	onMatchReady: (matchId: string) => void;
 	onMatchError: (error: string) => void;
 	onCancel: () => void;
@@ -457,7 +457,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 		render();
 	};
 
-	const setOpponent = (opponent: Player, matchId: string) => {
+	const setOpponent = (opponent: PlayerInfo, matchId: string) => {
 		matchmakingState.status = 'found';
 		matchmakingState.opponent = opponent;
 		matchmakingState.matchId = matchId;
