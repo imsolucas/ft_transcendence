@@ -1,6 +1,8 @@
 import { isAuthenticated, getCurrentUser, logout } from '../utils/auth-script';
 import { navigate } from '../router';
 import type { Screen } from '../router';
+import { LanguageSelector } from './LanguageSelector';
+import { t } from '../i18n';
 
 export async function createNavbar(): Promise<HTMLElement> {
 	const navbar = document.createElement('nav');
@@ -51,6 +53,9 @@ export async function createNavbar(): Promise<HTMLElement> {
 	const rightSection = document.createElement('div');
 	rightSection.className = 'flex items-center space-x-3';
 
+	// Language Selector
+	const languageSelector = LanguageSelector();
+	rightSection.appendChild(languageSelector);
 
 	// Auth Section
 	const authSection = document.createElement('div');
@@ -58,7 +63,7 @@ export async function createNavbar(): Promise<HTMLElement> {
 
 	if (isAuthenticated()) {
 		const user = await getCurrentUser();
-		console.log("user:", user);
+		// console.log("user:", user);
 		const profileContainer = document.createElement('div');
 		profileContainer.className = 'relative';
 
@@ -114,17 +119,17 @@ export async function createNavbar(): Promise<HTMLElement> {
 		
 		dropdown.innerHTML = `
 	  <a href="#" data-link="profile" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		Profile
+		${t('navbar.profile')}
 	  </a>
 	  <a href="#" data-link="profile" data-tab="friends" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		Friends
+		${t('navbar.friends')}
 	  </a>
 	  <a href="#" data-link="profile" data-tab="match-history" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		Game History
+		${t('navbar.gameHistory')}
 	  </a>
 	  <hr class="my-1">
 	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-[#2BD2FF] hover:bg-red-50/80 transition-colors">
-		Logout
+		${t('navbar.logout')}
 	  </button>
 	`;
 
@@ -220,7 +225,7 @@ export async function createNavbar(): Promise<HTMLElement> {
 		// Login/SignUp Button - updated for transparency
 		const loginButton = document.createElement('button');
 		loginButton.className = 'bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 border border-white/20';
-		loginButton.textContent = 'Login / SignUp';
+		loginButton.textContent = String(t('navbar.loginSignup'));
 		loginButton.addEventListener('click', () => {
 			navigate('auth' as Screen);
 		});
@@ -392,12 +397,12 @@ function toggleMobileMenu(): void {
 
 	// Menu items with creative styling
 	const menuItems = [
-		{ text: 'Home', action: () => {
+		{ text: t('navbar.home'), action: () => {
 			navigate('landing' as Screen);
 			closeMobileMenu();
 		}},
 		...(isAuthenticated() ? [
-			{ text: 'Play Game', action: () => {
+			{ text: t('navbar.playGame'), action: () => {
 				// Add your play game navigation here
 				navigate('lobby' as Screen);
 				console.log('Navigate to play game');
@@ -413,8 +418,8 @@ function toggleMobileMenu(): void {
 		const link = document.createElement('a');
 		link.className = 'creative-navigation__link';
 		link.href = '#';
-		link.setAttribute('data-text', item.text);
-		link.textContent = item.text;
+		link.setAttribute('data-text', String(item.text));
+		link.textContent = String(item.text);
 		
 		link.addEventListener('click', (e) => {
 			e.preventDefault();
@@ -480,4 +485,9 @@ export async function initializeNavbar(): Promise<void> {
 	// Remove fixed padding since navbar is now truly transparent
 	// The content will flow behind the navbar
 	document.body.style.paddingTop = '0px';
+	
+	// Listen for auth expiration events
+	window.addEventListener('authExpired', async () => {
+		await updateNavbar();
+	});
 }

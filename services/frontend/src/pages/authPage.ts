@@ -1,15 +1,19 @@
 import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
+import { navigate } from "../router";
+import { updateNavbar } from "../components/Navbar";
+import type { Screen } from "../router";
 
-// Types for API requests/responses
-interface LoginRequest {
-  username: string;
-  password: string;
-}
+// Import API functions from auth-script
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
-interface RegisterRequest {
-  username: string;
-  email: string;
-  password: string;
+interface BackendLoginResponse {
+  token: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    avatar: string;
+  };
 }
 
 interface AuthResponse {
@@ -17,61 +21,84 @@ interface AuthResponse {
   message: string;
   token?: string;
   user?: {
-    id: string;
+    id: number;
     username: string;
     email: string;
-    picture?: string;
+    avatar?: string;
   };
 }
 
-// API Functions
-async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
-  // Mock API call - simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock successful response - only allow demo/password combination
-  if (credentials.username === "demo" && credentials.password === "password") {
+// API Functions - using real backend
+async function apiLogin(name: string, password: string): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, password }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      return {
+        success: false,
+        message: errorData.error || 'Invalid username or password',
+      };
+    }
+
+    const data: BackendLoginResponse = await response.json();
+    
     return {
       success: true,
-      message: "Login successful",
-      token: "mock-jwt-token-" + Date.now(),
+      message: 'Login successful',
+      token: data.token,
       user: {
-        id: "1",
-        username: credentials.username,
-        email: "demo@example.com"
-      }
+        id: data.user.id,
+        username: data.user.username,
+        email: data.user.email,
+        avatar: data.user.avatar,
+      },
     };
-  } else {
+  } catch (error) {
+    console.error('Login API error:', error);
     return {
       success: false,
-      message: "Invalid username or password"
+      message: 'Network error. Please try again.',
     };
   }
 }
 
-async function apiRegister(userData: RegisterRequest): Promise<AuthResponse> {
-  // Mock API call - simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Mock validation
-  if (userData.username.length < 3) {
+async function apiRegister(name: string, email: string, password: string): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      return {
+        success: false,
+        message: errorData.error || 'Registration failed',
+      };
+    }
+
+    // Signup returns 201, user needs to login to get token
+    return {
+      success: true,
+      message: 'Registration successful! Please login with your credentials.',
+    };
+  } catch (error) {
+    console.error('Registration API error:', error);
     return {
       success: false,
-      message: "Username must be at least 3 characters long"
+      message: 'Network error. Please try again.',
     };
   }
-  
-  // Mock successful response
-  return {
-    success: true,
-    message: "Registration successful! Please check your email to verify your account.",
-    token: "mock-jwt-token-" + Date.now(),
-    user: {
-      id: "2",
-      username: userData.username,
-      email: userData.email
-    }
-  };
 }
 
 // Utility function to show notifications
@@ -677,13 +704,13 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
   const passwordInput = container.querySelector('.form-box.login input[type="password"]') as HTMLInputElement;
   const loginBtn = container.querySelector('.login-submit-btn') as HTMLButtonElement;
   
-  const username = usernameInput?.value.trim();
+  const name = usernameInput?.value.trim();
   const password = passwordInput?.value.trim();
 
   // Hide any previous errors
   hideError(container, 'login');
 
-  if (!username || !password) {
+  if (!name || !password) {
     showError(container, 'login', 'Please fill in all fields');
     return;
   }
@@ -694,23 +721,29 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
   loginBtn.disabled = true;
 
   try {
-    const response = await apiLogin({ username, password });
+    const response = await apiLogin(name, password);
     
     if (response.success) {
       // Store auth token
-      if (response.token) {
+      if (response.token && response.user) {
         localStorage.setItem('authToken', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Store user with both picture and avatar for compatibility
+        const userToStore = {
+          ...response.user,
+          picture: response.user.avatar,
+        };
+        localStorage.setItem('user', JSON.stringify(userToStore));
       }
       
       showNotification('Login successful!', 'success');
+      updateNavbar();
       handleSuccessfulAuth(container);
     } else {
       // Reset button state immediately on error
       loginBtn.textContent = originalText;
       loginBtn.disabled = false;
       showError(container, 'login', response.message || 'Invalid username or password');
-      return; // Exit early to prevent finally block from running
+      return;
     }
   } catch (error) {
     console.error('Login error:', error);
@@ -718,10 +751,10 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     loginBtn.textContent = originalText;
     loginBtn.disabled = false;
     showError(container, 'login', 'Network error. Please try again.');
-    return; // Exit early to prevent finally block from running
+    return;
   }
   
-  // Only reset button state here if login was successful (but we won't reach here due to early returns)
+  // Only reset button state here if login was successful
   loginBtn.textContent = originalText;
   loginBtn.disabled = false;
 }
@@ -733,14 +766,14 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
   const passwordInput = container.querySelector('.form-box.register input[type="password"]') as HTMLInputElement;
   const registerBtn = container.querySelector('.register-submit-btn') as HTMLButtonElement;
   
-  const username = usernameInput?.value.trim();
+  const name = usernameInput?.value.trim();
   const email = emailInput?.value.trim();
   const password = passwordInput?.value.trim();
 
   // Hide any previous errors
   hideError(container, 'register');
 
-  if (!username || !email || !password) {
+  if (!name || !email || !password) {
     showError(container, 'register', 'Please fill in all fields');
     return;
   }
@@ -752,29 +785,44 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
     return;
   }
 
+  if (password.length < 6) {
+    showError(container, 'register', 'Password must be at least 6 characters long');
+    return;
+  }
+
   // Show loading state
   const originalText = registerBtn.textContent;
   registerBtn.textContent = 'REGISTERING...';
   registerBtn.disabled = true;
 
   try {
-    const response = await apiRegister({ username, email, password });
+    const response = await apiRegister(name, email, password);
     
     if (response.success) {
-      // Store auth token
-      if (response.token) {
-        localStorage.setItem('authToken', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-      }
+      showNotification('Registration successful! Please login with your credentials.', 'success');
       
-      showNotification('Registration successful!', 'success');
-      handleSuccessfulAuth(container);
+      // Clear form and switch to login
+      usernameInput.value = '';
+      emailInput.value = '';
+      passwordInput.value = '';
+      
+      // Switch to login form after a delay
+      setTimeout(() => {
+        const containerEl = container.querySelector('.container');
+        containerEl?.classList.remove('active');
+        const loginForm = container.querySelector('.form-box.login') as HTMLElement;
+        const registerForm = container.querySelector('.form-box.register') as HTMLElement;
+        if (loginForm && registerForm) {
+          registerForm.style.visibility = 'hidden';
+          loginForm.style.visibility = 'visible';
+        }
+      }, 1500);
     } else {
       // Reset button state immediately on error
       registerBtn.textContent = originalText;
       registerBtn.disabled = false;
       showError(container, 'register', response.message || 'Registration failed');
-      return; // Exit early to prevent finally block from running
+      return;
     }
   } catch (error) {
     console.error('Registration error:', error);
@@ -782,10 +830,10 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
     registerBtn.textContent = originalText;
     registerBtn.disabled = false;
     showError(container, 'register', 'Network error. Please try again.');
-    return; // Exit early to prevent finally block from running
+    return;
   }
   
-  // Only reset button state here if registration was successful (but we won't reach here due to early returns)
+  // Only reset button state here if registration was successful
   registerBtn.textContent = originalText;
   registerBtn.disabled = false;
 }
@@ -801,22 +849,9 @@ function handleSuccessfulAuth(container: HTMLElement): void {
   setTimeout(() => {
     containerEl?.classList.add('navigating');
     
-    // After zoom animation completes, navigate to next page
+    // After zoom animation completes, navigate to lobby
     setTimeout(() => {
-      // Here you would typically navigate to your lobby app/game page
-      // For example: window.location.href = '/game' or call your router
-      console.log('Navigating to lobby application...');
-      
-      // Example of how you might trigger navigation in your app:
-      // if (window.navigateToGame) {
-      //   window.navigateToGame();
-      // }
-      
-      // Or dispatch a custom event that your router can listen for:
-      window.dispatchEvent(new CustomEvent('authComplete', {
-        detail: { action: 'navigateToGame' }
-      }));
-      
+      navigate('lobby' as Screen);
     }, 1500); // Wait for zoom animation to complete
-  }, 5000); // Show welcome message for 3 seconds
+  }, 3000); // Show welcome message for 3 seconds
 }
