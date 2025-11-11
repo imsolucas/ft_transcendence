@@ -74,7 +74,7 @@ export async function login(req: FastifyRequest, reply: FastifyReply) {
   });
 }
 
-// Google Auth Controller
+// Google Auth controller
 
 const client = new OAuth2Client();
 
@@ -98,11 +98,37 @@ export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
     }
 
     // Extract user info from payload
-    const { email, name, picture, sub } = payload;
+    const { email, name, picture } = payload;
 
-    // Continue with your user lookup/creation logic...
-    // e.g., find or create user in your DB, then issue JWT
+    // Find or create user
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          username: name ?? email.split("@")[0],
+          email,
+          avatar: picture ?? "",
+          password: "",
+        }
+      });
+    }
 
+    // Issue JWT
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.email },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return reply.send({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
   } catch (err) {
     return reply.code(400).send({ error: "Invalid Google token" });
   }
