@@ -46,8 +46,8 @@ export function LobbyPage(): HTMLElement {
 
 		@keyframes flicker {
 			0%, 100% { opacity: 1; }
-			98% { opacity: 1; }
-			99% { opacity: 0.98; }
+			99% { opacity: 1; }
+			99.5% { opacity: 0.98; }
 		}
 
 		@keyframes ripple {
@@ -98,7 +98,7 @@ export function LobbyPage(): HTMLElement {
 		}
 
 		.flicker {
-			animation: flicker 3s infinite linear;
+			animation: flicker 8s infinite linear;
 		}
 
 		@keyframes ball-bounce-bounded {

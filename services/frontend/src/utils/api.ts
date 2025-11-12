@@ -316,6 +316,8 @@ export const getFriendRequests = async (direction?: 'sent' | 'received') => {
   try {
     const queryParam = direction ? `?direction=${direction}` : '';
     const requests = await apiFetch(`${API_URL}/user/friend-request${queryParam}`);
+    // Debug logging to see what we're getting from the backend
+    console.log('Friend requests received from backend:', requests);
     return requests;
   } catch (error) {
     console.error('Error fetching friend requests:', error);

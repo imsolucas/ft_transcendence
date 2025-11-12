@@ -31,6 +31,7 @@ services:
       - .env
     ports:
       - "${USERS_PORT}:${USERS_PORT}"
+      - "5555:5555"
     volumes:
       - ../services/users/:/usr/src/app/:rw
       - users_db:/usr/src/app/db/

@@ -169,7 +169,7 @@ export function ProfileData() {
                   </div>
                   <div class="mb-4 sm:mb-6">
                     <label class="block text-pink-300 mb-2 text-sm sm:text-base">Language</label>
-                    <div id="language-selector-container"></div>
+                    <div id="language-selector-container" class="w-full"></div>
                   </div>
                   <button type="submit" class="btn w-full h-10 sm:h-12 rounded-lg border-2 border-cyan-400 cursor-pointer font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all uppercase tracking-wider text-sm sm:text-base">${t('profile.saveChanges')}</button>
                 </form>
@@ -353,6 +353,23 @@ export function ProfileData() {
     const languageSelectorContainer = container.querySelector('#language-selector-container');
     if (languageSelectorContainer) {
       const languageSelector = LanguageSelector();
+      // Make the language selector button full width to match other form inputs
+      const selectorBtn = languageSelector.querySelector('#language-selector-btn') as HTMLElement;
+      if (selectorBtn) {
+        // Update styling to match form inputs while preserving layout
+        selectorBtn.classList.remove('p-2', 'border', 'border-white/20', 'hover:bg-white/10');
+        selectorBtn.classList.add('w-full', 'py-2', 'sm:py-3', 'px-3', 'sm:px-5', 'bg-gray-800/50', 'border-2', 'border-cyan-400/30', 'rounded-lg', 'outline-none', 'focus:border-cyan-400', 'focus:shadow-[0_0_15px_rgba(0,255,255,0.3)]', 'transition-all', 'text-sm', 'sm:text-base', 'text-white', 'hover:bg-gray-800/70', 'justify-between');
+        // Ensure the button maintains flex layout for icon and text
+        if (!selectorBtn.classList.contains('flex')) {
+          selectorBtn.classList.add('flex');
+        }
+      }
+      // Adjust dropdown to align left instead of right for profile context
+      const dropdown = languageSelector.querySelector('#language-dropdown') as HTMLElement;
+      if (dropdown) {
+        dropdown.classList.remove('right-0');
+        dropdown.classList.add('left-0', 'w-full');
+      }
       languageSelectorContainer.appendChild(languageSelector);
     }
 
