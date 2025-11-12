@@ -90,37 +90,49 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
   }
 }
 
-async function processGoogleAuth(payload: GoogleIdTokenPayload, _credential: string): Promise<boolean> {
+async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: string): Promise<boolean> {
   try {
-    // In a real app, you'd send the credential to your backend for verification
-    // For now, we'll simulate the process
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
     
-    // Mock API call to your backend
-    // const response = await fetch('/api/auth/google', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ credential })
-    // });
+    // Send the Google credential to backend for verification
+    const response = await fetch(`${API_URL}/auth/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ credential }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      console.error('Google auth error:', errorData);
+      showNotification(errorData.error || 'Google authentication failed', 'error');
+      return false;
+    }
+
+    const data = await response.json();
     
-    // For demo purposes, simulate successful authentication
-    const mockUser = {
-      id: payload.sub,
-      username: payload.given_name || payload.name?.split(' ')[0] || 'GoogleUser',
-      email: payload.email,
-      name: payload.name,
-      picture: payload.picture,
-      provider: 'google'
-    };
-
-    // Store authentication data
-    localStorage.setItem('authToken', `google-token-${Date.now()}`);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-
-    return true;
+    if (data.token && data.user) {
+      // Store the real JWT token from backend
+      localStorage.setItem('authToken', data.token);
+      
+      // Store user data with both picture and avatar for compatibility
+      const userToStore = {
+        ...data.user,
+        picture: data.user.avatar || payload.picture,
+        avatar: data.user.avatar || payload.picture,
+      };
+      localStorage.setItem('user', JSON.stringify(userToStore));
+      
+      return true;
+    } else {
+      console.error('Invalid response from backend:', data);
+      showNotification('Invalid response from server', 'error');
+      return false;
+    }
   } catch (error) {
     console.error('Error processing Google authentication:', error);
+    showNotification('Network error. Please try again.', 'error');
     return false;
   }
 }
