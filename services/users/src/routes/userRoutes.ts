@@ -115,7 +115,20 @@ export default async function registerUserRoutes(app: FastifyInstance) {
         200: {
           description: "Friend requests retrieved successfully.",
           type: "array",
-          items: { $ref: "FriendRequest#" }
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "integer" },
+              fromId: { type: "integer" },
+              toId: { type: "integer" },
+              requesterUsername: { type: "string" },
+              addresseeUsername: { type: "string" },
+              requester: { type: "string" },
+              requesterAvatar: { type: "string", format: "uri" },
+              status: { type: "string" },
+              created_at: { type: "string", format: "date-time" }
+            }
+          }
         },
         401: { $ref: "UnauthorizedError#" },
         500: { $ref: "InternalServerError#" }
