@@ -7,6 +7,7 @@ import {
   type PlayerLeftMessage,
   type GameStartMessage,
   type JoinQueueMessage,
+  type TournamentStateMessage,
 } from 'shared';
 
 import type { PlayerInputMessage, Player } from 'shared';
@@ -189,6 +190,9 @@ export class MessageHandler {
     this.roomManager.addPlayerToRoom(room.id, player.id);
     console.log(`Player "${player.name}" joined tournament room "${room.id}"`);
 
+    // Assign tournament roles
+    this.assignTournamentRoles(room);
+
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
       data: {
@@ -201,7 +205,119 @@ export class MessageHandler {
       timestamp: Date.now()
     };
     this.broadcaster.broadcastToRoom(room.id, response);
+
+    // Broadcast tournament state to all players
+    this.broadcastTournamentState(room.id);
+
     return room;
+  }
+
+  private assignTournamentRoles(room: Room): void {
+    if (room.type !== 'tournament') return;
+
+    const playerIds = room.playerIds;
+
+    // First player becomes king
+    if (!room.kingId && playerIds.length >= 1 && playerIds[0]) {
+      room.kingId = playerIds[0];
+      console.log(`Player ${room.kingId} is now the king`);
+    }
+
+    // Second player becomes challenger
+    if (!room.challengerId && playerIds.length >= 2 && playerIds[1]) {
+      room.challengerId = playerIds[1];
+      console.log(`Player ${room.challengerId} is now the challenger`);
+    }
+
+    // Remaining players go to queue
+    room.queueIds = playerIds.slice(2);
+  }
+
+  private broadcastTournamentState(roomId: string): void {
+    const room = this.roomManager.getRoom(roomId);
+    if (!room || room.type !== 'tournament') return;
+
+    const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
+    const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
+    const queuePlayers = room.queueIds.map(id => this.roomManager.getPlayer(id)).filter(p => p !== undefined);
+
+      const tournamentState: TournamentStateMessage = {
+        type: 'tournamentState',
+        data: {
+          roomType: room.type,
+          kingId: king ? king.id : '',
+          kingName: king ? king.name : '',
+          challengerId: challenger ? challenger.id : '',
+          challengerName: challenger ? challenger.name : '',
+          queue: queuePlayers.map(p => ({
+            playerId: p!.id,
+            playerName: p!.name
+          }))
+        },
+        timestamp: Date.now()
+      };
+
+    this.broadcaster.broadcastToRoom(roomId, tournamentState);
+  }
+
+  // Called when a tournament round ends (one player reaches 2 points) and switch king/challenger
+  handleTournamentRoundEnd(roomId: string, winnerId: string): void {
+    const room = this.roomManager.getRoom(roomId);
+    if (!room || room.type !== 'tournament') return;
+
+    console.log(`tournament round winner: ${winnerId}`);
+
+    // Determine if winner is king or challenger
+    const kingWon = winnerId === room.kingId;
+
+    if (kingWon) {
+      // King wins: challenger goes to back of queue
+      if (room.challengerId) {
+        console.log(`king won, challenger ${room.challengerId} goes to back of queue`);
+        room.queueIds.push(room.challengerId);
+      }
+
+      // Next player in queue becomes new challenger
+      if (room.queueIds.length > 0) {
+        const nextId = room.queueIds.shift();
+        if (nextId) {
+          room.challengerId = nextId;
+          console.log(`New challenger: ${room.challengerId}`);
+        }
+      } else {
+        delete room.challengerId;
+      }
+    } else {
+      // Challenger wins: becomes new king, old king goes to back of queue
+      console.log(`challenger won, old king ${room.kingId} goes to back of queue`);
+
+      if (room.kingId) {
+        room.queueIds.push(room.kingId);
+      }
+
+      // Challenger becomes new king
+      if (room.challengerId) {
+        room.kingId = room.challengerId;
+        console.log(`New king: ${room.kingId}`);
+
+        // Reset new king ready state
+        const newKing = this.roomManager.getPlayer(room.challengerId);
+      }
+
+      // Next player in queue becomes new challenger
+      if (room.queueIds.length > 0) {
+        const nextId = room.queueIds.shift();
+        if (nextId) {
+          room.challengerId = nextId;
+          console.log(`New challenger: ${room.challengerId}`);
+        }
+      } else {
+        delete room.challengerId;
+      }
+    }
+
+    // Broadcast updated tournament state
+    this.broadcastTournamentState(roomId);
   }
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {

@@ -10,7 +10,8 @@ export class InMemoryRoomStorage implements RoomStorage {
 		const newRoom: Room = {
 			id: roomId,
 			type: type,
-			playerIds: [], // Empty array - no players yet
+			playerIds: [], // Empty array
+			queueIds: [], // Empty queue for tournament mode
 			status: 'waiting',
 			createdAt: Date.now()
 		};

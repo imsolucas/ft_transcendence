@@ -8,7 +8,8 @@ export type GameMessage =
 | PlayerReadyMessage
 | JoinQueueMessage
 | LeaveRoomMessage
-| PlayerInputMessage;
+| PlayerInputMessage
+| TournamentStateMessage;
 
 export interface BaseMessage {
 	type: string;
@@ -95,6 +96,21 @@ export interface GameStartMessage extends BaseMessage {
 			playerId: string;
 			playerName: string;
 			position?: number;
+		}>;
+	}
+}
+
+export interface TournamentStateMessage extends BaseMessage {
+	type: 'tournamentState';
+	data: {
+		roomType: 'standard' | 'tournament';
+		kingId?: string;
+		kingName?: string;
+		challengerId?: string;
+		challengerName?: string;
+		queue: Array<{
+			playerId: string;
+			playerName: string;
 		}>;
 	}
 }
