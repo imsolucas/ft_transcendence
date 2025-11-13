@@ -1,5 +1,8 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient, UserStatus, FriendshipStatus } from "@prisma/client";
+import speakeasy from "speakeasy";
+import qrcode from "qrcode";
+import { error } from "console";
 
 const prisma = new PrismaClient();
 
@@ -170,4 +173,38 @@ export async function updateFriendRequest(req: FastifyRequest, reply: FastifyRep
   });
 
   return reply.send({ message: "Friend request updated successfully." });
+}
+
+// Setup 2Fa
+export async function enable2FA(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  // Check if 2FA is already enabled
+  const user   = await prisma.user.findUnique({ where: { id: userId } });
+  if (user?.is2FAEnabled) {
+    return reply.code(400).send({ error: "2FA is already enabled." });
+  }
+
+  // Generate a new 2FA secret
+  const secret = speakeasy.generateSecret({ length: 20, name: "User Management System" });
+
+  // Ensure otpauth_url is defined before generating QR code
+  if (!secret.otpauth_url) {
+    return reply.code(500).send({ error: "Failed to generate 2FA setup URL." });
+  }
+
+  // Generate QR code for authenticator apps
+  const qrCode = await qrcode.toDataURL(secret.otpauth_url);
+
+  // Save secret to user in DB
+  await prisma.user.update({
+    where: { id: userId },
+    data: { twoFASecret: secret.base32, is2FAEnabled: true }
+  });
+
+  return reply.send({
+    secret: secret.base32,
+    qrCode
+  });
 }

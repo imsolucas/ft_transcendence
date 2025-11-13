@@ -150,4 +150,33 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.updateFriendRequest);
+
+  // 2FA setup
+  app.post("/user/2fa/setup", {
+    schema: {
+      summary: "Enable 2FA for user",
+      description: "Generates a 2FA secret and returns a QR code for setup. The user must scan the QR code with an authenticator app and verify with a code.",
+      tags: ["user", "security"],
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          description: "2FA setup info",
+          type: "object",
+          properties: {
+            secret: { type: "string", example: "JBSWY3DPEHPK3PXP" },
+            qrCode: { type: "string", format: "uri", example: "data:image/png;base64,..." }
+          }
+        },
+        400: {
+          description: "2FA is already enabled.",
+          type: "object",
+          properties: {
+            error: { type: "string", example: "2FA is already enabled." }
+          }
+        },
+        401: { $ref: "UnauthorizedError#" },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.enable2FA);
 }
