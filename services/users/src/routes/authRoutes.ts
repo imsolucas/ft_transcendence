@@ -60,6 +60,14 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
             }
           }
         },
+        202: {
+          description: "2FA required",
+          type: "object",
+          properties: {
+            twoFARequired: { type: "boolean" },
+            id: { type: "integer" }
+          }
+        },
         401: {
           description: "Invalid username or password",
           type: "object",

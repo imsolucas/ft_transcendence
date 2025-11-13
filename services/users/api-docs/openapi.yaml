@@ -75,6 +75,19 @@ paths:
                     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                   user:
                     $ref: '#/components/schemas/UserProfile'
+        '202':
+          description: 2FA required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  twoFARequired:
+                    type: boolean
+                    example: true
+                  userId:
+                    type: integer
+                    example: 1
         '401':
           description: Invalid username or password
           content:

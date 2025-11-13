@@ -57,6 +57,14 @@ export async function login(req: FastifyRequest, reply: FastifyReply) {
     return reply.code(401).send({ error: "Invalid username or password" });
   }
 
+  if (user.is2FAEnabled) {
+    return reply.code(202).send({
+      twoFARequired: true,
+      id: user.id
+    });
+  }
+
+  // Issue token if 2FA is not enabled
   const token = jwt.sign(
     { id: user.id, username: user.username, email: user.email },
     JWT_SECRET,
