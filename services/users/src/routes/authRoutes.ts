@@ -118,4 +118,40 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.googleAuth);
+
+  // POST /auth/verify-2fa
+  app.post("/auth/verify-2fa", {
+    schema: {
+      summary: "Verify 2FA code",
+      description: "Verifies the 2FA code and returns a JWT token if successful.",
+      body: {
+        type: "object",
+        required: ["userId", "code"],
+        properties: {
+          userId: { type: "integer" },
+          code: { type: "string" }
+        }
+      },
+      response: {
+        200: {
+          description: "2FA verification successful",
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            user: { $ref: "UserProfile#" }
+          }
+        },
+        401: {
+          description: "Invalid 2FA code",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          $ref: "InternalServerError#"
+        }
+      }
+    }
+  }, controllers.verify2FA);
 }

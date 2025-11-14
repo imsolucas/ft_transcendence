@@ -181,7 +181,7 @@ export async function enable2FA(req: FastifyRequest, reply: FastifyReply) {
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
   // Check if 2FA is already enabled
-  const user   = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (user?.is2FAEnabled) {
     return reply.code(400).send({ error: "2FA is already enabled." });
   }

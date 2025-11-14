@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
+import speakeasy from "speakeasy";
 import { error } from "console";
 
 const prisma = new PrismaClient();
@@ -140,4 +141,45 @@ export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
   } catch (err) {
     return reply.code(400).send({ error: "Invalid Google token" });
   }
+}
+
+// 2FA Verification controller
+export async function verify2FA(req: FastifyRequest, reply: FastifyReply) {
+  const { userId, code } = req.body as { userId: number; code: string };
+  if (!userId || !code) {
+    return reply.code(400).send({ error: "Missing userId or code" });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.is2FAEnabled || !user.twoFASecret) {
+    return reply.code(401).send({ error: "2FA not enabled for this user" });
+  }
+
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFASecret,
+    encoding: "base32",
+    token: code,
+    window: 1 // allows for slight clock drift
+  });
+
+  if (!verified) {
+    return reply.code(401).send({ error: "Invalid 2FA code" });
+  }
+
+  // Issue JWT after successful 2FA
+  const token = jwt.sign(
+    { id: user.id, username: user.username, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return reply.send({
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+    },
+  });
 }

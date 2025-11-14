@@ -145,51 +145,51 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # /auth/verify-2fa:
-  #   post:
-  #     summary: Verify 2FA code
-  #     description: Verifies the 2FA code and returns a JWT token if successful.
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             type: object
-  #             required:
-  #               - userId
-  #               - code
-  #             properties:
-  #               userId:
-  #                 type: integer
-  #                 example: 1
-  #               code:
-  #                 type: string
-  #                 example: "123456"
-  #     responses:
-  #       '200':
-  #         description: 2FA verification successful
-  #         content:
-  #           application/json:
-  #             schema:
-  #               type: object
-  #               properties:
-  #                 token:
-  #                   type: string
-  #                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-  #                 user:
-  #                   $ref: '#/components/schemas/UserProfile'
-  #       '401':
-  #         description: Invalid 2FA code
-  #         content:
-  #           application/json:
-  #             schema:
-  #               type: object
-  #               properties:
-  #                 error:
-  #                   type: string
-  #                   example: Invalid 2FA code
-  #       '500':
-  #         $ref: '#/components/responses/InternalServerError'
+  /auth/verify-2fa:
+    post:
+      summary: Verify 2FA code
+      description: Verifies the 2FA code and returns a JWT token if successful.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - code
+              properties:
+                userId:
+                  type: integer
+                  example: 1
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: 2FA verification successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Invalid 2FA code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid 2FA code
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /user/2fa/setup:
     post:
