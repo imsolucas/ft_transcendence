@@ -1,16 +1,17 @@
-import type { PlayerInputs } from "../../types/pong.types.js";
+import type { GameConfig, PlayerInputs } from "../../types/pong.types.js";
 import type { Border } from "../components/Hitbox.js";
 import type { Vector } from "../components/Vector.js";
-import { constants } from "../constants.js";
 import Entity from "./Entity.js";
 
 export default class Paddle extends Entity {
     #size: Vector;
     #oldpos!: Vector;
 
-    constructor(color: string, pos: Vector = {x:0, y:0}, size: Vector = {x: constants.PLAYER_WIDTH, y: constants.PLAYER_HEIGHT}) {
-        super(pos, color);
-        this.#size = size;
+    constructor(config: GameConfig) {
+        const paddleConfig = config.paddleConfig;
+
+        super({x: 0, y:0}, paddleConfig.color, config, undefined, {width: paddleConfig.size!.x, height: paddleConfig.size!.y});
+        this.#size = {...paddleConfig.size!};
     }
 
     getOldBorder(): Border {
@@ -38,8 +39,8 @@ export default class Paddle extends Entity {
         this.#oldpos = { ...this.pos };
         if (border.top + cur_vel_y < 0 )
             this.pos.y = this.#size.y / 2;
-        else if (border.bottom + cur_vel_y > constants.COURT_HEIGHT)
-            this.pos.y = constants.COURT_HEIGHT - this.#size.y / 2;
+        else if (border.bottom + cur_vel_y > this.config.courtSize!.y)
+            this.pos.y = this.config.courtSize!.y - this.#size.y / 2;
         else {
             this.pos.y += cur_vel_y;
         }
@@ -70,8 +71,8 @@ export default class Paddle extends Entity {
         this.velocity.y = 0
 
         if (input.up)
-            this.velocity.y = -constants.PLAYER_SPEED;
+            this.velocity.y = -this.config.courtSize!.y;
         if (input.down)
-            this.velocity.y = constants.PLAYER_SPEED;
+            this.velocity.y = this.config.courtSize!.y;
     }
 }

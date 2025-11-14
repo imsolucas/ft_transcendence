@@ -29,20 +29,26 @@ export interface PlayerInputs {
     action_2: boolean;
 }
 
-export interface PlayerConfig {
-    skin?: string;
+export interface PaddleConfig {
     color: string;
-    size: Vector;
+    speed: number;
+    size?: Vector
+    friction?: number
 }
 
 export interface BallConfig {
-    skin?: string;
     color: string;
-    size: Vector;
+    speed: number;
+    size?: Vector;
 }
 
 export interface GameConfig {
-    playerConfigs: PlayerConfig[];
+    paddleConfig: PaddleConfig;
     ballConfig: BallConfig;
-    background: string
+    courtSize?: Vector
+    playerNames: string[];
+    backgroundColor: string;
+    pointsToWin: number;
+    isPrivate: boolean;
+    mode: 'tournament' | 'standard';
 }

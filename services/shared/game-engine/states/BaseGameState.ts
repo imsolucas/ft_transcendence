@@ -1,12 +1,12 @@
-import type { PlayerInputs } from "../../types/pong.types.js";
+import type { GameConfig, PlayerInputs } from "../../types/pong.types.js";
 import type EntityManager from "../managers/EntityManager.js";
 
 // Shared context passed to each state
 export interface GameContext {
+		config: GameConfig;
 		entityManager: EntityManager;
 		playerScore: number[];
 		previousState?: StateName // The state previous to the current one
-		socket?: WebSocket //Websocket for if the game is in listening mode
 }
 
 export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOverState" | "GameStartState" | "ListenState"

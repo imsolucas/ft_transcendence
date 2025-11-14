@@ -1,4 +1,4 @@
-import type { GameState, PlayerInputs } from "../types/pong.types.js";
+import type { GameConfig, GameState, PlayerInputs } from "../types/pong.types.js";
 import Ball from "./entities/Ball.js";
 import Paddle from "./entities/Paddle.js";
 import EntityManager from "./managers/EntityManager.js";
@@ -8,23 +8,36 @@ import GameOverState from "./states/GameOverState.js";
 import GameStartState from "./states/GameStartState.js";
 import PlayingState from "./states/PlayingState.js";
 import ScoredState from "./states/ScoredState.js";
+import { defaults } from "./defaults.js";
 
 export class GameEngine {
+    #config!: GameConfig;
     #context: GameContext;
     #entityManager: EntityManager = new EntityManager;
     #stateManager: StateManager;
     #isRunning = false;
     #previousTime: number = 0;
 
-    constructor (initialState: StateName = "GameStartState")
+    constructor (config: GameConfig, initialState: StateName = "GameStartState")
     {  
+        this.#initConfig(config);
         this.#context = {
+            config: config,
             entityManager: this.#entityManager,
             playerScore: [0, 0]
         }
         this.#stateManager = new StateManager(this.#context);
         this.#initEntities();
         this.#initStates(initialState);
+    }
+
+    // Set defaults which are not set in the frontend
+    #initConfig(config: GameConfig): void {
+        this.#config = config;
+        this.#config.paddleConfig.size = {x: defaults.PADDLE_WIDTH, y: defaults.PADDLE_HEIGHT};
+        this.#config.paddleConfig.friction = defaults.PADDLE_FRICTION;
+        this.#config.ballConfig.size = {x: defaults.BALL_SIZE, y: defaults.BALL_SIZE};
+        this.#config.courtSize = {x: defaults.COURT_WIDTH, y: defaults.COURT_HEIGHT};
     }
 
     #initStates(initialState: StateName):void {
@@ -38,9 +51,9 @@ export class GameEngine {
     }
 
     #initEntities():void {
-        this.#entityManager.addPlayer(new Paddle("#ffffff"));
-        this.#entityManager.addPlayer(new Paddle("#ffffff"));
-        this.#entityManager.addBall(new Ball("#ffffff"));
+        this.#entityManager.addPlayer(new Paddle(this.#config));
+        this.#entityManager.addPlayer(new Paddle(this.#config));
+        this.#entityManager.addBall(new Ball(this.#config));
     }
 
     input(p1?: PlayerInputs, p2?: PlayerInputs): void {

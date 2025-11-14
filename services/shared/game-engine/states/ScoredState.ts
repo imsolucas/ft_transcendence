@@ -1,5 +1,4 @@
 import type { PlayerInputs } from "../../types/pong.types.js";
-import { constants } from "../constants.js";
 import Paddle from "../entities/Paddle.js";
 import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
 
@@ -25,7 +24,7 @@ export default class ScoredState extends BaseGameState {
         this.getEntityManager().tickEntities(deltaTime, Paddle);
 
         for (let i in this.getPlayerScore()){
-            if (this.getPlayerScore()[i] >= constants.WIN_POINT)
+            if (this.getPlayerScore()[i] >= this.context.config.pointsToWin)
                 return ({nextState: "GameOverState"})
         }
 

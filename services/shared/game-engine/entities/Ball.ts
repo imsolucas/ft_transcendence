@@ -1,6 +1,6 @@
+import type { BallConfig, GameConfig } from "../../types/pong.types.js";
 import type { Border } from "../components/Hitbox.js";
 import type { Vector } from "../components/Vector.js";
-import { constants } from "../constants.js";
 import Entity from "./Entity.js";
 
 export default class Ball extends Entity {
@@ -9,10 +9,12 @@ export default class Ball extends Entity {
     #oldpos!: Vector;
     #destroyed: boolean = false;
 
-    constructor(color: string, pos: Vector = {x:0, y:0}, size: Vector = {x: constants.BALL_SIZE, y: constants.BALL_SIZE}, velocity: Vector = {x:0, y:0})
+    constructor(config: GameConfig)
     {
-        super(pos, color, velocity, {width: size.x, height: size.y});
-        this.#size = size;
+        const ballConfig = config.ballConfig;
+        const empty: Vector = {x: 0, y: 0}
+        super(empty, ballConfig.color, config, empty, {width: ballConfig.size!.x, height: ballConfig.size!.y});
+        this.#size = {...ballConfig.size!};
     }
 
     public getOldBorder () {
@@ -42,8 +44,8 @@ export default class Ball extends Entity {
     }
 
     public randomVelocity(): void {
-        const max = constants.BALL_SPEED_MAX;
-        const min = constants.BALL_SPEED_MIN;
+        const max = this.config.ballConfig.speed;
+        const min = max - 15;
         this.velocity = {
             x:(Math.random() * (max - min) + min),
             y:(Math.random() * (max - min) + min)};
@@ -61,12 +63,12 @@ export default class Ball extends Entity {
             this.velocity.y = Math.abs(this.velocity.y)
             this.pos.y = this.#size.y / 2;
         }
-        else if (border.bottom + cur_vel_y >= constants.COURT_HEIGHT)
+        else if (border.bottom + cur_vel_y >= this.config.courtSize!.y)
         {
             this.velocity.y = -Math.abs(this.velocity.y)
-            this.pos.y = constants.COURT_HEIGHT - this.#size.y / 2;
+            this.pos.y = this.config.courtSize!.y - this.#size.y / 2;
         }
-        else if (border.right <= 0 || border.left >= constants.COURT_WIDTH) {
+        else if (border.right <= 0 || border.left >= this.config.courtSize!.x) {
             this.#destroyed = true
         }
         this.pos.y += cur_vel_y;
@@ -75,8 +77,8 @@ export default class Ball extends Entity {
 
     public reset(): void {
         this.pos = {
-                    x: constants.COURT_WIDTH / 2,
-                    y: constants.COURT_HEIGHT / 2
+                    x: this.config.courtSize!.x / 2,
+                    y: this.config.courtSize!.y / 2
         }
         this.#destroyed = false
     }

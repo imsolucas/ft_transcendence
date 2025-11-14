@@ -1,9 +1,6 @@
 import { GameEngine } from "shared"
-import type { GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from "shared";
-import { drawCircle, drawRectangle, drawString, drawVector } from "./utils/drawUtils";
-import { constants } from "shared";
-
-const ASPECT_RATIO = constants.COURT_WIDTH / constants.COURT_HEIGHT;
+import type { ConnectionMessage, GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from "shared";
+import { drawRectangle, drawString } from "./utils/drawUtils";
 
 export class GameClient {
     private canvas: HTMLCanvasElement;
@@ -18,13 +15,15 @@ export class GameClient {
     private socket?: WebSocket
     private scale_x: number = 0
     private scale_y: number = 0
+    private aspectRatio!: number
 
     constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket)
     {
-        this.config = config
         this.socket = socket
         if (!socket)
-            this.gameEngine = new GameEngine();
+            this.gameEngine = new GameEngine(config);
+        this.config = config;
+        this.aspectRatio = config.courtSize!.x / config.courtSize!.y
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
         const inputs: PlayerInputs = {up: false, down: false, left: false, right: false, action_1: false, action_2: false}
@@ -52,6 +51,15 @@ export class GameClient {
     }
 
     private initSocket(): void {
+        this.socket!.onopen = () => {
+            const message: ConnectionMessage = {
+                type: 'connection',
+                data: { playerName: 'test'},
+                timestamp: Date.now()
+            }
+            this.socket!.send(JSON.stringify(message));
+        }
+
         this.socket!.onmessage = (event: MessageEvent) => {
             const message: GameMessage = (JSON.parse(event.data.toString())) as GameMessage;
 
@@ -121,21 +129,21 @@ export class GameClient {
         let newHeight = window.innerHeight - navbarHeight;
         let newAspect = newWidth / newHeight;
       
-        if (newAspect > ASPECT_RATIO)
+        if (newAspect > this.aspectRatio)
         {
-            newWidth = newHeight * ASPECT_RATIO;
+            newWidth = newHeight * this.aspectRatio;
             this.canvas.height = newHeight;
             this.canvas.width = newWidth;
         }
         else
         {
-            newHeight = newWidth / ASPECT_RATIO;
+            newHeight = newWidth / this.aspectRatio;
             this.canvas.height = newHeight;
             this.canvas.width = newWidth;
         }
       
-        this.scale_x = this.canvas.width / constants.COURT_WIDTH;
-        this.scale_y = this.canvas.height / constants.COURT_HEIGHT;
+        this.scale_x = this.canvas.width / this.config.courtSize!.x;
+        this.scale_y = this.canvas.height / this.config.courtSize!.y;
         
         this.canvas.style.marginTop = `${navbarHeight}px`;
     }
@@ -143,7 +151,7 @@ export class GameClient {
     private render_game_state(): void {        
         drawRectangle(
             {x: this.gameState.ball.x, y: this.gameState.ball.y},
-            this.config.ballConfig.size,
+            this.config.ballConfig.size!,
             this.config.ballConfig.color,
             {x: this.scale_x, y: this.scale_y},
             this.ctx
@@ -153,8 +161,8 @@ export class GameClient {
         for (let i = 0; i < this.gameState.paddles.length; i++){
             drawRectangle(
                 {x: paddles[i].x, y: paddles[i].y},
-                this.config.playerConfigs[i].size,
-                this.config.playerConfigs[i].color,
+                this.config.paddleConfig.size!,
+                this.config.paddleConfig.color,
                 {x: this.scale_x, y: this.scale_y},
                 this.ctx
             )
@@ -162,24 +170,24 @@ export class GameClient {
     }
 
     private render_ui(): void {
-            const line_size = this.canvas.height / constants.BALL_SIZE;
+            const line_size = this.canvas.height / this.config.ballConfig.size!.x;
             let i = 0;
             
             while (i < line_size)
             {
                 if (i % 2 == 0){
                     drawRectangle({
-                        x: constants.COURT_WIDTH / 2,
-                        y: i * constants.BALL_SIZE},
-                        {x: constants.BALL_SIZE, y:constants.BALL_SIZE},
+                        x: this.config.courtSize!.x / 2,
+                        y: i * this.config.ballConfig.size!.x},
+                        {x: this.config.ballConfig.size!.x, y:this.config.ballConfig.size!.x},
                         this.config.ballConfig.color,
                         {x: this.scale_x, y: this.scale_y},
                         this.ctx);
                 }
                 i++;
             }
-            drawString(this.gameState.scores[0].toString(), {x: constants.COURT_WIDTH / 2 - 10, y: 15}, "white","20px 'Courier New', monospace", {x: this.scale_x, y: this.scale_y} ,this.ctx);
-            drawString(this.gameState.scores[1].toString(), {x: constants.COURT_WIDTH / 2 + 10, y: 15}, "white","20px 'Courier New', monospace", {x: this.scale_x, y: this.scale_y} ,this.ctx);
+            drawString(this.gameState.scores[0].toString(), {x: this.config.courtSize!.x / 2 - 10, y: 15}, "white","20px 'Courier New', monospace", {x: this.scale_x, y: this.scale_y} ,this.ctx);
+            drawString(this.gameState.scores[1].toString(), {x: this.config.courtSize!.x / 2 + 10, y: 15}, "white","20px 'Courier New', monospace", {x: this.scale_x, y: this.scale_y} ,this.ctx);
     }
 
     private loop (timestamp: number) : void {

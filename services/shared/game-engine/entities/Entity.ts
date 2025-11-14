@@ -1,3 +1,4 @@
+import type { GameConfig } from "../../types/pong.types.js";
 import type { Hitbox } from "../components/Hitbox.js";
 import type { Sprite } from "../components/Sprite.js";
 import type { Vector } from "../components/Vector.js";
@@ -7,9 +8,10 @@ export default abstract class Entity {
     constructor (
         protected pos: Vector,
         protected color: string,
+        protected config: GameConfig,
         protected velocity: Vector = {x:0, y:0},
         protected hitbox?: Hitbox,
-        protected sprite?: Sprite
+        protected sprite?: Sprite,
     ) {}
 
     public setVelocity(velocity: Vector): void {
