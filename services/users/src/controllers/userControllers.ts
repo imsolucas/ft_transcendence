@@ -1,8 +1,7 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { PrismaClient, UserStatus, FriendshipStatus } from "@prisma/client";
+import { PrismaClient, FriendshipStatus } from "@prisma/client";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
-import { error } from "console";
 
 const prisma = new PrismaClient();
 
