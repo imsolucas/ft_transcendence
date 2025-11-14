@@ -135,14 +135,41 @@ export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply
     where = { addresseeId: userId, status: FriendshipStatus.PENDING };
   }
 
-  const requests = await prisma.friendship.findMany({ where });
-  const result = requests.map(r => ({
-    id: r.id,
-    fromId: r.requesterId,
-    toId: r.addresseeId,
-    status: r.status,
-    created_at: r.created_at
-  }));
+  const requests = await prisma.friendship.findMany({ 
+    where,
+    include: {
+      requester: {
+        select: {
+          id: true,
+          username: true,
+          avatar: true
+        }
+      },
+      addressee: {
+        select: {
+          id: true,
+          username: true,
+          avatar: true
+        }
+      }
+    }
+  });
+  
+  const result = requests.map(r => {
+    // For received requests, show requester info; for sent requests, show addressee info
+    const otherUser = direction === "received" ? r.requester : r.addressee;
+    return {
+      id: r.id,
+      fromId: r.requesterId,
+      toId: r.addresseeId,
+      requesterUsername: r.requester.username,
+      addresseeUsername: r.addressee.username,
+      requester: otherUser.username,
+      requesterAvatar: otherUser.avatar,
+      status: r.status,
+      created_at: r.created_at
+    };
+  });
 
   return reply.send(result);
 }

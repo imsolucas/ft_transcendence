@@ -4,12 +4,12 @@ import { updateNavbar } from '../components/Navbar';
 
 // Types for API requests/responses
 interface LoginRequest {
-  username: string;
+  name: string;
   password: string;
 }
 
 interface RegisterRequest {
-  username: string;
+  name: string;
   email: string;
   password: string;
 }
@@ -19,15 +19,25 @@ interface AuthResponse {
   message: string;
   token?: string;
   user?: {
-    id: string;
+    id: number;
     username: string;
     email: string;
-    picture?: string;
+    avatar?: string;
+  };
+}
+
+interface BackendLoginResponse {
+  token: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    avatar: string;
   };
 }
 
 // API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export function initializeAuthPage(): void {
   const container = document.querySelector('.container') as HTMLElement;
@@ -117,10 +127,10 @@ async function handleLogin(): Promise<void> {
   const passwordInput = document.querySelector('.form-box.login input[type="password"]') as HTMLInputElement;
   const loginBtn = document.querySelector('.login-submit-btn') as HTMLButtonElement;
   
-  const username = usernameInput?.value.trim();
+  const name = usernameInput?.value.trim();
   const password = passwordInput?.value.trim();
 
-  if (!username || !password) {
+  if (!name || !password) {
     showNotification('Please fill in all fields', 'error');
     return;
   }
@@ -130,13 +140,18 @@ async function handleLogin(): Promise<void> {
   loginBtn.disabled = true;
 
   try {
-    const response = await apiLogin({ username, password });
+    const response = await apiLogin({ name, password });
     
     if (response.success) {
       // Store auth token
-      if (response.token) {
+      if (response.token && response.user) {
         localStorage.setItem('authToken', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Store user with both picture and avatar for compatibility
+        const userToStore = {
+          ...response.user,
+          picture: response.user.avatar,
+        };
+        localStorage.setItem('user', JSON.stringify(userToStore));
       }
       
       showNotification('Login successful!', 'success');
@@ -167,11 +182,11 @@ async function handleRegistration(): Promise<void> {
   const passwordInput = document.querySelector('.form-box.register input[type="password"]') as HTMLInputElement;
   const registerBtn = document.querySelector('.register-submit-btn') as HTMLButtonElement;
   
-  const username = usernameInput?.value.trim();
+  const name = usernameInput?.value.trim();
   const email = emailInput?.value.trim();
   const password = passwordInput?.value.trim();
 
-  if (!username || !email || !password) {
+  if (!name || !email || !password) {
     showNotification('Please fill in all fields', 'error');
     return;
   }
@@ -192,7 +207,7 @@ async function handleRegistration(): Promise<void> {
   registerBtn.disabled = true;
 
   try {
-    const response = await apiRegister({ username, email, password });
+    const response = await apiRegister({ name, email, password });
     
     if (response.success) {
       showNotification('Registration successful! Please check your email to verify your account.', 'success');
@@ -235,52 +250,83 @@ function handleSocialLogin(platform: string): void {
 
 // API Functions
 async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
-  // Mock API call - simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock successful response
-  if (credentials.username === "demo" && credentials.password === "password") {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: credentials.name,
+        password: credentials.password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      return {
+        success: false,
+        message: errorData.error || 'Invalid username or password',
+      };
+    }
+
+    const data: BackendLoginResponse = await response.json();
+    
     return {
       success: true,
-      message: "Login successful",
-      token: "mock-jwt-token-" + Date.now(),
+      message: 'Login successful',
+      token: data.token,
       user: {
-        id: "1",
-        username: credentials.username,
-        email: "demo@example.com"
-      }
+        id: data.user.id,
+        username: data.user.username,
+        email: data.user.email,
+        avatar: data.user.avatar,
+      },
     };
-  } else {
+  } catch (error) {
+    console.error('Login API error:', error);
     return {
       success: false,
-      message: "Invalid username or password"
+      message: 'Network error. Please try again.',
     };
   }
 }
 
 async function apiRegister(userData: RegisterRequest): Promise<AuthResponse> {
-  // Mock API call - simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Mock validation
-  if (userData.username.length < 3) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      return {
+        success: false,
+        message: errorData.error || 'Registration failed',
+      };
+    }
+
+    // Signup returns 201, but we need to login to get token
+    // For now, return success and let user login
+    return {
+      success: true,
+      message: 'Registration successful! Please login with your credentials.',
+    };
+  } catch (error) {
+    console.error('Registration API error:', error);
     return {
       success: false,
-      message: "Username must be at least 3 characters long"
+      message: 'Network error. Please try again.',
     };
   }
-  
-  // Mock successful response
-  return {
-    success: true,
-    message: "Registration successful! Please check your email to verify your account.",
-    token: "mock-jwt-token-" + Date.now(),
-    user: {
-      id: "2",
-      username: userData.username,
-      email: userData.email
-    }
-  };
 }
 
 // Utility Functions
@@ -334,10 +380,48 @@ export function getAuthToken(): string | null {
   return localStorage.getItem('authToken');
 }
 
-export function getCurrentUser(): any {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
-}
+export async function getCurrentUser(): Promise<any> {
+	try {
+	  // Get user from localStorage first
+	  const storedUser = localStorage.getItem('user');
+	  if (storedUser) {
+		const user = JSON.parse(storedUser);
+		return user;
+	  }
+	  
+	  // If not in localStorage, fetch from backend using profile endpoint
+	  const token = getAuthToken();
+	  if (!token) {
+		return null;
+	  }
+	  
+	  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+		headers: {
+		  'Authorization': `Bearer ${token}`,
+		  'Content-Type': 'application/json',
+		},
+	  });
+	  
+      if (response.ok) {
+		const userData = await response.json();
+		const user = {
+		  id: userData.id,
+		  username: userData.username || userData.name,
+		  email: userData.email,
+		  picture: userData.avatar,
+		  avatar: userData.avatar, // Store both for compatibility
+		};
+		localStorage.setItem('user', JSON.stringify(user));
+		return user;
+	  }
+	  
+	  return null;
+	} catch (error) {
+	  console.error("Error fetching current user:", error);
+	  return null;
+	}
+  }
+  
 
 export function isAuthenticated(): boolean {
   return !!getAuthToken();

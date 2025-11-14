@@ -1,4 +1,5 @@
 import './styles/style.css'
+import './i18n';
 import { initializeApp } from "./router";
 import { initializeNavbar } from "./components/Navbar";
 

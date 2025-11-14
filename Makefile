@@ -1,6 +1,6 @@
 FILE=infra/docker-compose.yml
 
-.PHONY: all up down build re logs ps clean-volumes inspect-health
+.PHONY: all up down build re logs ps clean-volumes inspect-health install
 
 all: up
 
@@ -32,6 +32,17 @@ ps:
 	docker compose -f $(FILE) ps
 
 # cleanup / inspect
+install:
+	@for dir in services/*; do \
+		if [ $$dir = "services/shared" ]; then \
+			continue; \
+		fi; \
+		echo "Cleaning and intalling modules in $$dir"; \
+		rm -rf $$dir/node_modules $$dir/package-lock.json 1>/dev/null; \
+		(cd $$dir && npm install 1>/dev/null); \
+		echo "Done"; \
+	done;
+
 clean: down clean-volumes
 
 fclean: clean prune-cache

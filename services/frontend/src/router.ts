@@ -4,7 +4,7 @@ import { LobbyPage } from "./pages/lobbyPage";
 import { ProfilePage } from "./pages/profilePage";
 import { LoadingPong } from "./components/loadingGame";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
-import { initializeAuthPage, cleanupAuthPage, isAuthenticated } from "./utils/auth-script"; // Renamed from landing-script
+import { cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
 
 // Define all possible screen names
 export type Screen = "landing" | "auth" | "lobby" | "game" | "game" | "profile" | "email-verification" | "loading";
@@ -57,7 +57,7 @@ export function renderPage(screen: Screen) {
 
     case "auth":
       container.appendChild(AuthPage());
-      setTimeout(() => initializeAuthPage(), 0);
+      // AuthPage handles its own initialization via initializeAuthHandlers()
       break;
 
     case "lobby":

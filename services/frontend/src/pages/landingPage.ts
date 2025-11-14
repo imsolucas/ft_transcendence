@@ -1,4 +1,5 @@
 import { navigate } from '../router';
+import { t } from '../i18n';
 
 export function LandingPage(): HTMLElement {
   const container = document.createElement('div');
@@ -22,7 +23,7 @@ export function LandingPage(): HTMLElement {
             <span class="bg-gradient-to-l from-[#F49752] to-[#F031A5] bg-clip-text text-transparent"> Pong</span>
           </h1>
           <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto font-poppins">
-            Experience the classic game reimagined with stunning visuals, power-ups, and multiplayer action
+            ${t('landing.subtitle')}
           </p>
         </div>
 
@@ -36,8 +37,8 @@ export function LandingPage(): HTMLElement {
             <div class="hidden absolute inset-0 items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900 video-fallback">
               <div class="text-center">
                 <div class="text-6xl mb-4">🏓</div>
-                <h3 class="text-2xl font-bold text-white mb-2">Demo Video</h3>
-                <p class="text-gray-300">Video coming soon...</p>
+                <h3 class="text-2xl font-bold text-white mb-2">${t('landing.demoVideo')}</h3>
+                <p class="text-gray-300">${t('landing.videoComingSoon')}</p>
               </div>
             </div>
 
@@ -55,7 +56,7 @@ export function LandingPage(): HTMLElement {
         <div class="mb-16">
           <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button class="play-now-btn bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg font-poppins">
-              Play Now
+              ${t('landing.playNow')}
             </button>
           </div>
         </div>

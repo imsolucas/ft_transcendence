@@ -5,7 +5,7 @@ export function ProfilePage(): HTMLElement {
   container.className = 'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] to-[#F3796A] font-poppins text-white';
 
   const mainContent = document.createElement('main');
-  mainContent.className = 'container mx-auto px-4 py-16';
+  mainContent.className = 'container mx-auto px-2 sm:px-4 md:px-6 py-8 sm:py-12 md:py-16';
   
   mainContent.appendChild(ProfileData());
 
@@ -23,17 +23,27 @@ export function ProfilePage(): HTMLElement {
       height: 100%;
     }
     .tab-btn {
-      padding: 0.75rem 1.5rem;
+      padding: 0.5rem 1rem;
       cursor: pointer;
       border: none;
       background: transparent;
       color: white;
-      font-size: 1rem;
+      font-size: 0.875rem;
       font-weight: 600;
       position: relative;
       transition: all 0.3s ease;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (min-width: 640px) {
+      .tab-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        letter-spacing: 1px;
+      }
     }
     .tab-btn:after {
       content: '';
@@ -82,10 +92,6 @@ export function ProfilePage(): HTMLElement {
       }
       .h-40 {
         height: 8rem;
-      }
-      .tab-btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
       }
     }
   `;

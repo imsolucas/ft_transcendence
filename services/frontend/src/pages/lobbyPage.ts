@@ -5,6 +5,10 @@ import type { ConnectionErrorMessage, ConnectionMessage, ConnectionSuccessMessag
 import { navigate } from "../router";
 import type { GameStartMessage, PlayerReadyMessage } from "shared/index";
 
+import { AddFriend } from '../components/AddFriend';
+import { t } from '../i18n';
+import { fetchUserProfile } from '../utils/api';
+
 export var socket: WebSocket | undefined
 
 export function LobbyPage(): HTMLElement {
@@ -51,8 +55,8 @@ export function LobbyPage(): HTMLElement {
 
 		@keyframes flicker {
 			0%, 100% { opacity: 1; }
-			98% { opacity: 1; }
-			99% { opacity: 0.8; }
+			99% { opacity: 1; }
+			99.5% { opacity: 0.98; }
 		}
 
 		@keyframes ripple {
@@ -67,7 +71,7 @@ export function LobbyPage(): HTMLElement {
 		}
 
 		.pong-ball {
-			animation: ball-bounce 3s ease-in-out infinite;
+			animation: ball-bounce-bounded 3s ease-in-out infinite;
 		}
 
 		.paddle-left {
@@ -103,7 +107,15 @@ export function LobbyPage(): HTMLElement {
 		}
 
 		.flicker {
-			animation: flicker 0.15s infinite linear;
+			animation: flicker 8s infinite linear;
+		}
+
+		@keyframes ball-bounce-bounded {
+			0% { transform: translate(10%, 20%); }
+			25% { transform: translate(45%, 30%); }
+			50% { transform: translate(80%, 50%); }
+			75% { transform: translate(45%, 70%); }
+			100% { transform: translate(10%, 80%); }
 		}
 	`;
 	document.head.appendChild(style);
@@ -116,10 +128,10 @@ export function LobbyPage(): HTMLElement {
 				<!-- Header -->
 				<header class="text-center mb-8">
 					<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
-						PONG ARCADE
+						${t('lobby.title')}
 					</h1>
 					<div class="font-['Orbitron'] text-lg md:text-xl text-[#F34C94]">
-						Welcome to the Digital Arena
+						${t('lobby.subtitle')}
 					</div>
 				</header>
 
@@ -129,40 +141,50 @@ export function LobbyPage(): HTMLElement {
 					<div class="w-full lg:w-1/2 space-y-6">
 						<!-- Game Mode Buttons -->
 						<div class="space-y-4">
-							<h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">Game Modes</h2>
+							<h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">${t('lobby.gameModes')}</h2>
 							
 							<button class="neon-button localBtn w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#4B1B67] to-[#872481]">
-								🎮 LOCAL GAME
+								🎮 ${t('lobby.localGame')}
 							</button>
 							
 							<button class="neon-button onlineBtn w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#872481] to-[#DC25A3]">
-								🌐 MULTIPLAYER
+								🌐 ${t('lobby.multiplayer')}
 							</button>
 						</div>
 
 						<!-- Quick Stats -->
 						<div class="space-y-4">
-							<h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">Quick Stats</h2>
+							<div class="flex items-center justify-between">
+								<h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">${t('lobby.quickStats')}</h2>
+								<button id="refresh-stats-btn" class="text-[#F34C94] hover:text-[#F34C94]/80 transition-colors mb-4" title="${t('lobby.refresh') || 'Refresh'}">
+									<i class="bx bx-refresh text-xl"></i>
+								</button>
+							</div>
 							
 							<div class="bg-gray-900 border border-[#F34C94] p-4 rounded-lg">
 								<div class="grid grid-cols-2 gap-4 text-center">
 									<div>
-										<div class="font-['Press_Start_2P'] text-xs text-[#F34C94]">WINS</div>
-										<div class="font-['Orbitron'] text-lg text-white">42</div>
+										<div class="font-['Press_Start_2P'] text-xs text-[#F34C94]">${t('lobby.wins')}</div>
+										<div id="lobby-wins" class="font-['Orbitron'] text-lg text-white">-</div>
 									</div>
 									<div>
-										<div class="font-['Press_Start_2P'] text-xs text-[#F34C94]">LOSSES</div>
-										<div class="font-['Orbitron'] text-lg text-white">13</div>
+										<div class="font-['Press_Start_2P'] text-xs text-[#F34C94]">${t('lobby.losses')}</div>
+										<div id="lobby-losses" class="font-['Orbitron'] text-lg text-white">-</div>
 									</div>
 								</div>
 							</div>
+						</div>
+
+						<!-- Add Friends Section -->
+						<div class="space-y-4">
+							<div id="add-friend-container"></div>
 						</div>
 					</div>
 
 					<!-- Right Side - Game Preview -->
 					<div class="w-full lg:w-1/2">
 						<div class="space-y-6">
-							<h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">Game Preview</h2>
+							<h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">${t('lobby.gamePreview')}</h2>
 							
 							<!-- Pong Table Preview -->
 							<div class="relative bg-gray-900 border-4 border-[#F34C94] rounded-lg p-8 h-80 md:h-96 overflow-hidden">
@@ -189,18 +211,18 @@ export function LobbyPage(): HTMLElement {
 									<div class="paddle-right absolute w-4 h-20 bg-[#DC25A3] shadow-[0_0_10px_#DC25A3] right-5"></div>
 									
 									<!-- Ball -->
-									<div class="pong-ball absolute w-5 h-5 bg-[#F34C94] rounded-full shadow-[0_0_10px_#F34C94] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+									<div class="pong-ball absolute w-5 h-5 bg-[#F34C94] rounded-full shadow-[0_0_10px_#F34C94]" style="top: 20%; left: 10%;"></div>
 								</div>
 								
 								<!-- Score Display -->
 								<div class="absolute top-4 left-1/2 transform -translate-x-1/2 flex space-x-8">
 									<div class="text-center">
 										<div class="font-['Press_Start_2P'] text-2xl text-[#F34C94]">0</div>
-										<div class="font-['Orbitron'] text-xs text-gray-400">PLAYER 1</div>
+										<div class="font-['Orbitron'] text-xs text-gray-400">${t('lobby.player1')}</div>
 									</div>
 									<div class="text-center">
 										<div class="font-['Press_Start_2P'] text-2xl text-[#F34C94]">0</div>
-										<div class="font-['Orbitron'] text-xs text-gray-400">PLAYER 2</div>
+										<div class="font-['Orbitron'] text-xs text-gray-400">${t('lobby.player2')}</div>
 									</div>
 								</div>
 							</div>
@@ -236,6 +258,26 @@ export function LobbyPage(): HTMLElement {
 			}, 600);
 		});
 	});
+
+	// Load stats and setup refresh functionality
+	const loadStats = async () => {
+		try {
+			const profileData = await fetchUserProfile();
+			const winsElement = container.querySelector('#lobby-wins');
+			const lossesElement = container.querySelector('#lobby-losses');
+			if (winsElement) winsElement.textContent = String(profileData.wins || 0);
+			if (lossesElement) lossesElement.textContent = String(profileData.losses || 0);
+		} catch (error) {
+			console.error('Failed to load stats:', error);
+			const winsElement = container.querySelector('#lobby-wins');
+			const lossesElement = container.querySelector('#lobby-losses');
+			if (winsElement) winsElement.textContent = '0';
+			if (lossesElement) lossesElement.textContent = '0';
+		}
+	};
+
+	// Store reference to AddFriend component for refresh
+	let addFriendComponent: HTMLElement | null = null;
 
 	setTimeout(() => {
     const localGame = container.querySelector('.localBtn');
@@ -397,29 +439,32 @@ export function LobbyPage(): HTMLElement {
                 loadingComponent.remove();
             }
         }
-		
-		// setup mock opponent for testing
-        // setTimeout(() => {
-        //     const mockOpponent = {
-        //         id: '2',
-        //         username: 'CoolPlayer42',
-        //         picture: '/images/default-avatar.png',
-        //         level: 12,
-        //         wins: 23,
-        //         losses: 8,
-        //         winRate: '74%'
-        //     };
-            
-        //     // Use the exposed method to update the component
-        //     (loadingComponent as any).setOpponent(mockOpponent, 'match-123');
-        // }, 3000);
-
-        // Optional: Simulate error for testing
-        // setTimeout(() => {
-        //     (loadingComponent as any).setError('Connection failed. Please try again.');
-        // }, 5000);
     });
-}, 0);
+
+		// Load initial stats
+		loadStats();
+
+		// Setup refresh stats button
+		const refreshStatsBtn = container.querySelector('#refresh-stats-btn');
+		refreshStatsBtn?.addEventListener('click', () => {
+			const icon = refreshStatsBtn.querySelector('i');
+			if (icon) {
+				icon.classList.add('animate-spin');
+				loadStats().finally(() => {
+					setTimeout(() => {
+						icon.classList.remove('animate-spin');
+					}, 500);
+				});
+			}
+		});
+
+		// Add AddFriend component
+		const addFriendContainer = container.querySelector('#add-friend-container');
+		if (addFriendContainer) {
+			addFriendComponent = AddFriend();
+			addFriendContainer.appendChild(addFriendComponent);
+		}
+	}, 0);
 
 
 	return container;

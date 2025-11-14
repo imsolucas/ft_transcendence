@@ -73,4 +73,47 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.login);
+
+  // Google OAuth
+  app.post("/auth/google", {
+    schema: {
+      summary: "Google OAuth authentication",
+      description: "Authenticate user with Google OAuth credential.",
+      body: {
+        type: "object",
+        required: ["credential"],
+        properties: {
+          credential: { type: "string" }
+        }
+      },
+      response: {
+        200: {
+          description: "OK",
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            user: {
+              type: "object",
+              properties: {
+                id: { type: "integer" },
+                username: { type: "string" },
+                email: { type: "string", format: "email" },
+                avatar: { type: "string", format: "uri" }
+              }
+            }
+          }
+        },
+        400: {
+          description: "Invalid input",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          $ref: "InternalServerError#"
+        }
+      }
+    }
+  }, controllers.googleAuth);
 }
