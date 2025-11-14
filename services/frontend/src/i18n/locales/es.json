@@ -103,6 +103,47 @@
     "loading": "Cargando...",
     "error": "Error",
     "success": "Éxito"
+  },
+  "gameConfig": {
+    "title": "Configuración del Juego",
+    "paddleColor": "Color de la Paleta",
+    "paddleSpeed": "Velocidad de la Paleta",
+    "ballColor": "Color de la Pelota",
+    "ballSpeed": "Velocidad de la Pelota",
+    "backgroundColor": "Color de Fondo",
+    "pointsToWin": "Puntos para Ganar",
+    "playerName": "Nombre del Jugador {{num}}",
+    "numPlayers": "Número de Jugadores",
+    "addPlayer": "Agregar Jugador",
+    "lobbyType": "Tipo de Sala",
+    "public": "Público",
+    "private": "Privado",
+    "startGame": "INICIAR JUEGO",
+    "createLobby": "CREAR SALA",
+    "back": "ATRÁS"
+  },
+  "localGame": {
+    "title": "Juego Local",
+    "subtitle": "Elige tu modo de juego",
+    "oneVsOne": "1v1",
+    "tournament": "Torneo",
+    "oneVsOneDesc": "Partida clásica de dos jugadores",
+    "tournamentDesc": "Rey de la Colina - Partidas secuenciales"
+  },
+  "multiplayer": {
+    "title": "Multijugador",
+    "subtitle": "Elige cómo quieres jugar",
+    "randomPlay": "Juego Aleatorio",
+    "randomPlayDesc": "Encuentra un oponente aleatorio",
+    "createLobby": "Crear Sala",
+    "createLobbyDesc": "Crea una sala de juego personalizada",
+    "joinLobby": "Unirse a Sala",
+    "joinLobbyDesc": "Únete con un ID de juego",
+    "enterGameId": "Ingrese ID de Juego",
+    "join": "UNIRSE",
+    "searching": "Buscando oponente...",
+    "creatingLobby": "Creando sala...",
+    "joiningLobby": "Uniéndose a sala..."
   }
 }
 
