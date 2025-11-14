@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/userControllers.ts";
+import { stringify } from "querystring";
 
 export default async function registerUserRoutes(app: FastifyInstance) {
   // User profile
@@ -179,4 +180,29 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.enable2FA);
+
+  // Update user status
+  app.patch("/user/status", {
+    schema: {
+      summary: "Update user status",
+      description: "Updates the status of the authenticated user. This endpoint allows the user to set their current status (e.g., ONLINE, OFFLINE, INGAME). The status can be used to indicate availability or activity within the application.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] }
+        }
+      },
+      response: {
+        200: {
+          description: "User status updated successfully.",
+          type: "object",
+          properties: {
+            status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] }
+          }
+        }
+      }
+    }
+  }, controllers.updateUserStatus);
 }

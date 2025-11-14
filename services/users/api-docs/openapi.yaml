@@ -291,6 +291,48 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /user/status:
+    patch:
+      summary: Update user status
+      description: |
+        Updates the status of the authenticated user. This endpoint allows the user to set their current status (e.g., ONLINE, OFFLINE, INGAME).
+        The status can be used to indicate availability or activity within the application.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - ONLINE
+                  - OFFLINE
+                  - INGAME
+      responses:
+        '200':
+          description: User status updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ONLINE
+                      - OFFLINE
+                      - INGAME
+        '400':
+          description: Invalid status value.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /user/friends:
     get:
       summary: Get friend list

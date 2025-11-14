@@ -208,3 +208,21 @@ export async function enable2FA(req: FastifyRequest, reply: FastifyReply) {
     qrCode
   });
 }
+
+// Update user status
+export async function updateUserStatus(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { status } = req.body as { status?: "ONLINE" | "OFFLINE" | "INGAME" };
+  if (!status || !["ONLINE", "OFFLINE", "INGAME"].includes(status)) {
+    return reply.code(400).send({ error: "Invalid status value." });
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { status }
+  });
+
+  return reply.send({ status });
+}
