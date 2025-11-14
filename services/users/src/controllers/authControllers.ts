@@ -65,6 +65,11 @@ export async function login(req: FastifyRequest, reply: FastifyReply) {
     });
   }
 
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { status: "ONLINE" }
+  });
+
   // Issue token if 2FA is not enabled
   const token = jwt.sign(
     { id: user.id, username: user.username, email: user.email },
