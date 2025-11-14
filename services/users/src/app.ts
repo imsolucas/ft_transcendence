@@ -32,11 +32,12 @@ export async function buildApp(): Promise<FastifyInstance> {
   const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret";
 
   app.addHook("preHandler", async (req, reply) => {
-    // Only check for routes that require auth
+    // Only check for routes that require auth (exclude auth routes)
     const path = req.routeOptions?.url;
     if (
       path &&
-      (path.startsWith("/user") || path.startsWith("/game"))
+      (path.startsWith("/user") || path.startsWith("/game")) &&
+      !path.startsWith("/auth")
     ) {
       const auth = req.headers.authorization;
       if (!auth || !auth.startsWith("Bearer ")) {
