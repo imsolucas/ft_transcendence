@@ -4,9 +4,9 @@ import type { GameMessage } from 'shared';
 import type { Player } from 'shared';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { InMemoryRoomStorage } from './storage/roomStorage.js';
-import { MessageBroadcaster } from './websocket/broadcaster.js';
+import { MessageBroadcaster } from './websocket/Broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
-import { MessageHandler } from './websocket/handlers.js';
+import { MessageHandler } from './websocket/Messagehandler.js';
 import type { GameServer } from './game/GameServer.js';
 
 
@@ -77,7 +77,7 @@ server.register(async function (fastify: any) {
 let tickInterval: NodeJS.Timeout | null = null;
 
 function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, GameServer>): void {
-  const TICK_RATE = 11; // ticks per second
+  const TICK_RATE = 60; // ticks per second
   const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
 
   // If already running, stop the previous interval

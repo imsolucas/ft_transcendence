@@ -2,17 +2,18 @@
 import type { GameStartMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from 'shared';
 import { GameEngine } from 'shared';
 import type { Room } from '../types/room.types.js';
-import { MessageBroadcaster } from "../websocket/broadcaster.js";
+import { MessageBroadcaster } from "../websocket/Broadcaster.js";
 
 export class GameServer {
   readonly id: string;
   readonly playerIds: string[];
   readonly createdAt: number;
   private lastTickTime: number = 0;
-  private gameEngine = new GameEngine()
+  private gameEngine: GameEngine;
   private broadcaster: MessageBroadcaster;
 
   constructor(room: Room, broadcaster: MessageBroadcaster) {
+    this.gameEngine = new GameEngine(room.config);
     this.id = room.id;
     this.playerIds = room.playerIds;
     this.createdAt = room.createdAt;

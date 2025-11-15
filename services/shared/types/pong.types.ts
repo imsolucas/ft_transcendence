@@ -20,6 +20,17 @@ export interface GameState {
     lastUpdate: number
 }
 
+export interface TournamentState {
+    kingId?: string;
+    kingName?: string;
+    challengerId?: string;
+    challengerName?: string;
+    queue: Array<{
+        playerId: string;
+        playerName: string;
+    }>
+}
+
 export interface PlayerInputs {
     up: boolean;
     down: boolean;

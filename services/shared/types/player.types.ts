@@ -26,8 +26,4 @@ export interface PlayerStorage {
 	add(player: Player): void;
 	remove(playerId: string): Player | undefined;
 	get(playerId: string): Player | undefined;
-
-	//useful queries for multiplayer
-	getPaxInRoom(roomId: string): number;
-	getPlayersInRoom(roomId: string): Player[];
 }

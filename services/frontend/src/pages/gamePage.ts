@@ -1,7 +1,7 @@
 import type { GameConfig } from "shared/index";
 import { GameClient } from "../game/GameClient"
 import { socket } from "./lobbyPage";
-import { default_config } from "../game/default_configs";
+import { default_config } from "shared";
 
 let currentGame: GameClient | null = null;
 
@@ -12,15 +12,7 @@ export function GamePage(): HTMLElement {
     // const navbar = document.querySelector('nav')
     // const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
 
-    const config: GameConfig = {
-        paddleConfig: default_config.player,
-        ballConfig: default_config.ball,
-        backgroundColor: "#ae0909",
-        isPrivate: false,
-        playerNames: [],
-        mode: 'standard',
-        pointsToWin: 5
-    }
+    const config: GameConfig = default_config.standardGame
 
     const canvas = document.createElement('canvas');
     canvas.className = '';

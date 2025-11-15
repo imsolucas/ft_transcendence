@@ -1,5 +1,5 @@
 
-import type { Player, PlayerStorage } from 'shared';
+import type { GameConfig, Player, PlayerStorage } from 'shared';
 import type { Room, RoomStorage } from '../types/room.types.js';
 import type { GameServer } from './GameServer.js';
 
@@ -23,8 +23,8 @@ export class RoomManager {
   }
 
   // Create a new room
-  createRoom(type: 'standard' | 'tournament' = 'standard'): Room {
-    return this.roomStorage.createRoom(type);
+  createRoom(config: GameConfig): Room {
+    return this.roomStorage.createRoom(config);
   }
 
   // Remove a room
@@ -36,6 +36,10 @@ export class RoomManager {
   // Get a room by id
   getRoom(roomId: string): Room | undefined {
     return this.roomStorage.getRoom(roomId);
+  }
+
+  getPrivateRoom(roomId: string): Room | undefined {
+    return this.roomStorage.getPrivateRoom(roomId);
   }
 
   // Get all rooms
@@ -74,7 +78,7 @@ export class RoomManager {
     if (this.isRoomFull(roomId)) {
       room.status = 'full';
     }
-    console.log("Player added to room");
+    console.log(`Player "${player.name}" joined ${room.config.isPrivate ? 'private' : 'public'} ${room.type} room "${room.id}"`);
     return true;
   }
 
@@ -100,12 +104,19 @@ export class RoomManager {
     if (room.playerIds.length === 0) {
       this.removeRoom(roomId);
     }
+    console.log(`Removed Player ${playerId} from room ${roomId} `);
     return true;
   }
 
   // Get all players in a room
   getPlayersInRoom(roomId: string): Player[] {
-    return this.playerStorage.getPlayersInRoom(roomId);
+    const room = this.getRoom(roomId)!;
+    const playersInRoom: Player[] = []
+  
+    for (const id of room.playerIds)
+      playersInRoom.push(this.playerStorage.get(id)!);
+  
+    return playersInRoom
   }
 
   // Get first available position in a room
@@ -139,6 +150,6 @@ export class RoomManager {
 
   // Get number of players in a room
   getPaxInRoom(roomId: string): number {
-    return this.playerStorage.getPaxInRoom(roomId);
+    return this.getPlayersInRoom(roomId).length;
   }
 }

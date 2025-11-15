@@ -104,15 +104,7 @@ export interface GameStartMessage extends BaseMessage {
 export interface TournamentStateMessage extends BaseMessage {
 	type: 'tournamentState';
 	data: {
-		roomType: 'standard' | 'tournament';
-		kingId?: string;
-		kingName?: string;
-		challengerId?: string;
-		challengerName?: string;
-		queue: Array<{
-			playerId: string;
-			playerName: string;
-		}>;
+		state: TournamentState;
 	}
 }
 

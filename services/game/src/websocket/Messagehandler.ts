@@ -8,6 +8,7 @@ import {
   type GameStartMessage,
   type JoinQueueMessage,
   type TournamentStateMessage,
+  default_config,
 } from 'shared';
 
 import type { PlayerInputMessage, Player } from 'shared';
@@ -15,7 +16,7 @@ import { toSerializablePlayer } from 'shared';
 import type { Room } from '../types/room.types.js';
 import { RoomManager } from '../game/roomManager.js';
 import { pongSessions } from '../index.js';
-import { MessageBroadcaster } from './broadcaster.js';
+import { MessageBroadcaster } from './Broadcaster.js';
 import { randomUUID } from 'crypto';
 import { GameServer } from '../game/GameServer.js';
 import { json } from 'stream/consumers';
@@ -127,7 +128,7 @@ export class MessageHandler {
       timestamp: Date.now()
     }
     this.broadcaster.broadcastToRoom(roomId, response);
-    console.log(`Player "${player.name}" joined room "${roomId}"`);
+    console.log(`Player "${player.name}" joined room with id "${roomId}"`);
 
     return room || null;
   }
@@ -148,11 +149,10 @@ export class MessageHandler {
     if (standardRoom)
       room = standardRoom;
     else {
-      room = this.roomManager.createRoom('standard');
-      console.log(`Player "${player.name}" created room "${room.id}"`);
+      const config = default_config.standardGame;
+      room = this.roomManager.createRoom(config);
     }
     this.roomManager.addPlayerToRoom(room.id, player.id);
-    console.log(`Player "${player.name}" joined room "${room.id}"`);
 
     const response: PlayerJoinedMessage = {
       type: 'playerJoined',
@@ -185,11 +185,11 @@ export class MessageHandler {
     if (tournamentRoom)
       room = tournamentRoom;
     else {
-      room = this.roomManager.createRoom('tournament');
-      console.log(`Player "${player.name}" created tournament room "${room.id}"`);
+      const config = default_config.standardGame
+      config.mode = 'tournament';
+      room = this.roomManager.createRoom(config);
     }
     this.roomManager.addPlayerToRoom(room.id, player.id);
-    console.log(`Player "${player.name}" joined tournament room "${room.id}"`);
 
     // Assign tournament roles
     this.assignTournamentRoles(room);
@@ -208,7 +208,7 @@ export class MessageHandler {
     this.broadcaster.broadcastToRoom(room.id, response);
 
     // Broadcast tournament state to all players
-    this.broadcastTournamentState(room.id);
+    this.broadcaster.broadcastTournamentState(room.id);
 
     return room;
   }
@@ -234,33 +234,6 @@ export class MessageHandler {
     room.queueIds = playerIds.slice(2);
   }
 
-  private broadcastTournamentState(roomId: string): void {
-    const room = this.roomManager.getRoom(roomId);
-    if (!room || room.type !== 'tournament') return;
-
-    const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
-    const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
-    const queuePlayers = room.queueIds.map(id => this.roomManager.getPlayer(id)).filter(p => p !== undefined);
-
-      const tournamentState: TournamentStateMessage = {
-        type: 'tournamentState',
-        data: {
-          roomType: room.type,
-          kingId: king ? king.id : '',
-          kingName: king ? king.name : '',
-          challengerId: challenger ? challenger.id : '',
-          challengerName: challenger ? challenger.name : '',
-          queue: queuePlayers.map(p => ({
-            playerId: p!.id,
-            playerName: p!.name
-          }))
-        },
-        timestamp: Date.now()
-      };
-
-    this.broadcaster.broadcastToRoom(roomId, tournamentState);
-  }
-
   // Called when a tournament round ends (one player reaches 2 points) and switch king/challenger
   handleTournamentRoundEnd(roomId: string, winnerId: string): void {
     const room = this.roomManager.getRoom(roomId);
@@ -275,12 +248,12 @@ export class MessageHandler {
       // King wins: challenger goes to back of queue
       if (room.challengerId) {
         console.log(`king won, challenger ${room.challengerId} goes to back of queue`);
-        room.queueIds.push(room.challengerId);
+        room.queueIds!.push(room.challengerId);
       }
 
       // Next player in queue becomes new challenger
-      if (room.queueIds.length > 0) {
-        const nextId = room.queueIds.shift();
+      if (room.queueIds!.length > 0) {
+        const nextId = room.queueIds!.shift();
         if (nextId) {
           room.challengerId = nextId;
           console.log(`New challenger: ${room.challengerId}`);
@@ -293,7 +266,7 @@ export class MessageHandler {
       console.log(`challenger won, old king ${room.kingId} goes to back of queue`);
 
       if (room.kingId) {
-        room.queueIds.push(room.kingId);
+        room.queueIds!.push(room.kingId);
       }
 
       // Challenger becomes new king
@@ -306,8 +279,8 @@ export class MessageHandler {
       }
 
       // Next player in queue becomes new challenger
-      if (room.queueIds.length > 0) {
-        const nextId = room.queueIds.shift();
+      if (room.queueIds!.length > 0) {
+        const nextId = room.queueIds!.shift();
         if (nextId) {
           room.challengerId = nextId;
           console.log(`New challenger: ${room.challengerId}`);
@@ -318,7 +291,7 @@ export class MessageHandler {
     }
 
     // Broadcast updated tournament state
-    this.broadcastTournamentState(roomId);
+    this.broadcaster.broadcastTournamentState(roomId);
   }
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
@@ -414,15 +387,6 @@ export class MessageHandler {
     this.roomManager.removePlayerFromRoom(player.roomId, player.id);
   }
 
-  private sendError(connection: WebSocket, message: string): void {
-    const errorResponse: ConnectionErrorMessage = {
-      type: 'connectionError',
-      data: { message },
-      timestamp: Date.now()
-    };
-    connection.send(JSON.stringify(errorResponse));
-  }
-
   handlePlayerInput(data: PlayerInputMessage, player: Player) {
     const room = this.roomManager.getRoom(player.roomId);
     if (!room) return;
@@ -436,5 +400,14 @@ export class MessageHandler {
       session.input(data.data.inputs, undefined);
     else
       session.input(undefined, data.data.inputs);
+  }
+
+  private sendError(connection: WebSocket, message: string): void {
+    const errorResponse: ConnectionErrorMessage = {
+      type: 'connectionError',
+      data: { message },
+      timestamp: Date.now()
+    };
+    connection.send(JSON.stringify(errorResponse));
   }
 }
