@@ -7,6 +7,7 @@ import {
   type PlayerLeftMessage,
   type GameStartMessage,
   type JoinQueueMessage,
+  type TournamentStateMessage,
 } from 'shared';
 
 import type { PlayerInputMessage, Player } from 'shared';
@@ -84,6 +85,8 @@ export class MessageHandler {
 
     if (data.data.roomId)
       return (this.joinRoom(player, data));
+    else if (data.data.roomType == 'tournament')
+      return (this.joinTournament(player, data));
     else
       return (this.joinQueue(player, data));
   }
@@ -138,10 +141,14 @@ export class MessageHandler {
       console.error(`Player "${player.id}" already in room ${player.roomId}`);
       return null;
     }
-    if (availableRooms[0])
-      room = availableRooms[0]
+
+    // For queue, look for available standard rooms only
+    const standardRoom = availableRooms.find(r => r.type === 'standard');
+
+    if (standardRoom)
+      room = standardRoom;
     else {
-      room = this.roomManager.createRoom();
+      room = this.roomManager.createRoom('standard');
       console.log(`Player "${player.name}" created room "${room.id}"`);
     }
     this.roomManager.addPlayerToRoom(room.id, player.id);
@@ -160,6 +167,158 @@ export class MessageHandler {
     };
     this.broadcaster.broadcastToRoom(room.id, response);
     return room;
+  }
+
+  joinTournament(player: Player, data: JoinQueueMessage): Room | null {
+    const availableRooms = this.roomManager.getAvailableRooms() || [];
+    let room: Room;
+
+    if (this.roomManager.getRoom(player.roomId)){
+      this.sendError(player.socket, "Player Already in room");
+      console.error(`Player "${player.id}" already in room ${player.roomId}`);
+      return null;
+    }
+
+    // For tournaments, look for available tournament rooms only
+    const tournamentRoom = availableRooms.find(r => r.type === 'tournament');
+
+    if (tournamentRoom)
+      room = tournamentRoom;
+    else {
+      room = this.roomManager.createRoom('tournament');
+      console.log(`Player "${player.name}" created tournament room "${room.id}"`);
+    }
+    this.roomManager.addPlayerToRoom(room.id, player.id);
+    console.log(`Player "${player.name}" joined tournament room "${room.id}"`);
+
+    // Assign tournament roles
+    this.assignTournamentRoles(room);
+
+    const response: PlayerJoinedMessage = {
+      type: 'playerJoined',
+      data: {
+        playerName: player.name,
+        playerId: player.id,
+        roomId: room.id,
+        position: player.position,
+        playersInRoom: this.roomManager.getPlayersInRoom(room.id).map(toSerializablePlayer)
+      },
+      timestamp: Date.now()
+    };
+    this.broadcaster.broadcastToRoom(room.id, response);
+
+    // Broadcast tournament state to all players
+    this.broadcastTournamentState(room.id);
+
+    return room;
+  }
+
+  private assignTournamentRoles(room: Room): void {
+    if (room.type !== 'tournament') return;
+
+    const playerIds = room.playerIds;
+
+    // First player becomes king
+    if (!room.kingId && playerIds.length >= 1 && playerIds[0]) {
+      room.kingId = playerIds[0];
+      console.log(`Player ${room.kingId} is now the king`);
+    }
+
+    // Second player becomes challenger
+    if (!room.challengerId && playerIds.length >= 2 && playerIds[1]) {
+      room.challengerId = playerIds[1];
+      console.log(`Player ${room.challengerId} is now the challenger`);
+    }
+
+    // Remaining players go to queue
+    room.queueIds = playerIds.slice(2);
+  }
+
+  private broadcastTournamentState(roomId: string): void {
+    const room = this.roomManager.getRoom(roomId);
+    if (!room || room.type !== 'tournament') return;
+
+    const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
+    const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
+    const queuePlayers = room.queueIds.map(id => this.roomManager.getPlayer(id)).filter(p => p !== undefined);
+
+      const tournamentState: TournamentStateMessage = {
+        type: 'tournamentState',
+        data: {
+          roomType: room.type,
+          kingId: king ? king.id : '',
+          kingName: king ? king.name : '',
+          challengerId: challenger ? challenger.id : '',
+          challengerName: challenger ? challenger.name : '',
+          queue: queuePlayers.map(p => ({
+            playerId: p!.id,
+            playerName: p!.name
+          }))
+        },
+        timestamp: Date.now()
+      };
+
+    this.broadcaster.broadcastToRoom(roomId, tournamentState);
+  }
+
+  // Called when a tournament round ends (one player reaches 2 points) and switch king/challenger
+  handleTournamentRoundEnd(roomId: string, winnerId: string): void {
+    const room = this.roomManager.getRoom(roomId);
+    if (!room || room.type !== 'tournament') return;
+
+    console.log(`tournament round winner: ${winnerId}`);
+
+    // Determine if winner is king or challenger
+    const kingWon = winnerId === room.kingId;
+
+    if (kingWon) {
+      // King wins: challenger goes to back of queue
+      if (room.challengerId) {
+        console.log(`king won, challenger ${room.challengerId} goes to back of queue`);
+        room.queueIds.push(room.challengerId);
+      }
+
+      // Next player in queue becomes new challenger
+      if (room.queueIds.length > 0) {
+        const nextId = room.queueIds.shift();
+        if (nextId) {
+          room.challengerId = nextId;
+          console.log(`New challenger: ${room.challengerId}`);
+        }
+      } else {
+        delete room.challengerId;
+      }
+    } else {
+      // Challenger wins: becomes new king, old king goes to back of queue
+      console.log(`challenger won, old king ${room.kingId} goes to back of queue`);
+
+      if (room.kingId) {
+        room.queueIds.push(room.kingId);
+      }
+
+      // Challenger becomes new king
+      if (room.challengerId) {
+        room.kingId = room.challengerId;
+        console.log(`New king: ${room.kingId}`);
+
+        // Reset new king ready state
+        const newKing = this.roomManager.getPlayer(room.challengerId);
+      }
+
+      // Next player in queue becomes new challenger
+      if (room.queueIds.length > 0) {
+        const nextId = room.queueIds.shift();
+        if (nextId) {
+          room.challengerId = nextId;
+          console.log(`New challenger: ${room.challengerId}`);
+        }
+      } else {
+        delete room.challengerId;
+      }
+    }
+
+    // Broadcast updated tournament state
+    this.broadcastTournamentState(roomId);
   }
 
   handlePlayerReady(data: PlayerReadyMessage, player: Player): void {
@@ -184,56 +343,57 @@ export class MessageHandler {
     player.isReady = data.data.ready;
     this.broadcaster.broadcastToRoom(player.roomId, readyMessage, player.id);
 
-    // check if both players are ready and start game
+    // check if players are ready and start game
     this.checkAndStartGame(player.roomId);
   }
 
   private checkAndStartGame(roomId: string): void {
+    const room = this.roomManager.getRoom(roomId);
+    if (!room) return;
+
     const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
-    // need exactly 2 players to start
-    if (playersInRoom.length !== 2) {
-      console.log(`Cannot start game, room length: ${playersInRoom.length }`)
-      return;
+    // Check minimum and maximum players based on room type
+    if (room.type === 'standard') {
+      // Standard rooms need exactly 2 players
+      if (playersInRoom.length !== 2) {
+        console.log(`Cannot start standard game, need 2 players, have ${playersInRoom.length}`);
+        return;
+      }
+    } else {
+      // Tournament rooms need 2-8 players
+      if (playersInRoom.length < 2 || playersInRoom.length > 8) {
+        console.log(`Cannot start tournament game, need 2-8 players, have ${playersInRoom.length}`);
+        return;
+      }
     }
 
-    // find position 1 and position 2 players
-    let player1: Player | null = null;
-    let player2: Player | null = null;
-
-    for (const player of playersInRoom) {
-      if (player.position === 1) player1 = player;
-      if (player.position === 2) player2 = player;
-    }
-
-    // both positions must be filled and both players must be ready
-    if (!player1 || !player2 || !player1.isReady || !player2.isReady) {
+    // all players must be ready
+    const allReady = playersInRoom.every(p => p.isReady);
+    if (!allReady) {
       console.log("Not all players ready");
       return;
     }
 
-    // Set room and GameRoom status to 'playing'
-    const room = this.roomManager.getRoom(roomId);
-    if (room) {
-      room.status = 'playing';
-      // GameRoomManager removed, just create PongSession
-      pongSessions.set(roomId, new GameServer(room, this.broadcaster));
-    }
+    // Set room status to 'playing'
+    room.status = 'playing';
+    pongSessions.set(roomId, new GameServer(room, this.broadcaster));
 
-    console.log('Both players are ready - starting game!');
+    console.log('All players are ready - starting game!');
 
     const startMessage: GameStartMessage = {
       type: 'gameStart',
       data: {
-        player1id: player1.id,
-        player1Name: player1.name,
-        player2id: player2.id,
-        player2Name: player2.name
+        players: playersInRoom.map(p => ({
+          playerId: p.id,
+          playerName: p.name,
+          position: p.position
+        }))
       },
       timestamp: Date.now()
     };
 
-    // broadcast to both players
+    // broadcast to all players
     this.broadcaster.broadcastToRoom(roomId, startMessage);
   }
 

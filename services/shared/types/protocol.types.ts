@@ -9,7 +9,8 @@ export type GameMessage =
 | JoinQueueMessage
 | LeaveRoomMessage
 | GameStateMessage
-| PlayerInputMessage;
+| PlayerInputMessage
+| TournamentStateMessage;
 
 export interface BaseMessage {
 	type: string;
@@ -39,6 +40,7 @@ export interface JoinQueueMessage extends BaseMessage {
 	type: 'joinQueue';
 	data: {
 		roomId?: string;
+		roomType: 'standard' | 'tournament';
 	}
 }
 
@@ -91,10 +93,26 @@ export interface PlayerLeftMessage extends BaseMessage {
 export interface GameStartMessage extends BaseMessage {
 	type: 'gameStart';
 	data: {
-		player1Name: string;
-		player1id: string;
-		player2Name: string;
-		player2id: string;
+		players: Array<{
+			playerId: string;
+			playerName: string;
+			position?: number;
+		}>;
+	}
+}
+
+export interface TournamentStateMessage extends BaseMessage {
+	type: 'tournamentState';
+	data: {
+		roomType: 'standard' | 'tournament';
+		kingId?: string;
+		kingName?: string;
+		challengerId?: string;
+		challengerName?: string;
+		queue: Array<{
+			playerId: string;
+			playerName: string;
+		}>;
 	}
 }
 

@@ -14,7 +14,8 @@
 
     <hr>
     <input type="text" id="roomId" placeholder="Room ID">
-    <button onclick="joinQueue()">Play</button>
+    <button onclick="joinRoom('standard')">Play Standard</button>
+    <button onclick="joinRoom('tournament')">Tournament</button>
     <button onclick="leaveRoom()">Leave</button>
     <div id="room">Room: None</div>
 
@@ -115,7 +116,7 @@
             };
         }
 
-        function joinQueue() {
+        function joinRoom(roomType) {
             if (!socket || socket.readyState !== WebSocket.OPEN) {
                 console.log('Not connected to server!');
                 return;
@@ -125,27 +126,28 @@
                 return;
             }
             const roomId = document.getElementById('roomId').value.substring(0, 8);
+            let message;
             if (roomId === "") {
-                let message = {
+                message = {
                     type: "joinQueue",
                     data: {
                         playerId: currentPlayer.id,
+                        roomType: roomType
                     }
-                }
-                console.log('Client requesting to join queue');
-                socket.send(JSON.stringify(message));
-            }
-            else {
-                let message = {
+                };
+                console.log(`Client requesting to join ${roomType} queue`);
+            } else {
+                message = {
                     type: "joinQueue",
                     data: {
                         roomId: roomId,
                         playerId: currentPlayer.id,
+                        roomType: roomType
                     }
                 };
-                console.log('Client requesting to join room:', roomId);
-                socket.send(JSON.stringify(message));
+                console.log(`Client requesting to join ${roomType} room:`, roomId);
             }
+            socket.send(JSON.stringify(message));
         }
 
         function leaveRoom() {
@@ -230,7 +232,7 @@
                     return;
             }
             socket.send(JSON.stringify({
-                type: 'playerInput',
+                type: 'paddleMove',
                 data: {
                     inputs: move
                 },

@@ -23,8 +23,8 @@ export class RoomManager {
   }
 
   // Create a new room
-  createRoom(): Room {
-    return this.roomStorage.createRoom();
+  createRoom(type: 'standard' | 'tournament' = 'standard'): Room {
+    return this.roomStorage.createRoom(type);
   }
 
   // Remove a room
@@ -58,7 +58,7 @@ export class RoomManager {
     const room = this.roomStorage.getRoom(roomId);
     if (!room)
       return false;
-    if (room.playerIds.length >= 2)
+    if (this.isRoomFull(roomId))
       return false;
     if (room.playerIds.includes(playerId))
       return false;
@@ -71,7 +71,7 @@ export class RoomManager {
     player.position = position;
     this.playerStorage.add(player);
     room.playerIds.push(playerId);
-    if (room.playerIds.length === 2) {
+    if (this.isRoomFull(roomId)) {
       room.status = 'full';
     }
     console.log("Player added to room");
@@ -110,16 +110,20 @@ export class RoomManager {
 
   // Get first available position in a room
   getPlayerPosition(roomId: string): number {
+    const room = this.getRoom(roomId);
+    if (!room) return -1;
+
     const players = this.getPlayersInRoom(roomId);
-    let position1Taken = false;
-    let position2Taken = false;
-    for (const player of players) {
-      if (player.position === 1) position1Taken = true;
-      if (player.position === 2) position2Taken = true;
+    const maxPlayers = room.type === 'standard' ? 2 : 8;
+
+    // Find first available position (1-indexed)
+    const takenPositions = new Set(players.map(p => p.position));
+    for (let i = 1; i <= maxPlayers; i++) {
+      if (!takenPositions.has(i)) {
+        return i;
+      }
     }
-    if (!position1Taken) return 1;
-    if (!position2Taken) return 2;
-    return -1;
+    return -1; // No available positions
   }
 
   // Check if room is full
@@ -127,7 +131,10 @@ export class RoomManager {
     const room = this.getRoom(roomId);
     if (!room)
       return false;
-    return room.playerIds.length >= 2;
+    if (room.type === 'standard')
+      return room.playerIds.length >= 2;
+    else
+      return room.playerIds.length >= 8;
   }
 
   // Get number of players in a room
