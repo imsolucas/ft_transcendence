@@ -556,6 +556,22 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the service. Useful for monitoring and orchestration tools to verify the service is running.
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
 components:
   securitySchemes:
     bearerAuth:
