@@ -23,8 +23,11 @@
     <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
 
     <hr>
-    <h2>Game State</h2>
-    <pre id="gameStateDisplay">No game state yet</pre>
+    <pre id="gameStateDisplay" style="display:inline-block; width:300px;">No game state yet</pre>
+
+    <div id="tournamentStateDisplay" style="display:inline-block; width:200px; vertical-align:top;">
+        No tournament state yet
+    </div>
 
     <script>
         let isReady = false;
@@ -95,7 +98,10 @@
                     } else if (message.type === "gameState") {
                         // game tick
                         document.getElementById('gameStateDisplay').textContent = JSON.stringify(message.data, null, 2);
-                    }
+                    } else if (message.type === 'tournamentState')
+                        document.getElementById('tournamentStateDisplay').textContent = JSON.stringify(message.data.state, null, 2);
+
+                    
                 } catch (error) {
                     console.log('Could not parse message:', error);
                 }
