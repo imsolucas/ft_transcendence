@@ -1,5 +1,5 @@
 import { GameEngine } from "shared"
-import type { ConnectionMessage, GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from "shared";
+import type { ConnectionMessage, GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, TournamentState } from "shared";
 import { drawRectangle, drawString } from "./utils/drawUtils";
 
 export class GameClient {
@@ -11,14 +11,17 @@ export class GameClient {
     private playerInputs: PlayerInputs[]
     private gameEngine?: GameEngine;
     private gameState!: GameState;
+    private tournamentState?: TournamentState;
     private config: GameConfig;
     private socket?: WebSocket
     private scale_x: number = 0
     private scale_y: number = 0
     private aspectRatio!: number
+    onGameOver?: () => void
 
-    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket)
+    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket, onGameOver?: () => void)
     {
+        this.onGameOver = onGameOver;
         this.socket = socket
         if (!socket)
             this.gameEngine = new GameEngine(config);
@@ -43,7 +46,6 @@ export class GameClient {
 
     public stop(): void {
         this.isRunning = false;
-        this.socket?.close()
         if (this.animationId){
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
@@ -148,7 +150,16 @@ export class GameClient {
         this.canvas.style.marginTop = `${navbarHeight}px`;
     }
 
-    private render_game_state(): void {        
+    private render_game_state(): void {
+        if (this.gameState.name == "GameOverState"){
+            const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? "1" : "2"; 
+            drawString(
+                `Player ${winner} has won!`,
+                {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
+                "#8f40de", "bold 16px Poppins",
+                {x: this.scale_x, y: this.scale_y}, this.ctx);
+        }
+        
         drawRectangle(
             {x: this.gameState.ball.x, y: this.gameState.ball.y},
             this.config.ballConfig.size!,
@@ -200,10 +211,13 @@ export class GameClient {
             this.gameEngine!.tick(deltaTime);
             this.gameState = this.gameEngine!.getGameState()
         }
-        // console.log("Game State: ", this.gameState);
         if (this.gameState){
             this.render_ui();
             this.render_game_state();
+        }
+        if (this.gameState.name == 'GameOverState'){
+            this.onGameOver?.();
+            return ;
         }
         requestAnimationFrame(this.loop.bind(this));
     }

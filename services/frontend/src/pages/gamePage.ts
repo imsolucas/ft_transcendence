@@ -2,6 +2,7 @@ import type { GameConfig } from "shared/index";
 import { GameClient } from "../game/GameClient"
 import { socket } from "./lobbyPage";
 import { default_config } from "shared";
+import { navigate } from "../router";
 
 let currentGame: GameClient | null = null;
 
@@ -24,9 +25,16 @@ export function GamePage(): HTMLElement {
     document.body.style.margin = '0';
     document.body.style.padding = '0';
 
+    const onGameOver = () => {
+        if (config.mode == 'standard'){
+            setTimeout(() => {
+                navigate('lobby');
+            }, 3 * 1000)
+        }
+    }
 
     setTimeout(() => {
-        currentGame = new GameClient(canvas, config, socket);
+        currentGame = new GameClient(canvas, config, socket, onGameOver);
         currentGame.start()
     }, 0);
 
