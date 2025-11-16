@@ -71,9 +71,16 @@ export class GameClient {
                     this.gameState = gameStateMessage.data.gameState
                     console.log("Recieved game state", this.gameState);
                     break;
+                case 'playerLeft':
+                    this.onGameOver?.();
+                    break;
                 default:
                     break;
             }
+        }
+
+        this.socket!.onclose = () => {
+            this.onGameOver?.();
         }
     }
 
@@ -215,7 +222,7 @@ export class GameClient {
             this.render_ui();
             this.render_game_state();
         }
-        if (this.gameState.name == 'GameOverState'){
+        if (this.gameState?.name == 'GameOverState'){
             this.onGameOver?.();
             return ;
         }
