@@ -18,6 +18,9 @@ model User {
   created_at   DateTime   @default(now())
   last_updated DateTime   @updatedAt
 
+  is2FAEnabled Boolean    @default(false)
+  twoFASecret  String?
+
   sentFriendships     Friendship[] @relation("SentFriendships")
   receivedFriendships Friendship[] @relation("ReceivedFriendships")
 

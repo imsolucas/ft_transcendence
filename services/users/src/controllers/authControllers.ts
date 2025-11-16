@@ -2,6 +2,9 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
+import speakeasy from "speakeasy";
+import { error } from "console";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret";
@@ -55,6 +58,19 @@ export async function login(req: FastifyRequest, reply: FastifyReply) {
     return reply.code(401).send({ error: "Invalid username or password" });
   }
 
+  if (user.is2FAEnabled) {
+    return reply.code(202).send({
+      twoFARequired: true,
+      id: user.id
+    });
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { status: "ONLINE" }
+  });
+
+  // Issue token if 2FA is not enabled
   const token = jwt.sign(
     { id: user.id, username: user.username, email: user.email },
     JWT_SECRET,
@@ -72,64 +88,46 @@ export async function login(req: FastifyRequest, reply: FastifyReply) {
   });
 }
 
-// Google OAuth controller
-export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
-  const { credential } = req.body as { credential: string };
+// Google Auth controller
 
-  if (!credential) {
-    return reply.code(400).send({ error: "Invalid input. Credential is required." });
+const client = new OAuth2Client();
+
+export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
+  const { idToken } = req.body as { idToken: string };
+
+  if (!idToken) {
+    return reply.code(400).send({ error: "Missing Google ID token" });
   }
 
   try {
-    // Decode the Google JWT token (basic verification - in production, verify signature)
-    const decoded = jwt.decode(credential) as any;
-    
-    if (!decoded || !decoded.email || !decoded.sub) {
-      return reply.code(400).send({ error: "Invalid Google credential." });
+    // Verify the token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID, // Your Google Client ID
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      return reply.code(400).send({ error: "Invalid Google token" });
     }
 
-    const googleId = decoded.sub;
-    const email = decoded.email;
-    const name = decoded.name || decoded.given_name || email.split('@')[0];
-    const picture = decoded.picture || '';
+    // Extract user info from payload
+    const { email, name, picture } = payload;
 
-    // Find or create user by email
+    // Find or create user
     let user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
-      // Create new user with Google credentials
-      // Generate a random password for Google users (they won't use it)
-      const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
-      
-      // Check if username is taken, if so append a number
-      let username = name;
-      let usernameExists = await prisma.user.findUnique({ where: { username } });
-      let counter = 1;
-      while (usernameExists) {
-        username = `${name}${counter}`;
-        usernameExists = await prisma.user.findUnique({ where: { username } });
-        counter++;
-      }
-
       user = await prisma.user.create({
         data: {
-          username: username,
-          email: email,
-          password: randomPassword, // Google users don't need password
-          avatar: picture,
-        },
+          username: name ?? email.split("@")[0],
+          email,
+          avatar: picture ?? "",
+          password: "",
+        }
       });
-    } else {
-      // Update avatar if it's different and user doesn't have one
-      if (picture && (!user.avatar || user.avatar === '')) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { avatar: picture },
-        });
-      }
     }
 
-    // Generate JWT token for the user
+    // Issue JWT
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },
       JWT_SECRET,
@@ -145,8 +143,48 @@ export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
         avatar: user.avatar,
       },
     });
-  } catch (error) {
-    console.error('Google auth error:', error);
-    return reply.code(500).send({ error: "Failed to authenticate with Google." });
+  } catch (err) {
+    return reply.code(400).send({ error: "Invalid Google token" });
   }
+}
+
+// 2FA Verification controller
+export async function verify2FA(req: FastifyRequest, reply: FastifyReply) {
+  const { userId, code } = req.body as { userId: number; code: string };
+  if (!userId || !code) {
+    return reply.code(400).send({ error: "Missing userId or code" });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.is2FAEnabled || !user.twoFASecret) {
+    return reply.code(401).send({ error: "2FA not enabled for this user" });
+  }
+
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFASecret,
+    encoding: "base32",
+    token: code,
+    window: 1 // allows for slight clock drift
+  });
+
+  if (!verified) {
+    return reply.code(401).send({ error: "Invalid 2FA code" });
+  }
+
+  // Issue JWT after successful 2FA
+  const token = jwt.sign(
+    { id: user.id, username: user.username, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return reply.send({
+    token,
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+    },
+  });
 }

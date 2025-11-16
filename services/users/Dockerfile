@@ -11,7 +11,7 @@ RUN npm install
 
 COPY . .
 
-RUN npx prisma generate
+RUN ./init.sh dev
 
 EXPOSE 3000
 
