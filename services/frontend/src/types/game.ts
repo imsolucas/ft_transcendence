@@ -9,9 +9,9 @@ export interface BallConfig {
 }
 
 export interface GameConfig {
-	paddleConfig: PaddleConfig;
+	paddleConfig: PaddleConfig | PaddleConfig[]; // Single config for local, array for multiplayer (per player)
 	ballConfig: BallConfig;
-	playerNames: string[];
+	playerNames: string[]; // Only for local games
 	backgroundColor: string;
 	pointsToWin: number;
 	isPrivate: boolean;

@@ -7,7 +7,8 @@
     "friends": "Amigos",
     "gameHistory": "Historial de Juegos",
     "logout": "Cerrar Sesión",
-    "loginSignup": "Iniciar Sesión / Registrarse"
+    "loginSignup": "Iniciar Sesión / Registrarse",
+    "toggleNavbar": "Alternar Barra de Navegación (Pantalla Completa)"
   },
   "landing": {
     "title": "Super Pong",

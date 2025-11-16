@@ -165,7 +165,6 @@ export function LocalGamePage(): HTMLElement {
 			const gameConfig = GameConfig({
 				mode: mode,
 				isMultiplayer: false,
-				numPlayers: mode === 'tournament' ? 4 : 2,
 				onSubmit: (config: GameConfigType) => {
 					// Store config in sessionStorage
 					sessionStorage.setItem('gameConfig', JSON.stringify(config));

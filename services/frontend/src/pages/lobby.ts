@@ -6,7 +6,7 @@ import { navigate } from '../router';
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
 	container.className =
-		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16 overflow-hidden';
+		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] overflow-hidden';
 
 	// Add minimal custom styles for complex animations that can't be done with Tailwind
 	const style = document.createElement('style');
@@ -118,7 +118,7 @@ export function LobbyPage(): HTMLElement {
 			<!-- Main Container -->
 			<div class="container mx-auto px-4 py-8">
 				<!-- Header -->
-				<header class="text-center mb-8">
+				<header class="text-center mt-16 mb-8">
 					<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
 						${t('lobby.title')}
 					</h1>
