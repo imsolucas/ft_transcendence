@@ -5,8 +5,6 @@ import { navigate } from '../router';
 
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
-	container.className =
-		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] overflow-hidden';
 
 	// Add minimal custom styles for complex animations that can't be done with Tailwind
 	const style = document.createElement('style');

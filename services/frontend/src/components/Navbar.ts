@@ -3,6 +3,7 @@ import { navigate } from '../router';
 import type { Screen } from '../router';
 import { LanguageSelector } from './LanguageSelector';
 import { t } from '../i18n';
+import { setUserStatus } from '../utils/api';
 
 export async function createNavbar(): Promise<HTMLElement> {
 	const navbar = document.createElement('nav');
@@ -516,6 +517,12 @@ export async function updateNavbar(): Promise<void> {
 		} else {
 			removeFloatingToggleButton();
 		}
+		// If user is now authenticated, ensure status is marked online
+		try {
+			if (isAuthenticated()) {
+				await setUserStatus('ONLINE');
+			}
+		} catch {}
 	}
 }
 
@@ -616,5 +623,27 @@ export async function initializeNavbar(): Promise<void> {
 	// Listen for auth expiration events
 	window.addEventListener('authExpired', async () => {
 		await updateNavbar();
+		// Ensure status is set to offline on auth expiration
+		setUserStatus('OFFLINE', { keepalive: true }).catch(() => {});
+	});
+
+	// On app bootstrap, if authenticated, mark user online
+	try {
+		if (isAuthenticated()) {
+			await setUserStatus('ONLINE');
+		}
+	} catch {}
+
+	// Handle tab visibility changes
+	document.addEventListener('visibilitychange', () => {
+		if (!isAuthenticated()) return;
+		// Use keepalive to improve delivery when tab is backgrounded
+		setUserStatus(document.hidden ? 'OFFLINE' : 'ONLINE', { keepalive: true }).catch(() => {});
+	});
+
+	// Handle tab/window close or navigation away
+	window.addEventListener('beforeunload', () => {
+		if (!isAuthenticated()) return;
+		setUserStatus('OFFLINE', { keepalive: true }).catch(() => {});
 	});
 }
