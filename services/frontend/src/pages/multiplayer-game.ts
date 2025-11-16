@@ -4,7 +4,8 @@ import { GameConfig } from '../components/GameConfig';
 import { LoadingPong } from '../components/loadingGame';
 import type { GameConfig as GameConfigType } from '../types/game';
 
-type MultiplayerMode = 'selection' | 'config-create' | 'join-lobby' | 'loading';
+type MultiplayerMode = 'mode-selection' | 'lobby-selection' | 'config-create' | 'join-lobby' | 'loading';
+type GameMode = 'standard' | 'tournament';
 
 // Mock API functions
 const mockRandomMatchmaking = async (): Promise<{ success: boolean; matchId?: string; error?: string }> => {
@@ -112,9 +113,80 @@ export function MultiplayerGamePage(): HTMLElement {
 	`;
 	document.head.appendChild(style);
 
-	let currentMode: MultiplayerMode = 'selection';
+	let currentMode: MultiplayerMode = 'mode-selection';
+	let selectedGameMode: GameMode = 'standard';
 
-	const renderSelection = () => {
+	const renderModeSelection = () => {
+		container.innerHTML = `
+			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black flicker">
+				<div class="container mx-auto px-4 py-8">
+					<header class="text-center mb-12">
+						<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
+							${t('multiplayer.title')}
+						</h1>
+						<div class="font-['Orbitron'] text-lg md:text-xl text-[#F34C94]">
+							${t('multiplayer.subtitle')}
+						</div>
+					</header>
+
+					<div class="flex flex-col md:flex-row gap-8 max-w-4xl mx-auto">
+						<!-- 1v1 Mode -->
+						<button 
+							id="one-vs-one-btn"
+							class="flex-1 border-2 border-[#F34C94] text-white py-8 px-6 rounded-lg font-['Press_Start_2P'] text-lg md:text-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(243,76,148,0.6)] bg-gradient-to-r from-[#4B1B67] to-[#872481] relative overflow-hidden"
+						>
+							<div class="text-4xl mb-4">⚔️</div>
+							<div class="mb-2">${t('localGame.oneVsOne')}</div>
+							<div class="font-['Orbitron'] text-sm text-gray-300">${t('localGame.oneVsOneDesc')}</div>
+						</button>
+
+						<!-- Tournament Mode -->
+						<button 
+							id="tournament-btn"
+							class="flex-1 border-2 border-[#F34C94] text-white py-8 px-6 rounded-lg font-['Press_Start_2P'] text-lg md:text-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(243,76,148,0.6)] bg-gradient-to-r from-[#872481] to-[#DC25A3] relative overflow-hidden"
+						>
+							<div class="text-4xl mb-4">👑</div>
+							<div class="mb-2">${t('localGame.tournament')}</div>
+							<div class="font-['Orbitron'] text-sm text-gray-300">${t('localGame.tournamentDesc')}</div>
+						</button>
+					</div>
+
+					<!-- Back Button -->
+					<div class="text-center mt-12">
+						<button 
+							id="back-btn"
+							class="border-2 border-gray-500 text-gray-300 py-3 px-8 rounded-lg font-['Press_Start_2P'] text-sm transition-all duration-300 hover:border-gray-400 hover:text-white"
+						>
+							${t('gameConfig.back')}
+						</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		// Event listeners
+		const btn1v1 = container.querySelector('#one-vs-one-btn');
+		const btnTournament = container.querySelector('#tournament-btn');
+		const btnBack = container.querySelector('#back-btn');
+
+		btn1v1?.addEventListener('click', () => {
+			selectedGameMode = 'standard';
+			currentMode = 'lobby-selection';
+			renderLobbySelection();
+		});
+
+		btnTournament?.addEventListener('click', () => {
+			selectedGameMode = 'tournament';
+			currentMode = 'lobby-selection';
+			renderLobbySelection();
+		});
+
+		btnBack?.addEventListener('click', () => {
+			navigate('lobby');
+		});
+	};
+
+	const renderLobbySelection = () => {
 		container.innerHTML = `
 			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black flicker">
 				<div class="container mx-auto px-4 py-8">
@@ -220,16 +292,17 @@ export function MultiplayerGamePage(): HTMLElement {
 				const result = await mockRandomMatchmaking();
 				if (result.success && result.matchId) {
 					sessionStorage.setItem('matchId', result.matchId);
+					sessionStorage.setItem('gameMode', selectedGameMode);
 					navigate('game');
 				} else {
 					alert(result.error || 'Failed to find match');
-					currentMode = 'selection';
-					renderSelection();
+					currentMode = 'lobby-selection';
+					renderLobbySelection();
 				}
 			} catch (error) {
 				alert('Error during matchmaking');
-				currentMode = 'selection';
-				renderSelection();
+				currentMode = 'lobby-selection';
+				renderLobbySelection();
 			}
 		});
 
@@ -255,13 +328,13 @@ export function MultiplayerGamePage(): HTMLElement {
 					navigate('game');
 				} else {
 					alert(result.error || 'Failed to join lobby');
-					currentMode = 'selection';
-					renderSelection();
+					currentMode = 'lobby-selection';
+					renderLobbySelection();
 				}
 			} catch (error) {
 				alert('Error joining lobby');
-				currentMode = 'selection';
-				renderSelection();
+				currentMode = 'lobby-selection';
+				renderLobbySelection();
 			}
 		});
 
@@ -273,7 +346,8 @@ export function MultiplayerGamePage(): HTMLElement {
 		});
 
 		btnBack?.addEventListener('click', () => {
-			navigate('lobby');
+			currentMode = 'mode-selection';
+			renderModeSelection();
 		});
 	};
 
@@ -295,9 +369,9 @@ export function MultiplayerGamePage(): HTMLElement {
 		const configContainer = container.querySelector('#game-config-container');
 		if (configContainer) {
 			const gameConfig = GameConfig({
-				mode: 'standard',
+				mode: selectedGameMode,
 				isMultiplayer: true,
-				numPlayers: 2,
+				numPlayers: selectedGameMode === 'tournament' ? 2 : 2,
 				onSubmit: async (config: GameConfigType) => {
 					currentMode = 'loading';
 					renderLoading();
@@ -308,6 +382,7 @@ export function MultiplayerGamePage(): HTMLElement {
 							config.lobbyId = result.lobbyId;
 							sessionStorage.setItem('gameConfig', JSON.stringify(config));
 							sessionStorage.setItem('lobbyId', result.lobbyId);
+							sessionStorage.setItem('gameMode', selectedGameMode);
 							navigate('game');
 						} else {
 							alert(result.error || 'Failed to create lobby');
@@ -321,8 +396,8 @@ export function MultiplayerGamePage(): HTMLElement {
 					}
 				},
 				onCancel: () => {
-					currentMode = 'selection';
-					renderSelection();
+					currentMode = 'lobby-selection';
+					renderLobbySelection();
 				}
 			});
 			configContainer.appendChild(gameConfig);
@@ -335,7 +410,7 @@ export function MultiplayerGamePage(): HTMLElement {
 		container.appendChild(loadingComponent);
 	};
 
-	renderSelection();
+	renderModeSelection();
 
 	return container;
 }
