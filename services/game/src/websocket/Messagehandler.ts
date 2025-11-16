@@ -15,7 +15,6 @@ import type { PlayerInputMessage, Player } from 'shared';
 import { toSerializablePlayer } from 'shared';
 import type { Room } from '../types/room.types.js';
 import { RoomManager } from '../game/roomManager.js';
-import { pongSessions } from '../index.js';
 import { MessageBroadcaster } from './Broadcaster.js';
 import { randomUUID } from 'crypto';
 import { GameServer } from '../game/GameServer.js';
@@ -348,9 +347,13 @@ export class MessageHandler {
       return;
     }
 
-    // Set room status to 'playing'
+    // Set room status to 'playing' and reset the game
+    if (room.gameServer) {
+      room.gameServer.resetGame();
+    }
+    else
+      room.gameServer = new GameServer(room, this.broadcaster);
     room.status = 'playing';
-    pongSessions.set(roomId, new GameServer(room, this.broadcaster));
 
     console.log('All players are ready - starting game!');
 
@@ -385,6 +388,9 @@ export class MessageHandler {
 
     console.log(`Player "${player.name}" (${player.id}) disconnected`);
     this.roomManager.removePlayerFromRoom(player.roomId, player.id);
+    const room = this.roomManager.getRoom(player.roomId);
+    if (room?.status == 'playing')
+      room.status = 'waiting';
   }
 
   handlePlayerInput(data: PlayerInputMessage, player: Player) {
@@ -392,14 +398,13 @@ export class MessageHandler {
     if (!room) return;
 
     console.log(`Input from player ${player.name}`)
-    console.log(JSON.stringify(data.data));
-    const session = pongSessions.get(room.id);
-    if (!session) return;
+    // console.log(JSON.stringify(data.data));
+    if (!room.gameServer) return;
 
     if (room.playerIds[0] == player.id)
-      session.input(data.data.inputs, undefined);
+      room.gameServer.input(data.data.inputs, undefined);
     else
-      session.input(undefined, data.data.inputs);
+      room.gameServer.input(undefined, data.data.inputs);
   }
 
   private sendError(connection: WebSocket, message: string): void {

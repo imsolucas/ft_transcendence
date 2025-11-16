@@ -1,38 +1,42 @@
 
-import type { GameStartMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from 'shared';
+import type { GameConfig, GameStartMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from 'shared';
 import { GameEngine } from 'shared';
 import type { Room } from '../types/room.types.js';
 import { MessageBroadcaster } from "../websocket/Broadcaster.js";
+import { RoomManager } from './roomManager.js';
 
 export class GameServer {
   readonly id: string;
   readonly playerIds: string[];
   readonly createdAt: number;
-  private lastTickTime: number = 0;
   private gameEngine: GameEngine;
   private broadcaster: MessageBroadcaster;
+  private config: GameConfig;
 
   constructor(room: Room, broadcaster: MessageBroadcaster) {
-    this.gameEngine = new GameEngine(room.config);
     this.id = room.id;
     this.playerIds = room.playerIds;
     this.createdAt = room.createdAt;
     this.broadcaster = broadcaster;
+    this.config = room.config;
+    this.gameEngine = new GameEngine(room.config);
   }
 
   input(p1?: PlayerInputs, p2?: PlayerInputs): void {
     this.gameEngine.input(p1, p2);
   }
 
+  resetGame(): void {
+    // Re-create the game engine with the same config
+    this.gameEngine = new GameEngine(this.config);
+  }
+
   // Called every tick by the tick system
-  tick(): boolean {
+  tick(deltaTime: number): boolean {
     // 1. Process player inputs (if any)
     // 2. Move game forwards by 1 frame
     // 3. Check for win/lose conditions
     // 4. Broadcast state to player
-    const currentTime = Date.now();
-    const deltaTime = (currentTime - this.lastTickTime) / 1000;
-    this.lastTickTime = currentTime
 
     this.gameEngine.tick(deltaTime)
     
