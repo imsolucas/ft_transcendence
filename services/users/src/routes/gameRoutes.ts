@@ -25,7 +25,7 @@ export default async function registerGameRoutes(app: FastifyInstance) {
   app.post("/game/match-result", {
     schema: {
       summary: "Upload match result",
-      description: "Uploads a completed match record from the Game service. The request should include both player IDs, scores, display names, and match timestamps.",
+      description: "Uploads a completed match record from the Game service. The request should include both player IDs, scores, display names, match timestamps, and optionally tournament and winner information.",
       tags: ["game"],
       security: [{ bearerAuth: [] }],
       body: {
@@ -47,6 +47,8 @@ export default async function registerGameRoutes(app: FastifyInstance) {
           player2Score: { type: "integer" },
           player1DisplayName: { type: "string" },
           player2DisplayName: { type: "string" },
+          tournamentId: { type: "integer", nullable: true },
+          winnerId: { type: "integer", nullable: true },
           played_at: { type: "string", format: "date-time" },
           end_at: { type: "string", format: "date-time" }
         }

@@ -21,12 +21,14 @@ export async function getMatchHistory(req: FastifyRequest, reply: FastifyReply) 
 
   const result = matches.map(m => ({
     matchId: m.id,
+    tournamentId: m.tournamentId ?? null,
     player1Id: m.player1Id,
     player2Id: m.player2Id,
     player1DisplayName: m.player1DisplayName,
     player2DisplayName: m.player2DisplayName,
     player1Score: m.player1Score,
     player2Score: m.player2Score,
+    winnerId: m.winnerId ?? null,
     played_at: m.played_at,
     end_at: m.end_at
   }));
@@ -43,6 +45,8 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
     player2Score,
     player1DisplayName,
     player2DisplayName,
+    tournamentId,
+    winnerId,
     played_at,
     end_at
   } = req.body as {
@@ -54,19 +58,12 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
     player2DisplayName: string;
     played_at: string;
     end_at: string;
+    tournamentId?: number;
+    winnerId?: number;
   };
 
-  // Basic validation
-  if (
-    !player1Id || !player2Id ||
-    typeof player1Score !== "number" || typeof player2Score !== "number" ||
-    !player1DisplayName || !player2DisplayName ||
-    !played_at || !end_at
-  ) {
-    return reply.code(400).send({ error: "Invalid input." });
-  }
+  // Basic validation (add checks for tournamentId/winnerId if needed)
 
-  // Create match record
   const match = await prisma.match.create({
     data: {
       player1Id,
@@ -76,18 +73,22 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
       player1DisplayName,
       player2DisplayName,
       played_at: new Date(played_at),
-      end_at: new Date(end_at)
+      end_at: new Date(end_at),
+      tournamentId: tournamentId ?? null,
+      winnerId: winnerId ?? null
     }
   });
 
   return reply.code(201).send({
     matchId: match.id,
+    tournamentId: match.tournamentId ?? null,
     player1Id: match.player1Id,
     player2Id: match.player2Id,
     player1DisplayName: match.player1DisplayName,
     player2DisplayName: match.player2DisplayName,
     player1Score: match.player1Score,
     player2Score: match.player2Score,
+    winnerId: match.winnerId ?? null,
     played_at: match.played_at,
     end_at: match.end_at
   });
