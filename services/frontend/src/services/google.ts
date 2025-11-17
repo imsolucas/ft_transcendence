@@ -100,18 +100,23 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ credential }),
+      body: JSON.stringify({ idToken: credential }),
     });
 
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch (_) {
+      // Non-JSON error or empty body
+      data = null;
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      console.error('Google auth error:', errorData);
-      showNotification(errorData.error || 'Google authentication failed', 'error');
+      console.error('Google auth error:', data || response.statusText);
+      showNotification((data && data.error) || `Google authentication failed (${response.status})`, 'error');
       return false;
     }
 
-    const data = await response.json();
-    
     if (data.token && data.user) {
       // Store the real JWT token from backend
       localStorage.setItem('authToken', data.token);

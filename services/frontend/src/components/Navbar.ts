@@ -3,6 +3,7 @@ import { navigate } from '../router';
 import type { Screen } from '../router';
 import { LanguageSelector } from './LanguageSelector';
 import { t } from '../i18n';
+import { setUserStatus } from '../utils/api';
 
 export async function createNavbar(): Promise<HTMLElement> {
 	const navbar = document.createElement('nav');
@@ -52,6 +53,31 @@ export async function createNavbar(): Promise<HTMLElement> {
 	// Right side - Social links and Auth
 	const rightSection = document.createElement('div');
 	rightSection.className = 'flex items-center space-x-3';
+
+	// Navbar Toggle Button (Hide/Show for fullscreen)
+	const navbarToggleBtn = document.createElement('button');
+	navbarToggleBtn.className = 'flex items-center justify-center p-2 rounded-lg transition-all duration-200 hover:bg-white/20 cursor-pointer border border-white/30 bg-white/10 backdrop-blur-sm';
+	const toggleNavbarText = String(t('navbar.toggleNavbar') || 'Toggle Navbar');
+	navbarToggleBtn.title = toggleNavbarText;
+	navbarToggleBtn.setAttribute('aria-label', toggleNavbarText);
+	navbarToggleBtn.id = 'navbar-toggle-btn';
+	
+	const isNavbarHidden = localStorage.getItem('navbarHidden') === 'true';
+	
+	// Arrow icon image (up when navbar visible, down when hidden)
+	const arrowIcon = document.createElement('img');
+	arrowIcon.className = 'w-5 h-5 object-contain transition-transform duration-200';
+	arrowIcon.src = isNavbarHidden ? '/images/down.png' : '/images/up.png';
+	arrowIcon.alt = isNavbarHidden ? 'Show navbar' : 'Hide navbar';
+	
+	navbarToggleBtn.appendChild(arrowIcon);
+	
+	navbarToggleBtn.addEventListener('click', (e) => {
+		e.stopPropagation();
+		toggleNavbarVisibility();
+	});
+	
+	rightSection.appendChild(navbarToggleBtn);
 
 	// Language Selector
 	const languageSelector = LanguageSelector();
@@ -242,6 +268,13 @@ export async function createNavbar(): Promise<HTMLElement> {
 
 	// Add the creative menu styles to the document head
 	addCreativeMenuStyles();
+
+	// Apply initial state if navbar was hidden (reuse the variable declared earlier)
+	if (isNavbarHidden) {
+		navbar.style.transform = 'translateY(-100%)';
+		navbar.style.opacity = '0';
+	}
+	navbar.style.transition = 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out';
 
 	return navbar;
 }
@@ -471,9 +504,98 @@ function closeMobileMenu(): void {
 
 // Function to update navbar when auth state changes
 export async function updateNavbar(): Promise<void> {
-	const existingNavbar = document.querySelector('nav');
+	const existingNavbar = document.querySelector('nav') as HTMLElement | null;
+	const wasHidden = existingNavbar && existingNavbar.style.transform === 'translateY(-100%)';
 	if (existingNavbar) {
-		existingNavbar.replaceWith(await createNavbar());
+		const newNavbar = await createNavbar();
+		existingNavbar.replaceWith(newNavbar);
+		// Restore hidden state if it was hidden
+		if (wasHidden) {
+			newNavbar.style.transform = 'translateY(-100%)';
+			newNavbar.style.opacity = '0';
+			createFloatingToggleButton();
+		} else {
+			removeFloatingToggleButton();
+		}
+		// If user is now authenticated, ensure status is marked online
+		try {
+			if (isAuthenticated()) {
+				await setUserStatus('ONLINE');
+			}
+		} catch {}
+	}
+}
+
+// Toggle navbar visibility for fullscreen gameplay
+export function toggleNavbarVisibility(): void {
+	const navbar = document.querySelector('nav') as HTMLElement;
+	if (!navbar) return;
+
+	const isHidden = navbar.style.transform === 'translateY(-100%)';
+	
+	if (isHidden) {
+		// Show navbar
+		navbar.style.transform = 'translateY(0)';
+		navbar.style.opacity = '1';
+		localStorage.setItem('navbarHidden', 'false');
+		// Remove floating button
+		removeFloatingToggleButton();
+	} else {
+		// Hide navbar
+		navbar.style.transform = 'translateY(-100%)';
+		navbar.style.opacity = '0';
+		localStorage.setItem('navbarHidden', 'true');
+		// Add floating button
+		createFloatingToggleButton();
+	}
+
+	// Update toggle button arrow icon image
+	const toggleBtn = navbar.querySelector('#navbar-toggle-btn') as HTMLElement;
+	if (toggleBtn) {
+		const iconImg = toggleBtn.querySelector('img');
+		if (iconImg) {
+			if (isHidden) {
+				// Now showing navbar → next action hides it
+				iconImg.src = '/images/up.png';
+				iconImg.alt = 'Hide navbar';
+			} else {
+				// Now hiding navbar → next action shows it
+				iconImg.src = '/images/down.png';
+				iconImg.alt = 'Show navbar';
+			}
+		}
+	}
+}
+
+// Create floating toggle button when navbar is hidden
+function createFloatingToggleButton(): void {
+	// Remove existing floating button if any
+	removeFloatingToggleButton();
+
+	const floatingBtn = document.createElement('button');
+	floatingBtn.id = 'floating-navbar-toggle';
+	floatingBtn.className = 'fixed top-4 right-4 z-50 flex items-center justify-center w-10 h-10 bg-[#F34C94]/90 hover:bg-[#F34C94] backdrop-blur-sm rounded-full shadow-lg border-2 border-white/20 transition-all duration-200 hover:scale-110 cursor-pointer';
+	const floatingBtnText = String(t('navbar.toggleNavbar') || 'Show Navbar');
+	floatingBtn.title = floatingBtnText;
+	
+	const icon = document.createElement('img');
+	icon.className = 'w-5 h-5 object-contain';
+	icon.src = '/images/down.png';
+	icon.alt = 'Toggle navbar';
+	
+	floatingBtn.appendChild(icon);
+	floatingBtn.addEventListener('click', () => {
+		toggleNavbarVisibility();
+	});
+	
+	document.body.appendChild(floatingBtn);
+}
+
+// Remove floating toggle button
+function removeFloatingToggleButton(): void {
+	const existingBtn = document.getElementById('floating-navbar-toggle');
+	if (existingBtn) {
+		existingBtn.remove();
 	}
 }
 
@@ -486,8 +608,42 @@ export async function initializeNavbar(): Promise<void> {
 	// The content will flow behind the navbar
 	document.body.style.paddingTop = '0px';
 	
+	// Apply initial navbar state (hidden or visible)
+	const isNavbarHidden = localStorage.getItem('navbarHidden') === 'true';
+	if (isNavbarHidden) {
+		navbar.style.transform = 'translateY(-100%)';
+		navbar.style.opacity = '0';
+		// Create floating button if navbar is hidden
+		createFloatingToggleButton();
+	}
+	
+	// Add smooth transition
+	navbar.style.transition = 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out';
+	
 	// Listen for auth expiration events
 	window.addEventListener('authExpired', async () => {
 		await updateNavbar();
+		// Ensure status is set to offline on auth expiration
+		setUserStatus('OFFLINE', { keepalive: true }).catch(() => {});
+	});
+
+	// On app bootstrap, if authenticated, mark user online
+	try {
+		if (isAuthenticated()) {
+			await setUserStatus('ONLINE');
+		}
+	} catch {}
+
+	// Handle tab visibility changes
+	document.addEventListener('visibilitychange', () => {
+		if (!isAuthenticated()) return;
+		// Use keepalive to improve delivery when tab is backgrounded
+		setUserStatus(document.hidden ? 'OFFLINE' : 'ONLINE', { keepalive: true }).catch(() => {});
+	});
+
+	// Handle tab/window close or navigation away
+	window.addEventListener('beforeunload', () => {
+		if (!isAuthenticated()) return;
+		setUserStatus('OFFLINE', { keepalive: true }).catch(() => {});
 	});
 }
