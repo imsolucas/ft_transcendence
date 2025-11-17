@@ -59,6 +59,35 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
   return response.json();
 };
 
+export async function setUserStatus(
+	status: 'ONLINE' | 'OFFLINE' | 'INGAME' | 'online' | 'offline' | 'ingame',
+  options?: { keepalive?: boolean }
+): Promise<void> {
+  try {
+    const token = getToken();
+    if (!token) return;
+    const normalized = String(status).toUpperCase() as 'ONLINE' | 'OFFLINE' | 'INGAME';
+    console.debug('[setUserStatus] sending:', normalized, 'keepalive=', options?.keepalive === true);
+    const res = await fetch(`${API_URL}/user/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status: normalized }),
+      keepalive: options?.keepalive === true,
+    });
+    try {
+      const bodyText = await res.clone().text();
+      console.debug('[setUserStatus] response:', res.status, bodyText || '<no body>');
+    } catch (e) {
+      console.debug('[setUserStatus] response:', res.status, '<unreadable body>');
+    }
+  } catch (error) {
+    console.debug('Failed to update user status:', error);
+  }
+}
+
 // User Profile Operations
 export const fetchUserProfile = async () => {
   try {

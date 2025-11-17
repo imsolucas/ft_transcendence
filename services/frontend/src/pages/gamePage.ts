@@ -1,6 +1,5 @@
 import type { GameConfig } from "shared/index";
 import { GameClient } from "../game/GameClient"
-import { socket } from "./lobbyPage";
 import { default_config } from "shared";
 import { navigate } from "../router";
 
@@ -34,7 +33,7 @@ export function GamePage(): HTMLElement {
     }
 
     setTimeout(() => {
-        currentGame = new GameClient(canvas, config, socket, onGameOver);
+        currentGame = new GameClient(canvas, config, undefined, onGameOver);
         currentGame.start()
     }, 0);
 

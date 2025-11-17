@@ -7,7 +7,8 @@
     "friends": "Amis",
     "gameHistory": "Historique des Parties",
     "logout": "Déconnexion",
-    "loginSignup": "Connexion / Inscription"
+    "loginSignup": "Connexion / Inscription",
+    "toggleNavbar": "Basculer la Barre de Navigation (Plein Écran)"
   },
   "landing": {
     "title": "Super Pong",
@@ -103,6 +104,47 @@
     "loading": "Chargement...",
     "error": "Erreur",
     "success": "Succès"
+  },
+  "gameConfig": {
+    "title": "Configuration du Jeu",
+    "paddleColor": "Couleur de la Raquette",
+    "paddleSpeed": "Vitesse de la Raquette",
+    "ballColor": "Couleur de la Balle",
+    "ballSpeed": "Vitesse de la Balle",
+    "backgroundColor": "Couleur de Fond",
+    "pointsToWin": "Points pour Gagner",
+    "playerName": "Nom du Joueur {{num}}",
+    "numPlayers": "Nombre de Joueurs",
+    "addPlayer": "Ajouter un Joueur",
+    "lobbyType": "Type de Salon",
+    "public": "Public",
+    "private": "Privé",
+    "startGame": "DÉMARRER LE JEU",
+    "createLobby": "CRÉER UN SALON",
+    "back": "RETOUR"
+  },
+  "localGame": {
+    "title": "Jeu Local",
+    "subtitle": "Choisissez votre mode de jeu",
+    "oneVsOne": "1v1",
+    "tournament": "Tournoi",
+    "oneVsOneDesc": "Match classique à deux joueurs",
+    "tournamentDesc": "Roi de la Colline - Matchs séquentiels"
+  },
+  "multiplayer": {
+    "title": "Multijoueur",
+    "subtitle": "Choisissez comment vous voulez jouer",
+    "randomPlay": "Jeu Aléatoire",
+    "randomPlayDesc": "Trouver un adversaire aléatoire",
+    "createLobby": "Créer un Salon",
+    "createLobbyDesc": "Créer un salon de jeu personnalisé",
+    "joinLobby": "Rejoindre un Salon",
+    "joinLobbyDesc": "Rejoindre avec un ID de jeu",
+    "enterGameId": "Entrez l'ID du Jeu",
+    "join": "REJOINDRE",
+    "searching": "Recherche d'adversaire...",
+    "creatingLobby": "Création du salon...",
+    "joiningLobby": "Rejoindre le salon..."
   }
 }
 

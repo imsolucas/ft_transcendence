@@ -1,20 +1,11 @@
-import { LoadingPong, type MatchmakingState } from "../components/loadingGame";
-import { type PlayerInfo } from "../components/loadingGame";
-import { getCurrentUser } from "../utils/auth-script";
-import type { ConnectionErrorMessage, ConnectionMessage, ConnectionSuccessMessage, GameMessage, GameMessageType, GameServerMessage, JoinQueueMessage, PlayerJoinedMessage } from "../game/types/protocol.types";
 import { navigate } from "../router";
-import type { GameStartMessage, PlayerReadyMessage } from "shared/index";
 
 import { AddFriend } from '../components/AddFriend';
 import { t } from '../i18n';
 import { fetchUserProfile } from '../utils/api';
 
-export var socket: WebSocket | undefined
-
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
-	container.className =
-		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16 overflow-hidden';
 
 	// Add minimal custom styles for complex animations that can't be done with Tailwind
 	const style = document.createElement('style');
@@ -126,7 +117,7 @@ export function LobbyPage(): HTMLElement {
 			<!-- Main Container -->
 			<div class="container mx-auto px-4 py-8">
 				<!-- Header -->
-				<header class="text-center mb-8">
+				<header class="text-center mt-16 mb-8">
 					<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
 						${t('lobby.title')}
 					</h1>
@@ -147,7 +138,7 @@ export function LobbyPage(): HTMLElement {
 								🎮 ${t('lobby.localGame')}
 							</button>
 							
-							<button class="neon-button onlineBtn w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#872481] to-[#DC25A3]">
+							<button class="neon-button multiplayerBtn w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#872481] to-[#DC25A3]">
 								🌐 ${t('lobby.multiplayer')}
 							</button>
 						</div>
@@ -280,166 +271,16 @@ export function LobbyPage(): HTMLElement {
 	let addFriendComponent: HTMLElement | null = null;
 
 	setTimeout(() => {
-    const localGame = container.querySelector('.localBtn');
-    const onlineGame = container.querySelector('.onlineBtn');
+		const localGame = container.querySelector('.localBtn');
+		const multiplayerGame = container.querySelector('.multiplayerBtn');
 
-    localGame?.addEventListener('click', () => {
-		navigate('game');
-    });
-    
-    onlineGame?.addEventListener('click', () => {
-		try {
-			console.log("connecting to game socket");
-			socket = new WebSocket("ws://localhost:3001/ws/game");
-		}
-		catch(error) {
-			console.error("could not connect to game websocket", error);
-			return ;
-		}
-		
-		var currentPlayer = {
-			playerId: "",
-			playerName: ""
-		};
-		var opponent = {
-			playerId: "",
-			playerName: ""
-		};
+		localGame?.addEventListener('click', () => {
+			navigate('local-game');
+		});
 
-		const loadingComponent = LoadingPong({
-
-            onMatchFound: (opponent, matchId) => {
-                console.log('Match found:', opponent, matchId);
-            },
-            onMatchReady: (matchId) => {
-                console.log('Match ready:', matchId);
-				const message: PlayerReadyMessage = {
-					type: 'playerReady',
-					data: {ready: true},
-					timestamp: Date.now()
-				}
-				socket?.send(JSON.stringify(message));
-            },
-            onMatchError: (error) => {
-                console.error('Matchmaking error:', error);
-            },
-            onCancel: () => {
-                console.log('Matchmaking cancelled');
-				socket!.close(undefined, "Player cancelled matchmaking");
-                loadingComponent.remove();
-            }
-        });
-
-        // Style the component as a full-screen overlay
-        loadingComponent.style.position = 'fixed';
-        loadingComponent.style.top = '0';
-        loadingComponent.style.left = '0';
-        loadingComponent.style.width = '100vw';
-        loadingComponent.style.height = '100vh';
-        loadingComponent.style.zIndex = '9999';
-
-        // Add to body or container
-        document.body.appendChild(loadingComponent);
-
-		socket.onopen = () => {
-			//TODO imeplement getCurrent user
-			const connectionMsg:ConnectionMessage = {
-				type: 'connection',
-				data: { playerName: "pringles" },
-				timestamp: Date.now()
-			}
-
-			socket!.send(JSON.stringify(connectionMsg));
-			console.log("Sent connectionmsg to socket");
-		}
-
-		socket.onmessage = (ev: MessageEvent) => {
-			const message: GameMessage = JSON.parse(ev.data.toString()) as GameMessage;
-			switch (message.type) {
-				case 'connectionSuccess': 
-					console.log("successfully connected to server");
-					const connectionSuccessMsg = message as ConnectionSuccessMessage;
-					currentPlayer.playerId = connectionSuccessMsg.data.playerId
-					const response: JoinQueueMessage = {
-						type : "joinQueue",
-						data : { playerId: connectionSuccessMsg.data.playerId, playerName: "Player"},
-						timestamp: Date.now()
-					}
-					socket!.send(JSON.stringify(response));
-					break;
-				case 'playerJoined':
-					const playerJoinedMsg = message as PlayerJoinedMessage;
-					console.log(`playerJoinedMessage`, playerJoinedMsg)
-					if (playerJoinedMsg.data.playerId == currentPlayer.playerId){
-						currentPlayer.playerName = playerJoinedMsg.data.playerName
-						if (playerJoinedMsg.data.playersInRoom.length >= 2) {
-							const opponentData = playerJoinedMsg.data.playersInRoom[0];
-							(loadingComponent as any).setOpponent({ 
-								id: opponentData.id || '0',
-								username: opponentData.name,
-								picture: opponentData.picture || '/images/pong.png',
-								level: opponentData.level || 1,
-								wins: opponentData.wins || 0,
-								losses: opponentData.losses || 0,
-								winRate: opponentData.winRate || '0%'
-							}, playerJoinedMsg.data.roomId)
-						}
-						console.log("joined room: ", playerJoinedMsg.data.roomId);
-						break;
-					}
-					try{
-						console.log("opponent joined", opponent);
-						// Get opponent info from the message
-						const opponentInfo = playerJoinedMsg.data.playersInRoom.find(
-							p => p.id !== currentPlayer.playerId
-						);
-						if (opponentInfo) {
-							(loadingComponent as any).setOpponent({
-								id: opponentInfo.id || '0',
-								username: opponentInfo.name,
-								picture: opponentInfo.picture || '/images/pong.png',
-								level: opponentInfo.level || 1,
-								wins: opponentInfo.wins || 0,
-								losses: opponentInfo.losses || 0,
-								winRate: opponentInfo.winRate || '0%'
-							}, playerJoinedMsg.data.roomId)
-						}
-					}
-					catch(error){
-						console.error("Unable to use loadingComponent method", error);
-					}
-					break;
-				case 'connectionError':
-					const connectionErrorMsg = message as ConnectionErrorMessage;
-					console.error("connection error", connectionErrorMsg);
-					break;
-				case 'playerReady':
-					break;
-				case 'gameStart':
-					loadingComponent.remove();
-					navigate('game');
-					break
-				default:
-					console.error("Server sent invalid message", message);
-			}
-		}
-
-		socket.onclose = (ev: CloseEvent) => {
-			console.log("Game socket closed", ev);
-            // Clean up the loading component if it still exists
-            if (loadingComponent.parentElement) {
-                loadingComponent.remove();
-            }
-		}
-
-        socket.onerror = (error) => {
-            console.error("WebSocket error:", error);
-            // Clean up the loading component on error
-            if (loadingComponent.parentElement) {
-                loadingComponent.remove();
-            }
-        }
-    });
+		multiplayerGame?.addEventListener('click', () => {
+			navigate('multiplayer-game');
+		});
 
 		// Load initial stats
 		loadStats();

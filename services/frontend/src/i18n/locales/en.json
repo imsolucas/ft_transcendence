@@ -7,7 +7,8 @@
     "friends": "Friends",
     "gameHistory": "Game History",
     "logout": "Logout",
-    "loginSignup": "Login / SignUp"
+    "loginSignup": "Login / SignUp",
+    "toggleNavbar": "Toggle Navbar (Fullscreen)"
   },
   "landing": {
     "title": "Super Pong",
@@ -103,6 +104,47 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
+  },
+  "gameConfig": {
+    "title": "Game Configuration",
+    "paddleColor": "Paddle Color",
+    "paddleSpeed": "Paddle Speed",
+    "ballColor": "Ball Color",
+    "ballSpeed": "Ball Speed",
+    "backgroundColor": "Background Color",
+    "pointsToWin": "Points to Win",
+    "playerName": "Player {{num}} Name",
+    "numPlayers": "Number of Players",
+    "addPlayer": "Add Player",
+    "lobbyType": "Lobby Type",
+    "public": "Public",
+    "private": "Private",
+    "startGame": "START GAME",
+    "createLobby": "CREATE LOBBY",
+    "back": "BACK"
+  },
+  "localGame": {
+    "title": "Local Game",
+    "subtitle": "Choose your game mode",
+    "oneVsOne": "1v1",
+    "tournament": "Tournament",
+    "oneVsOneDesc": "Classic two-player match",
+    "tournamentDesc": "King of the Hill - Sequential matches"
+  },
+  "multiplayer": {
+    "title": "Multiplayer",
+    "subtitle": "Choose how you want to play",
+    "randomPlay": "Random Play",
+    "randomPlayDesc": "Find a random opponent",
+    "createLobby": "Create Lobby",
+    "createLobbyDesc": "Create a custom game lobby",
+    "joinLobby": "Join Lobby",
+    "joinLobbyDesc": "Join with a game ID",
+    "enterGameId": "Enter Game ID",
+    "join": "JOIN",
+    "searching": "Searching for opponent...",
+    "creatingLobby": "Creating lobby...",
+    "joiningLobby": "Joining lobby..."
   }
 }
 

@@ -2,12 +2,14 @@ import { LandingPage } from "./pages/landingPage";
 import { AuthPage } from "./pages/authPage";
 import { LobbyPage } from "./pages/lobbyPage";
 import { ProfilePage } from "./pages/profilePage";
+import { LocalGamePage } from "./pages/local-game";
+import { MultiplayerGamePage } from "./pages/multiplayer-game";
 import { LoadingPong } from "./components/loadingGame";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
 import { cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
 
 // Define all possible screen names
-export type Screen = "landing" | "auth" | "lobby" | "game" | "game" | "profile" | "email-verification" | "loading";
+export type Screen = "landing" | "auth" | "lobby" | "game" | "profile" | "email-verification" | "local-game" | "multiplayer-game";
 
 // Track which screen we're currently showing
 let currentScreen: Screen | null = null;
@@ -72,8 +74,12 @@ export function renderPage(screen: Screen) {
       container.appendChild(LoadingPong());
       break;
 
-    case "game":
-      container.appendChild(GamePage());
+    case "local-game":
+      container.appendChild(LocalGamePage());
+      break;
+
+    case "multiplayer-game":
+      container.appendChild(MultiplayerGamePage());
       break;
 
     default:
