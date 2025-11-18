@@ -4,7 +4,6 @@ import { LobbyPage } from "./pages/lobbyPage";
 import { ProfilePage } from "./pages/profilePage";
 import { LocalGamePage } from "./pages/local-game";
 import { MultiplayerGamePage } from "./pages/multiplayer-game";
-import { LoadingPong } from "./components/loadingGame";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
 import { cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
 
@@ -70,8 +69,8 @@ export function renderPage(screen: Screen) {
       container.appendChild(ProfilePage());
       break;
 
-    case "loading":
-      container.appendChild(LoadingPong());
+    case "game":
+      container.appendChild(GamePage());
       break;
 
     case "local-game":
@@ -94,12 +93,12 @@ function checkAuthAndRedirect(requestedScreen: Screen): Screen {
   const isLoggedIn = isAuthenticated();
 
   // Public pages
-  const publicScreens: Screen[] = ["landing", "auth", "game", "game", "lobby", "loading"];
+  const publicScreens: Screen[] = ["landing", "auth"];
 
   if (!isLoggedIn && !publicScreens.includes(requestedScreen)) {
     // ❌ Not logged in and trying to access a private page
     console.log(`Redirecting guest from ${requestedScreen} to landing`);
-    return "landing";
+    return "auth";
   }
 
   if (isLoggedIn && requestedScreen === "auth") {
