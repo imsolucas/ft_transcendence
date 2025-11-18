@@ -1,7 +1,8 @@
 import { t } from '../i18n';
 import { navigate } from '../router';
 import { GameConfig } from '../components/GameConfig';
-import type { GameConfig as GameConfigType } from '../types/game';
+import { gameStorage } from '../types/game';
+import { type GameConfig as GameConfigType } from 'shared/index';
 
 type LocalGameMode = 'selection' | 'config-1v1' | 'config-tournament';
 
@@ -167,12 +168,9 @@ export function LocalGamePage(): HTMLElement {
 				isMultiplayer: false,
 				onSubmit: (config: GameConfigType) => {
 					// Store config in sessionStorage
-					sessionStorage.setItem('gameConfig', JSON.stringify(config));
-					// Navigate to game (will be implemented later)
+					gameStorage.setGameOptions({type: 'local'});
 					console.log('Game config:', config);
-					// For now, just show alert
-					alert('Game configuration saved! Game implementation coming soon.');
-					navigate('lobby');
+					navigate('game');
 				},
 				onCancel: () => {
 					currentMode = 'selection';

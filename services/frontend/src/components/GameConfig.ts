@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import type { GameConfig as GameConfigType } from '../types/game';
+import type { GameConfig as GameConfigType } from 'shared/index';
 
 interface GameConfigProps {
 	mode: 'tournament' | 'standard';
@@ -287,7 +287,7 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 		if (mode === 'tournament') {
 			const addPlayerBtn = container.querySelector('#add-player-btn');
 			addPlayerBtn?.addEventListener('click', () => {
-				if (paddleColors.length < 8) {
+				if (paddleColors.length < 4) {
 					// Save current paddle colors
 					paddleColors.forEach((_, index) => {
 						const input = container.querySelector(`#paddle-color-${index}-input`) as HTMLInputElement;
@@ -411,8 +411,9 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 		}
 
 		// Create paddle config: array of configs (one per player) - each player gets their own color
-		const paddleConfig = paddleColors.slice(0, mode === 'tournament' ? paddleColors.length : 2)
-			.map(color => ({ color, speed: paddleSpeed }));
+		const paddleConfig = { color: paddleColors[0], speed: paddleSpeed};
+		// const paddleConfig = paddleColors.slice(0, mode === 'tournament' ? paddleColors.length : 2)
+		// 	.map(color => ({ color, speed: paddleSpeed }));
 
 		const config: GameConfigType = {
 			paddleConfig: paddleConfig,

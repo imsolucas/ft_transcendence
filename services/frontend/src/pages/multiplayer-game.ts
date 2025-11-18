@@ -1,8 +1,8 @@
 import { t } from '../i18n';
 import { navigate } from '../router';
 import { GameConfig } from '../components/GameConfig';
-import { LoadingPong } from '../components/loadingGame';
-import type { GameConfig as GameConfigType } from '../types/game';
+import { gameStorage } from '../types/game';
+import { type GameConfig as GameConfigType  } from 'shared/index';
 
 type MultiplayerMode = 'mode-selection' | 'lobby-selection' | 'config-create' | 'join-lobby' | 'loading';
 type GameMode = 'standard' | 'tournament';
@@ -285,25 +285,8 @@ export function MultiplayerGamePage(): HTMLElement {
 		const btnBack = container.querySelector('#back-btn');
 
 		btnRandom?.addEventListener('click', async () => {
-			currentMode = 'loading';
-			renderLoading();
-			
-			try {
-				const result = await mockRandomMatchmaking();
-				if (result.success && result.matchId) {
-					sessionStorage.setItem('matchId', result.matchId);
-					sessionStorage.setItem('gameMode', selectedGameMode);
-					navigate('game');
-				} else {
-					alert(result.error || 'Failed to find match');
-					currentMode = 'lobby-selection';
-					renderLobbySelection();
-				}
-			} catch (error) {
-				alert('Error during matchmaking');
-				currentMode = 'lobby-selection';
-				renderLobbySelection();
-			}
+			gameStorage.setGameOptions({type: 'random'});
+			navigate('game');
 		});
 
 		btnCreate?.addEventListener('click', () => {
@@ -317,31 +300,14 @@ export function MultiplayerGamePage(): HTMLElement {
 				alert('Please enter a game ID');
 				return;
 			}
-
-			currentMode = 'loading';
-			renderLoading();
-
-			try {
-				const result = await mockJoinLobby(lobbyId);
-				if (result.success) {
-					sessionStorage.setItem('lobbyId', lobbyId);
-					navigate('game');
-				} else {
-					alert(result.error || 'Failed to join lobby');
-					currentMode = 'lobby-selection';
-					renderLobbySelection();
-				}
-			} catch (error) {
-				alert('Error joining lobby');
-				currentMode = 'lobby-selection';
-				renderLobbySelection();
-			}
+			gameStorage.setGameOptions({type: 'join-room', roomId: lobbyId});
+			navigate('game')
 		});
 
 		// Allow Enter key to join lobby
 		inputLobbyId?.addEventListener('keypress', (e) => {
 			if (e.key === 'Enter') {
-				btnJoin?.click();
+				(btnJoin as HTMLTimeElement).click();
 			}
 		});
 
@@ -373,27 +339,8 @@ export function MultiplayerGamePage(): HTMLElement {
 				isMultiplayer: true,
 				numPlayers: selectedGameMode === 'tournament' ? 2 : 2,
 				onSubmit: async (config: GameConfigType) => {
-					currentMode = 'loading';
-					renderLoading();
-
-					try {
-						const result = await mockCreateLobby(config);
-						if (result.success && result.lobbyId) {
-							config.lobbyId = result.lobbyId;
-							sessionStorage.setItem('gameConfig', JSON.stringify(config));
-							sessionStorage.setItem('lobbyId', result.lobbyId);
-							sessionStorage.setItem('gameMode', selectedGameMode);
-							navigate('game');
-						} else {
-							alert(result.error || 'Failed to create lobby');
-							currentMode = 'config-create';
-							renderConfig();
-						}
-					} catch (error) {
-						alert('Error creating lobby');
-						currentMode = 'config-create';
-						renderConfig();
-					}
+					gameStorage.setGameOptions({type: 'create-room', config: config});
+					navigate('game');
 				},
 				onCancel: () => {
 					currentMode = 'lobby-selection';
@@ -402,12 +349,6 @@ export function MultiplayerGamePage(): HTMLElement {
 			});
 			configContainer.appendChild(gameConfig);
 		}
-	};
-
-	const renderLoading = () => {
-		container.innerHTML = '';
-		const loadingComponent = LoadingPong();
-		container.appendChild(loadingComponent);
 	};
 
 	renderModeSelection();

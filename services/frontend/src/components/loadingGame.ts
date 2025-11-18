@@ -1,5 +1,7 @@
 import { getCurrentUser } from '../utils/auth-script';
 
+const currentUser = await getCurrentUser();
+
 // Types for matchmaking
 export interface PlayerInfo {
 	id: string;
@@ -20,7 +22,7 @@ export interface MatchmakingState {
 }
 
 // WebSocket integration interface
-interface MatchmakingEvents {
+export interface MatchmakingEvents {
 	onMatchFound: (opponent: PlayerInfo, matchId: string) => void;
 	onMatchReady: (matchId: string) => void;
 	onMatchError: (error: string) => void;
@@ -142,7 +144,6 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 	};
 
 	// Initialize current user
-	const currentUser = getCurrentUser();
 	if (currentUser) {
 		matchmakingState.currentUser = {
 			id: currentUser.id,

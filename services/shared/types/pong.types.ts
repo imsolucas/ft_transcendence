@@ -62,4 +62,5 @@ export interface GameConfig {
     pointsToWin: number;
     isPrivate: boolean;
     mode: 'tournament' | 'standard';
+    numPlayers?: number; // For tournament mode
 }

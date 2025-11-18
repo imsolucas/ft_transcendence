@@ -1,5 +1,5 @@
 import type { Player, serializablePlayer } from "./player.types.js";
-import type { GameState, PlayerInputs, TournamentState } from "./pong.types.js";
+import type { GameConfig, GameState, PlayerInputs, TournamentState } from "./pong.types.js";
 
 export type GameMessage =
 | ConnectionMessage
@@ -11,6 +11,8 @@ export type GameMessage =
 | LeaveRoomMessage
 | GameStateMessage
 | PlayerInputMessage
+| GameStartMessage
+| PlayerJoinedMessage
 | TournamentStateMessage;
 
 export interface BaseMessage {
@@ -41,6 +43,7 @@ export interface JoinQueueMessage extends BaseMessage {
 	type: 'joinQueue';
 	data: {
 		roomId?: string;
+		config?: GameConfig;
 		roomType: 'standard' | 'tournament';
 	}
 }
