@@ -1,11 +1,10 @@
 import { AddFriend } from '../components/AddFriend';
 import { t } from '../i18n';
 import { fetchUserProfile } from '../utils/api';
+import { navigate } from '../router';
 
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
-	container.className =
-		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16 overflow-hidden';
 
 	// Add minimal custom styles for complex animations that can't be done with Tailwind
 	const style = document.createElement('style');
@@ -117,7 +116,7 @@ export function LobbyPage(): HTMLElement {
 			<!-- Main Container -->
 			<div class="container mx-auto px-4 py-8">
 				<!-- Header -->
-				<header class="text-center mb-8">
+				<header class="text-center mt-16 mb-8">
 					<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
 						${t('lobby.title')}
 					</h1>
@@ -138,7 +137,7 @@ export function LobbyPage(): HTMLElement {
 								🎮 ${t('lobby.localGame')}
 							</button>
 							
-							<button class="neon-button w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#872481] to-[#DC25A3]">
+							<button class="neon-button multiplayerBtn w-full border-2 border-[#F34C94] text-white py-4 px-6 rounded-lg font-['Press_Start_2P'] text-sm md:text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] relative overflow-hidden bg-gradient-to-r from-[#872481] to-[#DC25A3]">
 								🌐 ${t('lobby.multiplayer')}
 							</button>
 						</div>
@@ -272,9 +271,14 @@ export function LobbyPage(): HTMLElement {
 
 	setTimeout(() => {
 		const localGame = container.querySelector('.localBtn');
+		const multiplayerGame = container.querySelector('.multiplayerBtn');
 
 		localGame?.addEventListener('click', () => {
-			console.log("Hello");
+			navigate('local-game');
+		});
+
+		multiplayerGame?.addEventListener('click', () => {
+			navigate('multiplayer-game');
 		});
 
 		// Load initial stats

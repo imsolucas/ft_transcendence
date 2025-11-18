@@ -427,14 +427,19 @@ export function isAuthenticated(): boolean {
   return !!getAuthToken();
 }
 
+import { setUserStatus } from './api';
+
 export function logout(): void {
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('user');
-  updateNavbar();
-  // Force navigation to landing page
-  setTimeout(() => {
-    navigate('landing' as Screen);
-  }, 100);
+  // Try to mark user offline before clearing token
+  setUserStatus('OFFLINE', { keepalive: true }).finally(() => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    updateNavbar();
+    // Force navigation to landing page
+    setTimeout(() => {
+      navigate('landing' as Screen);
+    }, 100);
+  });
 }
 
 // Clean up event listeners when navigating away
