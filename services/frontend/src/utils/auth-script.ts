@@ -1,6 +1,7 @@
 import { navigate } from '../router';
 import type { Screen } from '../router';
 import { updateNavbar } from '../components/Navbar';
+import type { UserData } from '../types/user';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -380,7 +381,7 @@ export function getAuthToken(): string | null {
   return localStorage.getItem('authToken');
 }
 
-export async function getCurrentUser(): Promise<any> {
+export async function getCurrentUser(): Promise<UserData | null> {
 	try {
 	  // Get user from localStorage first
 	  const storedUser = localStorage.getItem('user');
@@ -404,7 +405,7 @@ export async function getCurrentUser(): Promise<any> {
 	  
       if (response.ok) {
 		const userData = await response.json();
-		const user = {
+		const user: UserData = {
 		  id: userData.id,
 		  username: userData.username || userData.name,
 		  email: userData.email,
