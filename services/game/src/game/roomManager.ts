@@ -1,13 +1,14 @@
 
 import type { Player, PlayerStorage } from 'shared';
-import type { Room, RoomStorage } from '../types/room.types.js';
+import type { Room } from '../types/room.types.js';
 import type { GameServer } from './GameServer.js';
+import { randomUUID } from 'crypto';
 
 export class RoomManager {
+  private rooms = new Map<string, Room>();
 
   constructor(
-    private playerStorage: PlayerStorage,
-    private roomStorage: RoomStorage
+    private playerStorage: PlayerStorage
   ) {}
 
   addPlayer(player: Player): void {
@@ -24,38 +25,68 @@ export class RoomManager {
 
   // Create a new room
   createRoom(type: 'standard' | 'tournament' = 'standard'): Room {
-    return this.roomStorage.createRoom(type);
+    const roomId = randomUUID().substring(0, 8).toLowerCase();
+
+    const newRoom: Room = {
+      id: roomId,
+      type: type,
+      playerIds: [],
+      queueIds: [],
+      status: 'waiting',
+      createdAt: Date.now()
+    };
+
+    this.rooms.set(roomId, newRoom);
+    return newRoom;
   }
 
   // Remove a room
   removeRoom(roomId: string): Room | undefined {
-    const removed = this.roomStorage.removeRoom(roomId);
-    return removed;
+    const room = this.rooms.get(roomId);
+    this.rooms.delete(roomId);
+    return room;
   }
 
   // Get a room by id
   getRoom(roomId: string): Room | undefined {
-    return this.roomStorage.getRoom(roomId);
+    return this.rooms.get(roomId);
   }
+
+  // getPrivateRoom(roomId: string): Room | undefined {
+  //   return this.rooms.getPrivateRoom(roomId);
+  // }
 
   // Get all rooms
   getAllRooms(): Room[] {
-    return this.roomStorage.getAllRooms();
+    return Array.from(this.rooms.values());
   }
 
   // Get available rooms (not full)
   getAvailableRooms(): Room[] {
-    return this.roomStorage.getAvailableRooms();
+    const availableRooms: Room[] = [];
+    for (const room of this.rooms.values()) {
+      const maxPlayers = (room.type === 'standard') ? 2 : 6;
+      if (room.playerIds.length < maxPlayers && room.status === 'waiting') {
+        availableRooms.push(room);
+      }
+    }
+    return availableRooms;
   }
 
   // Get active rooms (playing)
   getActiveRooms(): Room[] {
-    return this.roomStorage.getActiveRooms();
+    const activeRooms: Room[] = [];
+    for (const room of this.rooms.values()) {
+      if (room.playerIds.length === 2 && room.status === 'playing') {
+        activeRooms.push(room);
+      }
+    }
+    return activeRooms;
   }
 
   // Add a player to a room by playerId
   addPlayerToRoom(roomId: string, playerId: string): boolean {
-    const room = this.roomStorage.getRoom(roomId);
+    const room = this.rooms.get(roomId);
     if (!room)
       return false;
     if (this.isRoomFull(roomId))
@@ -74,13 +105,15 @@ export class RoomManager {
     if (this.isRoomFull(roomId)) {
       room.status = 'full';
     }
-    console.log("Player added to room");
+    // console.log(`Player "${player.name}" joined ${room.config.isPrivate ? 'private' : 'public'} ${room.type} room "${room.id}"`);
+    console.log(`Player "${player.name}" joined ${room.type} room "${room.id}"`);
+
     return true;
   }
 
   // Remove a player from a room
   removePlayerFromRoom(roomId: string, playerId: string): boolean {
-    const room = this.roomStorage.getRoom(roomId);
+    const room = this.rooms.get(roomId);
     if (!room)
       return false;
     const player = this.getPlayer(playerId);
@@ -100,6 +133,7 @@ export class RoomManager {
     if (room.playerIds.length === 0) {
       this.removeRoom(roomId);
     }
+    console.log(`Removed Player ${playerId} from room ${roomId} `);
     return true;
   }
 

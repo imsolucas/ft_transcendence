@@ -3,17 +3,16 @@ import ws from '@fastify/websocket';
 import type { GameMessage } from 'shared';
 import type { Player } from 'shared';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
-import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
 import { MessageHandler } from './websocket/handlers.js';
 import type { GameServer } from './game/GameServer.js';
+// import TickSytem from './websocket/TickSystem.js';
 
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
-const roomStorage = new InMemoryRoomStorage();
-const roomManager = new RoomManager(playerStorage, roomStorage);
+const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
 const messageHandler = new MessageHandler(roomManager, broadcaster);
 export const pongSessions = new Map<string, GameServer>();
@@ -72,41 +71,7 @@ server.register(async function (fastify: any) {
   });
 });
 
-
-// Holds the interval ID so we can clear it later
-let tickInterval: NodeJS.Timeout | null = null;
-
-function startTickSystem(roomManager: RoomManager, pongSessions: Map<string, GameServer>): void {
-  const TICK_RATE = 11; // ticks per second
-  const TICK_INTERVAL = 1000 / TICK_RATE; // ms per tick
-
-  // If already running, stop the previous interval
-  if (tickInterval)
-    clearInterval(tickInterval);
-
-  tickInterval = setInterval(() => {
-    // For each active room, tick its PongSession if it exists
-    const activeRooms = roomManager.getActiveRooms();
-    for (const room of activeRooms) {
-      const session = pongSessions.get(room.id);
-      if (session) {
-        if (!session.tick())
-          room.status = 'finished';
-      }
-    }
-  }, TICK_INTERVAL);
-}
-
-
-//Call this to pause the game loop or during server shutdown/tests.
-function stopTickSystem(): void {
-  if (tickInterval) {
-    clearInterval(tickInterval);
-    tickInterval = null;
-  }
-}
-
-startTickSystem(roomManager, pongSessions);
+// tickSystem.startTickSystem();
 
 server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {

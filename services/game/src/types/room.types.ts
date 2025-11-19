@@ -1,3 +1,4 @@
+import type { GameConfig } from "shared/index.js";
 import { GameServer } from "../game/GameServer.js";
 
 export interface Room {
@@ -9,14 +10,6 @@ export interface Room {
 	queueIds?: string[]; // Queue of players waiting to challenge
 	status: 'waiting' | 'full' | 'playing' | 'finished';
 	createdAt: number;
+	config: GameConfig;
 	gameServer?: GameServer
-}
-
-export interface RoomStorage {
-	createRoom(type?: 'standard' | 'tournament'): Room;
-	getRoom(roomId: string): Room | undefined;
-	removeRoom(roomId: string): Room | undefined;
-	getAllRooms(): Room[];
-	getAvailableRooms(): Room[];
-	getActiveRooms(): Room[];
 }
