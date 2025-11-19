@@ -16,6 +16,17 @@ export function drawCircle(pos: Vector, radius: number, color: string, scale: Ve
     ctx.restore()
 }
 
+export function drawRoundRect(pos: Vector, size: Vector, radius: number, color: string, scale: Vector, ctx: CanvasRenderingContext2D)
+{
+    ctx.save();
+    ctx.beginPath();
+    ctx.scale(scale.x, scale.y);
+    ctx.fillStyle = color
+    ctx.roundRect(pos.x - size.x / 2, pos.y - size.y / 2, size.x, size.y, radius);
+    ctx.fill();
+    ctx.restore();
+}
+
 export function drawRectangle(pos: Vector, size: Vector, color: string, scale: Vector, ctx: CanvasRenderingContext2D): void{
     ctx.save()
     ctx.beginPath()

@@ -1,13 +1,13 @@
 import { GameEngine } from "shared"
 import type { ConnectionMessage, GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, TournamentState } from "shared";
-import { drawRectangle, drawString } from "./utils/drawUtils";
+import { drawCircle, drawRectangle, drawRoundRect, drawString } from "./utils/drawUtils";
 
 export class GameClient {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private animationId: number | null = null;
     private isRunning = false;
-    private previousTime: number = 0;
+    private previousTime: number = performance.now();
     private playerInputs: PlayerInputs[]
     private gameEngine?: GameEngine;
     private gameState!: GameState;
@@ -23,8 +23,7 @@ export class GameClient {
     {
         this.onGameOver = onGameOver;
         this.socket = socket
-        if (!socket)
-            this.gameEngine = new GameEngine(config);
+        this.gameEngine = new GameEngine(config);
         this.config = config;
         this.aspectRatio = config.courtSize!.x / config.courtSize!.y
         this.canvas = canvas;
@@ -158,6 +157,33 @@ export class GameClient {
     }
 
     private render_game_state(): void {
+        drawCircle(
+            {x: this.gameState.ball.x, y: this.gameState.ball.y},
+            this.config.ballConfig.size!.y / 2,
+            this.config.ballConfig.color,
+            {x: this.scale_x, y: this.scale_y},
+            this.ctx
+        )
+
+        // drawRectangle(
+        //     {x: this.gameState.ball.x, y: this.gameState.ball.y},
+        //     this.config.ballConfig.size!,
+        //     this.config.ballConfig.color,
+        //     {x: this.scale_x, y: this.scale_y},
+        //     this.ctx
+        // )
+
+        for (const paddle of this.gameState.paddles){
+            drawRoundRect(
+                {x: paddle.x, y: paddle.y},
+                this.config.paddleConfig.size!,
+                1,
+                this.config.paddleConfig.color,
+                {x: this.scale_x, y: this.scale_y},
+                this.ctx
+            )
+        }
+
         if (this.gameState.name == "GameOverState"){
             const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? "1" : "2"; 
             drawString(
@@ -166,46 +192,18 @@ export class GameClient {
                 "#8f40de", "bold 16px Poppins",
                 {x: this.scale_x, y: this.scale_y}, this.ctx);
         }
-        
-        drawRectangle(
-            {x: this.gameState.ball.x, y: this.gameState.ball.y},
-            this.config.ballConfig.size!,
-            this.config.ballConfig.color,
-            {x: this.scale_x, y: this.scale_y},
-            this.ctx
-        )
-
-        const paddles = this.gameState.paddles;
-        for (let i = 0; i < this.gameState.paddles.length; i++){
-            drawRectangle(
-                {x: paddles[i].x, y: paddles[i].y},
-                this.config.paddleConfig.size!,
-                this.config.paddleConfig.color,
-                {x: this.scale_x, y: this.scale_y},
-                this.ctx
-            )
-        }
     }
 
     private render_ui(): void {
-            const line_size = this.canvas.height / this.config.ballConfig.size!.x;
-            let i = 0;
-            
-            while (i < line_size)
-            {
-                if (i % 2 == 0){
-                    drawRectangle({
-                        x: this.config.courtSize!.x / 2,
-                        y: i * this.config.ballConfig.size!.x},
-                        {x: this.config.ballConfig.size!.x, y:this.config.ballConfig.size!.x},
-                        this.config.ballConfig.color,
-                        {x: this.scale_x, y: this.scale_y},
-                        this.ctx);
-                }
-                i++;
-            }
-            drawString(this.gameState.scores[0].toString(), {x: this.config.courtSize!.x / 2 - 10, y: 15}, "white","20px 'Courier New', monospace", {x: this.scale_x, y: this.scale_y} ,this.ctx);
-            drawString(this.gameState.scores[1].toString(), {x: this.config.courtSize!.x / 2 + 10, y: 15}, "white","20px 'Courier New', monospace", {x: this.scale_x, y: this.scale_y} ,this.ctx);
+            drawRectangle(
+                {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
+                {x: this.config.courtSize!.x / 50, y: this.config.courtSize!.y},
+                "#9da1a3",
+                {x: this.scale_x, y: this.scale_y},
+                this.ctx
+            )
+            drawString(this.gameState.scores[0].toString(), {x: this.config.courtSize!.x / 2 - 10, y: 15}, "white","bold 16px Poppins", {x: this.scale_x, y: this.scale_y} ,this.ctx);
+            drawString(this.gameState.scores[1].toString(), {x: this.config.courtSize!.x / 2 + 10, y: 15}, "white","bold 16px Poppins", {x: this.scale_x, y: this.scale_y} ,this.ctx);
     }
 
     private loop (timestamp: number) : void {

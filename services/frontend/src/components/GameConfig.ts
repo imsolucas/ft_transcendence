@@ -21,7 +21,7 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 		: ['#DC25A3', '#F34C94']; // Two colors for standard
 	let paddleSpeed = 5;
 	let ballColor = '#F34C94';
-	let ballSpeed = 5;
+	let ballSpeed = 50;
 	let backgroundColor = '#000000';
 	let pointsToWin = 5;
 	// Player names only for local games - start with 2, will adjust dynamically for tournament
@@ -121,8 +121,8 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 							<input 
 								type="range" 
 								id="ball-speed-input" 
-								min="1" 
-								max="10" 
+								min="0" 
+								max="100" 
 								value="${ballSpeed}"
 								class="w-full"
 							/>
@@ -419,7 +419,7 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 			paddleConfig: paddleConfig,
 			ballConfig: {
 				color: ballColor,
-				speed: ballSpeed
+				speed: ballSpeed * 2
 			},
 			playerNames: !isMultiplayer ? playerNames.map(name => name.trim()) : [],
 			backgroundColor: backgroundColor,

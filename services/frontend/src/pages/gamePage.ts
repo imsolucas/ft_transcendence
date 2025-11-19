@@ -4,19 +4,15 @@ import { navigate } from "../router";
 import { LoadingPong } from "../components/loadingGame";
 import type { MatchmakingEvents, PlayerInfo } from "../components/loadingGame";
 import { getCurrentUser } from "../utils/auth-script";
-import { gameStorage } from "../types/game";
+import { gameStorage, type GameOptionsData } from "../types/game";
 
 const user = await getCurrentUser();
-const gameOptions = gameStorage.getGameOptions();
 
+let gameOptions: GameOptionsData | null = null;
 let currentGame: GameClient | null = null;
 
-let socket: WebSocket;
-if (sessionStorage.getItem('gameType') == 'local'){
-    socket = new WebSocket("ws://localhost:3001/ws/game");
-}
-
 function onlineGame(canvas: HTMLCanvasElement, onGameOver: () => void) {
+    const socket = new WebSocket('ws://localhost:3001/ws/game');
     const events: MatchmakingEvents = {
         onMatchFound: (opponent: PlayerInfo, matchId: string) =>{},
         onMatchReady: (matchId: string) => {
@@ -105,7 +101,7 @@ function onlineGame(canvas: HTMLCanvasElement, onGameOver: () => void) {
             socket.send(JSON.stringify(JoinQueueMsg));
             break;
         default:
-            alert(`Invalid online game Type ${gameOptions?.type}`);
+            // alert(`Invalid online game Type ${gameOptions?.type}`);
             console.log('Invalid online game Type: ', gameOptions?.type);
             navigate('lobby');
             break;
@@ -114,14 +110,15 @@ function onlineGame(canvas: HTMLCanvasElement, onGameOver: () => void) {
 
 function localGame(canvas: HTMLCanvasElement, onGameOver: () => void) {
     canvas.style.display = 'block';
-
     setTimeout(() => {
-        currentGame = new GameClient(canvas, gameOptions!.config!, socket, onGameOver);
+        currentGame = new GameClient(canvas, gameOptions!.config!, undefined, onGameOver);
         currentGame.start()
     }, 0);
 }
 
 export function GamePage(): HTMLElement {
+    gameOptions = gameStorage.getGameOptions();
+
     if (!user || !gameOptions)
         navigate('lobby');
 
@@ -132,6 +129,7 @@ export function GamePage(): HTMLElement {
     canvas.className = '';
     canvas.style.display = 'none';
     canvas.style.background = "#000000";
+    canvas.style.borderRadius = "25px"
 
     container.appendChild(canvas);
 
