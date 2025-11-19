@@ -15,7 +15,7 @@ import { toSerializablePlayer } from 'shared';
 import type { Room } from '../types/room.types.js';
 import { RoomManager } from '../game/roomManager.js';
 import { pongSessions } from '../index.js';
-import { MessageBroadcaster } from './broadcaster.js';
+import { MessageBroadcaster } from './Broadcaster.js';
 import { randomUUID } from 'crypto';
 import { GameServer } from '../game/GameServer.js';
 import { json } from 'stream/consumers';

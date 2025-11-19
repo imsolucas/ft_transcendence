@@ -2,7 +2,7 @@
 import type { GameStartMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from 'shared';
 import { GameEngine } from 'shared';
 import type { Room } from '../types/room.types.js';
-import { MessageBroadcaster } from "../websocket/broadcaster.js";
+import { MessageBroadcaster } from "../websocket/Broadcaster.js";
 
 export class GameServer {
   readonly id: string;
@@ -34,7 +34,7 @@ export class GameServer {
     this.lastTickTime = currentTime
 
     this.gameEngine.tick(deltaTime)
-    
+
     const gameState = this.gameEngine.getGameState()
 
     console.log(`Tick for room ${this.id}`);

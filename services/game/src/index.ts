@@ -3,7 +3,7 @@ import ws from '@fastify/websocket';
 import type { GameMessage } from 'shared';
 import type { Player } from 'shared';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
-import { MessageBroadcaster } from './websocket/broadcaster.js';
+import { MessageBroadcaster } from './websocket/Broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
 import { MessageHandler } from './websocket/handlers.js';
 import type { GameServer } from './game/GameServer.js';

@@ -3,6 +3,7 @@ import type { Player, PlayerStorage } from 'shared';
 import type { Room } from '../types/room.types.js';
 import type { GameServer } from './GameServer.js';
 import { randomUUID } from 'crypto';
+import { GameConfig } from 'shared';
 
 export class RoomManager {
   private rooms = new Map<string, Room>();
@@ -24,16 +25,17 @@ export class RoomManager {
   }
 
   // Create a new room
-  createRoom(type: 'standard' | 'tournament' = 'standard'): Room {
+  createRoom(config: GameConfig): Room {
     const roomId = randomUUID().substring(0, 8).toLowerCase();
 
     const newRoom: Room = {
       id: roomId,
-      type: type,
+      type: config.mode,
       playerIds: [],
       queueIds: [],
       status: 'waiting',
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      config: config,
     };
 
     this.rooms.set(roomId, newRoom);
@@ -148,7 +150,7 @@ export class RoomManager {
     if (!room) return -1;
 
     const players = this.getPlayersInRoom(roomId);
-    const maxPlayers = room.type === 'standard' ? 2 : 8;
+    const maxPlayers = room.type === 'standard' ? 2 : 6;
 
     // Find first available position (1-indexed)
     const takenPositions = new Set(players.map(p => p.position));
