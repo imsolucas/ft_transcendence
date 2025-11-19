@@ -6,6 +6,7 @@ import { LocalGamePage } from "./pages/local-game";
 import { MultiplayerGamePage } from "./pages/multiplayer-game";
 import { GamePage, cleanupGamePage } from "./pages/gamePage";
 import { cleanupAuthPage, isAuthenticated } from "./utils/auth-script";
+import { gameStorage } from "./types/game";
 
 // Define all possible screen names
 export type Screen = "landing" | "auth" | "lobby" | "game" | "profile" | "email-verification" | "local-game" | "multiplayer-game";
@@ -62,6 +63,7 @@ export function renderPage(screen: Screen) {
       break;
 
     case "lobby":
+      gameStorage.clearGameOptions()
       container.appendChild(LobbyPage());
       break;
 
@@ -74,10 +76,12 @@ export function renderPage(screen: Screen) {
       break;
 
     case "local-game":
+      gameStorage.clearGameOptions()
       container.appendChild(LocalGamePage());
       break;
 
     case "multiplayer-game":
+      gameStorage.clearGameOptions()
       container.appendChild(MultiplayerGamePage());
       break;
 
