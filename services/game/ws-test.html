@@ -14,11 +14,14 @@
 
     <hr>
     <input type="text" id="roomId" placeholder="Room ID">
-    <button onclick="joinRoom('standard')">Play Standard</button>
-    <button onclick="joinRoom('tournament')">Tournament</button>
-    <button onclick="leaveRoom()">Leave</button>
+    <button onclick="createRoom()">Create Room</button>
+    <button onclick="joinRoom()">Join Room</button>
+    <button onclick="joinQueue()">Join Queue</button>
     <div id="room">Room: None</div>
 
+    <hr>
+    <button onclick="leaveRoom()">Leave Room</button>
+    <button onclick="leaveQueue()">Leave Queue</button>
     <hr>
     <button id="readyButton" onclick="togglePlayerReady()">I'm Ready!</button>
 
@@ -92,6 +95,13 @@
                         console.log('Joined room:', currentPlayer.roomId, 'as position', currentPlayer.position);
                         const room = document.getElementById('room');
                         room.innerText = `Room: ${currentPlayer.roomId}`
+                    } else if (message.type === 'playerLeft') {
+                        // Player left the room
+                        console.log('Player left:', message.data.playerName);
+                        // If the player who left is not us, we're still in the room
+                        // Update UI to show the player has left
+                        const statusDiv = document.getElementById('status');
+                        statusDiv.textContent = `${message.data.playerName} left the room`;
                     } else if (message.type === "gameState") {
                         // game tick
                         document.getElementById('gameStateDisplay').textContent = JSON.stringify(message.data, null, 2);
@@ -116,7 +126,7 @@
             };
         }
 
-        function joinRoom(roomType) {
+        function joinRoom() {
             if (!socket || socket.readyState !== WebSocket.OPEN) {
                 console.log('Not connected to server!');
                 return;
@@ -126,27 +136,72 @@
                 return;
             }
             const roomId = document.getElementById('roomId').value.substring(0, 8);
-            let message;
-            if (roomId === "") {
-                message = {
-                    type: "joinQueue",
-                    data: {
-                        playerId: currentPlayer.id,
-                        roomType: roomType
-                    }
-                };
-                console.log(`Client requesting to join ${roomType} queue`);
-            } else {
-                message = {
-                    type: "joinQueue",
-                    data: {
-                        roomId: roomId,
-                        playerId: currentPlayer.id,
-                        roomType: roomType
-                    }
-                };
-                console.log(`Client requesting to join ${roomType} room:`, roomId);
+            message = {
+                type: "joinRoom",
+                data: {
+                    roomId: roomId,
+                }
+            };
+            console.log(`Client requesting to join room:`, roomId);
+            socket.send(JSON.stringify(message));
+        }
+
+        const defaultConfig = {
+            paddleConfig: {
+                color: "#950ae6",
+                size: { x: 10, y: 100 },
+                speed: 500
+            },
+            ballConfig: {
+                color: "#d712a9",
+                size: { x: 10, y: 10 },
+                speed: 600
+            },
+            courtSize: { x: 800, y: 600 },
+            playerNames: [],
+            backgroundColor: "#000000",
+            pointsToWin: 2,
+            isPrivate: false,
+            mode: "standard"
+        };
+
+        function createRoom() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                console.log('Not connected to server!');
+                return;
             }
+            if (!connectionEstablished) {
+                console.log('Player not registered yet!');
+                return;
+            }
+
+            message = {
+                type: "createRoom",
+                data: {
+                    config: defaultConfig,
+                },
+                timestamp: Date.now()
+
+            };
+            console.log(`Client requesting to create room.`);
+            socket.send(JSON.stringify(message));
+        }
+
+        function joinQueue() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                console.log('Not connected to server!');
+                return;
+            }
+            if (!connectionEstablished) {
+                console.log('Player not registered yet!');
+                return;
+            }
+            message = {
+                type: "joinQueue",
+                data: {},
+                timestamp: Date.now()
+            };
+            console.log(`Client requesting to join queue`);
             socket.send(JSON.stringify(message));
         }
 
@@ -163,7 +218,8 @@
                 type: "leaveRoom",
                 data: {
                     playerId: currentPlayer.id,
-                }
+                },
+                timestamp: Date.now()
             };
             socket.send(JSON.stringify(message));
             console.log('Client requesting to leave room');

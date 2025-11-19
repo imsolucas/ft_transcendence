@@ -1,9 +1,8 @@
 
-import type { Player, PlayerStorage } from 'shared';
+import type { Player, PlayerStorage, GameConfig } from 'shared';
 import type { Room } from '../types/room.types.js';
 import type { GameServer } from './GameServer.js';
 import { randomUUID } from 'crypto';
-import { GameConfig } from 'shared';
 
 export class RoomManager {
   private rooms = new Map<string, Room>();

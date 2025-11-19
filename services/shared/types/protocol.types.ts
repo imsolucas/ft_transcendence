@@ -10,6 +10,7 @@ export type GameMessage =
 | JoinRoomMessage
 | CreateRoomMessage
 | LeaveRoomMessage
+| LeaveQueueMessage
 | GameStateMessage
 | PlayerInputMessage
 | TournamentStateMessage;
@@ -50,8 +51,6 @@ export interface PlayerReadyMessage extends BaseMessage {
 export interface JoinQueueMessage extends BaseMessage {
 	type: 'joinQueue';
 	data: {
-		roomId?: string;
-		roomType: 'standard' | 'tournament';
 	}
 }
 

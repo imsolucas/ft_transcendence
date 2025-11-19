@@ -1,4 +1,5 @@
 import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, LeaveRoomMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage } from "shared/index.js";
+import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
 import GameLifeCycleService from "./GameLifeCycleService.js";
@@ -12,11 +13,55 @@ export default class NewMessageHandler {
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
 
-    constructor (roomManager: RoomManager) {
+    constructor (private roomManager: RoomManager) {
         this.tournamentService = new TournamentService(roomManager);
         this.gameService = new GameLifeCycleService(roomManager);
         this.roomService = new RoomService(roomManager);
         this.broadcaster = new MessageBroadcaster(roomManager)
+    }
+
+    handleConnection(data: any, connection: any): Player | null {
+        const playerId = 'player_' + crypto.randomUUID().substring(0, 8).toLowerCase();
+        const roomId = "";
+        const position = 0;
+
+        const newPlayer: Player = {
+            id: playerId,
+            name: data.data.playerName,
+            socket: connection,
+            roomId: roomId,
+            position: position,
+            connectedAt: Date.now(),
+            isReady: false
+        };
+
+        const response = {
+            type: 'connectionSuccess',
+            data: {
+                playerId: playerId,
+            },
+            timestamp: Date.now()
+        };
+
+        this.roomManager.addPlayer(newPlayer);
+        connection.send(JSON.stringify(response));
+        return newPlayer;
+    }
+
+    handleDisconnection(player: Player): void {
+        const wasInQueue = this.roomService.leaveQueue(player);
+        const room = this.roomService.leaveRoom(player);
+
+        if (room) {
+            const leaveMessage = {
+                type: 'playerLeft',
+                data: { playerName: player.name },
+                timestamp: Date.now()
+            };
+            this.broadcaster.broadcastToRoom(room.id, leaveMessage, player.id);
+        }
+
+        this.roomManager.removePlayer(player.id);
     }
 
     routeMessage(message: GameMessage, player: Player): void {
@@ -33,6 +78,9 @@ export default class NewMessageHandler {
             case "leaveRoom":
                 this.handleLeaveRoom(player);
                 break;
+            case "leaveQueue":
+                this.handleLeaveQueue(player);
+                break;
             case "playerReady":
                 this.handlePlayerReady(message as PlayerReadyMessage, player);
                 break;
@@ -40,12 +88,13 @@ export default class NewMessageHandler {
                 this.handlePlayerInput(message as PlayerInputMessage, player);
                 break;
           default:
-            console.error('Unknown message type:', message.type);
+            console.error(`[Router] ERROR: Unknown message type: ${message.type}`);
         }
     }
 
     handleCreateRoom(message: CreateRoomMessage, player: Player) {
         if (player.roomId) {
+            console.error(`[CreateRoom] ERROR: Player "${player.name}" already in room ${player.roomId}`);
             this.sendError("Already in room", "ALREADY_IN_ROOM", player.socket);
             return;
         }
@@ -55,6 +104,7 @@ export default class NewMessageHandler {
         const joined = this.roomService.joinRoom(player, room.id);
 
         if (!joined) {
+            console.error(`[CreateRoom] ERROR: Failed to join room ${room.id}`);
             this.sendError("Failed to join", "JOIN_FAILED", player.socket);
             return;
         }
@@ -66,7 +116,7 @@ export default class NewMessageHandler {
                 playerId: player.id,
                 roomId: room.id,
                 position: player.position,
-                playersInRoom: this.roomService.getPlayersInRoom(room.id)
+                playersInRoom: this.roomService.getPlayersInRoom(room.id).map(toSerializablePlayer)
             },
             timestamp: Date.now()
         };
@@ -79,11 +129,14 @@ export default class NewMessageHandler {
 
         // Player added to queue - send waiting message
         if (result.queued) {
+            const position = this.roomService.getQueuePosition(player.id);
+            const queueLength = this.roomService.getQueueLength();
+
             const response = {
                 type: 'queueJoined',
                 data: {
-                    position: this.roomService.getQueuePosition(player.id),
-                    queueLength: this.roomService.getQueueLength()
+                    position: position,
+                    queueLength: queueLength
                 },
                 timestamp: Date.now()
             };
@@ -100,7 +153,7 @@ export default class NewMessageHandler {
                     playerId: player.id,
                     roomId: result.room.id,
                     position: player.position,
-                    playersInRoom: this.roomService.getPlayersInRoom(result.room.id)
+                    playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
                 },
                 timestamp: Date.now()
             };
@@ -116,7 +169,7 @@ export default class NewMessageHandler {
                         playerId: result.matchedPlayer.id,
                         roomId: result.room.id,
                         position: result.matchedPlayer.position,
-                        playersInRoom: this.roomService.getPlayersInRoom(result.room.id)
+                        playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
                     },
                     timestamp: Date.now()
                 };
@@ -127,13 +180,16 @@ export default class NewMessageHandler {
 
     handleJoinRoom(message: JoinRoomMessage, player: Player) {
         const roomId = message.data.roomId;
+
         if (!roomId) {
-            this.sendError("Room doesn't exist", "JOIN_FAILED", player.socket);
+            console.error(`[JoinRoom] ERROR: No room ID provided`);
+            this.sendError("Room doesn't exist", 'ROOM_NOT_FOUND', player.socket);
             return;
         }
 
         const joined = this.roomService.joinRoom(player, roomId);
-        if (!roomId) {
+        if (!joined) {
+            console.error(`[JoinRoom] ERROR: Failed to join room ${roomId}`);
             this.sendError("Failed to join", "JOIN_FAILED", player.socket);
             return;
         }
@@ -145,7 +201,7 @@ export default class NewMessageHandler {
                 playerId: player.id,
                 roomId: roomId,
                 position: player.position,
-                playersInRoom: this.roomService.getPlayersInRoom(roomId)
+                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
             },
             timestamp: Date.now()
         };
@@ -155,7 +211,9 @@ export default class NewMessageHandler {
 
     handleLeaveRoom(player: Player) {
         const room = this.roomService.leaveRoom(player);
-        if (!room) return;
+        if (!room) {
+            return;
+        }
 
         const response = {
             type: 'playerLeft',
@@ -170,7 +228,9 @@ export default class NewMessageHandler {
 
     handleLeaveQueue(player: Player) {
         const wasInQueue = this.roomService.leaveQueue(player);
-        if (!wasInQueue) return;
+        if (!wasInQueue) {
+            return;
+        }
 
         const response = {
             type: 'queueLeft',
@@ -180,15 +240,14 @@ export default class NewMessageHandler {
             timestamp: Date.now()
         };
         player.socket.send(JSON.stringify(response));
-        return;
     }
 
     handlePlayerReady(message: PlayerReadyMessage, player: Player) {
-        this.gameService.setReady(message)
+        // this.gameService.setReady(message)
     }
 
     handlePlayerInput(message: PlayerInputMessage, player: Player) {
-
+        // Handle player input
     }
 
     private sendError(errorMessage: string, code: GameErrorCodes, socket: WebSocket) {

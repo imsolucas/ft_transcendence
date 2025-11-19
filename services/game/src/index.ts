@@ -5,7 +5,7 @@ import type { Player } from 'shared';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { MessageBroadcaster } from './websocket/Broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
-import { MessageHandler } from './websocket/handlers.js';
+import MessageHandler from './websocket/MessageHandler.js';
 import type { GameServer } from './game/GameServer.js';
 // import TickSytem from './websocket/TickSystem.js';
 
@@ -14,7 +14,7 @@ const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
 const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
-const messageHandler = new MessageHandler(roomManager, broadcaster);
+const messageHandler = new MessageHandler(roomManager);
 export const pongSessions = new Map<string, GameServer>();
 
 server.register(ws);
