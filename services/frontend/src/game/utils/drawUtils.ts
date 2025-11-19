@@ -8,7 +8,7 @@ export function drawCircle(pos: Vector, radius: number, color: string, scale: Ve
     ctx.arc(
         pos.x,
         pos.y,
-        radius * scale.x,
+        radius,
         0, 
         2 * Math.PI
     )
