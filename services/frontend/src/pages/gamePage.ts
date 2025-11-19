@@ -6,6 +6,7 @@ import type { MatchmakingEvents, PlayerInfo } from "../components/loadingGame";
 import { getCurrentUser } from "../utils/auth-script";
 import { gameStorage, type GameOptionsData } from "../types/game";
 import type { UserData } from "../types/user";
+import { toggleNavbarVisibility } from "../components/Navbar";
 
 
 let socket: WebSocket;
@@ -13,7 +14,7 @@ let user: UserData | null = null;
 let gameOptions: GameOptionsData | null = null;
 let currentGame: GameClient | null = null;
 
-function matchMaking(canvas: HTMLCanvasElement, container: HTMLElement, onGameOver: () => void) {
+function matchMaking(container: HTMLElement, onGameOver: () => void) {
 
     const events: MatchmakingEvents = {
         onMatchFound: (opponent: PlayerInfo, matchId: string) =>{},
@@ -146,7 +147,7 @@ function matchMaking(canvas: HTMLCanvasElement, container: HTMLElement, onGameOv
             case 'gameStart':
                 if (loadingComponent)
                     loadingComponent.remove();
-                startGame(canvas, container, onGameOver);
+                startGame(container, onGameOver);
                 break;
             default:
                 console.log("Unexpected message from server: ", message);
@@ -155,39 +156,19 @@ function matchMaking(canvas: HTMLCanvasElement, container: HTMLElement, onGameOv
     }
 }
 
-function startGame(canvas: HTMLCanvasElement, container: HTMLElement, onGameOver: () => void) {
-    canvas.style.background = gameOptions!.config?.backgroundColor!;
-    container.appendChild(canvas);
+function startGame(container: HTMLElement, onGameOver: () => void) {
+    const canvas = container.appendChild(createGameWrapper(container));
     setTimeout(() => {
         currentGame = new GameClient(canvas, gameOptions!.config!, socket, onGameOver);
-        currentGame.start()
+        currentGame.start();
     }, 0);
 }
 
 export function GamePage(): HTMLElement {
     gameOptions = gameStorage.getGameOptions();
 
-    getCurrentUser().then(currentUser => {
-        user = currentUser;
-
-        if (!user || !gameOptions){
-            navigate('lobby');
-            return ;
-        }
-
-    })
-
     const container = document.createElement('div');
-    container.className = 'flex inset overflow-hidden items-center justify-center';
-
-    const canvas = document.createElement('canvas');
-    canvas.className = '';
-    canvas.style.display = 'block';
-    canvas.style.borderRadius = "25px"
-
-    document.body.style.overflow = 'hidden';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
+    container.className = 'flex flex-col inset overflow-hidden items-center justify-center bg-gray-900 min-h-screen';
 
     const onGameOver = () => {
         if (gameOptions?.config!.mode == 'standard'){
@@ -197,12 +178,92 @@ export function GamePage(): HTMLElement {
         }
     }
 
-    if (gameOptions!.type == 'local')
-        startGame(canvas, container, onGameOver);
-    else
-        matchMaking(canvas, container, onGameOver);
+    getCurrentUser().then(currentUser => {
+        user = currentUser;
+
+        if (!user || !gameOptions){
+            navigate('lobby');
+            return ;
+
+        }
+        if (gameOptions!.type == 'local')
+            startGame(container, onGameOver);
+        else
+            matchMaking(container, onGameOver);
+
+    })
 
     return container;
+}
+
+function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
+    // Player info header
+    const playerHeader = document.createElement('div');
+    playerHeader.className = 'flex items-center justify-between w-full max-w-4xl px-8 mb-8';
+
+    // Left player info
+    const leftPlayerContainer = document.createElement('div');
+    leftPlayerContainer.className = 'flex items-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3';
+    
+    const leftPlayerAvatar = document.createElement('img');
+    leftPlayerAvatar.src = user!.picture;
+    leftPlayerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold';
+    leftPlayerAvatar.textContent = user?.username.charAt(0).toUpperCase() || 'P';
+    
+    const leftPlayerName = document.createElement('span');
+    leftPlayerName.className = 'text-gray-900 font-bold text-lg';
+    leftPlayerName.textContent = user?.username || 'Player 1';
+    
+    leftPlayerContainer.appendChild(leftPlayerAvatar);
+    leftPlayerContainer.appendChild(leftPlayerName);
+
+    // VS text
+    const vsText = document.createElement('span');
+    vsText.className = 'text-orange-500 font-bold text-3xl';
+    vsText.textContent = 'VS';
+
+    // Right player info
+    const rightPlayerContainer = document.createElement('div');
+    rightPlayerContainer.className = 'flex items-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3';
+    rightPlayerContainer.id = 'right-player-container';
+    
+    const rightPlayerAvatar = document.createElement('img');
+    rightPlayerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold';
+    rightPlayerAvatar.id = 'right-player-avatar';
+    rightPlayerAvatar.textContent = 'O';
+    
+    const rightPlayerName = document.createElement('span');
+    rightPlayerName.className = 'text-gray-900 font-bold text-lg';
+    rightPlayerName.id = 'right-player-name';
+    rightPlayerName.textContent = 'Opponent';
+    
+    rightPlayerContainer.appendChild(rightPlayerAvatar);
+    rightPlayerContainer.appendChild(rightPlayerName);
+
+    playerHeader.appendChild(leftPlayerContainer);
+    playerHeader.appendChild(vsText);
+    playerHeader.appendChild(rightPlayerContainer);
+
+    // Game canvas wrapper
+    const gameWrapper = document.createElement('div');
+    gameWrapper.className = 'relative';
+    gameWrapper.id = 'game-wrapper';
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'border-4 border-blue-500 rounded-3xl shadow-2xl';
+    canvas.style.display = 'block';
+    canvas.style.background = gameOptions?.config!.backgroundColor!;
+
+    container.appendChild(playerHeader)
+    gameWrapper.appendChild(canvas);
+    
+    container.appendChild(gameWrapper);
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+
+    return canvas;
 }
 
 export function cleanupGamePage(): void {
