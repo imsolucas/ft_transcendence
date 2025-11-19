@@ -23,7 +23,8 @@ export class GameClient {
     {
         this.onGameOver = onGameOver;
         this.socket = socket
-        this.gameEngine = new GameEngine(config);
+        if (!socket)
+            this.gameEngine = new GameEngine(config);
         this.config = config;
         this.aspectRatio = config.courtSize!.x / config.courtSize!.y
         this.canvas = canvas;
@@ -45,6 +46,7 @@ export class GameClient {
 
     public stop(): void {
         this.isRunning = false;
+        this.socket?.close()
         if (this.animationId){
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
@@ -71,6 +73,7 @@ export class GameClient {
                     console.log("Recieved game state", this.gameState);
                     break;
                 case 'playerLeft':
+                    alert("Opponent left");
                     this.onGameOver?.();
                     break;
                 default:
@@ -185,9 +188,9 @@ export class GameClient {
         }
 
         if (this.gameState.name == "GameOverState"){
-            const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? "1" : "2"; 
+            const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1]; 
             drawString(
-                `Player ${winner} has won!`,
+                `${winner} has won!`,
                 {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
                 "#8f40de", "bold 16px Poppins",
                 {x: this.scale_x, y: this.scale_y}, this.ctx);

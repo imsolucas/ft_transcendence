@@ -53,17 +53,6 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
       }
     }
 
-    @keyframes scanlines {
-      0% { transform: translateY(-100%); }
-      100% { transform: translateY(100vh); }
-    }
-
-    @keyframes flicker {
-      0%, 100% { opacity: 1; }
-      98% { opacity: 1; }
-      99% { opacity: 0.8; }
-    }
-
     @keyframes pulse-glow {
       0%, 100% { 
         box-shadow: 0 0 20px rgba(243, 76, 148, 0.5);
@@ -84,35 +73,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     .neon-text {
       animation: neon-glow 2s ease-in-out infinite alternate;
     }
-
-    .crt-screen::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(transparent 50%, rgba(0, 255, 255, 0.03) 50%);
-      background-size: 100% 4px;
-      pointer-events: none;
-      animation: scanlines 0.1s linear infinite;
-    }
-
-    .crt-screen::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
-      pointer-events: none;
-    }
-
-    .flicker {
-      animation: flicker 0.15s infinite linear;
-    }
-
+  
     .pulse-glow {
       animation: pulse-glow 2s ease-in-out infinite;
     }
@@ -159,7 +120,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 	// Render functions
 	const renderSearching = () => {
 		return `
-      <div class="crt-screen relative min-h-screen mt-8 flicker">
+      <div class="relative min-h-screen mt-8">
         <!-- Main Container -->
         <div class="container mx-auto px-4 py-8 h-full flex flex-col justify-center">
           <!-- Header -->
@@ -259,7 +220,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 
 	const renderMatchFound = () => {
 		return `
-      <div class="crt-screen relative min-h-screen flicker">
+      <div class="crt-screen relative min-h-screen">
         <!-- Main Container -->
         <div class="container mx-auto px-4 py-8 h-full flex flex-col justify-center">
           <!-- Header -->
@@ -391,7 +352,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 
 	const renderError = () => {
 		return `
-      <div class="crt-screen relative min-h-screen flicker">
+      <div class="crt-screen relative min-h-screen">
         <div class="container mx-auto px-4 py-8 h-full flex flex-col justify-center items-center">
           <div class="text-center">
             <h1 class="font-['Press_Start_2P'] text-3xl md:text-5xl text-red-500 mb-8">
@@ -458,6 +419,13 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 		render();
 	};
 
+  const removeOpponent = () => {
+    matchmakingState.status = 'searching',
+    matchmakingState.opponent = null;
+    matchmakingState.matchId = undefined;
+    render();
+  }
+
 	const setOpponent = (opponent: PlayerInfo, matchId: string) => {
 		matchmakingState.status = 'found';
 		matchmakingState.opponent = opponent;
@@ -476,6 +444,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 	// Expose methods on the container for external access
 	(container as any).updateState = updateState;
 	(container as any).setOpponent = setOpponent;
+	(container as any).removeOpponent = removeOpponent;
 	(container as any).setError = setError;
 
 	// Initial render
