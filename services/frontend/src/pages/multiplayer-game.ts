@@ -68,47 +68,8 @@ export function MultiplayerGamePage(): HTMLElement {
 			}
 		}
 
-		@keyframes scanlines {
-			0% { transform: translateY(-100%); }
-			100% { transform: translateY(100vh); }
-		}
-
-		@keyframes flicker {
-			0%, 100% { opacity: 1; }
-			99% { opacity: 1; }
-			99.5% { opacity: 0.98; }
-		}
-
 		.neon-text {
 			animation: neon-glow 2s ease-in-out infinite alternate;
-		}
-
-		.crt-screen::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: linear-gradient(transparent 50%, rgba(0, 255, 255, 0.03) 50%);
-			background-size: 100% 4px;
-			pointer-events: none;
-			animation: scanlines 0.1s linear infinite;
-		}
-
-		.crt-screen::after {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
-			pointer-events: none;
-		}
-
-		.flicker {
-			animation: flicker 8s infinite linear;
 		}
 	`;
 	document.head.appendChild(style);
@@ -118,7 +79,7 @@ export function MultiplayerGamePage(): HTMLElement {
 
 	const renderModeSelection = () => {
 		container.innerHTML = `
-			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black flicker">
+			<div class="relative min-h-screen bg-gradient-to-b from-gray-900 to-black">
 				<div class="container mx-auto px-4 py-8">
 					<header class="text-center mb-12">
 						<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
@@ -188,7 +149,7 @@ export function MultiplayerGamePage(): HTMLElement {
 
 	const renderLobbySelection = () => {
 		container.innerHTML = `
-			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black flicker">
+			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black">
 				<div class="container mx-auto px-4 py-8">
 					<header class="text-center mb-12">
 						<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">

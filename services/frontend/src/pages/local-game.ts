@@ -9,7 +9,7 @@ type LocalGameMode = 'selection' | 'config-1v1' | 'config-tournament';
 export function LocalGamePage(): HTMLElement {
 	const container = document.createElement('div');
 	container.className =
-		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16 overflow-hidden';
+		'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] via-[#DC25A3] via-[#F34C94] to-[#F3796A] pt-16 overflow-y-auto';
 
 	// Add custom styles
 	const style = document.createElement('style');
@@ -31,47 +31,8 @@ export function LocalGamePage(): HTMLElement {
 			}
 		}
 
-		@keyframes scanlines {
-			0% { transform: translateY(-100%); }
-			100% { transform: translateY(100vh); }
-		}
-
-		@keyframes flicker {
-			0%, 100% { opacity: 1; }
-			99% { opacity: 1; }
-			99.5% { opacity: 0.98; }
-		}
-
 		.neon-text {
 			animation: neon-glow 2s ease-in-out infinite alternate;
-		}
-
-		.crt-screen::before {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: linear-gradient(transparent 50%, rgba(0, 255, 255, 0.03) 50%);
-			background-size: 100% 4px;
-			pointer-events: none;
-			animation: scanlines 0.1s linear infinite;
-		}
-
-		.crt-screen::after {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
-			pointer-events: none;
-		}
-
-		.flicker {
-			animation: flicker 8s infinite linear;
 		}
 	`;
 	document.head.appendChild(style);
@@ -80,7 +41,7 @@ export function LocalGamePage(): HTMLElement {
 
 	const renderSelection = () => {
 		container.innerHTML = `
-			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black flicker">
+			<div class="relative min-h-screen bg-gradient-to-b from-gray-900 to-black">
 				<div class="container mx-auto px-4 py-8">
 					<header class="text-center mb-12">
 						<h1 class="font-['Press_Start_2P'] text-4xl md:text-6xl neon-text mb-4 text-white">
@@ -148,7 +109,7 @@ export function LocalGamePage(): HTMLElement {
 
 	const renderConfig = (mode: 'standard' | 'tournament') => {
 		container.innerHTML = `
-			<div class="crt-screen relative min-h-screen bg-gradient-to-b from-gray-900 to-black flicker">
+			<div class="relative min-h-screen bg-gradient-to-b from-gray-900 to-black">
 				<div class="container mx-auto px-4 py-8">
 					<header class="text-center mb-8">
 						<h1 class="font-['Press_Start_2P'] text-3xl md:text-5xl neon-text mb-4 text-white">
@@ -168,7 +129,7 @@ export function LocalGamePage(): HTMLElement {
 				isMultiplayer: false,
 				onSubmit: (config: GameConfigType) => {
 					// Store config in sessionStorage
-					gameStorage.setGameOptions({type: 'local'});
+					gameStorage.setGameOptions({type: 'local', config: config});
 					console.log('Game config:', config);
 					navigate('game');
 				},
