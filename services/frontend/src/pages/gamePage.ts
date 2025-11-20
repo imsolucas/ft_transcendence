@@ -18,6 +18,7 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
 
     const events: MatchmakingEvents = {
         onMatchFound: (opponent: PlayerInfo, matchId: string) =>{},
+        onMatchError: (matchId: string) => {},
         onMatchReady: (matchId: string) => {
             const readyMsg: PlayerReadyMessage = {
                 type: 'playerReady',
@@ -26,9 +27,6 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
             };
 
             socket!.send(JSON.stringify(readyMsg));
-        },
-        onMatchError: (matchId: string) => {
-            
         },
         onCancel: () => {
             navigate('lobby');
@@ -157,7 +155,7 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
 }
 
 function startGame(container: HTMLElement, onGameOver: () => void) {
-    const canvas = container.appendChild(createGameWrapper(container));
+    const canvas = createGameWrapper(container);
     setTimeout(() => {
         currentGame = new GameClient(canvas, gameOptions!.config!, socket, onGameOver);
         currentGame.start();
@@ -168,9 +166,12 @@ export function GamePage(): HTMLElement {
     gameOptions = gameStorage.getGameOptions();
 
     const container = document.createElement('div');
-    container.className = 'flex flex-col inset overflow-hidden items-center justify-center bg-gray-900 min-h-screen';
+    container.className = 'flex-row inset overflow-hidden items-center justify-center bg-gray-900 max-h-screen';
+    container.id = 'game-page';
 
     const onGameOver = () => {
+        if (socket)
+            socket.onmessage = null;
         if (gameOptions?.config!.mode == 'standard'){
             setTimeout(() => {
                 navigate('lobby');
@@ -199,46 +200,41 @@ export function GamePage(): HTMLElement {
 function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
     // Player info header
     const playerHeader = document.createElement('div');
-    playerHeader.className = 'flex items-center justify-between w-full max-w-4xl px-8 mb-8';
+    playerHeader.className = 'grid grid-cols-3 items-center w-full max-w-4xl px-8 mb-8';
+    playerHeader.id = 'player-header';
 
-    // Left player info
-    const leftPlayerContainer = document.createElement('div');
-    leftPlayerContainer.className = 'flex items-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3';
-    
-    const leftPlayerAvatar = document.createElement('img');
-    leftPlayerAvatar.src = user!.picture;
-    leftPlayerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold';
-    leftPlayerAvatar.textContent = user?.username.charAt(0).toUpperCase() || 'P';
-    
-    const leftPlayerName = document.createElement('span');
-    leftPlayerName.className = 'text-gray-900 font-bold text-lg';
-    leftPlayerName.textContent = user?.username || 'Player 1';
-    
-    leftPlayerContainer.appendChild(leftPlayerAvatar);
-    leftPlayerContainer.appendChild(leftPlayerName);
+    const createPlayerContainer = (isLeft: boolean): HTMLElement => {
+        const playerContainer = document.createElement('div');
+        playerContainer.className = 'flex items-center justify-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3';
+        playerContainer.id = isLeft ? 'left-player-container' : 'right-player-container';
+
+        if (gameOptions?.type != 'local'){
+            const playerAvatar = document.createElement('img');
+            playerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold';
+            playerAvatar.id = isLeft ? 'left-player-avatar' : 'right-player-avatar';
+            playerAvatar.src = isLeft? user!.picture : ''; //TODO get opponent avatar
+
+            playerContainer.appendChild(playerAvatar);
+        }
+        
+        const playerName = document.createElement('span');
+        playerName.className = 'text-gray-900 font-bold text-lg';
+        playerName.textContent = isLeft ? gameOptions!.config!.playerNames[0] : gameOptions!.config!.playerNames[1];
+        playerName.id = isLeft ? 'left-player-name' : 'right-player-name';
+
+        playerContainer.appendChild(playerName);
+        
+        return playerContainer;
+    };
+
+    // Create player containers
+    const leftPlayerContainer = createPlayerContainer(true);
+    const rightPlayerContainer = createPlayerContainer(false);
 
     // VS text
     const vsText = document.createElement('span');
-    vsText.className = 'text-orange-500 font-bold text-3xl';
+    vsText.className = 'text-orange-500 font-bold text-3xl justify-self-center  ';
     vsText.textContent = 'VS';
-
-    // Right player info
-    const rightPlayerContainer = document.createElement('div');
-    rightPlayerContainer.className = 'flex items-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3';
-    rightPlayerContainer.id = 'right-player-container';
-    
-    const rightPlayerAvatar = document.createElement('img');
-    rightPlayerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold';
-    rightPlayerAvatar.id = 'right-player-avatar';
-    rightPlayerAvatar.textContent = 'O';
-    
-    const rightPlayerName = document.createElement('span');
-    rightPlayerName.className = 'text-gray-900 font-bold text-lg';
-    rightPlayerName.id = 'right-player-name';
-    rightPlayerName.textContent = 'Opponent';
-    
-    rightPlayerContainer.appendChild(rightPlayerAvatar);
-    rightPlayerContainer.appendChild(rightPlayerName);
 
     playerHeader.appendChild(leftPlayerContainer);
     playerHeader.appendChild(vsText);
@@ -246,16 +242,22 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 
     // Game canvas wrapper
     const gameWrapper = document.createElement('div');
-    gameWrapper.className = 'relative';
+    gameWrapper.className = 'flex flex-col items-center justify-center w-full h-screen p-8';
     gameWrapper.id = 'game-wrapper';
 
+    // Canvas container to control sizing
+    const canvasContainer = document.createElement('div');
+    canvasContainer.className = 'flex flex-1 items-center justify-center flex-1 w-full';
+    canvasContainer.id = 'canvas-container';
+
     const canvas = document.createElement('canvas');
-    canvas.className = 'border-4 border-blue-500 rounded-3xl shadow-2xl';
+    canvas.className = 'border-4 border-blue-500 rounded-3xl shadow-2xl max-w-full max-h-full';
     canvas.style.display = 'block';
     canvas.style.background = gameOptions?.config!.backgroundColor!;
-
-    container.appendChild(playerHeader)
-    gameWrapper.appendChild(canvas);
+    
+    canvasContainer.appendChild(canvas);
+    gameWrapper.appendChild(playerHeader); 
+    gameWrapper.appendChild(canvasContainer);
     
     container.appendChild(gameWrapper);
 

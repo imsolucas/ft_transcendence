@@ -133,30 +133,32 @@ export class GameClient {
     }
 
     private fillWindow(): void {
-        const navbar = document.querySelector('nav');
-        const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
+        const canvasContainer = document.getElementById('canvas-container')! as HTMLDivElement;
         
-        let newWidth = window.innerWidth;
-        let newHeight = window.innerHeight - navbarHeight;
-        let newAspect = newWidth / newHeight;
-      
-        if (newAspect > this.aspectRatio)
-        {
-            newWidth = newHeight * this.aspectRatio;
-            this.canvas.height = newHeight;
-            this.canvas.width = newWidth;
+        // Get the available space from the container
+        const containerRect = canvasContainer.getBoundingClientRect();
+        const availableWidth = containerRect.width;
+        const availableHeight = containerRect.height;
+    
+        let newWidth = availableWidth;
+        let newHeight = availableHeight;
+        let containerAspect = availableWidth / availableHeight;
+    
+        // Fit canvas to container while maintaining aspect ratio
+        if (containerAspect > this.aspectRatio) {
+            // Container is wider than needed, constrain by height
+            newWidth = availableHeight * this.aspectRatio;
+            newHeight = availableHeight;
+        } else {
+            // Container is taller than needed, constrain by width
+            newHeight = availableWidth / this.aspectRatio;
+            newWidth = availableWidth;
         }
-        else
-        {
-            newHeight = newWidth / this.aspectRatio;
-            this.canvas.height = newHeight;
-            this.canvas.width = newWidth;
-        }
-      
-        this.scale_x = this.canvas.width / this.config.courtSize!.x;
-        this.scale_y = this.canvas.height / this.config.courtSize!.y;
-        
-        this.canvas.style.marginTop = `${navbarHeight}px`;
+    
+        this.canvas.width = newWidth;
+        this.canvas.height = newHeight;
+        this.scale_x = this.canvas.width / this.config!.courtSize!.x;
+        this.scale_y = this.canvas.height / this.config!.courtSize!.y;
     }
 
     private render_game_state(): void {
