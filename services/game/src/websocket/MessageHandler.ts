@@ -1,4 +1,4 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, LeaveRoomMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage } from "shared/index.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage } from "shared/index.js";
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
@@ -280,8 +280,12 @@ export default class NewMessageHandler {
             };
 
             this.broadcaster.broadcastToRoom(room.id, startMessage);
-        }
 
+            if (room.mode === 'tournament') {
+                this.tournamentService.assignRoles(room);
+                this.broadcastTournamentState(room.id);
+            }
+        }
     }
 
     handlePlayerInput(message: PlayerInputMessage, player: Player) {
@@ -299,5 +303,32 @@ export default class NewMessageHandler {
             timestamp: Date.now()
           };
         socket.send(JSON.stringify(errorResponse));
+    }
+
+    private broadcastTournamentState(roomId: string): void {
+        const room = this.roomManager.getRoom(roomId);
+        if (!room || room.mode !== 'tournament') return;
+
+        const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
+        const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
+        const queuePlayers = (room.queueIds || []).map(id => this.roomManager.getPlayer(id));
+
+        const tournamentState: TournamentStateMessage = {
+            type: 'tournamentState',
+            data: {
+            roomType: room.mode,
+            kingId: king ? king.id : '',
+            kingName: king ? king.name : '',
+            challengerId: challenger ? challenger.id : '',
+            challengerName: challenger ? challenger.name : '',
+            queue: queuePlayers.map(p => ({
+                playerId: p!.id,
+                playerName: p!.name
+                }))
+            },
+            timestamp: Date.now()
+        };
+
+        this.broadcaster.broadcastToRoom(roomId, tournamentState);
     }
 }

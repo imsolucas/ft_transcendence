@@ -29,7 +29,7 @@ export class RoomManager {
 
     const newRoom: Room = {
       id: roomId,
-      type: config.mode,
+      mode: config.mode,
       playerIds: [],
       queueIds: [],
       status: 'waiting',
