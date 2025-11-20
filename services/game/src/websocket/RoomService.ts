@@ -9,8 +9,13 @@ export default class RoomService {
         private roomManager: RoomManager
     ){}
 
-    createRoom(player: Player, config: GameConfig): Room {
+    createRoom(player: Player, config: GameConfig): Room | null {
+        if (player.roomId) {
+            return null;
+        }
+
         const room = this.roomManager.createRoom(config);
+        room.status = 'waiting';
         return room;
     }
 
@@ -21,12 +26,14 @@ export default class RoomService {
         if (!this.roomManager.addPlayerToRoom(roomId, player.id))
             return false
 
+        if (this.roomManager.getPaxInRoom(roomId) == 2)
+            room.status = 'full';
         return true
     }
 
-    joinQueue(player: Player): { room?: Room; queued: boolean; matchedPlayer?: Player } {
+    joinQueue(player: Player): { room?: Room; queued: boolean; matchedPlayer?: Player } | null {
         if (player.roomId) {
-            return { queued: false };
+            return null;
         }
 
         const availableRooms = this.roomManager.getAvailableRooms() || [];
@@ -35,6 +42,8 @@ export default class RoomService {
         if (standardRoom) {
             const success = this.roomManager.addPlayerToRoom(standardRoom.id, player.id);
             if (success) {
+                const room = this.roomManager.getRoom(standardRoom.id);
+                if (room) room.status = 'full';
                 return { room: standardRoom, queued: false };
             }
         }
@@ -47,6 +56,7 @@ export default class RoomService {
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);
             this.roomManager.addPlayerToRoom(room.id, player.id);
+            room.status = 'full';
 
             return { room, queued: false, matchedPlayer: waitingPlayer };
         }
@@ -69,6 +79,7 @@ export default class RoomService {
         const room = this.roomManager.getRoom(player.roomId);
         if (!room) return null;
 
+        room.status = 'finished';
         const success = this.roomManager.removePlayerFromRoom(player.roomId, player.id);
         if (!success) return null;
 

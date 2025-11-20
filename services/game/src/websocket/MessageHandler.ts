@@ -2,22 +2,23 @@ import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, Joi
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
-import GameLifeCycleService from "./GameLifeCycleService.js";
+import GameService from "./GameService.js";
 import RoomService from "./RoomService.js";
 import TournamentService from "./TournamentService.js";
 import { timeStamp } from "console";
+import { measureMemory } from "vm";
 
 export default class NewMessageHandler {
     private tournamentService: TournamentService
-    private gameService: GameLifeCycleService
+    private gameService: GameService
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
 
     constructor (private roomManager: RoomManager) {
+        this.broadcaster = new MessageBroadcaster(roomManager);
         this.tournamentService = new TournamentService(roomManager);
-        this.gameService = new GameLifeCycleService(roomManager);
+        this.gameService = new GameService(roomManager, this.broadcaster);
         this.roomService = new RoomService(roomManager);
-        this.broadcaster = new MessageBroadcaster(roomManager)
     }
 
     handleConnection(data: any, connection: any): Player | null {
@@ -93,18 +94,15 @@ export default class NewMessageHandler {
     }
 
     handleCreateRoom(message: CreateRoomMessage, player: Player) {
-        if (player.roomId) {
-            console.error(`[CreateRoom] ERROR: Player "${player.name}" already in room ${player.roomId}`);
+        const config = message.data.config;
+        const room = this.roomService.createRoom(player, config);
+        if (!room) {
             this.sendError("Already in room", "ALREADY_IN_ROOM", player.socket);
             return;
         }
 
-        const config = message.data.config;
-        const room = this.roomService.createRoom(player, config);
         const joined = this.roomService.joinRoom(player, room.id);
-
         if (!joined) {
-            console.error(`[CreateRoom] ERROR: Failed to join room ${room.id}`);
             this.sendError("Failed to join", "JOIN_FAILED", player.socket);
             return;
         }
@@ -126,6 +124,10 @@ export default class NewMessageHandler {
 
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
         const result = this.roomService.joinQueue(player);
+        if (!result) {
+            this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
+            return;
+        }
 
         // Player added to queue - send waiting message
         if (result.queued) {
@@ -182,14 +184,12 @@ export default class NewMessageHandler {
         const roomId = message.data.roomId;
 
         if (!roomId) {
-            console.error(`[JoinRoom] ERROR: No room ID provided`);
             this.sendError("Room doesn't exist", 'ROOM_NOT_FOUND', player.socket);
             return;
         }
 
         const joined = this.roomService.joinRoom(player, roomId);
         if (!joined) {
-            console.error(`[JoinRoom] ERROR: Failed to join room ${roomId}`);
             this.sendError("Failed to join", "JOIN_FAILED", player.socket);
             return;
         }
@@ -212,6 +212,7 @@ export default class NewMessageHandler {
     handleLeaveRoom(player: Player) {
         const room = this.roomService.leaveRoom(player);
         if (!room) {
+            this.sendError("Player not in room", 'ROOM_NOT_FOUND', player.socket);
             return;
         }
 
@@ -229,6 +230,7 @@ export default class NewMessageHandler {
     handleLeaveQueue(player: Player) {
         const wasInQueue = this.roomService.leaveQueue(player);
         if (!wasInQueue) {
+            this.sendError("Player not in queue", 'INVALID_REQUEST', player.socket);
             return;
         }
 
@@ -243,11 +245,30 @@ export default class NewMessageHandler {
     }
 
     handlePlayerReady(message: PlayerReadyMessage, player: Player) {
-        // this.gameService.setReady(message)
+        const success = this.gameService.setReady(message, player);
+        if (!success) {
+            this.sendError("Player not in room", 'ROOM_NOT_FOUND', player.socket);
+        }
+
+        const response: PlayerReadyMessage = {
+            type: 'playerReady',
+            data: {
+                playerName: player.name,
+                playerId: player.id,
+                ready: message.data.ready
+            },
+            timestamp: Date.now()
+        };
+
+        this.broadcaster.broadcastToRoom(player.roomId, response, player.id);
     }
 
     handlePlayerInput(message: PlayerInputMessage, player: Player) {
-        // Handle player input
+        const success = this.gameService.playerInput(message, player);
+        if (!success) {
+            this.sendError("Invalid Room", 'INVALID_REQUEST', player.socket);
+            return;
+        }
     }
 
     private sendError(errorMessage: string, code: GameErrorCodes, socket: WebSocket) {

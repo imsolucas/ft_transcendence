@@ -1,0 +1,51 @@
+import type { PlayerInputMessage, PlayerReadyMessage } from "shared/index.js";
+import type { Player } from "shared"
+import type { RoomManager } from "../game/roomManager.js";
+import type { Room } from "../types/room.types.js";
+import { pongSessions } from "../index.js";
+import { GameServer } from "../game/GameServer.js";
+import { MessageBroadcaster } from "./Broadcaster.js";
+
+export default class GameService {
+    constructor (
+        private roomManager: RoomManager,
+        private broadcaster: MessageBroadcaster
+    ) {}
+
+    setReady(message: PlayerReadyMessage, player: Player): Room | boolean {
+        const room = this.roomManager.getRoom(player.id);
+        if (!room) return false;
+
+        player.isReady = message.data.ready;
+        if (this.checkReady(room)) {
+            this.startGame(room);
+            return room;
+        }
+        return true;
+    }
+
+    checkReady(room: Room): boolean {
+        const players = this.roomManager.getPlayersInRoom(room.id);
+        return players.every(p => p.isReady) && players.length >= 2;
+    }
+
+    startGame(room: Room): boolean {
+        room.status = 'playing';
+        pongSessions.set(room.id, new GameServer(room, this.broadcaster));
+        return true;
+    }
+
+    playerInput(message: PlayerInputMessage, player: Player) : boolean {
+        const room = this.roomManager.getRoom(player.id);
+        if (!room) return false;
+
+        const session = pongSessions.get(room.id);
+        if (!session) return false;
+
+        if (room.playerIds[0] == player.id)
+            session.input(message.data.inputs, undefined);
+        else
+            session.input(undefined, message.data.inputs);
+        return true;
+    }
+}
