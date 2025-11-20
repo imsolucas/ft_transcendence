@@ -1,4 +1,4 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, LeaveRoomMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage } from "shared/index.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, LeaveRoomMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage } from "shared/index.js";
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
@@ -246,11 +246,11 @@ export default class NewMessageHandler {
 
     handlePlayerReady(message: PlayerReadyMessage, player: Player) {
         const success = this.gameService.setReady(message, player);
-        if (!success) {
+        if (!success.setReady) {
             this.sendError("Player not in room", 'ROOM_NOT_FOUND', player.socket);
         }
 
-        const response: PlayerReadyMessage = {
+        const readyMessage: PlayerReadyMessage = {
             type: 'playerReady',
             data: {
                 playerName: player.name,
@@ -260,7 +260,28 @@ export default class NewMessageHandler {
             timestamp: Date.now()
         };
 
-        this.broadcaster.broadcastToRoom(player.roomId, response, player.id);
+        this.broadcaster.broadcastToRoom(player.roomId, readyMessage);
+
+        if (success.startGame) {
+            const room = this.roomManager.getRoom(player.id);
+            if (!room) return;
+            const playersInRoom = this.roomManager.getPlayersInRoom(room.id);
+
+            const startMessage: GameStartMessage = {
+            type: 'gameStart',
+            data: {
+                players: playersInRoom.map(p => ({
+                playerId: p.id,
+                playerName: p.name,
+                position: p.position
+                }))
+            },
+            timestamp: Date.now()
+            };
+
+            this.broadcaster.broadcastToRoom(room.id, startMessage);
+        }
+
     }
 
     handlePlayerInput(message: PlayerInputMessage, player: Player) {
@@ -277,6 +298,6 @@ export default class NewMessageHandler {
             data: { message: errorMessage, code: code },
             timestamp: Date.now()
           };
-          socket.send(JSON.stringify(errorResponse));
+        socket.send(JSON.stringify(errorResponse));
     }
 }

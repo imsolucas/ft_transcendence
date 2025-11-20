@@ -66,7 +66,7 @@ export class RoomManager {
   getAvailableRooms(): Room[] {
     const availableRooms: Room[] = [];
     for (const room of this.rooms.values()) {
-      const maxPlayers = (room.type === 'standard') ? 2 : 6;
+      const maxPlayers = (room.mode === 'standard') ? 2 : 6;
       if (room.playerIds.length < maxPlayers && room.status === 'waiting') {
         availableRooms.push(room);
       }
@@ -106,8 +106,8 @@ export class RoomManager {
     if (this.isRoomFull(roomId)) {
       room.status = 'full';
     }
-    // console.log(`Player "${player.name}" joined ${room.config.isPrivate ? 'private' : 'public'} ${room.type} room "${room.id}"`);
-    console.log(`Player "${player.name}" joined ${room.type} room "${room.id}"`);
+    // console.log(`Player "${player.name}" joined ${room.config.isPrivate ? 'private' : 'public'} ${room.mode} room "${room.id}"`);
+    console.log(`Player "${player.name}" joined ${room.mode} room "${room.id}"`);
 
     return true;
   }
@@ -128,9 +128,6 @@ export class RoomManager {
       return false;
     room.playerIds.splice(idx, 1);
 
-    if (room.playerIds.length > 0) {
-      room.status = 'waiting';
-    }
     if (room.playerIds.length === 0) {
       this.removeRoom(roomId);
     }
@@ -149,7 +146,7 @@ export class RoomManager {
     if (!room) return -1;
 
     const players = this.getPlayersInRoom(roomId);
-    const maxPlayers = room.type === 'standard' ? 2 : 6;
+    const maxPlayers = room.mode === 'standard' ? 2 : 6;
 
     // Find first available position (1-indexed)
     const takenPositions = new Set(players.map(p => p.position));
@@ -166,10 +163,10 @@ export class RoomManager {
     const room = this.getRoom(roomId);
     if (!room)
       return false;
-    if (room.type === 'standard')
+    if (room.mode === 'standard')
       return room.playerIds.length >= 2;
     else
-      return room.playerIds.length >= 8;
+      return room.playerIds.length >= 6;
   }
 
   // Get number of players in a room

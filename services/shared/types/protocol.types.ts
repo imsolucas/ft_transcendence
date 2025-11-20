@@ -135,11 +135,11 @@ export interface PlayerLeftMessage extends BaseMessage {
 export interface GameStartMessage extends BaseMessage {
 	type: 'gameStart';
 	data: {
-		players: Array<{
+		players: {
 			playerId: string;
 			playerName: string;
 			position?: number;
-		}>;
+		}[];
 	}
 }
 
@@ -151,10 +151,10 @@ export interface TournamentStateMessage extends BaseMessage {
 		kingName?: string;
 		challengerId?: string;
 		challengerName?: string;
-		queue: Array<{
+		queue: {
 			playerId: string;
 			playerName: string;
-		}>;
+		}[];
 	}
 }
 

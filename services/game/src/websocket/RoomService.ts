@@ -26,7 +26,7 @@ export default class RoomService {
         if (!this.roomManager.addPlayerToRoom(roomId, player.id))
             return false
 
-        if (this.roomManager.getPaxInRoom(roomId) == 2)
+        if (this.roomManager.isRoomFull(roomId))
             room.status = 'full';
         return true
     }
@@ -37,14 +37,14 @@ export default class RoomService {
         }
 
         const availableRooms = this.roomManager.getAvailableRooms() || [];
-        const standardRoom = availableRooms.find(r => r.type === 'standard');
+        const firstRoom = availableRooms[0]
 
-        if (standardRoom) {
-            const success = this.roomManager.addPlayerToRoom(standardRoom.id, player.id);
+        if (firstRoom) {
+            const success = this.roomManager.addPlayerToRoom(firstRoom.id, player.id);
             if (success) {
-                const room = this.roomManager.getRoom(standardRoom.id);
+                const room = this.roomManager.getRoom(firstRoom.id);
                 if (room) room.status = 'full';
-                return { room: standardRoom, queued: false };
+                return { room: firstRoom, queued: false };
             }
         }
 

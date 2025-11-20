@@ -3,7 +3,7 @@ import { GameServer } from "../game/GameServer.js";
 
 export interface Room {
 	id: string;
-	type: 'standard' | 'tournament'
+	mode: 'standard' | 'tournament'
 	playerIds: string[]; //indexes 0 and 1 will be considered as player 1 and 2 respectively
 	kingId?: string;
 	challengerId?: string;

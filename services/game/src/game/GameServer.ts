@@ -9,7 +9,7 @@ export class GameServer {
   readonly playerIds: string[];
   readonly createdAt: number;
   private lastTickTime: number = 0;
-  private gameEngine = new GameEngine()
+  private gameEngine: GameEngine;
   private broadcaster: MessageBroadcaster;
 
   constructor(room: Room, broadcaster: MessageBroadcaster) {
@@ -17,6 +17,7 @@ export class GameServer {
     this.playerIds = room.playerIds;
     this.createdAt = room.createdAt;
     this.broadcaster = broadcaster;
+    this.gameEngine = new GameEngine(room.config);
   }
 
   input(p1?: PlayerInputs, p2?: PlayerInputs): void {

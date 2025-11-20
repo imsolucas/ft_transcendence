@@ -12,20 +12,24 @@ export default class GameService {
         private broadcaster: MessageBroadcaster
     ) {}
 
-    setReady(message: PlayerReadyMessage, player: Player): Room | boolean {
-        const room = this.roomManager.getRoom(player.id);
-        if (!room) return false;
+    setReady(message: PlayerReadyMessage, player: Player): {setReady: boolean; startGame: boolean} {
+        const room = this.roomManager.getRoom(player.roomId);
+        if (!room) return {setReady: false, startGame: false};
 
         player.isReady = message.data.ready;
+        console.log(`[GameService] Player ${player.name} set ready: ${player.isReady}`);
+
         if (this.checkReady(room)) {
+            console.log(`[GameService] All players ready! Starting game in room ${room.id}`);
             this.startGame(room);
-            return room;
+            return {setReady: true, startGame: true}
         }
-        return true;
+        return {setReady: true, startGame: false};
     }
 
     checkReady(room: Room): boolean {
         const players = this.roomManager.getPlayersInRoom(room.id);
+        console.log(`[GameService] Checking ready status:`, players.map(p => ({ name: p.name, ready: p.isReady })));
         return players.every(p => p.isReady) && players.length >= 2;
     }
 
