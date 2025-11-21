@@ -6,15 +6,13 @@ import type { MatchmakingEvents, PlayerInfo } from "../components/loadingGame";
 import { getCurrentUser } from "../utils/auth-script";
 import { gameStorage, type GameOptionsData } from "../types/game";
 import type { UserData } from "../types/user";
-import { toggleNavbarVisibility } from "../components/Navbar";
-
 
 let socket: WebSocket;
 let user: UserData | null = null;
 let gameOptions: GameOptionsData | null = null;
 let currentGame: GameClient | null = null;
 
-function matchMaking(container: HTMLElement, onGameOver: () => void) {
+function matchMaking(container: HTMLElement) {
 
     const events: MatchmakingEvents = {
         onMatchFound: (opponent: PlayerInfo, matchId: string) =>{},
@@ -143,7 +141,7 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
             case 'gameStart':
                 if (loadingComponent)
                     loadingComponent.remove();
-                startGame(container, onGameOver);
+                startGame(container);
                 break;
             default:
                 console.log("Unexpected message from server: ", message);
@@ -152,12 +150,24 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
     }
 }
 
-function startGame(container: HTMLElement, onGameOver: () => void) {
+function startGame(container: HTMLElement) {
     const canvas = createGameWrapper(container);
     setTimeout(() => {  
-        currentGame = new GameClient(canvas, gameOptions!.config!, gameOptions?.type == 'local' ? socket : undefined, onGameOver);
+        currentGame = new GameClient(canvas, gameOptions!.config!, gameOptions?.type == 'local' ? undefined : socket, onGameOver);
         currentGame.start();
     }, 0);
+}
+
+function onGameOver() {
+    if (socket){
+        socket.onmessage = null;
+        socket.close();
+    }
+    if (gameOptions?.config!.mode == 'standard'){
+        setTimeout(() => {
+            navigate('lobby');
+        }, 3 * 1000)
+    }
 }
 
 export function GamePage(): HTMLElement {
@@ -167,28 +177,17 @@ export function GamePage(): HTMLElement {
     container.className = 'flex-row inset overflow-hidden items-center justify-center bg-gray-900 max-h-screen';
     container.id = 'game-page';
 
-    const onGameOver = () => {
-        if (socket)
-            socket.onmessage = null;
-        if (gameOptions?.config!.mode == 'standard'){
-            setTimeout(() => {
-                navigate('lobby');
-            }, 3 * 1000)
-        }
-    }
-
     getCurrentUser().then(currentUser => {
         user = currentUser;
 
         if (!user || !gameOptions){
             navigate('lobby');
             return ;
-
         }
         if (gameOptions!.type == 'local')
-            startGame(container, onGameOver);
+            startGame(container);
         else
-            matchMaking(container, onGameOver);
+            matchMaking(container);
 
     })
 
@@ -201,61 +200,102 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
     playerHeader.className = 'grid grid-cols-3 items-center w-full max-w-4xl px-8 mb-8';
     playerHeader.id = 'player-header';
 
-    const createPlayerContainer = (isLeft: boolean): HTMLElement => {
+    const createPlayerContainer = (name: string, id?: string, king: boolean = false, avatar?: string): HTMLElement => {
         const playerContainer = document.createElement('div');
-        playerContainer.className = 'flex items-center justify-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3';
-        playerContainer.id = isLeft ? 'left-player-container' : 'right-player-container';
+        playerContainer.className = 'flex items-center justify-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3 min-w-0 w-full';
+        playerContainer.id = id ? id : '';
 
         if (gameOptions?.type != 'local'){
             const playerAvatar = document.createElement('img');
-            playerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold';
-            playerAvatar.id = isLeft ? 'left-player-avatar' : 'right-player-avatar';
-            playerAvatar.src = isLeft? user!.picture : ''; //TODO get opponent avatar
+            playerAvatar.className = 'w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold flex-shrink-0';
+            playerAvatar.id = id ? id : '';
+            playerAvatar.src = avatar ? avatar : ''; //TODO get opponent avatar
 
             playerContainer.appendChild(playerAvatar);
         }
         
         const playerName = document.createElement('span');
-        playerName.className = 'text-gray-900 font-bold text-lg';
-        playerName.textContent = isLeft ? gameOptions!.config!.playerNames[0] : gameOptions!.config!.playerNames[1];
-        playerName.id = isLeft ? 'left-player-name' : 'right-player-name';
+        playerName.className = 'text-gray-900 font-bold text-lg truncate';
+        playerName.textContent = name;
 
         playerContainer.appendChild(playerName);
+        
+        if (king){
+            const kingLogo = document.createElement('img');
+            kingLogo.className = 'w-10 h-10 flex items-center justify-center text-white font-bold flex-shrink-0';
+            kingLogo.src = '/images/crown.png'
+
+            playerContainer.appendChild(kingLogo)
+        }
         
         return playerContainer;
     };
 
     // Create player containers
-    const leftPlayerContainer = createPlayerContainer(true);
-    const rightPlayerContainer = createPlayerContainer(false);
+    const leftPlayerContainer = createPlayerContainer(gameOptions!.config!.playerNames[0], 'left-player-name', gameOptions?.config?.mode == 'tournament', user!.avatar);
+    const rightPlayerContainer = createPlayerContainer(gameOptions!.config!.playerNames[1], 'right-player-name');
 
     // VS text
     const vsText = document.createElement('span');
-    vsText.className = 'text-orange-500 font-bold text-3xl justify-self-center  ';
+    vsText.className = 'text-orange-500 font-bold text-3xl justify-self-center';
     vsText.textContent = 'VS';
 
     playerHeader.appendChild(leftPlayerContainer);
     playerHeader.appendChild(vsText);
     playerHeader.appendChild(rightPlayerContainer);
 
-    // Game canvas wrapper
+    // Game canvas wrapper - main container
     const gameWrapper = document.createElement('div');
     gameWrapper.className = 'flex flex-col items-center justify-center w-full h-screen p-8';
     gameWrapper.id = 'game-wrapper';
 
-    // Canvas container to control sizing
+    // Canvas and queue container - sits below player header
+    const gameContentContainer = document.createElement('div');
+    gameContentContainer.className = 'flex items-center justify-center gap-8 flex-1 max-w-full';
+    gameContentContainer.id = 'game-content-container';
+
+    // Queue section (only for tournament mode)
+    if (gameOptions?.config?.mode == 'tournament'){
+        const queueContainer = document.createElement('div');
+        queueContainer.className = 'flex flex-col gap-4 h-full w-64 min-w-64 max-w-64 justify-start items-center flex-shrink-0';
+        queueContainer.id = 'queue-container';
+
+        const queueTitle = document.createElement('span');
+        queueTitle.className = 'text-orange-500 font-bold text-3xl mb-2';
+        queueTitle.textContent = 'queue';
+
+        const queue = document.createElement('div');
+        queue.className = 'flex flex-col gap-3 p-6 border-4 border-yellow-500 rounded-3xl shadow-2xl bg-blue-900/30 overflow-y-auto h-full w-full';
+        queue.id = 'queue';
+        
+        queueContainer.appendChild(queueTitle);
+        queueContainer.appendChild(queue);
+        
+        for (let i = 0; i < gameOptions.config!.numPlayers!; i++){
+            if (i < 2)
+                continue;
+            queue.appendChild(createPlayerContainer(gameOptions!.config!.playerNames[i], undefined));
+        }
+
+        gameContentContainer.appendChild(queueContainer);
+    }
+
+    // Canvas container - centered
     const canvasContainer = document.createElement('div');
-    canvasContainer.className = 'flex flex-1 items-center justify-center flex-1 w-full';
+    canvasContainer.className = 'flex items-center justify-center h-full aspect-video';
     canvasContainer.id = 'canvas-container';
 
     const canvas = document.createElement('canvas');
-    canvas.className = 'border-4 border-blue-500 rounded-3xl shadow-2xl max-w-full max-h-full';
+    canvas.className = 'border-4 border-blue-500 rounded-3xl shadow-2xl w-full h-full';
     canvas.style.display = 'block';
     canvas.style.background = gameOptions?.config!.backgroundColor!;
     
     canvasContainer.appendChild(canvas);
+    gameContentContainer.appendChild(canvasContainer);
+
+    // Assemble the structure
     gameWrapper.appendChild(playerHeader); 
-    gameWrapper.appendChild(canvasContainer);
+    gameWrapper.appendChild(gameContentContainer);
     
     container.appendChild(gameWrapper);
 
