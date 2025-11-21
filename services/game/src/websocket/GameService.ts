@@ -20,10 +20,8 @@ export default class GameService {
 
         if (this.checkReady(room)) {
             this.startGame(room);
-            console.log("all are ready\n");
             return {setReady: true, startGame: true}
         }
-        console.log("not all ready\n");
         return {setReady: true, startGame: false};
     }
 
