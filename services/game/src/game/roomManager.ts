@@ -135,7 +135,8 @@ export class RoomManager {
 
   // Get all players in a room
   getPlayersInRoom(roomId: string): Player[] {
-    const room = this.getRoom(roomId)!;
+    const room = this.getRoom(roomId);
+    if (!room) return [];
     const playersInRoom: Player[] = []
   
     for (const id of room.playerIds)
