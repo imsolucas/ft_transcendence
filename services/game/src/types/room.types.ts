@@ -8,6 +8,7 @@ export interface Room {
 	kingId?: string;
 	challengerId?: string;
 	queueIds?: string[]; // Queue of players waiting to challenge
+	tournamentScores?: Map<string, number>;
 	status: 'waiting' | 'full' | 'playing' | 'finished';
 	createdAt: number;
 	config: GameConfig;

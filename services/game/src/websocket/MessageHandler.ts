@@ -16,7 +16,7 @@ export default class NewMessageHandler {
 
     constructor (private roomManager: RoomManager) {
         this.broadcaster = new MessageBroadcaster(roomManager);
-        this.tournamentService = new TournamentService(roomManager);
+        this.tournamentService = new TournamentService(roomManager, this.broadcaster);
         this.gameService = new GameService(roomManager, this.broadcaster);
         this.roomService = new RoomService(roomManager);
     }
@@ -283,7 +283,7 @@ export default class NewMessageHandler {
 
             if (room.mode === 'tournament') {
                 this.tournamentService.assignRoles(room);
-                this.broadcastTournamentState(room.id);
+                this.tournamentService.broadcastTournamentState(room.id);
             }
         }
     }
@@ -303,32 +303,5 @@ export default class NewMessageHandler {
             timestamp: Date.now()
           };
         socket.send(JSON.stringify(errorResponse));
-    }
-
-    private broadcastTournamentState(roomId: string): void {
-        const room = this.roomManager.getRoom(roomId);
-        if (!room || room.mode !== 'tournament') return;
-
-        const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
-        const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
-        const queuePlayers = (room.queueIds || []).map(id => this.roomManager.getPlayer(id));
-
-        const tournamentState: TournamentStateMessage = {
-            type: 'tournamentState',
-            data: { state: {
-                kingId: king ? king.id : '',
-                kingName: king ? king.name : '',
-                challengerId: challenger ? challenger.id : '',
-                challengerName: challenger ? challenger.name : '',
-                queue: queuePlayers.map(p => ({
-                    playerId: p!.id,
-                    playerName: p!.name
-                    }))
-            }
-            },
-            timestamp: Date.now()
-        };
-
-        this.broadcaster.broadcastToRoom(roomId, tournamentState);
     }
 }

@@ -9,14 +9,16 @@ import NewMessageHandler from './websocket/MessageHandler.js';
 import type { GameServer } from './game/GameServer.js';
 // import TickSytem from './websocket/TickSystem.js';
 import TickSytem from './websocket/TickSystem.js';
+import TournamentService from './websocket/TournamentService.js';
 
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
 const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
+const tournamentService = new TournamentService(roomManager, broadcaster);
 const messageHandler = new NewMessageHandler(roomManager);
-const tickSystem = new TickSytem(roomManager);
+const tickSystem = new TickSytem(roomManager, tournamentService);
 export const pongSessions = new Map<string, GameServer>();
 
 server.register(ws);
