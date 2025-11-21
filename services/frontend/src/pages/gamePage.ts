@@ -154,8 +154,8 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
 
 function startGame(container: HTMLElement, onGameOver: () => void) {
     const canvas = createGameWrapper(container);
-    setTimeout(() => {
-        currentGame = new GameClient(canvas, gameOptions!.config!, socket, onGameOver);
+    setTimeout(() => {  
+        currentGame = new GameClient(canvas, gameOptions!.config!, gameOptions?.type == 'local' ? socket : undefined, onGameOver);
         currentGame.start();
     }, 0);
 }
