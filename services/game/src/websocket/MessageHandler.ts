@@ -263,20 +263,20 @@ export default class NewMessageHandler {
         this.broadcaster.broadcastToRoom(player.roomId, readyMessage);
 
         if (success.startGame) {
-            const room = this.roomManager.getRoom(player.id);
+            const room = this.roomManager.getRoom(player.roomId);
             if (!room) return;
             const playersInRoom = this.roomManager.getPlayersInRoom(room.id);
 
             const startMessage: GameStartMessage = {
-            type: 'gameStart',
-            data: {
-                players: playersInRoom.map(p => ({
-                playerId: p.id,
-                playerName: p.name,
-                position: p.position
-                }))
-            },
-            timestamp: Date.now()
+                type: 'gameStart',
+                data: {
+                    players: playersInRoom.map(p => ({
+                    playerId: p.id,
+                    playerName: p.name,
+                    position: p.position
+                    }))
+                },
+                timestamp: Date.now()
             };
 
             this.broadcaster.broadcastToRoom(room.id, startMessage);
