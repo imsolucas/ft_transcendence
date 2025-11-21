@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient } from "@prisma/client";
+import { error } from "console";
 
 const prisma = new PrismaClient();
 
@@ -92,4 +93,82 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
     played_at: match.played_at,
     end_at: match.end_at
   });
+}
+
+export async function postTournamentResult(req: FastifyRequest, reply: FastifyReply) {
+  const body = req.body as {
+    tournamentId?: number;
+    name?: string;
+    winnerId?: number;
+    start_at?: string;
+    end_at?: string;
+    players?: Array<{ userId: number }>;
+    matches?: Array<{
+      player1Id: number;
+      player2Id: number;
+      player1DisplayName: string;
+      player2DisplayName: string;
+      player1Score: number;
+      player2Score: number;
+      winnerId?: number;
+      played_at: string;
+      end_at: string;
+    }>;
+  };
+
+  const { tournamentId, name, winnerId, start_at, end_at, players, matches } = body;
+
+  if (!tournamentId || !winnerId || !start_at || !end_at || !players || !matches) {
+    return reply.code(400).send({ error: "Missing required tournament data" });
+  }
+
+  const startAt = new Date(start_at);
+  const endAt = new Date(end_at);
+  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+    return reply.code(400).send({ error: "Invalid start_at or end_at datetime" });
+  }
+
+  try {
+    // Create tournament
+    const tournament = await prisma.tournament.create({
+      data: {
+        id: tournamentId,
+        name: name ?? `Tournament ${tournamentId}`,
+        winnerId,
+        start_at: startAt,
+        end_at: endAt,
+        players: {
+          create: players.map(p => ({
+            userId: p.userId,
+          })),
+        },
+        matches: {
+          create: matches.map(m => ({
+            player1Id: m.player1Id,
+            player2Id: m.player2Id,
+            player1DisplayName: m.player1DisplayName,
+            player2DisplayName: m.player2DisplayName,
+            player1Score: m.player1Score,
+            player2Score: m.player2Score,
+            winnerId: m.winnerId ?? null,
+            played_at: new Date(m.played_at),
+            end_at: new Date(m.end_at),
+          })),
+        },
+      },
+      include: { players: true, matches: true },
+    });
+
+    return reply.send({
+      tournamentId: tournament.id,
+      winnerId: tournament.winnerId,
+      start_at: tournament.start_at,
+      end_at: tournament.end_at,
+      players: tournament.players,
+      matches: tournament.matches,
+    });
+  } catch (err) {
+    req.log?.error?.(err);
+    return reply.code(500).send({ error: "Internal server error" });
+  }
 }
