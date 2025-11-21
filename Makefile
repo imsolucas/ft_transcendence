@@ -26,7 +26,7 @@ rebuild: fclean up
 
 # logs / status
 logs:
-	docker compose -f $(FILE) logs -f --tail=200
+	docker compose -f $(FILE) logs -f --tail=200 $(SERVICE)
 
 ps:
 	docker compose -f $(FILE) ps
