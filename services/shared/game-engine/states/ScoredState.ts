@@ -12,11 +12,20 @@ export default class ScoredState extends BaseGameState {
     }
 
     enter(): void {
-        if (this.getEntityManager().getBall().getPos().x <= 0)
+        const ball = this.getEntityManager().getBall();
+        let newVelx = this.context.config.ballConfig.speed;
+
+        if (ball.getPos().x <= 0) {
             this.context.playerScore[1]++;
-        else
+            newVelx *= 1;
+        }
+        else {
+            newVelx *= -1;
             this.context.playerScore[0]++;
-        this.getEntityManager().getBall().reset();
+        }
+        
+        ball.reset()
+        ball.setVelocity({x: newVelx, y: 0});
     }
 
     update(deltaTime: number): StateResult | null {

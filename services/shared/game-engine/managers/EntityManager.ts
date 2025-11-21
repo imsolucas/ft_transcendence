@@ -22,7 +22,7 @@ export default class EntityManager {
 
     checkCollisions(): void {
         for (const player of this.#paddles){
-            this.#ball.collision(player.getBorder(), player.getOldBorder())
+            this.#ball.collision(player.getBorder(), player.getOldBorder(), player.getVelocity())
             player.collision(this.#ball.getBorder(), this.#ball.getOldBorder());
         }
     }

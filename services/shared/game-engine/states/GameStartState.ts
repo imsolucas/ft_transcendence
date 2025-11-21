@@ -22,7 +22,7 @@ export default class GameStartState extends BaseGameState{
         for (let i in this.getPlayerScore())
             this.getPlayerScore()[i] = 0;
         this.getEntityManager().getBall().reset()
-        this.getEntityManager().getBall().randomVelocity();     
+        this.getEntityManager().getBall().setVelocity({x: this.context.config.ballConfig.speed, y: 0});
     }
 
     update(deltaTime: number): StateResult | null {

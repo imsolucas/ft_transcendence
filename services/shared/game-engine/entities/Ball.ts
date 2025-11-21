@@ -83,7 +83,7 @@ export default class Ball extends Entity {
         this.#destroyed = false
     }
 
-    public collision(other: Border, old_other: Border): boolean {
+    public collision(other: Border, old_other: Border, otherVelocity?: Vector): boolean {
         const border = this.getBorder()
         const old_border = this.getOldBorder();
 
@@ -96,6 +96,11 @@ export default class Ball extends Entity {
             return false;
         
         this.velocity.x *= -1;
+
+        if (otherVelocity){
+            this.velocity.y += otherVelocity.y
+        }
+
         if (border.right >= other.left && old_border.right <= old_other.left){
             this.pos.x = other.left - this.#size.x / 2;
         }
