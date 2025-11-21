@@ -3,7 +3,7 @@ import { GameServer } from "../game/GameServer.js";
 
 export interface Room {
 	id: string;
-	type: 'standard' | 'tournament'
+	mode: 'standard' | 'tournament'
 	playerIds: string[]; //indexes 0 and 1 will be considered as player 1 and 2 respectively
 	kingId?: string;
 	challengerId?: string;
@@ -12,15 +12,4 @@ export interface Room {
 	createdAt: number;
 	config: GameConfig;
 	gameServer?: GameServer
-}
-
-export interface RoomStorage {
-	createRoom(config: GameConfig): Room;
-	getRoom(roomId: string): Room | undefined;
-	removeRoom(roomId: string): Room | undefined;
-	getAllRooms(): Room[];
-	getAvailableRooms(): Room[];
-	getPublicRoom(roomId: string): Room | undefined;
-	getPrivateRoom(roomId: string): Room | undefined;
-	getActiveRooms(): Room[];
 }

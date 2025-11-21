@@ -39,7 +39,7 @@ export class GameServer {
     // 4. Broadcast state to player
 
     this.gameEngine.tick(deltaTime)
-    
+
     const gameState = this.gameEngine.getGameState()
 
     console.log(`Tick for room ${this.id}`);

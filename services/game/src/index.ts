@@ -3,20 +3,19 @@ import ws from '@fastify/websocket';
 import type { GameMessage } from 'shared';
 import type { Player } from 'shared';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
-import { InMemoryRoomStorage } from './storage/roomStorage.js';
 import { MessageBroadcaster } from './websocket/Broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
-import { MessageHandler } from './websocket/Messagehandler.js';
+import NewMessageHandler from './websocket/MessageHandler.js';
 import type { GameServer } from './game/GameServer.js';
+// import TickSytem from './websocket/TickSystem.js';
 import TickSytem from './websocket/TickSystem.js';
 
 
 const server = fastify()
 const playerStorage = new InMemoryPlayerStorage();
-const roomStorage = new InMemoryRoomStorage();
-const roomManager = new RoomManager(playerStorage, roomStorage);
+const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
-const messageHandler = new MessageHandler(roomManager, broadcaster);
+const messageHandler = new NewMessageHandler(roomManager);
 const tickSystem = new TickSytem(roomManager);
 export const pongSessions = new Map<string, GameServer>();
 

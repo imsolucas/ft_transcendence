@@ -8,12 +8,24 @@ export type GameMessage =
 | PlayerReadyMessage
 | PlayerLeftMessage
 | JoinQueueMessage
+| JoinRoomMessage
+| CreateRoomMessage
 | LeaveRoomMessage
+| LeaveQueueMessage
 | GameStateMessage
 | PlayerInputMessage
 | GameStartMessage
 | PlayerJoinedMessage
 | TournamentStateMessage;
+
+export type GameErrorCodes =
+| 'ALREADY_IN_ROOM'
+| 'JOIN_FAILED'
+| 'ROOM_NOT_FOUND'
+| 'ROOM_FULL'
+| 'INVALID_REQUEST'
+| 'UNAUTHORIZED'
+| 'INTERNAL_ERROR';
 
 export interface BaseMessage {
 	type: string;
@@ -50,12 +62,44 @@ export interface JoinQueueMessage extends BaseMessage {
 
 export interface LeaveRoomMessage extends BaseMessage {
 	type: 'leaveRoom';
+	data: {
+		playerName: string;
+	}
+}
+
+export interface LeaveQueueMessage extends BaseMessage {
+	type: 'leaveQueue';
+	data: {
+		playerName: string;
+	}
 }
 
 export interface PlayerInputMessage extends BaseMessage {
 	type: 'playerInput';
 	data: {
 		inputs: PlayerInputs
+	}
+}
+
+export interface CreateRoomMessage extends BaseMessage {
+	type: 'createRoom';
+	data: {
+		config: GameConfig;
+	}
+}
+
+export interface JoinRoomMessage extends BaseMessage {
+	type: 'joinRoom';
+	data: {
+		roomId: string;
+	}
+}
+
+export interface ErrorMessage extends BaseMessage {
+	type: 'Error';
+	data: {
+		message: string;
+		code: GameErrorCodes;
 	}
 }
 
@@ -97,11 +141,11 @@ export interface PlayerLeftMessage extends BaseMessage {
 export interface GameStartMessage extends BaseMessage {
 	type: 'gameStart';
 	data: {
-		players: Array<{
+		players: {
 			playerId: string;
 			playerName: string;
 			position?: number;
-		}>;
+		}[];
 		tournamentState?: TournamentState
 	}
 }
@@ -119,3 +163,4 @@ export interface GameStateMessage extends BaseMessage {
 		gameState: GameState
 	}
 }
+

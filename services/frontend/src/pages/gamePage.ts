@@ -1,4 +1,4 @@
-import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type GameMessage, type JoinQueueMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage } from "shared/index";
+import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type CreateRoomMessage, type GameMessage, type JoinQueueMessage, type JoinRoomMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage } from "shared/index";
 import { GameClient } from "../game/GameClient"
 import { navigate } from "../router";
 import { LoadingPong } from "../components/loadingGame";
@@ -57,22 +57,20 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
     const onSuccessfulConnect = () => {
         switch (gameOptions?.type) {
             case 'create-room':
-                const createRoomMsg: JoinQueueMessage = {
-                    type: 'joinQueue',
+                const createRoomMsg: CreateRoomMessage = {
+                    type: 'createRoom',
                     data: {
-                        config: gameOptions.config,
-                        roomType: gameOptions.config!.mode
+                        config: gameOptions.config!,
                     },
                     timestamp: Date.now()
                 }
                 socket!.send(JSON.stringify(createRoomMsg));
                 break;
             case 'join-room':
-                const joinRoomMsg: JoinQueueMessage = {
-                    type: 'joinQueue',
+                const joinRoomMsg: JoinRoomMessage = {
+                    type: 'joinRoom',
                     data: {
-                        roomType: gameOptions.config?.mode!,
-                        roomId: gameOptions.roomId
+                        roomId: gameOptions.roomId!
                     },
                     timestamp: Date.now()
                 }
@@ -82,7 +80,7 @@ function matchMaking(container: HTMLElement, onGameOver: () => void) {
                 const JoinQueueMsg: JoinQueueMessage = {
                     type: 'joinQueue',
                     data: {
-                        roomType: gameOptions.config?.mode!  
+                        roomType: gameOptions.config?.mode!
                     },
                     timestamp: Date.now()
                 }
