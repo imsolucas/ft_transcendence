@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import type { GameConfig as GameConfigType } from 'shared/index';
+import { default_config, type GameConfig as GameConfigType } from 'shared/index';
 
 interface GameConfigProps {
 	mode: 'tournament' | 'standard';
@@ -16,14 +16,12 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 	// Default values
 	// For local games: single paddle config, for multiplayer: per-player paddle colors
 	// Tournament mode starts with 2 players (can add up to 8)
-	let paddleColors: string[] = mode === 'tournament' 
-		? ['#DC25A3', '#F34C94'] // Start with 2 players for tournament
-		: ['#DC25A3', '#F34C94']; // Two colors for standard
-	let paddleSpeed = 5;
-	let ballColor = '#F34C94';
-	let ballSpeed = 50;
-	let backgroundColor = '#000000';
-	let pointsToWin = 5;
+	let paddleColors: string[] = [default_config.paddle.color, default_config.paddle.color]
+	let paddleSpeed = default_config.standardGame.pointsToWin;
+	let ballColor = default_config.ball.color;
+	let ballSpeed = default_config.ball.speed;
+	let backgroundColor = default_config.standardGame.backgroundColor;
+	let pointsToWin = default_config.standardGame.pointsToWin;
 	// Player names only for local games - start with 2, will adjust dynamically for tournament
 	let playerNames: string[] = !isMultiplayer 
 		? (mode === 'tournament' ? Array(2).fill('') : Array(2).fill(''))

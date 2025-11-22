@@ -4,7 +4,7 @@ import type { GameConfig } from "./pong.types.js";
 
 export namespace default_config {
     export const paddle: PaddleConfig = {
-        color: "#950ae6",
+        color: "#F34C94",
         size: {x: defaults.PADDLE_WIDTH, y: defaults.PADDLE_HEIGHT },
         speed: defaults.PADDLE_SPEED
     }
@@ -20,7 +20,7 @@ export namespace default_config {
         ballConfig: default_config.ball,
         courtSize: {x: defaults.COURT_WIDTH, y: defaults.COURT_HEIGHT},
         playerNames: [],
-        backgroundColor: "#ae0909",
+        backgroundColor: "#000000",
         pointsToWin: defaults.WIN_POINT,
         isPrivate: false,
         mode: 'standard'
