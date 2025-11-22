@@ -23,6 +23,13 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
         400: {
           description: "Invalid input."
         },
+        409: {
+          description: "User name already exists or email already registered.",
+          type: "object",
+          properties: {
+            error: { type: "string", example: "User name already exists." }
+          }
+        },
         500: {
           $ref: "InternalServerError#"
         }
