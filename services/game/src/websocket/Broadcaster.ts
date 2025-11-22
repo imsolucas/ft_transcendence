@@ -17,6 +17,7 @@ export class MessageBroadcaster {
       player.socket!.send(JSON.stringify(message));
     }
 
-    console.log(`Broadcasted ${message.type} to ${playersInRoom.length} players in room ${roomId}`);
+    if (message.type != 'gameState')
+      console.log(`Broadcasted ${message.type} to ${playersInRoom.length} players in room ${roomId}`);
   }
 }
