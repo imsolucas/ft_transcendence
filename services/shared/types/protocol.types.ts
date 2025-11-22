@@ -120,6 +120,14 @@ export interface ConnectionErrorMessage extends BaseMessage {
 	};
 }
 
+export interface QueueJoinedMessage extends BaseMessage {
+	type: 'queueJoined';
+	data: {
+		position: number
+		queueLength: number
+	}
+}
+
 export interface PlayerJoinedMessage extends BaseMessage {
 	type: 'playerJoined';
 	data: {
