@@ -80,10 +80,10 @@ export default class RoomService {
         const room = this.roomManager.getRoom(player.roomId);
         if (!room) return null;
 
-        room.status = 'finished';
         const success = this.roomManager.removePlayerFromRoom(player.roomId, player.id);
         if (!success) return null;
 
+        room.status = 'waiting';
         return room;
     }
 
