@@ -2,6 +2,7 @@ import type { GameConfig } from "shared/index";
 
 export interface GameOptionsData {
 	type: 'local' | 'join-room' | 'random' | 'create-room';
+  mode: 'tournament' | 'standard';
 	config?: GameConfig;
 	roomId?: string
 }

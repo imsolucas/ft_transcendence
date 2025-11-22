@@ -78,7 +78,7 @@ function matchMaking(container: HTMLElement) {
                 const JoinQueueMsg: JoinQueueMessage = {
                     type: 'joinQueue',
                     data: {
-                        roomType: gameOptions.config?.mode!
+                        roomType: gameOptions.mode
                     },
                     timestamp: Date.now()
                 }
@@ -255,7 +255,7 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
     gameContentContainer.id = 'game-content-container';
 
     // Queue section (only for tournament mode)
-    if (gameOptions?.config?.mode == 'tournament'){
+    if (gameOptions?.mode == 'tournament'){
         const queueContainer = document.createElement('div');
         queueContainer.className = 'flex flex-col gap-4 h-full w-64 min-w-64 max-w-64 justify-start items-center flex-shrink-0';
         queueContainer.id = 'queue-container';
@@ -271,7 +271,7 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
         queueContainer.appendChild(queueTitle);
         queueContainer.appendChild(queue);
         
-        for (let i = 0; i < gameOptions.config!.numPlayers!; i++){
+        for (let i = 0; i < gameOptions!.config!.numPlayers!; i++){
             if (i < 2)
                 continue;
             queue.appendChild(createPlayerContainer(gameOptions!.config!.playerNames[i], undefined));

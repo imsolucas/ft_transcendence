@@ -1,4 +1,4 @@
-import type { GameConfig, Player } from "shared/index.js";
+import { default_config, type GameConfig, type Player } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import type { Room } from "../types/room.types.js";
 
@@ -31,7 +31,7 @@ export default class RoomService {
         return true
     }
 
-    joinQueue(player: Player): { room?: Room; queued: boolean; matchedPlayer?: Player } | null {
+    joinQueue(player: Player, mode: 'tournament' | 'standard'): { room?: Room; queued: boolean; matchedPlayer?: Player } | null {
         if (player.roomId) {
             return null;
         }
@@ -51,7 +51,8 @@ export default class RoomService {
         if (this.waitingQueue.length > 0) {
             const waitingPlayer = this.waitingQueue.shift()!;
 
-            const config = this.createStandardConfig();
+            const config = default_config.standardGame;
+            config.mode = mode;
             const room = this.roomManager.createRoom(config);
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);

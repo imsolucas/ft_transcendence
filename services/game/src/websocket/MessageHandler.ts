@@ -123,7 +123,7 @@ export default class NewMessageHandler {
     }
 
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
-        const result = this.roomService.joinQueue(player);
+        const result = this.roomService.joinQueue(player, message.data.roomType);
         if (!result) {
             this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
             return;

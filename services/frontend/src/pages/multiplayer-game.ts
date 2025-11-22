@@ -246,7 +246,7 @@ export function MultiplayerGamePage(): HTMLElement {
 		const btnBack = container.querySelector('#back-btn');
 
 		btnRandom?.addEventListener('click', async () => {
-			gameStorage.setGameOptions({type: 'random'});
+			gameStorage.setGameOptions({type: 'random', mode: selectedGameMode});
 			navigate('game');
 		});
 
@@ -261,7 +261,7 @@ export function MultiplayerGamePage(): HTMLElement {
 				alert('Please enter a game ID');
 				return;
 			}
-			gameStorage.setGameOptions({type: 'join-room', roomId: lobbyId});
+			gameStorage.setGameOptions({type: 'join-room', mode: selectedGameMode, roomId: lobbyId});
 			navigate('game')
 		});
 
@@ -300,7 +300,7 @@ export function MultiplayerGamePage(): HTMLElement {
 				isMultiplayer: true,
 				numPlayers: selectedGameMode === 'tournament' ? 2 : 2,
 				onSubmit: async (config: GameConfigType) => {
-					gameStorage.setGameOptions({type: 'create-room', config: config});
+					gameStorage.setGameOptions({type: 'create-room', mode: selectedGameMode, config: config});
 					navigate('game');
 				},
 				onCancel: () => {
