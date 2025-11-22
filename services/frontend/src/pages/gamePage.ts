@@ -1,4 +1,4 @@
-import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type CreateRoomMessage, type GameMessage, type JoinQueueMessage, type JoinRoomMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage } from "shared/index";
+import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type CreateRoomMessage, type GameMessage, type JoinQueueMessage, type JoinRoomMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage, type serializablePlayer } from "shared/index";
 import { GameClient } from "../game/GameClient"
 import { navigate } from "../router";
 import { LoadingPong } from "../components/loadingGame";
@@ -11,6 +11,7 @@ let socket: WebSocket;
 let user: UserData | null = null;
 let gameOptions: GameOptionsData | null = null;
 let currentGame: GameClient | null = null;
+let playersInRoom: serializablePlayer[] | null = null;
 
 function matchMaking(container: HTMLElement) {
 
@@ -38,7 +39,11 @@ function matchMaking(container: HTMLElement) {
     socket.onopen = () => {
         const connectionMsg: ConnectionMessage = {
             type: 'connection',
-            data: {playerName: user!.username},
+            data: {
+                picture: user!.picture,
+                playerName: user!.username,
+                playerId: user!.id,
+            },
             timestamp: Date.now()
         }
 
@@ -111,7 +116,11 @@ function matchMaking(container: HTMLElement) {
                 let player: PlayerInfo;
 
                 gameOptions!.config = default_config.standardGame; //TODO backend will pass config
-                playerJoineMsg.data.playersInRoom.forEach((val) => gameOptions!.config!.playerNames.push(val.name));
+
+                if (!playersInRoom)
+                    playersInRoom = []
+
+                playerJoineMsg.data.playersInRoom.forEach((val) => playersInRoom!.push(val));
                 if (playerJoineMsg.data.playerName == user!.username) {
                     console.log('Joined room with id: ', playerJoineMsg.data.roomId);
                     
@@ -121,7 +130,8 @@ function matchMaking(container: HTMLElement) {
                                 if (p.name !== user!.username) {
                                     const existingPlayer: PlayerInfo = {
                                         id: p.id,
-                                        username: p.name
+                                        username: p.name,
+                                        picture: user?.avatar
                                     };
                                     (loadingComponent as any).addOpponent(existingPlayer, playerJoineMsg.data.roomId);
                                 }
@@ -129,7 +139,8 @@ function matchMaking(container: HTMLElement) {
                         } else {
                             player = {
                                 id: playerJoineMsg.data.playersInRoom[0].id,
-                                username: playerJoineMsg.data.playersInRoom[0].name
+                                username: playerJoineMsg.data.playersInRoom[0].name,
+                                picture: playerJoineMsg.data.picture
                             };
                             (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId);
                         }
@@ -141,7 +152,8 @@ function matchMaking(container: HTMLElement) {
                 console.log(`Player ${playerJoineMsg.data.playerName} joined`)
                 player = {
                     id: playerJoineMsg.data.playerId,
-                    username: playerJoineMsg.data.playerName
+                    username: playerJoineMsg.data.playerName,
+                    picture: playerJoineMsg.data.picture
                 };
                 
                 if (gameOptions?.mode === 'tournament')
@@ -258,8 +270,30 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
     };
 
     // Create player containers
-    const leftPlayerContainer = createPlayerContainer(gameOptions!.config!.playerNames[0], 'left-player-name', gameOptions?.config?.mode == 'tournament', user!.avatar);
-    const rightPlayerContainer = createPlayerContainer(gameOptions!.config!.playerNames[1], 'right-player-name');
+    var leftPlayerName: string;
+    var leftPlayerAvatar: string | undefined = undefined;
+
+    var rightPlayerName: string;
+    var rightPlayerAvatar: string | undefined = undefined;
+
+    if (gameOptions?.type == 'local'){
+        leftPlayerName = gameOptions!.config!.playerNames[0];
+        rightPlayerName = gameOptions!.config!.playerNames[1];
+    } else {
+        playersInRoom?.forEach(player => {
+            if (player.position == 1){
+                leftPlayerName = player.name;
+                leftPlayerAvatar = player.picture
+            }
+            if (player.position == 2){
+                rightPlayerName = player.name;
+                rightPlayerAvatar = player.picture;
+            }
+        });
+    }
+
+    const leftPlayerContainer = createPlayerContainer(leftPlayerName!, 'left-player-name', gameOptions?.config?.mode == 'tournament', leftPlayerAvatar);
+    const rightPlayerContainer = createPlayerContainer(rightPlayerName!, 'right-player-name', false, rightPlayerAvatar);
 
     // VS text
     const vsText = document.createElement('span');
@@ -333,6 +367,7 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 }
 
 export function cleanupGamePage(): void {
+    playersInRoom = [];
     gameStorage.clearGameOptions();
     socket?.close()
     currentGame?.stop();

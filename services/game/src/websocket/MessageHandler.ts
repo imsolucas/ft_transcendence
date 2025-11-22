@@ -1,4 +1,4 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage } from "shared/index.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage } from "shared/index.js";
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
@@ -21,26 +21,20 @@ export default class NewMessageHandler {
         this.roomService = new RoomService(roomManager);
     }
 
-    handleConnection(data: any, connection: any): Player | null {
-        const playerId = 'player_' + crypto.randomUUID().substring(0, 8).toLowerCase();
-        const roomId = "";
-        const position = 0;
-
+    handleConnection(message: ConnectionMessage, connection: any): Player | null {
         const newPlayer: Player = {
-            id: playerId,
-            name: data.data.playerName,
+            id: message.data.playerId,
+            name: message.data.playerName,
             socket: connection,
-            roomId: roomId,
-            position: position,
+            roomId: '',
+            position: 0,
             connectedAt: Date.now(),
-            isReady: false
+            isReady: false,
+            picture: message.data.picture
         };
 
         const response = {
             type: 'connectionSuccess',
-            data: {
-                playerId: playerId,
-            },
             timestamp: Date.now()
         };
 

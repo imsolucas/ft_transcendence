@@ -39,6 +39,9 @@ export interface ConnectionMessage extends BaseMessage {
 	type: 'connection';
 	data: {
 		playerName: string;
+		playerId: string;
+		picture: string;
+		token?: string;
 	} ;
 }
 
@@ -107,9 +110,6 @@ export interface ErrorMessage extends BaseMessage {
 
 export interface ConnectionSuccessMessage extends BaseMessage {
 	type: 'connectionSuccess';
-	data: {
-		playerId: string;
-	};
 }
 
 export interface ConnectionErrorMessage extends BaseMessage {
@@ -135,6 +135,7 @@ export interface PlayerJoinedMessage extends BaseMessage {
 		playerId: string;
 		roomId: string;
 		position: number;
+		picture: string;
 		playersInRoom: serializablePlayer[]
 	}
 }
