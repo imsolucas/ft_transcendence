@@ -1,4 +1,4 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage } from "shared/index.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage } from "shared/index.js";
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
@@ -54,7 +54,7 @@ export default class NewMessageHandler {
         const room = this.roomService.leaveRoom(player);
 
         if (room) {
-            const leaveMessage = {
+            const leaveMessage: PlayerLeftMessage = {
                 type: 'playerLeft',
                 data: { playerName: player.name },
                 timestamp: Date.now()
@@ -216,7 +216,7 @@ export default class NewMessageHandler {
             return;
         }
 
-        const response = {
+        const response: PlayerLeftMessage = {
             type: 'playerLeft',
             data: {
                 playerName: player.name

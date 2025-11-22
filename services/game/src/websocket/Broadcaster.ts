@@ -1,9 +1,10 @@
+import type { GameMessage } from 'shared/index.js';
 import type { RoomManager } from '../game/roomManager.js';
 
 export class MessageBroadcaster {
   constructor(private roomManager: RoomManager) {}
 
-  broadcastToRoom(roomId: string, message: any, excludePlayerid?: string): void {
+  broadcastToRoom(roomId: string, message: GameMessage, excludePlayerid?: string): void {
     const playersInRoom = this.roomManager.getPlayersInRoom(roomId);
 
     for (const player of playersInRoom) {
@@ -16,6 +17,6 @@ export class MessageBroadcaster {
       player.socket!.send(JSON.stringify(message));
     }
 
-    console.log(`Broadcasted to ${playersInRoom.length} players in room ${roomId}`);
+    console.log(`Broadcasted ${message.type} to ${playersInRoom.length} players in room ${roomId}`);
   }
 }
