@@ -19,7 +19,6 @@ const broadcaster = new MessageBroadcaster(roomManager);
 const tournamentService = new TournamentService(roomManager, broadcaster);
 const messageHandler = new NewMessageHandler(roomManager);
 const tickSystem = new TickSytem(roomManager, tournamentService);
-export const pongSessions = new Map<string, GameServer>();
 
 server.register(ws);
 

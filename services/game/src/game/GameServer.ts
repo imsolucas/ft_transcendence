@@ -42,7 +42,7 @@ export class GameServer {
 
     const gameState = this.gameEngine.getGameState()
 
-    console.log(`Tick for room ${this.id}`);
+    // console.log(`Tick for room ${this.id}`);
 
     const message: GameStateMessage = {
       type: "gameState",

@@ -2,7 +2,6 @@ import type { PlayerInputMessage, PlayerReadyMessage } from "shared/index.js";
 import type { Player } from "shared"
 import type { RoomManager } from "../game/roomManager.js";
 import type { Room } from "../types/room.types.js";
-import { pongSessions } from "../index.js";
 import { GameServer } from "../game/GameServer.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
 
@@ -31,22 +30,21 @@ export default class GameService {
     }
 
     startGame(room: Room): boolean {
+        room.gameServer = new GameServer(room, this.broadcaster);
         room.status = 'playing';
-        pongSessions.set(room.id, new GameServer(room, this.broadcaster));
         return true;
     }
 
     playerInput(message: PlayerInputMessage, player: Player) : boolean {
-        const room = this.roomManager.getRoom(player.id);
+        const room = this.roomManager.getRoom(player.roomId);
         if (!room) return false;
 
-        const session = pongSessions.get(room.id);
-        if (!session) return false;
+        if (!room.gameServer) return false;
 
-        if (room.playerIds[0] == player.id)
-            session.input(message.data.inputs, undefined);
+        if (this.roomManager.getPlayer(room.playerIds[0]!)!.name == player.name)
+            room.gameServer.input(message.data.inputs, undefined);
         else
-            session.input(undefined, message.data.inputs);
+            room.gameServer.input(undefined, message.data.inputs);
         return true;
     }
 }
