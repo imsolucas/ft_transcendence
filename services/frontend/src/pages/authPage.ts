@@ -2,6 +2,8 @@ import { loadGoogleSignInService, handleCredentialResponse } from "../services/g
 import { navigate } from "../router";
 import { updateNavbar } from "../components/Navbar";
 import type { Screen } from "../router";
+import { verify2FACode } from "../utils/api";
+import { t } from "../i18n";
 
 // Import API functions from auth-script
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -26,6 +28,8 @@ interface AuthResponse {
     email: string;
     avatar?: string;
   };
+  twoFARequired?: boolean;
+  userId?: number;
 }
 
 // API Functions - using real backend
@@ -38,6 +42,17 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
       },
       body: JSON.stringify({ name, password }),
     });
+
+    // Handle 202 status - 2FA required
+    if (response.status === 202) {
+      const data = await response.json();
+      return {
+        success: false,
+        message: '2FA verification required',
+        twoFARequired: true,
+        userId: data.id,
+      };
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -698,6 +713,171 @@ function hideError(container: HTMLElement, formType: 'login' | 'register'): void
   }
 }
 
+// Show 2FA verification modal
+function show2FAModal(container: HTMLElement, userId: number): void {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm';
+  modal.id = '2fa-modal';
+  
+  const modalContent = document.createElement('div');
+  modalContent.className = 'relative w-[850px] max-w-[90vw] bg-gradient-to-br from-gray-900/95 to-purple-900/95 backdrop-blur-sm rounded-[30px] shadow-[0_0_50px_rgba(255,20,147,0.4)] border-2 border-pink-400/30 p-8 md:p-12 font-poppins';
+  
+  // Retro grid overlay
+  const gridOverlay = document.createElement('div');
+  gridOverlay.className = 'absolute inset-0 opacity-10 pointer-events-none rounded-[30px]';
+  const gridPattern = document.createElement('div');
+  gridPattern.className = 'grid-pattern';
+  gridOverlay.appendChild(gridPattern);
+  modalContent.appendChild(gridOverlay);
+  
+  // Glowing orbs
+  const orb1 = document.createElement('div');
+  orb1.className = 'absolute top-4 right-4 w-8 h-8 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_20px_#00ffff]';
+  modalContent.appendChild(orb1);
+  
+  const orb2 = document.createElement('div');
+  orb2.className = 'absolute bottom-4 left-4 w-6 h-6 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_#ff1493] animation-delay-500';
+  modalContent.appendChild(orb2);
+  
+  const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'relative z-10 text-center';
+  
+  const title = document.createElement('h2');
+  title.className = 'text-3xl md:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]';
+  title.textContent = t('auth.enter2FACode') || 'ENTER 2FA CODE';
+  contentWrapper.appendChild(title);
+  
+  const descText = document.createElement('p');
+  descText.className = 'text-pink-300 mb-6 text-sm md:text-base';
+  descText.textContent = t('twoFA.enterCodeDesc') || 'Please enter the 6-digit code from your authenticator app';
+  contentWrapper.appendChild(descText);
+  
+  const inputContainer = document.createElement('div');
+  inputContainer.className = 'mb-6';
+  const codeInput = document.createElement('input');
+  codeInput.id = '2fa-code-input';
+  codeInput.type = 'text';
+  codeInput.maxLength = 6;
+  codeInput.pattern = '[0-9]{6}';
+  codeInput.placeholder = '000000';
+  codeInput.className = 'w-full max-w-xs mx-auto py-3 px-5 text-center text-2xl md:text-3xl font-bold tracking-widest bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-white focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm';
+  codeInput.autocomplete = 'off';
+  inputContainer.appendChild(codeInput);
+  contentWrapper.appendChild(inputContainer);
+  
+  const errorDiv = document.createElement('div');
+  errorDiv.id = '2fa-error';
+  errorDiv.className = 'error-message hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins';
+  const errorText = document.createElement('span');
+  errorText.className = 'error-text';
+  errorDiv.appendChild(errorText);
+  contentWrapper.appendChild(errorDiv);
+  
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'flex gap-4 justify-center';
+  
+  const verifyBtn = document.createElement('button');
+  verifyBtn.id = '2fa-verify-btn';
+  verifyBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-cyan-400 cursor-pointer text-base text-white font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all font-poppins bg-gradient-to-r from-cyan-500/20 to-pink-500/20 backdrop-blur-sm uppercase tracking-wider';
+  verifyBtn.textContent = t('auth.verify') || 'VERIFY';
+  buttonContainer.appendChild(verifyBtn);
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.id = '2fa-cancel-btn';
+  cancelBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-pink-400/50 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/10 to-cyan-500/10 backdrop-blur-sm uppercase tracking-wider';
+  cancelBtn.textContent = t('common.cancel') || 'CANCEL';
+  buttonContainer.appendChild(cancelBtn);
+  
+  contentWrapper.appendChild(buttonContainer);
+  modalContent.appendChild(contentWrapper);
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+  
+  // Auto-focus and format input
+  codeInput.focus();
+  codeInput.addEventListener('input', (e) => {
+    const target = e.target as HTMLInputElement;
+    target.value = target.value.replace(/\D/g, '').slice(0, 6);
+  });
+  
+  // Handle Enter key
+  codeInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && codeInput.value.length === 6) {
+      verifyBtn.click();
+    }
+  });
+  
+  // Verify button handler
+  verifyBtn.addEventListener('click', async () => {
+    const code = codeInput.value.trim();
+    
+    if (code.length !== 6) {
+      errorText.textContent = t('twoFA.invalidCodeLength') || 'Please enter a 6-digit code';
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+    
+    errorDiv.classList.add('hidden');
+    verifyBtn.disabled = true;
+    const originalText = verifyBtn.textContent;
+    verifyBtn.textContent = t('auth.verifying2FA') || 'VERIFYING...';
+    
+    try {
+      const result = await verify2FACode(userId, code);
+      
+      // Store auth token
+      if (result.token && result.user) {
+        localStorage.setItem('authToken', result.token);
+        const userToStore = {
+          ...result.user,
+          picture: result.user.avatar,
+        };
+        localStorage.setItem('user', JSON.stringify(userToStore));
+      }
+      
+      showNotification(t('auth.loginSuccessful') || 'Login successful!', 'success');
+      updateNavbar();
+      
+      // Remove modal and proceed with auth
+      if (document.body.contains(modal)) {
+        document.body.removeChild(modal);
+      }
+      handleSuccessfulAuth(container);
+    } catch (error: any) {
+      console.error('2FA verification error:', error);
+      errorText.textContent = error.message || t('auth.invalid2FACode') || 'Invalid 2FA code';
+      errorDiv.classList.remove('hidden');
+      codeInput.value = '';
+      codeInput.focus();
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = originalText || '';
+    }
+  });
+  
+  // Close modal helper
+  const closeModal = () => {
+    if (document.body.contains(modal)) {
+      document.body.removeChild(modal);
+    }
+    const loginBtn = container.querySelector('.login-submit-btn') as HTMLButtonElement;
+    if (loginBtn) {
+      loginBtn.textContent = '► LOGIN';
+      loginBtn.disabled = false;
+    }
+  };
+  
+  // Cancel button handler
+  cancelBtn.addEventListener('click', closeModal);
+  
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+}
+
 // Handle login form submission
 async function handleLoginSubmit(container: HTMLElement): Promise<void> {
   const usernameInput = container.querySelector('.form-box.login input[type="text"]') as HTMLInputElement;
@@ -722,6 +902,14 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
 
   try {
     const response = await apiLogin(name, password);
+    
+    if (response.twoFARequired && response.userId) {
+      // Show 2FA modal
+      loginBtn.textContent = originalText;
+      loginBtn.disabled = false;
+      show2FAModal(container, response.userId);
+      return;
+    }
     
     if (response.success) {
       // Store auth token

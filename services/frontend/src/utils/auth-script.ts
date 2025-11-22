@@ -1,6 +1,8 @@
 import { navigate } from '../router';
 import type { Screen } from '../router';
 import { updateNavbar } from '../components/Navbar';
+import { verify2FACode } from './api';
+import { t } from '../i18n';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -24,6 +26,8 @@ interface AuthResponse {
     email: string;
     avatar?: string;
   };
+  twoFARequired?: boolean;
+  userId?: number;
 }
 
 interface BackendLoginResponse {
@@ -261,6 +265,17 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
         password: credentials.password,
       }),
     });
+
+    // Handle 202 status - 2FA required
+    if (response.status === 202) {
+      const data = await response.json();
+      return {
+        success: false,
+        message: '2FA verification required',
+        twoFARequired: true,
+        userId: data.id,
+      };
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: response.statusText }));

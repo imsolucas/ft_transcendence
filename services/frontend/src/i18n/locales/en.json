@@ -66,7 +66,20 @@
     "invalidImageType": "Please select a valid image file.",
     "edit": "Edit",
     "profileUpdated": "Profile updated successfully!",
-    "updateFailed": "Failed to update profile. Please try again."
+    "updateFailed": "Failed to update profile. Please try again.",
+    "twoFAEnabled": "2FA Has Been Enabled"
+  },
+  "twoFA": {
+    "setupTitle": "SETUP TWO-FACTOR AUTHENTICATION",
+    "scanQR": "Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)",
+    "manualEntry": "Or enter this code manually:",
+    "setupComplete": "Once you've scanned the QR code, 2FA will be enabled for your account.",
+    "settingUp": "Setting up 2FA...",
+    "setupSuccess": "2FA setup successful!",
+    "setupFailed": "Failed to setup 2FA. Please try again.",
+    "enterCodeDesc": "Please enter the 6-digit code from your authenticator app",
+    "invalidCodeLength": "Please enter a 6-digit code",
+    "alreadyEnabled": "2FA is already enabled for your account."
   },
   "auth": {
     "login": "LOGIN",
@@ -81,7 +94,11 @@
     "registrationSuccessful": "Registration successful! Please check your email to verify your account.",
     "registrationFailed": "Registration failed",
     "networkError": "Network error. Please try again.",
-    "invalidCredentials": "Invalid username or password"
+    "invalidCredentials": "Invalid username or password",
+    "enter2FACode": "ENTER 2FA CODE",
+    "verifying2FA": "VERIFYING...",
+    "invalid2FACode": "Invalid 2FA code",
+    "verify": "VERIFY"
   },
   "friends": {
     "sendRequest": "Send Friend Request",
