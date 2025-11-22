@@ -9,7 +9,7 @@ export async function getMatchHistory(req: FastifyRequest, reply: FastifyReply) 
   const userId = (req.user as any)?.id;
   if (!userId) return reply.code(401).send({ error: "Unauthorized" });
 
-  // Find matches where user is player1 or player2
+  // Find matches where user is player1 or player2, include tournament info if present
   const matches = await prisma.match.findMany({
     where: {
       OR: [
@@ -17,7 +17,18 @@ export async function getMatchHistory(req: FastifyRequest, reply: FastifyReply) 
         { player2Id: userId }
       ]
     },
-    orderBy: { played_at: "desc" }
+    orderBy: { played_at: "desc" },
+    include: {
+      tournament: {
+        select: {
+          id: true,
+          name: true,
+          winnerId: true,
+          start_at: true,
+          end_at: true
+        }
+      }
+    }
   });
 
   const result = matches.map(m => ({
@@ -31,7 +42,16 @@ export async function getMatchHistory(req: FastifyRequest, reply: FastifyReply) 
     player2Score: m.player2Score,
     winnerId: m.winnerId ?? null,
     played_at: m.played_at,
-    end_at: m.end_at
+    end_at: m.end_at,
+    tournament: m.tournament
+      ? {
+          id: m.tournament.id,
+          name: m.tournament.name,
+          winnerId: m.tournament.winnerId,
+          start_at: m.tournament.start_at,
+          end_at: m.tournament.end_at
+        }
+      : null
   }));
 
   return reply.send(result);

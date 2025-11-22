@@ -6,14 +6,33 @@ export default async function registerGameRoutes(app: FastifyInstance) {
   app.get("/user/match-history", {
     schema: {
       summary: "Retrieve match history of authenticated user",
-      description: "Retrieves the match history for the authenticated user. Returns a list of matches the user has participated in, including details such as opponent, scores, display names, start time and end time.",
+      description: "Retrieves the match history for the authenticated user. Returns a list of matches the user has participated in, including details such as opponent, scores, display names, start time and end time. If a match is part of a tournament, tournament details are included.",
       tags: ["game"],
       security: [{ bearerAuth: [] }],
       response: {
         200: {
           description: "Match history retrieved successfully.",
           type: "array",
-          items: { $ref: "MatchHistory#" }
+          items: {
+            allOf: [
+              { $ref: "MatchHistory#" },
+              {
+                type: "object",
+                properties: {
+                  tournament: {
+                    type: ["object", "null"],
+                    properties: {
+                      id: { type: "integer" },
+                      name: { type: "string" },
+                      winnerId: { type: "integer" },
+                      start_at: { type: "string", format: "date-time" },
+                      end_at: { type: "string", format: "date-time" }
+                    }
+                  }
+                }
+              }
+            ]
+          }
         },
         401: { $ref: "UnauthorizedError#" },
         500: { $ref: "InternalServerError#" }
