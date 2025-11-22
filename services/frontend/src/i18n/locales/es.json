@@ -66,7 +66,20 @@
     "invalidImageType": "Por favor seleccione un archivo de imagen válido.",
     "edit": "Editar",
     "profileUpdated": "¡Perfil actualizado exitosamente!",
-    "updateFailed": "Error al actualizar el perfil. Por favor intente nuevamente."
+    "updateFailed": "Error al actualizar el perfil. Por favor intente nuevamente.",
+    "twoFAEnabled": "2FA Ha Sido Habilitado"
+  },
+  "twoFA": {
+    "setupTitle": "CONFIGURAR AUTENTICACIÓN DE DOS FACTORES",
+    "scanQR": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Authy, etc.)",
+    "manualEntry": "O ingresa este código manualmente:",
+    "setupComplete": "Una vez que hayas escaneado el código QR, 2FA estará habilitado para tu cuenta.",
+    "settingUp": "Configurando 2FA...",
+    "setupSuccess": "¡Configuración de 2FA exitosa!",
+    "setupFailed": "Error al configurar 2FA. Por favor intente nuevamente.",
+    "enterCodeDesc": "Por favor ingresa el código de 6 dígitos de tu aplicación de autenticación",
+    "invalidCodeLength": "Por favor ingresa un código de 6 dígitos",
+    "alreadyEnabled": "2FA ya está habilitado para tu cuenta."
   },
   "auth": {
     "login": "INICIAR SESIÓN",
@@ -81,7 +94,11 @@
     "registrationSuccessful": "¡Registro exitoso! Por favor revise su correo electrónico para verificar su cuenta.",
     "registrationFailed": "Error en el registro",
     "networkError": "Error de red. Por favor intente nuevamente.",
-    "invalidCredentials": "Nombre de usuario o contraseña inválidos"
+    "invalidCredentials": "Nombre de usuario o contraseña inválidos",
+    "enter2FACode": "INGRESAR CÓDIGO 2FA",
+    "verifying2FA": "VERIFICANDO...",
+    "invalid2FACode": "Código 2FA inválido",
+    "verify": "VERIFICAR"
   },
   "friends": {
     "sendRequest": "Enviar Solicitud de Amistad",

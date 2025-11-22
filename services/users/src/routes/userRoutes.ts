@@ -171,6 +171,11 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       description: "Generates a 2FA secret and returns a QR code for setup. The user must scan the QR code with an authenticator app and verify with a code.",
       tags: ["user", "security"],
       security: [{ bearerAuth: [] }],
+      body: {
+        type: "object",
+        // Allow empty body
+        additionalProperties: false
+      },
       response: {
         200: {
           description: "2FA setup info",
