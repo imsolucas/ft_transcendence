@@ -17,9 +17,16 @@ export async function signup(req: FastifyRequest, reply: FastifyReply) {
     return reply.code(400).send({ error: "Invalid input." });
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return reply.code(400).send({ error: "Email already registered." });
+  // Check for existing username
+  const existingUsername = await prisma.user.findUnique({ where: { username: name } });
+  if (existingUsername) {
+    return reply.code(409).send({ error: "User name already exists." });
+  }
+
+  // Check for existing email
+  const existingEmail = await prisma.user.findUnique({ where: { email } });
+  if (existingEmail) {
+    return reply.code(409).send({ error: "Email already registered." });
   }
 
   const hashed = await bcrypt.hash(password, 10);

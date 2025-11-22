@@ -26,6 +26,9 @@ model User {
 
   matchesAsPlayer1 Match[] @relation("Player1Matches")
   matchesAsPlayer2 Match[] @relation("Player2Matches")
+  matchesWon Match[] @relation("Match_winner")
+  tournamentPlayers TournamentPlayer[] @relation("TournamentPlayers")
+  tournamentsWon Tournament[] @relation("Tournament_winner")
 
   @@map("Users")
 }
@@ -48,6 +51,7 @@ model Friendship {
 
 model Match {
   id           Int        @id @default(autoincrement())
+  tournamentId Int?
   player1Id    Int
   player2Id    Int
   player1      User       @relation("Player1Matches", fields: [player1Id], references: [id])
@@ -56,10 +60,39 @@ model Match {
   player2Score Int
   player1DisplayName String
   player2DisplayName String
+  winnerId     Int?
+  winner       User? @relation("Match_winner", fields: [winnerId], references: [id])
   played_at    DateTime   @default(now())
   end_at       DateTime
 
+  tournament   Tournament? @relation("TournamentMatches", fields: [tournamentId], references: [id])
+
   @@map("Matches")
+}
+
+model Tournament {
+  id        Int      @id @default(autoincrement())
+  name      String
+  players   TournamentPlayer[] @relation("TournamentPlayers")
+  matches   Match[]  @relation("TournamentMatches")
+  winnerId  Int?
+  winner    User?    @relation("Tournament_winner", fields: [winnerId], references: [id])
+  start_at  DateTime @default(now())
+  end_at    DateTime?
+
+  @@map("Tournaments")
+}
+
+model TournamentPlayer {
+  id           Int      @id @default(autoincrement())
+  tournamentId Int
+  userId       Int
+
+  tournament   Tournament @relation("TournamentPlayers", fields: [tournamentId], references: [id])
+  user         User       @relation("TournamentPlayers", fields: [userId], references: [id])
+
+  @@unique([tournamentId, userId])
+  @@map("TournamentPlayers")
 }
 
 enum UserStatus {

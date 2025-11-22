@@ -38,6 +38,16 @@ paths:
           description: User created successfully.
         '400':
           description: Invalid input.
+        '409':
+          description: User name already exists or email already registered.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: User name already exists.
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -476,6 +486,7 @@ paths:
       description: |
         Retrieves the match history for the authenticated user.
         Returns a list of matches the user has participated in, including details such as opponent, scores, display names, start time and end time.
+        If a match is part of a tournament, tournament details are included.
       security:
         - bearerAuth: []
       responses:
@@ -486,7 +497,30 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MatchHistory'
+                  allOf:
+                    - $ref: '#/components/schemas/MatchHistory'
+                    - type: object
+                      properties:
+                        tournament:
+                          type: ["object", "null"]
+                          properties:
+                            id:
+                              type: integer
+                              example: 5
+                            name:
+                              type: string
+                              example: "Winter Cup"
+                            winnerId:
+                              type: integer
+                              example: 1
+                            start_at:
+                              type: string
+                              format: date-time
+                              example: "2025-11-16T10:00:00Z"
+                            end_at:
+                              type: string
+                              format: date-time
+                              example: "2025-11-16T11:15:00Z"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '500':
@@ -556,6 +590,196 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /game/tournament-result:
+    post:
+      summary: Post tournament result
+      description: |
+        Creates a tournament record with all details after the tournament ends. The request must include tournament ID, name, winner ID, start/end times, players, and matches.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tournamentId
+                - winnerId
+                - start_at
+                - end_at
+                - players
+                - matches
+              properties:
+                tournamentId:
+                  type: integer
+                  example: 5
+                name:
+                  type: string
+                  example: "Winter Cup"
+                winnerId:
+                  type: integer
+                  example: 1
+                start_at:
+                  type: string
+                  format: date-time
+                  example: "2025-11-16T10:00:00Z"
+                end_at:
+                  type: string
+                  format: date-time
+                  example: "2025-11-16T11:15:00Z"
+                players:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - userId
+                    properties:
+                      userId:
+                        type: integer
+                        example: 1
+                matches:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - player1Id
+                      - player2Id
+                      - player1DisplayName
+                      - player2DisplayName
+                      - player1Score
+                      - player2Score
+                      - played_at
+                      - end_at
+                    properties:
+                      player1Id:
+                        type: integer
+                        example: 1
+                      player2Id:
+                        type: integer
+                        example: 2
+                      player1DisplayName:
+                        type: string
+                        example: Alice
+                      player2DisplayName:
+                        type: string
+                        example: Bob
+                      player1Score:
+                        type: integer
+                        example: 5
+                      player2Score:
+                        type: integer
+                        example: 3
+                      winnerId:
+                        type: ["integer", "null"]
+                        example: 1
+                      played_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-16T10:30:00Z"
+                      end_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-16T10:40:00Z"
+      responses:
+        '200':
+          description: Tournament result recorded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tournamentId:
+                    type: integer
+                    example: 5
+                  winnerId:
+                    type: integer
+                    example: 1
+                  start_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-16T10:00:00Z"
+                  end_at:
+                    type: string
+                    format: date-time
+                    example: "2025-11-16T11:15:00Z"
+                  players:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        tournamentId:
+                          type: integer
+                          example: 5
+                        userId:
+                          type: integer
+                          example: 1
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 101
+                        tournamentId:
+                          type: integer
+                          example: 5
+                        player1Id:
+                          type: integer
+                          example: 1
+                        player2Id:
+                          type: integer
+                          example: 2
+                        player1DisplayName:
+                          type: string
+                          example: Alice
+                        player2DisplayName:
+                          type: string
+                          example: Bob
+                        player1Score:
+                          type: integer
+                          example: 5
+                        player2Score:
+                          type: integer
+                          example: 3
+                        winnerId:
+                          type: ["integer", "null"]
+                          example: 1
+                        played_at:
+                          type: string
+                          format: date-time
+                          example: "2025-11-16T10:30:00Z"
+                        end_at:
+                          type: string
+                          format: date-time
+                          example: "2025-11-16T10:40:00Z"
+        '400':
+          description: Invalid input.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the service. Useful for monitoring and orchestration tools to verify the service is running.
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
 components:
   securitySchemes:
     bearerAuth:
@@ -585,12 +809,14 @@ components:
       type: object
       properties:
         matchId: { type: integer, example: 42 }
+        tournamentId: { type: integer, example: 5 }
         player1Id: { type: integer, example: 1 }
         player2Id: { type: integer, example: 2 }
         player1DisplayName: { type: string, example: Alice }
         player2DisplayName: { type: string, example: Bob }
         player1Score: { type: integer, example: 10 }
         player2Score: { type: integer, example: 8 }
+        winnerId: { type: integer, example: 1 }
         played_at: { type: string, format: date-time, example: "2025-11-06T10:30:00Z" }
         end_at: { type: string, format: date-time, example: "2025-11-06T10:40:00Z" }
 
