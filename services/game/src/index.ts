@@ -33,6 +33,22 @@ server.get('/ping', async (request: any, reply: any) => {
   return 'pong\n';
 });
 
+server.get('/rooms', async (request: any, reply: any) => {
+  reply.header('Content-Type', 'text/plain');
+  const rooms = roomManager.getAllRooms();
+  
+  let output = '';
+  rooms.forEach((room, index) => {
+    output += `Room ${index + 1}:\n`;
+    Object.entries(room).forEach(([key, value]) => {
+      output += `  ${key}: ${JSON.stringify(value)}\n`;
+    });
+    output += '\n';
+  });
+  
+  return output || 'No rooms available\n';
+})
+
 server.register(async function (fastify: any) {
   fastify.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
     console.log('WebSocket connection established');
