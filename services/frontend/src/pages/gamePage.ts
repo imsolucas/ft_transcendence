@@ -116,23 +116,49 @@ function matchMaking(container: HTMLElement) {
                     console.log('Joined room with id: ', playerJoineMsg.data.roomId);
                     
                     if (playerJoineMsg.data.playersInRoom.length > 1){
-                        player = {
-                            id: playerJoineMsg.data.playersInRoom[0].id,
-                            username: playerJoineMsg.data.playersInRoom[0].name
-                        };
-                        (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId); //TODO use users API to get opponent info
+                        if (gameOptions?.mode === 'tournament') {
+                            playerJoineMsg.data.playersInRoom.forEach((p) => {
+                                if (p.name !== user!.username) {
+                                    const existingPlayer: PlayerInfo = {
+                                        id: p.id,
+                                        username: p.name
+                                    };
+                                    (loadingComponent as any).addOpponent(existingPlayer, playerJoineMsg.data.roomId);
+                                }
+                            });
+                        } else {
+                            player = {
+                                id: playerJoineMsg.data.playersInRoom[0].id,
+                                username: playerJoineMsg.data.playersInRoom[0].name
+                            };
+                            (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId);
+                        }
                     }
                     break;
                 }
+                
+                // Another player joined the room
                 console.log(`Player ${playerJoineMsg.data.playerName} joined`)
                 player = {
                     id: playerJoineMsg.data.playerId,
                     username: playerJoineMsg.data.playerName
                 };
-                (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId) //TODO use users API to get opponent info
+                
+                if (gameOptions?.mode === 'tournament')
+                    (loadingComponent as any).addOpponent(player, playerJoineMsg.data.roomId);
+                else
+                    (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId);
                 break;
             case 'playerLeft':
-                (loadingComponent as any).removeOpponent();
+                const playerLeftMsg = message as PlayerLeftMessage;
+                
+                // For tournament mode, remove specific opponent by username
+                if (gameOptions?.mode === 'tournament') {
+                    (loadingComponent as any).removeOpponentByUsername(playerLeftMsg.data.playerName);
+                } else {
+                    // For standard mode, remove the opponent
+                    (loadingComponent as any).removeOpponent();
+                }
                 break;
             case 'playerReady':
                 const playerReadyMsg = message as PlayerReadyMessage;

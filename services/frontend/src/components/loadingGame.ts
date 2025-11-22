@@ -16,7 +16,8 @@ export interface PlayerInfo {
 export interface MatchmakingState {
     status: 'searching' | 'found' | 'ready' | 'error';
     currentUser: PlayerInfo | null;
-    opponent: PlayerInfo | null;
+    opponent: PlayerInfo | null; // Keep for backward compatibility
+    opponents: PlayerInfo[]; // Array for multiple opponents (tournament mode)
     matchId?: string;
     error?: string;
 }
@@ -100,7 +101,9 @@ function createButton(text: string, id: string, variant: 'cancel' | 'ready' | 'r
 
 export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'relative w-full h-full min-h-screen bg-gradient-to-b from-gray-900 to-black overflow-hidden';
+    container.className = 'relative w-full min-h-screen bg-gradient-to-b from-gray-900 to-black overflow-y-auto';
+    container.style.maxHeight = '100vh';
+    container.style.overflowY = 'auto';
 
     // Add custom styles
     const style = document.createElement('style');
@@ -170,7 +173,8 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     let matchmakingState: MatchmakingState = {
         status: 'searching',
         currentUser: null,
-        opponent: null
+        opponent: null,
+        opponents: []
     };
 
     // Initialize current user
@@ -188,23 +192,36 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     // Render functions
     const renderSearching = (): HTMLElement => {
         const wrapper = document.createElement('div');
-        wrapper.className = 'relative min-h-screen mt-8';
+        wrapper.className = 'relative w-full pb-8';
 
         const mainContainer = document.createElement('div');
-        mainContainer.className = 'container mx-auto px-4 py-8 h-full flex flex-col justify-center';
+        mainContainer.className = 'container mx-auto px-4 py-8 flex flex-col';
 
         const header = createHeader('MATCHMAKING', 'Searching for opponent');
 
         const contentGrid = document.createElement('div');
-        contentGrid.className = 'flex flex-col lg:flex-row gap-8 items-center justify-center';
+        contentGrid.className = 'flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-center flex-wrap w-full';
 
         const leftPlayer = createPlayerCard(matchmakingState.currentUser, false, true, false);
-        const vsSection = createVSSection(true);
-        const rightPlayer = createPlayerCard(null, true, false, false);
-
         contentGrid.appendChild(leftPlayer);
-        contentGrid.appendChild(vsSection);
-        contentGrid.appendChild(rightPlayer);
+        
+        // Show VS section if opponents
+        if (matchmakingState.opponents.length > 0) {
+            const vsSection = createVSSection(false);
+            contentGrid.appendChild(vsSection);
+            
+            // Render all opponents
+            matchmakingState.opponents.forEach(opponent => {
+                const opponentCard = createPlayerCard(opponent, true, true, false);
+                contentGrid.appendChild(opponentCard);
+            });
+        } else {
+            const vsSection = createVSSection(true);
+            contentGrid.appendChild(vsSection);
+            
+            const rightPlayer = createPlayerCard(null, true, false, false);
+            contentGrid.appendChild(rightPlayer);
+        }
 
         const cancelButton = createButton('CANCEL SEARCH', 'cancel-matchmaking', 'cancel');
 
@@ -218,23 +235,30 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 
     const renderMatchFound = (): HTMLElement => {
         const wrapper = document.createElement('div');
-        wrapper.className = 'crt-screen relative min-h-screen';
+        wrapper.className = 'crt-screen relative w-full pb-8';
 
         const mainContainer = document.createElement('div');
-        mainContainer.className = 'container mx-auto px-4 py-8 h-full flex flex-col justify-center';
+        mainContainer.className = 'container mx-auto px-4 py-8 flex flex-col';
 
         const header = createHeader('OPPONENT FOUND!', 'Get ready to play', 'text-green-400');
 
         const contentGrid = document.createElement('div');
-        contentGrid.className = 'flex flex-col lg:flex-row gap-8 items-center justify-center';
+        contentGrid.className = 'flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-center flex-wrap w-full';
 
         const leftPlayer = createPlayerCard(matchmakingState.currentUser, false, true, true);
-        const vsSection = createVSSection(false);
-        const rightPlayer = createPlayerCard(matchmakingState.opponent, true, true, true);
-
         contentGrid.appendChild(leftPlayer);
+        
+        const vsSection = createVSSection(false);
         contentGrid.appendChild(vsSection);
-        contentGrid.appendChild(rightPlayer);
+        
+        const opponentsToShow = matchmakingState.opponents.length > 0 
+            ? matchmakingState.opponents 
+            : (matchmakingState.opponent ? [matchmakingState.opponent] : []);
+            
+        opponentsToShow.forEach(opponent => {
+            const opponentCard = createPlayerCard(opponent, true, true, true);
+            contentGrid.appendChild(opponentCard);
+        });
 
         const readyButton = createButton('READY TO PLAY', 'ready-to-play', 'ready');
 
@@ -248,10 +272,10 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
 
     const renderError = (): HTMLElement => {
         const wrapper = document.createElement('div');
-        wrapper.className = 'crt-screen relative min-h-screen';
+        wrapper.className = 'crt-screen relative w-full pb-8';
 
         const mainContainer = document.createElement('div');
-        mainContainer.className = 'container mx-auto px-4 py-8 h-full flex flex-col justify-center items-center';
+        mainContainer.className = 'container mx-auto px-4 py-8 flex flex-col items-center';
 
         const centerContent = document.createElement('div');
         centerContent.className = 'text-center';
@@ -331,6 +355,7 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     const removeOpponent = () => {
         matchmakingState.status = 'searching';
         matchmakingState.opponent = null;
+        matchmakingState.opponents = [];
         matchmakingState.matchId = undefined;
         render();
     };
@@ -338,9 +363,65 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     const setOpponent = (opponent: PlayerInfo, matchId: string) => {
         matchmakingState.status = 'found';
         matchmakingState.opponent = opponent;
+        matchmakingState.opponents = [opponent]; // Also add to opponents array for consistency
         matchmakingState.matchId = matchId;
         render();
         events?.onMatchFound(opponent, matchId);
+    };
+
+    const addOpponent = (opponent: PlayerInfo, matchId?: string) => {
+        // Check if opponent already exists (prevent duplicates)
+        const existingOpponent = matchmakingState.opponents.find(op => op.id === opponent.id);
+        if (existingOpponent) {
+            console.warn('Opponent already added:', opponent.id);
+            return;
+        }
+        
+        // Add opponent to the array
+        matchmakingState.opponents.push(opponent);
+        
+        // Update match ID if provided
+        if (matchId) {
+            matchmakingState.matchId = matchId;
+        }
+        
+        // Update status to 'found' if we have at least one opponent
+        if (matchmakingState.opponents.length > 0) {
+            matchmakingState.status = 'found';
+        }
+        
+        render();
+        
+        // Trigger match found event for the first opponent
+        if (matchmakingState.opponents.length === 1 && matchId) {
+            events?.onMatchFound(opponent, matchId);
+        }
+    };
+
+    const removeOpponentById = (opponentId: string) => {
+        matchmakingState.opponents = matchmakingState.opponents.filter(op => op.id !== opponentId);
+        
+        // If no opponents left, go back to searching
+        if (matchmakingState.opponents.length === 0) {
+            matchmakingState.status = 'searching';
+            matchmakingState.opponent = null;
+            matchmakingState.matchId = undefined;
+        }
+        
+        render();
+    };
+
+    const removeOpponentByUsername = (username: string) => {
+        matchmakingState.opponents = matchmakingState.opponents.filter(op => op.username !== username);
+        
+        // If no opponents left, go back to searching
+        if (matchmakingState.opponents.length === 0) {
+            matchmakingState.status = 'searching';
+            matchmakingState.opponent = null;
+            matchmakingState.matchId = undefined;
+        }
+        
+        render();
     };
 
     const setError = (error: string) => {
@@ -354,6 +435,9 @@ export function LoadingPong(events?: MatchmakingEvents): HTMLElement {
     (container as any).updateState = updateState;
     (container as any).setOpponent = setOpponent;
     (container as any).removeOpponent = removeOpponent;
+    (container as any).addOpponent = addOpponent;
+    (container as any).removeOpponentById = removeOpponentById;
+    (container as any).removeOpponentByUsername = removeOpponentByUsername;
     (container as any).setError = setError;
 
     // Initial render
