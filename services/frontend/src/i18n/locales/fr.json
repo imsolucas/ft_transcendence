@@ -66,7 +66,20 @@
     "invalidImageType": "Veuillez sélectionner un fichier image valide.",
     "edit": "Modifier",
     "profileUpdated": "Profil mis à jour avec succès !",
-    "updateFailed": "Échec de la mise à jour du profil. Veuillez réessayer."
+    "updateFailed": "Échec de la mise à jour du profil. Veuillez réessayer.",
+    "twoFAEnabled": "2FA a été activé"
+  },
+  "twoFA": {
+    "setupTitle": "CONFIGURER L'AUTHENTIFICATION À DEUX FACTEURS",
+    "scanQR": "Scannez ce code QR avec votre application d'authentification (Google Authenticator, Authy, etc.)",
+    "manualEntry": "Ou entrez ce code manuellement :",
+    "setupComplete": "Une fois que vous avez scanné le code QR, 2FA sera activé pour votre compte.",
+    "settingUp": "Configuration de 2FA...",
+    "setupSuccess": "Configuration de 2FA réussie !",
+    "setupFailed": "Échec de la configuration de 2FA. Veuillez réessayer.",
+    "enterCodeDesc": "Veuillez entrer le code à 6 chiffres de votre application d'authentification",
+    "invalidCodeLength": "Veuillez entrer un code à 6 chiffres",
+    "alreadyEnabled": "2FA est déjà activé pour votre compte."
   },
   "auth": {
     "login": "CONNEXION",
@@ -81,7 +94,11 @@
     "registrationSuccessful": "Inscription réussie ! Veuillez vérifier votre e-mail pour vérifier votre compte.",
     "registrationFailed": "Échec de l'inscription",
     "networkError": "Erreur réseau. Veuillez réessayer.",
-    "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide"
+    "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
+    "enter2FACode": "ENTRER LE CODE 2FA",
+    "verifying2FA": "VÉRIFICATION...",
+    "invalid2FACode": "Code 2FA invalide",
+    "verify": "VÉRIFIER"
   },
   "friends": {
     "sendRequest": "Envoyer une Demande d'Amitié",

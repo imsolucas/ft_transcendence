@@ -18,6 +18,7 @@ export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
     username: user.username,
     email: user.email,
     avatar: user.avatar,
+    is2FAEnabled: (user as any).is2FAEnabled || false,
   });
 }
 
@@ -208,7 +209,7 @@ export async function enable2FA(req: FastifyRequest, reply: FastifyReply) {
 
   // Check if 2FA is already enabled
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (user?.is2FAEnabled) {
+  if ((user as any)?.is2FAEnabled) {
     return reply.code(400).send({ error: "2FA is already enabled." });
   }
 
@@ -226,7 +227,7 @@ export async function enable2FA(req: FastifyRequest, reply: FastifyReply) {
   // Save secret to user in DB
   await prisma.user.update({
     where: { id: userId },
-    data: { twoFASecret: secret.base32, is2FAEnabled: true }
+    data: { twoFASecret: secret.base32, is2FAEnabled: true } as any
   });
 
   return reply.send({

@@ -2,11 +2,13 @@ import { seedUsers } from "./users.ts";
 import { seedFriendships } from "./friendships.ts";
 import { seedMatchHistory } from "./match-history.ts";
 import { error } from "console";
+import { seedTournaments } from "./tournaments.ts";
 
 export async function seed() {
     await seedUsers();
     await seedFriendships();
     await seedMatchHistory();
+    await seedTournaments();
     console.log("Seeding complete!");
 }
 

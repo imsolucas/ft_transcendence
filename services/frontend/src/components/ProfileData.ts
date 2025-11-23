@@ -1,5 +1,5 @@
 
-import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture } from '../utils/api';
+import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture, setup2FA } from '../utils/api';
 import { getCurrentUser } from '../utils/auth-script';
 import { getActiveTab } from '../router';
 import { t } from '../i18n';
@@ -165,7 +165,7 @@ export function ProfileData() {
                   </div>
                   <div class="mb-4 sm:mb-6">
                     <label class="block text-pink-300 mb-2 text-sm sm:text-base">${t('profile.twoFactorAuth')}</label>
-                    <button type="button" class="btn-2fa w-full h-10 sm:h-12 rounded-lg border-2 border-pink-400 cursor-pointer font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all text-sm sm:text-base">${t('profile.enable2FA')}</button>
+                    <button type="button" class="btn-2fa w-full h-10 sm:h-12 rounded-lg border-2 border-pink-400 font-bold transition-all text-sm sm:text-base ${profileData.is2FAEnabled ? 'opacity-50 cursor-not-allowed bg-gray-800/30' : 'cursor-pointer hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)]'}" ${profileData.is2FAEnabled ? 'disabled="disabled"' : ''}>${profileData.is2FAEnabled ? String(t('profile.twoFAEnabled') || '2FA Has Been Enabled') : String(t('profile.enable2FA') || 'Enable 2FA')}</button>
                   </div>
                   <div class="mb-4 sm:mb-6">
                     <label class="block text-pink-300 mb-2 text-sm sm:text-base">Language</label>
@@ -393,9 +393,220 @@ export function ProfileData() {
       }
     });
 
+    // Handle 2FA button
+    const twoFABtn = container.querySelector('.btn-2fa') as HTMLButtonElement;
+    if (twoFABtn) {
+      if (profileData.is2FAEnabled) {
+        // Ensure button is disabled and styled correctly if 2FA is already enabled
+        twoFABtn.disabled = true;
+        twoFABtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800/30');
+        twoFABtn.classList.remove('cursor-pointer', 'hover:bg-pink-400/20', 'hover:shadow-[0_0_20px_rgba(255,20,147,0.5)]');
+        // Remove any existing click handlers
+        twoFABtn.onclick = null;
+      } else {
+        // Only attach click handler if 2FA is not enabled
+        twoFABtn.disabled = false;
+        twoFABtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          show2FASetupModal();
+        });
+      }
+    }
+
     // Fetch and render match history and friends list
     loadMatchHistory();
     loadFriendsList();
+  };
+
+  // Show 2FA Setup Modal
+  const show2FASetupModal = async () => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm';
+    modal.id = '2fa-setup-modal';
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'relative w-[850px] max-w-[90vw] bg-gradient-to-br from-gray-900/95 to-purple-900/95 backdrop-blur-sm rounded-[30px] shadow-[0_0_50px_rgba(255,20,147,0.4)] border-2 border-pink-400/30 p-8 md:p-12 font-poppins';
+    
+    // Retro grid overlay
+    const gridOverlay = document.createElement('div');
+    gridOverlay.className = 'absolute inset-0 opacity-10 pointer-events-none rounded-[30px]';
+    const gridPattern = document.createElement('div');
+    gridPattern.className = 'grid-pattern';
+    gridOverlay.appendChild(gridPattern);
+    modalContent.appendChild(gridOverlay);
+    
+    // Glowing orbs
+    const orb1 = document.createElement('div');
+    orb1.className = 'absolute top-4 right-4 w-8 h-8 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_20px_#00ffff]';
+    modalContent.appendChild(orb1);
+    
+    const orb2 = document.createElement('div');
+    orb2.className = 'absolute bottom-4 left-4 w-6 h-6 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_#ff1493] animation-delay-500';
+    modalContent.appendChild(orb2);
+    
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'relative z-10 text-center';
+    
+    const title = document.createElement('h2');
+    title.className = 'text-3xl md:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]';
+    title.textContent = String(t('twoFA.setupTitle') || 'SETUP TWO-FACTOR AUTHENTICATION');
+    contentWrapper.appendChild(title);
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = '2fa-setup-loading';
+    loadingDiv.className = 'mb-6';
+    const loadingText = document.createElement('p');
+    loadingText.className = 'text-pink-300 mb-4';
+    loadingText.textContent = String(t('twoFA.settingUp') || 'Setting up 2FA...');
+    loadingDiv.appendChild(loadingText);
+    const spinner = document.createElement('div');
+    spinner.className = 'flex justify-center';
+    const spinnerCircle = document.createElement('div');
+    spinnerCircle.className = 'w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin';
+    spinner.appendChild(spinnerCircle);
+    loadingDiv.appendChild(spinner);
+    contentWrapper.appendChild(loadingDiv);
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.id = '2fa-setup-content';
+    contentDiv.className = 'hidden';
+    
+    const scanText = document.createElement('p');
+    scanText.className = 'text-pink-300 mb-4 text-sm md:text-base';
+    scanText.textContent = String(t('twoFA.scanQR') || 'Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)');
+    contentDiv.appendChild(scanText);
+    
+    const qrContainer = document.createElement('div');
+    qrContainer.className = 'mb-6 flex justify-center';
+    const qrCodeImg = document.createElement('img');
+    qrCodeImg.id = '2fa-qr-code';
+    qrCodeImg.alt = 'QR Code';
+    qrCodeImg.className = 'w-64 h-64 bg-white p-4 rounded-lg border-2 border-cyan-400/50 shadow-[0_0_20px_rgba(0,255,255,0.3)]';
+    qrContainer.appendChild(qrCodeImg);
+    contentDiv.appendChild(qrContainer);
+    
+    const manualEntryContainer = document.createElement('div');
+    manualEntryContainer.className = 'mb-6';
+    const manualEntryLabel = document.createElement('p');
+    manualEntryLabel.className = 'text-cyan-300 mb-2 text-sm font-semibold';
+    manualEntryLabel.textContent = String(t('twoFA.manualEntry') || 'Or enter this code manually:');
+    manualEntryContainer.appendChild(manualEntryLabel);
+    const secretContainer = document.createElement('div');
+    secretContainer.className = 'bg-gray-800/50 border-2 border-cyan-400/30 rounded-lg p-3';
+    const secretCode = document.createElement('code');
+    secretCode.id = '2fa-secret';
+    secretCode.className = 'text-cyan-400 font-mono text-sm md:text-base break-all';
+    secretContainer.appendChild(secretCode);
+    manualEntryContainer.appendChild(secretContainer);
+    contentDiv.appendChild(manualEntryContainer);
+    
+    const setupCompleteText = document.createElement('p');
+    setupCompleteText.className = 'text-pink-300 mb-6 text-xs md:text-sm';
+    setupCompleteText.textContent = String(t('twoFA.setupComplete') || 'Once you\'ve scanned the QR code, 2FA will be enabled for your account.');
+    contentDiv.appendChild(setupCompleteText);
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.id = '2fa-setup-close-btn';
+    closeBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-pink-400 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/20 to-cyan-500/20 backdrop-blur-sm uppercase tracking-wider';
+    closeBtn.textContent = String(t('common.close') || 'CLOSE');
+    contentDiv.appendChild(closeBtn);
+    
+    contentWrapper.appendChild(contentDiv);
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.id = '2fa-setup-error';
+    errorDiv.className = 'hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins';
+    const errorText = document.createElement('span');
+    errorText.className = 'error-text';
+    errorDiv.appendChild(errorText);
+    contentWrapper.appendChild(errorDiv);
+    
+    modalContent.appendChild(contentWrapper);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Track if 2FA was successfully set up (to update button on close)
+    let shouldUpdateButton = false;
+    
+    // Single close button handler to prevent duplicate listeners
+    const handleClose = () => {
+      if (shouldUpdateButton) {
+        // Update button state if 2FA was successfully set up
+        const twoFABtn = container.querySelector('.btn-2fa') as HTMLButtonElement;
+        if (twoFABtn) {
+          twoFABtn.textContent = String(t('profile.twoFAEnabled') || '2FA Has Been Enabled');
+          twoFABtn.disabled = true;
+          twoFABtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800/30');
+          twoFABtn.classList.remove('cursor-pointer', 'hover:bg-pink-400/20', 'hover:shadow-[0_0_20px_rgba(255,20,147,0.5)]');
+          twoFABtn.onclick = null;
+        }
+      }
+      
+      // Remove modal
+      if (document.body.contains(modal)) {
+        document.body.removeChild(modal);
+      }
+      
+      // Reload profile to update button state
+      loadProfileData();
+    };
+    
+    // Attach close handler once
+    closeBtn.addEventListener('click', handleClose);
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        handleClose();
+      }
+    });
+    
+    // Setup 2FA
+    try {
+      const result = await setup2FA();
+      
+      // Hide loading, show content
+      loadingDiv.classList.add('hidden');
+      contentDiv.classList.remove('hidden');
+      
+      // Set QR code and secret (we already have references)
+      if (result.qrCode) {
+        qrCodeImg.src = result.qrCode;
+      }
+      
+      if (result.secret) {
+        secretCode.textContent = result.secret;
+      }
+      
+      showNotification(String(t('twoFA.setupSuccess') || '2FA setup successful!'), 'success');
+      
+      // Mark that button should be updated on close
+      shouldUpdateButton = true;
+    } catch (error: any) {
+      console.error('2FA setup error:', error);
+      loadingDiv.classList.add('hidden');
+      
+      // Check if 2FA is already enabled
+      if (error.message && error.message.includes('already enabled')) {
+        errorText.textContent = String(t('twoFA.alreadyEnabled') || '2FA is already enabled for your account.');
+        // Update button state immediately
+        const twoFABtn = container.querySelector('.btn-2fa') as HTMLButtonElement;
+        if (twoFABtn) {
+          twoFABtn.textContent = String(t('profile.twoFAEnabled') || '2FA Has Been Enabled');
+          twoFABtn.disabled = true;
+          twoFABtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800/30');
+          twoFABtn.classList.remove('cursor-pointer', 'hover:bg-pink-400/20', 'hover:shadow-[0_0_20px_rgba(255,20,147,0.5)]');
+          twoFABtn.onclick = null;
+        }
+        // Mark that button should be updated on close (already updated, but reload will confirm)
+        shouldUpdateButton = true;
+      } else {
+        errorText.textContent = error.message || String(t('twoFA.setupFailed') || 'Failed to setup 2FA. Please try again.');
+      }
+      
+      errorDiv.classList.remove('hidden');
+    }
   };
 
   const renderLoading = () => {

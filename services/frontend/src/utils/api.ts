@@ -119,6 +119,7 @@ export const fetchUserProfile = async () => {
       wins: wins,
       losses: losses,
       winRate: winRate,
+      is2FAEnabled: user.is2FAEnabled || false,
     };
   } catch (error) {
     console.error('Error fetching user profile:', error);
@@ -133,6 +134,7 @@ export const fetchUserProfile = async () => {
       wins: 0,
       losses: 0,
       winRate: '0%',
+      is2FAEnabled: (currentUser as any)?.is2FAEnabled || false,
     };
   }
 };
@@ -376,6 +378,57 @@ export const deleteUser = async (_userId: string) => {
     throw new Error('Delete user endpoint not available');
   } catch (error) {
     console.error('Error deleting user:', error);
+    throw error;
+  }
+};
+
+// 2FA Operations
+export const setup2FA = async () => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_URL}/user/2fa/setup`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}), // Send empty JSON body
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(errorData.error || `API request failed: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error setting up 2FA:', error);
+    throw error;
+  }
+};
+
+export const verify2FACode = async (userId: number, code: string) => {
+  try {
+    const result = await fetch(`${API_URL}/auth/verify-2fa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, code }),
+    });
+
+    if (!result.ok) {
+      const errorData = await result.json().catch(() => ({ error: result.statusText }));
+      throw new Error(errorData.error || 'Invalid 2FA code');
+    }
+
+    return await result.json();
+  } catch (error) {
+    console.error('Error verifying 2FA code:', error);
     throw error;
   }
 };
