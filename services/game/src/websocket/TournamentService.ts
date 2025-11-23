@@ -31,6 +31,17 @@ export default class TournamentService {
         room.queueIds = playerIds.slice(2) || [];
     }
 
+    private popNextChallenger(room: Room): void {
+        if (room.queueIds && room.queueIds.length > 0) {
+            const nextId = room.queueIds.shift();
+            if (nextId) {
+                room.challengerId = nextId;
+            }
+        } else {
+            delete room.challengerId;
+        }
+    }
+
     endRound(room: Room, winnerId: string): { tournamentOver: boolean; tournamentWinnerId?: string } {
         if (!room || room.mode !== 'tournament') return { tournamentOver: false };
 
@@ -56,18 +67,9 @@ export default class TournamentService {
             // King wins: challenger goes to back of queue
             if (room.challengerId) {
                 if (!room.queueIds) room.queueIds = [];
-                    room.queueIds.push(room.challengerId);
+                room.queueIds.push(room.challengerId);
             }
-
-            // Next player in queue becomes new challenger
-            if (room.queueIds && room.queueIds.length > 0) {
-                const nextId = room.queueIds.shift();
-                if (nextId) {
-                    room.challengerId = nextId;
-                }
-            } else {
-                delete room.challengerId;
-            }
+            this.popNextChallenger(room);
         } else {
             // Challenger wins: becomes new king, old king goes to back of queue
             if (room.kingId) {
@@ -78,22 +80,8 @@ export default class TournamentService {
             // Challenger becomes new king
             if (room.challengerId) {
                 room.kingId = room.challengerId;
-
-                // Reset new king ready state
-                const newKing = this.roomManager.getPlayer(room.challengerId);
             }
-
-            // Next player in queue becomes new challenger
-            if (room.queueIds && room.queueIds.length > 0) {
-                const nextId = room.queueIds.shift();
-                if (nextId) {
-                    room.challengerId = nextId;
-                } else {
-                    delete room.challengerId;
-                }
-            } else {
-                delete room.challengerId;
-            }
+            this.popNextChallenger(room);
         }
 
         return { tournamentOver: false };
