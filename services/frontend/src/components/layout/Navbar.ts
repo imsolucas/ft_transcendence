@@ -1,20 +1,20 @@
-import { isAuthenticated, getCurrentUser, logout } from '../utils/auth-script';
-import { navigate } from '../router';
-import type { Screen } from '../router';
-import { LanguageSelector } from './LanguageSelector';
-import { t } from '../i18n';
-import { setUserStatus } from '../utils/api';
+import { isAuthenticated, getCurrentUser, logout } from '../../utils/auth-script';
+import { navigate } from '../../router';
+import type { Screen } from '../../router';
+import { LanguageSelector } from '../shared/LanguageSelector';
+import { t } from '../../i18n';
+import { setUserStatus } from '../../utils/api';
 
 export async function createNavbar(): Promise<HTMLElement> {
 	const navbar = document.createElement('nav');
-	// Remove bg-transparent and backdrop-blur-md, add fully transparent background
 	navbar.className = `
     fixed top-0 left-0 right-0 z-50
+    bg-black/30 backdrop-blur-md
     border-b border-white/10
-    shadow-none
-    transition-colors
+    shadow-lg
+    transition-all duration-300
     `.replace(/\s+/g, ' ');
-	
+
 	const container = document.createElement('div');
 	container.className = 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8';
 
@@ -61,22 +61,22 @@ export async function createNavbar(): Promise<HTMLElement> {
 	navbarToggleBtn.title = toggleNavbarText;
 	navbarToggleBtn.setAttribute('aria-label', toggleNavbarText);
 	navbarToggleBtn.id = 'navbar-toggle-btn';
-	
+
 	const isNavbarHidden = localStorage.getItem('navbarHidden') === 'true';
-	
+
 	// Arrow icon image (up when navbar visible, down when hidden)
 	const arrowIcon = document.createElement('img');
 	arrowIcon.className = 'w-5 h-5 object-contain transition-transform duration-200';
 	arrowIcon.src = isNavbarHidden ? '/images/down.png' : '/images/up.png';
 	arrowIcon.alt = isNavbarHidden ? 'Show navbar' : 'Hide navbar';
-	
+
 	navbarToggleBtn.appendChild(arrowIcon);
-	
+
 	navbarToggleBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
 		toggleNavbarVisibility();
 	});
-	
+
 	rightSection.appendChild(navbarToggleBtn);
 
 	// Language Selector
@@ -135,65 +135,72 @@ export async function createNavbar(): Promise<HTMLElement> {
 
 		// Enhanced Dropdown Menu with sliding animations
 		const dropdown = document.createElement('div');
-		dropdown.className = 'dropdown-menu absolute right-0 mt-2 bg-transparent w-48 backdrop-blur-md rounded-lg shadow-lg border border-white/20 py-1 overflow-hidden';
-		
+		dropdown.className = 'dropdown-menu absolute right-0 top-full mt-2 bg-black/80 w-48 backdrop-blur-md rounded-lg shadow-lg border border-white/20 py-1 overflow-hidden';
+
 		// Set initial state for animation
 		dropdown.style.maxHeight = '0';
 		dropdown.style.opacity = '0';
 		dropdown.style.transform = 'translateY(-10px)';
 		dropdown.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-		
+
 		dropdown.innerHTML = `
-	  <a href="#" data-link="profile" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		${t('navbar.profile')}
+	  <a href="#" data-link="profile" data-tab="profile-settings" class="dropdown-item block px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">
+		Settings
 	  </a>
-	  <a href="#" data-link="profile" data-tab="friends" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		${t('navbar.friends')}
+	  <a href="#" data-link="profile" data-tab="friends" class="dropdown-item block px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">
+		Friends
 	  </a>
-	  <a href="#" data-link="profile" data-tab="match-history" class="dropdown-item block px-4 py-2 text-sm text-[#00FF85] hover:bg-gray-100/80 transition-colors">
-		${t('navbar.gameHistory')}
+	  <a href="#" data-link="profile" data-tab="match-history" class="dropdown-item block px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">
+		History
 	  </a>
 	  <hr class="my-1">
-	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-[#2BD2FF] hover:bg-red-50/80 transition-colors">
+	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-[#ff9b94] hover:bg-red-50/80 transition-colors">
 		${t('navbar.logout')}
 	  </button>
 	`;
 
 		let isDropdownOpen = false;
+		let isAnimating = false;
 
 		// Enhanced profile dropdown toggle with animations
 		profileButton.addEventListener('click', (e) => {
 			e.stopPropagation();
-			
+
+			if (isAnimating) return;
+
 			if (!isDropdownOpen) {
 				// Open dropdown - slide down animation
+				isAnimating = true;
 				dropdown.style.display = 'block';
-				
+
 				// Force a reflow to ensure the display change takes effect
 				dropdown.offsetHeight;
-				
+
 				// Animate to open state
-				dropdown.style.maxHeight = '200px'; // Adjust based on content
+				dropdown.style.maxHeight = '200px';
 				dropdown.style.opacity = '1';
 				dropdown.style.transform = 'translateY(0)';
 				chevronIcon.style.transform = 'rotate(180deg)';
-				
+
 				isDropdownOpen = true;
+				setTimeout(() => { isAnimating = false; }, 300);
 			} else {
 				// Close dropdown - slide up animation
+				isAnimating = true;
 				dropdown.style.maxHeight = '0';
 				dropdown.style.opacity = '0';
 				dropdown.style.transform = 'translateY(-10px)';
 				chevronIcon.style.transform = 'rotate(0deg)';
-				
+
+				isDropdownOpen = false;
+
 				// Hide element after animation completes
 				setTimeout(() => {
 					if (!isDropdownOpen) {
 						dropdown.style.display = 'none';
 					}
+					isAnimating = false;
 				}, 300);
-				
-				isDropdownOpen = false;
 			}
 		});
 
@@ -204,11 +211,11 @@ export async function createNavbar(): Promise<HTMLElement> {
 				dropdown.style.opacity = '0';
 				dropdown.style.transform = 'translateY(-10px)';
 				chevronIcon.style.transform = 'rotate(0deg)';
-				
+
 				setTimeout(() => {
 					dropdown.style.display = 'none';
 				}, 300);
-				
+
 				isDropdownOpen = false;
 			}
 		};
@@ -290,20 +297,20 @@ function addCreativeMenuStyles(): void {
 	styleSheet.id = 'creative-menu-styles';
 	styleSheet.textContent = `
 		@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@900&display=swap');
-		
+
 		/* Enhanced dropdown animations */
 		.dropdown-menu {
 			transform-origin: top center;
 		}
-		
+
 		.dropdown-menu.sliding-down {
 			animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 		}
-		
+
 		.dropdown-menu.sliding-up {
 			animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 		}
-		
+
 		@keyframes slideDown {
 			0% {
 				max-height: 0;
@@ -316,7 +323,7 @@ function addCreativeMenuStyles(): void {
 				transform: translateY(0) scaleY(1);
 			}
 		}
-		
+
 		@keyframes slideUp {
 			0% {
 				max-height: 200px;
@@ -329,7 +336,7 @@ function addCreativeMenuStyles(): void {
 				transform: translateY(-10px) scaleY(0.95);
 			}
 		}
-		
+
 		.creative-navigation {
 			margin: 0;
 			padding: 20px;
@@ -341,7 +348,7 @@ function addCreativeMenuStyles(): void {
 			justify-content: center;
 			align-items: center;
 		}
-		
+
 		.creative-navigation__link {
 			position: relative;
 			display: block;
@@ -360,25 +367,25 @@ function addCreativeMenuStyles(): void {
 			cursor: pointer;
 			margin: 10px 0;
 		}
-		
+
 		.creative-navigation__link:hover {
 			color: #ffffff;
 			-webkit-text-stroke: 2px transparent;
 			transform: scale(1.05);
 		}
-		
+
 		.creative-navigation__link:hover::before {
 			transform: translate(8px, -8px);
 			color: #9B5DE5;
 			-webkit-text-stroke: 2px transparent;
 		}
-		
+
 		.creative-navigation__link:hover::after {
 			transform: translate(16px, -16px);
 			color: #00FF85;
 			-webkit-text-stroke: 2px transparent;
 		}
-		
+
 		.creative-navigation__link::before,
 		.creative-navigation__link::after {
 			content: attr(data-text);
@@ -390,13 +397,13 @@ function addCreativeMenuStyles(): void {
 			-webkit-text-stroke: 2px transparent;
 			pointer-events: none;
 		}
-		
+
 		@media (max-width: 768px) {
 			.creative-navigation__link {
 				font-size: 2.5rem;
 			}
 		}
-		
+
 		@media (max-width: 480px) {
 			.creative-navigation__link {
 				font-size: 2rem;
@@ -419,11 +426,11 @@ function toggleMobileMenu(): void {
 
 	const mobileMenu = document.createElement('div');
 	mobileMenu.className = 'mobile-menu fixed inset-0 z-50 opacity-0 transition-opacity duration-200';
-	
+
 	// Create the creative navigation overlay
 	const overlay = document.createElement('div');
 	overlay.className = 'creative-navigation';
-	
+
 	// Create navigation list
 	const navList = document.createElement('ul');
 	navList.className = 'creative-navigation-list';
@@ -447,18 +454,18 @@ function toggleMobileMenu(): void {
 	menuItems.forEach(item => {
 		const listItem = document.createElement('li');
 		listItem.className = 'creative-navigation__item';
-		
+
 		const link = document.createElement('a');
 		link.className = 'creative-navigation__link';
 		link.href = '#';
 		link.setAttribute('data-text', String(item.text));
 		link.textContent = String(item.text);
-		
+
 		link.addEventListener('click', (e) => {
 			e.preventDefault();
 			item.action();
 		});
-		
+
 		listItem.appendChild(link);
 		navList.appendChild(listItem);
 	});
@@ -481,7 +488,7 @@ function toggleMobileMenu(): void {
 	});
 
 	document.body.appendChild(mobileMenu);
-	
+
 	// Trigger fade in
 	setTimeout(() => {
 		mobileMenu.classList.remove('opacity-0');
@@ -496,7 +503,9 @@ function closeMobileMenu(): void {
 	if (mobileMenu) {
 		mobileMenu.classList.add('opacity-0');
 		setTimeout(() => {
-			mobileMenu.remove();
+			if (mobileMenu.parentNode) {
+				mobileMenu.remove();
+			}
 			document.body.style.overflow = '';
 		}, 200);
 	}
@@ -532,7 +541,7 @@ export function toggleNavbarVisibility(): void {
 	if (!navbar) return;
 
 	const isHidden = navbar.style.transform === 'translateY(-100%)';
-	
+
 	if (isHidden) {
 		// Show navbar
 		navbar.style.transform = 'translateY(0)';
@@ -577,17 +586,17 @@ function createFloatingToggleButton(): void {
 	floatingBtn.className = 'fixed top-4 right-4 z-50 flex items-center justify-center w-10 h-10 bg-[#F34C94]/90 hover:bg-[#F34C94] backdrop-blur-sm rounded-full shadow-lg border-2 border-white/20 transition-all duration-200 hover:scale-110 cursor-pointer';
 	const floatingBtnText = String(t('navbar.toggleNavbar') || 'Show Navbar');
 	floatingBtn.title = floatingBtnText;
-	
+
 	const icon = document.createElement('img');
 	icon.className = 'w-5 h-5 object-contain';
 	icon.src = '/images/down.png';
 	icon.alt = 'Toggle navbar';
-	
+
 	floatingBtn.appendChild(icon);
 	floatingBtn.addEventListener('click', () => {
 		toggleNavbarVisibility();
 	});
-	
+
 	document.body.appendChild(floatingBtn);
 }
 
@@ -607,7 +616,7 @@ export async function initializeNavbar(): Promise<void> {
 	// Remove fixed padding since navbar is now truly transparent
 	// The content will flow behind the navbar
 	document.body.style.paddingTop = '0px';
-	
+
 	// Apply initial navbar state (hidden or visible)
 	const isNavbarHidden = localStorage.getItem('navbarHidden') === 'true';
 	if (isNavbarHidden) {
@@ -616,10 +625,10 @@ export async function initializeNavbar(): Promise<void> {
 		// Create floating button if navbar is hidden
 		createFloatingToggleButton();
 	}
-	
+
 	// Add smooth transition
 	navbar.style.transition = 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out';
-	
+
 	// Listen for auth expiration events
 	window.addEventListener('authExpired', async () => {
 		await updateNavbar();
@@ -632,18 +641,32 @@ export async function initializeNavbar(): Promise<void> {
 		if (isAuthenticated()) {
 			await setUserStatus('ONLINE');
 		}
-	} catch {}
+	} catch (error) {
+		console.error('Error setting initial online status:', error);
+	}
+
+	// Debounce status updates to prevent spam
+	let statusUpdateTimeout: number | null = null;
 
 	// Handle tab visibility changes
 	document.addEventListener('visibilitychange', () => {
 		if (!isAuthenticated()) return;
-		// Use keepalive to improve delivery when tab is backgrounded
-		setUserStatus(document.hidden ? 'OFFLINE' : 'ONLINE', { keepalive: true }).catch(() => {});
+
+		if (statusUpdateTimeout !== null) {
+			clearTimeout(statusUpdateTimeout);
+		}
+
+		statusUpdateTimeout = window.setTimeout(() => {
+			setUserStatus(document.hidden ? 'OFFLINE' : 'ONLINE', { keepalive: true })
+				.catch(error => console.error('Error updating visibility status:', error));
+			statusUpdateTimeout = null;
+		}, 100);
 	});
 
 	// Handle tab/window close or navigation away
 	window.addEventListener('beforeunload', () => {
 		if (!isAuthenticated()) return;
-		setUserStatus('OFFLINE', { keepalive: true }).catch(() => {});
+		setUserStatus('OFFLINE', { keepalive: true })
+			.catch(error => console.error('Error setting offline status:', error));
 	});
 }

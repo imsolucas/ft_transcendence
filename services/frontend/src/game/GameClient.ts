@@ -11,7 +11,6 @@ export class GameClient {
     private playerInputs: PlayerInputs[]
     private gameEngine?: GameEngine;
     private gameState!: GameState;
-    private tournamentState?: TournamentState;
     private config: GameConfig;
     private socket?: WebSocket
     private scale_x: number = 0
@@ -134,16 +133,16 @@ export class GameClient {
 
     private fillWindow(): void {
         const canvasContainer = document.getElementById('canvas-container')! as HTMLDivElement;
-        
+
         // Get the available space from the container
         const containerRect = canvasContainer.getBoundingClientRect();
         const availableWidth = containerRect.width;
         const availableHeight = containerRect.height;
-    
+
         let newWidth = availableWidth;
         let newHeight = availableHeight;
         let containerAspect = availableWidth / availableHeight;
-    
+
         // Fit canvas to container while maintaining aspect ratio
         if (containerAspect > this.aspectRatio) {
             // Container is wider than needed, constrain by height
@@ -154,7 +153,7 @@ export class GameClient {
             newHeight = availableWidth / this.aspectRatio;
             newWidth = availableWidth;
         }
-    
+
         this.canvas.width = newWidth;
         this.canvas.height = newHeight;
         this.scale_x = this.canvas.width / this.config!.courtSize!.x;
@@ -190,7 +189,7 @@ export class GameClient {
         }
 
         if (this.gameState.name == "GameOverState"){
-            const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1]; 
+            const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1];
             drawString(
                 `${winner} has won!`,
                 {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
@@ -212,7 +211,7 @@ export class GameClient {
     }
 
     private loop (timestamp: number) : void {
-        if (!this.isRunning) 
+        if (!this.isRunning)
             return;
         let deltaTime = (timestamp - this.previousTime) / 1000 ;
         this.previousTime = timestamp;

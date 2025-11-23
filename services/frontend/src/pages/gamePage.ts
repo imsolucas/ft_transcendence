@@ -1,8 +1,8 @@
 import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type CreateRoomMessage, type GameMessage, type JoinQueueMessage, type JoinRoomMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage } from "shared/index";
 import { GameClient } from "../game/GameClient"
 import { navigate } from "../router";
-import { LoadingPong } from "../components/loadingGame";
-import type { MatchmakingEvents, PlayerInfo } from "../components/loadingGame";
+import { MatchmakingScreen } from "../components/matchmaking/MatchmakingScreen";
+import type { MatchmakingEvents, MatchmakingPlayer } from "../components/matchmaking/MatchmakingScreen";
 import { getCurrentUser } from "../utils/auth-script";
 import { gameStorage, type GameOptionsData } from "../types/game";
 import type { UserData } from "../types/user";
@@ -15,7 +15,7 @@ let currentGame: GameClient | null = null;
 function matchMaking(container: HTMLElement) {
 
     const events: MatchmakingEvents = {
-        onMatchFound: (opponent: PlayerInfo, matchId: string) =>{},
+        onMatchFound: (opponent: MatchmakingPlayer, matchId: string) =>{},
         onMatchError: (matchId: string) => {},
         onMatchReady: (matchId: string) => {
             const readyMsg: PlayerReadyMessage = {
@@ -27,14 +27,12 @@ function matchMaking(container: HTMLElement) {
             socket!.send(JSON.stringify(readyMsg));
         },
         onCancel: () => {
-            navigate('lobby');
+            history.back();
         }
-    }
+	}
 
-    const loadingComponent = LoadingPong(events);
-    container.appendChild(loadingComponent);
-    
-    socket = new WebSocket('ws://localhost:3001/ws/game');
+	const loadingComponent = MatchmakingScreen(events);
+	container.appendChild(loadingComponent);    socket = new WebSocket('ws://localhost:3001/ws/game');
     socket.onopen = () => {
         const connectionMsg: ConnectionMessage = {
             type: 'connection',
@@ -108,13 +106,13 @@ function matchMaking(container: HTMLElement) {
                 break;
             case 'playerJoined':
                 const playerJoineMsg = message as PlayerJoinedMessage
-                let player: PlayerInfo;
+                let player: MatchmakingPlayer;
 
                 gameOptions!.config = default_config.standardGame; //TODO backend will pass config
                 playerJoineMsg.data.playersInRoom.forEach((val) => gameOptions!.config!.playerNames.push(val.name));
                 if (playerJoineMsg.data.playerName == user!.username) {
                     console.log('Joined room with id: ', playerJoineMsg.data.roomId);
-                    
+
                     if (playerJoineMsg.data.playersInRoom.length > 1){
                         player = {
                             id: playerJoineMsg.data.playersInRoom[0].id,
@@ -152,7 +150,7 @@ function matchMaking(container: HTMLElement) {
 
 function startGame(container: HTMLElement) {
     const canvas = createGameWrapper(container);
-    setTimeout(() => {  
+    setTimeout(() => {
         currentGame = new GameClient(canvas, gameOptions!.config!, gameOptions?.type == 'local' ? undefined : socket, onGameOver);
         currentGame.start();
     }, 0);
@@ -213,13 +211,13 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 
             playerContainer.appendChild(playerAvatar);
         }
-        
+
         const playerName = document.createElement('span');
         playerName.className = 'text-gray-900 font-bold text-lg truncate';
         playerName.textContent = name;
 
         playerContainer.appendChild(playerName);
-        
+
         if (king){
             const kingLogo = document.createElement('img');
             kingLogo.className = 'w-10 h-10 flex items-center justify-center text-white font-bold flex-shrink-0';
@@ -227,7 +225,7 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 
             playerContainer.appendChild(kingLogo)
         }
-        
+
         return playerContainer;
     };
 
@@ -267,10 +265,10 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
         const queue = document.createElement('div');
         queue.className = 'flex flex-col gap-3 p-6 border-4 border-yellow-500 rounded-3xl shadow-2xl bg-blue-900/30 overflow-y-auto h-full w-full';
         queue.id = 'queue';
-        
+
         queueContainer.appendChild(queueTitle);
         queueContainer.appendChild(queue);
-        
+
         for (let i = 0; i < gameOptions.config!.numPlayers!; i++){
             if (i < 2)
                 continue;
@@ -289,14 +287,14 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
     canvas.className = 'border-4 border-blue-500 rounded-3xl shadow-2xl w-full h-full';
     canvas.style.display = 'block';
     canvas.style.background = gameOptions?.config!.backgroundColor!;
-    
+
     canvasContainer.appendChild(canvas);
     gameContentContainer.appendChild(canvasContainer);
 
     // Assemble the structure
-    gameWrapper.appendChild(playerHeader); 
+    gameWrapper.appendChild(playerHeader);
     gameWrapper.appendChild(gameContentContainer);
-    
+
     container.appendChild(gameWrapper);
 
     document.body.style.overflow = 'hidden';
