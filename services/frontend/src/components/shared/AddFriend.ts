@@ -1,5 +1,5 @@
-import { sendFriendRequest, getFriendRequests, updateFriendRequest } from '../utils/api';
-import { t } from '../i18n';
+import { sendFriendRequest, getFriendRequests, updateFriendRequest } from '../../utils/api';
+import { t } from '../../i18n';
 
 export function AddFriend() {
   const container = document.createElement('div');
@@ -8,20 +8,20 @@ export function AddFriend() {
   const render = () => {
     container.innerHTML = `
       <div class="space-y-4">
-        <h2 class="font-['Orbitron'] text-xl mb-4 text-[#F34C94]">${t('lobby.addFriends')}</h2>
-        
+        <h2 class="text-xl mb-4 font-poppins text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">${t('lobby.addFriends')}</h2>
+
         <!-- Add Friend Form -->
-        <div class="bg-gray-900 border border-[#F34C94] p-4 rounded-lg">
+        <div class="bg-black/40 backdrop-blur-md border-2 border-white/40 p-4 rounded-2xl shadow-xl">
           <div class="flex gap-2 mb-4">
-            <input 
-              type="text" 
-              id="friend-username-input" 
-              placeholder="${t('lobby.enterUsername')}" 
-              class="flex-1 py-2 px-4 bg-gray-800 border-2 border-[#F34C94]/30 rounded-lg text-white placeholder-gray-400 focus:border-[#F34C94] focus:outline-none focus:shadow-[0_0_10px_rgba(243,76,148,0.3)] transition-all"
+            <input
+              type="text"
+              id="friend-username-input"
+              placeholder="${t('lobby.enterUsername')}"
+              class="flex-1 py-2 px-4 bg-black/30 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-white/60 focus:outline-none focus:shadow-[0_0_10px_rgba(255,255,255,0.3)] transition-all backdrop-blur-sm"
             />
-            <button 
-              id="send-friend-request-btn" 
-              class="neon-button border-2 border-[#F34C94] text-white py-2 px-6 rounded-lg font-['Press_Start_2P'] text-xs transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(243,76,148,0.5)] bg-gradient-to-r from-[#872481] to-[#DC25A3]"
+            <button
+              id="send-friend-request-btn"
+              class="neon-button border-2 border-white/50 hover:border-white/80 text-white py-2 px-6 rounded-lg font-poppins text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-lg bg-gradient-to-r from-[#872481] to-[#DC25A3]"
             >
               ${t('lobby.add')}
             </button>
@@ -29,10 +29,10 @@ export function AddFriend() {
         </div>
 
         <!-- Friend Requests -->
-        <div class="bg-gray-900 border border-[#F34C94] p-4 rounded-lg">
+        <div class="bg-black/40 backdrop-blur-md border-2 border-white/40 p-4 rounded-2xl shadow-xl">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="font-['Orbitron'] text-sm text-[#F34C94]">${t('lobby.friendRequests')}</h3>
-            <button id="refresh-friend-requests-btn" class="text-[#F34C94] hover:text-[#F34C94]/80 transition-colors" title="${t('lobby.refresh') || 'Refresh'}">
+            <h3 class="text-sm font-poppins font-semibold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">${t('lobby.friendRequests')}</h3>
+            <button id="refresh-friend-requests-btn" class="text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all p-2 rounded-lg border border-white/30" title="${t('lobby.refresh') || 'Refresh'}">
               <i class="bx bx-refresh text-lg"></i>
             </button>
           </div>
@@ -74,7 +74,7 @@ export function AddFriend() {
     // Handle Enter key on input
     usernameInput?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        sendBtn?.click();
+        (sendBtn as HTMLButtonElement)?.click();
       }
     });
 
@@ -118,7 +118,7 @@ export function AddFriend() {
       const requester = request.requesterUsername || request.requester || 'Unknown';
       const requestId = request.id;
       const requesterAvatar = request.requesterAvatar || '/images/pong.png';
-      
+
       return `
         <div class="flex items-center justify-between bg-gray-800/70 p-3 rounded-lg gap-3">
           <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -126,13 +126,13 @@ export function AddFriend() {
             <span class="text-white font-semibold truncate">${requester}</span>
           </div>
           <div class="flex gap-2 flex-shrink-0">
-            <button 
+            <button
               class="accept-request-btn text-xs px-3 py-1 bg-green-500 hover:bg-green-600 rounded transition-colors font-['Press_Start_2P']"
               data-request-id="${requestId}"
             >
               ✓
             </button>
-            <button 
+            <button
               class="reject-request-btn text-xs px-3 py-1 bg-red-500 hover:bg-red-600 rounded transition-colors font-['Press_Start_2P']"
               data-request-id="${requestId}"
             >
@@ -174,7 +174,7 @@ export function AddFriend() {
   const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
-    
+
     switch (type) {
       case 'success':
         notification.className += ' bg-green-500 text-white';
@@ -186,15 +186,15 @@ export function AddFriend() {
         notification.className += ' bg-blue-500 text-white';
         break;
     }
-    
+
     notification.textContent = message;
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       notification.classList.remove('translate-x-full');
       notification.classList.add('translate-x-0');
     }, 100);
-    
+
     setTimeout(() => {
       notification.classList.remove('translate-x-0');
       notification.classList.add('translate-x-full');

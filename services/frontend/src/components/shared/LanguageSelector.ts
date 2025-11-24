@@ -1,4 +1,4 @@
-import { changeLanguage, getCurrentLanguage, t } from '../i18n';
+import { changeLanguage, getCurrentLanguage } from '../../i18n';
 
 export function LanguageSelector() {
   const container = document.createElement('div');
@@ -16,8 +16,8 @@ export function LanguageSelector() {
   const render = () => {
     container.innerHTML = `
       <div class="relative">
-        <button 
-          id="language-selector-btn" 
+        <button
+          id="language-selector-btn"
           class="flex items-center space-x-2 p-2 rounded-lg hover:bg-white/10 transition-colors duration-200 border border-white/20"
           title="Change Language"
         >
@@ -27,13 +27,13 @@ export function LanguageSelector() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
           </svg>
         </button>
-        
-        <div 
-          id="language-dropdown" 
+
+        <div
+          id="language-dropdown"
           class="absolute right-0 mt-2 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-lg border border-white/20 py-1 overflow-hidden min-w-[150px] hidden z-50"
         >
           ${languages.map(lang => `
-            <button 
+            <button
               class="language-option w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors flex items-center space-x-2 ${lang.code === currentLang ? 'bg-white/5' : ''}"
               data-lang="${lang.code}"
             >

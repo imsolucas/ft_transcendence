@@ -11,7 +11,7 @@ export class GameClient {
     private playerInputs: PlayerInputs[]
     private gameEngine?: GameEngine;
     private gameState!: GameState;
-    private tournamentState?: TournamentState;
+    private tournamentState?: TournamentState
     private config: GameConfig;
     private winner?: serializablePlayer
     private socket?: WebSocket
@@ -165,11 +165,11 @@ export class GameClient {
         const containerRect = canvasContainer.getBoundingClientRect();
         const availableWidth = containerRect.width;
         const availableHeight = containerRect.height;
-    
+
         let newWidth = availableWidth;
         let newHeight = availableHeight;
         let containerAspect = availableWidth / availableHeight;
-    
+
         // Fit canvas to container while maintaining aspect ratio
         if (containerAspect > this.aspectRatio) {
             // Container is wider than needed, constrain by height
@@ -180,7 +180,7 @@ export class GameClient {
             newHeight = availableWidth / this.aspectRatio;
             newWidth = availableWidth;
         }
-    
+
         this.canvas.width = newWidth;
         this.canvas.height = newHeight;
         this.scale_x = this.canvas.width / this.config!.courtSize!.x;
@@ -287,7 +287,7 @@ export class GameClient {
     }
 
     private loop (timestamp: number) : void {
-        if (!this.isRunning) 
+        if (!this.isRunning)
             return;
         let deltaTime = (timestamp - this.previousTime) / 1000 ;
         this.previousTime = timestamp;

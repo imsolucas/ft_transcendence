@@ -67,7 +67,8 @@
     "edit": "Edit",
     "profileUpdated": "Profile updated successfully!",
     "updateFailed": "Failed to update profile. Please try again.",
-    "twoFAEnabled": "2FA Has Been Enabled"
+    "twoFAEnabled": "2FA Has Been Enabled",
+    "setup2FA": "Setup 2FA"
   },
   "twoFA": {
     "setupTitle": "SETUP TWO-FACTOR AUTHENTICATION",
