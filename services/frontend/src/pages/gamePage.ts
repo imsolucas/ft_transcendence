@@ -190,7 +190,12 @@ function startGame(container: HTMLElement, tournamentState?: TournamentState) {
     }, 0);
 }
 
-function onGameOver() {
+function onGameOver(type: 'error' | 'finished') {
+    if (type == 'error'){
+        currentGame!.stop();
+        navigate('lobby');
+    }
+
     if (gameOptions!.config?.mode == 'standard'){
         currentGame!.stop();
         addBackToLobbyButton();

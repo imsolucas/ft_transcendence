@@ -18,13 +18,13 @@ export class GameClient {
     private scale_x: number = 0
     private scale_y: number = 0
     private aspectRatio!: number
-    onGameOver?: () => void
+    onGameOver?: (type: 'error' | 'finished') => void
 
     private resizeHandler: () => void;
     private keydownHandler: (ev: KeyboardEvent) => void;
     private keyupHandler: (ev: KeyboardEvent) => void;
 
-    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket, onGameOver?: () => void, tournamentState?: TournamentState)
+    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket, onGameOver?: (type: 'error' | 'finished') => void, tournamentState?: TournamentState)
     {
         this.onGameOver = onGameOver;
         this.socket = socket
@@ -85,7 +85,7 @@ export class GameClient {
                     break;
                 case 'playerLeft':
                     alert("Opponent left");
-                    this.onGameOver?.();
+                    this.onGameOver?.('error');
                     break;
                 case 'gameEnd':
                     const gameEndMsg = message as GameEndMessage
@@ -99,7 +99,7 @@ export class GameClient {
             }
         }
         this.socket!.onclose = () => {
-            this.onGameOver?.();
+            this.onGameOver?.('error');
         }
     }
 
@@ -303,7 +303,7 @@ export class GameClient {
         if (this.tournamentState)
             this.render_tournament_state();
         if (this.gameState?.name == 'GameOverState'){
-            this.onGameOver?.();
+            this.onGameOver?.('finished');
         }
         requestAnimationFrame(this.loop.bind(this));
     }
