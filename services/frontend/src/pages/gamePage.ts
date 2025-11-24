@@ -1,4 +1,4 @@
-import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type CreateRoomMessage, type GameMessage, type JoinQueueMessage, type JoinRoomMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage, type serializablePlayer } from "shared/index";
+import { default_config, type ConnectionErrorMessage, type ConnectionMessage, type CreateRoomMessage, type GameMessage, type GameStartMessage, type JoinQueueMessage, type JoinRoomMessage, type PlayerJoinedMessage, type PlayerLeftMessage, type PlayerReadyMessage, type serializablePlayer, type TournamentState } from "shared/index";
 import { GameClient } from "../game/GameClient"
 import { navigate } from "../router";
 import { LoadingPong } from "../components/loadingGame";
@@ -12,6 +12,7 @@ let user: UserData | null = null;
 let gameOptions: GameOptionsData | null = null;
 let currentGame: GameClient | null = null;
 let playersInRoom: serializablePlayer[] | null = null;
+let timeout: NodeJS.Timeout | undefined;
 
 function matchMaking(container: HTMLElement) {
 
@@ -112,54 +113,41 @@ function matchMaking(container: HTMLElement) {
                 navigate('lobby');
                 break;
             case 'playerJoined':
-                const playerJoineMsg = message as PlayerJoinedMessage
+                const playerJoinMsg = message as PlayerJoinedMessage
                 let player: PlayerInfo;
 
                 gameOptions!.config = default_config.standardGame; //TODO backend will pass config
 
-                if (!playersInRoom)
-                    playersInRoom = []
-
-                playerJoineMsg.data.playersInRoom.forEach((val) => playersInRoom!.push(val));
-                if (playerJoineMsg.data.playerName == user!.username) {
-                    console.log('Joined room with id: ', playerJoineMsg.data.roomId);
+                playersInRoom = playerJoinMsg.data.playersInRoom;
+                playersInRoom.sort((p1, p2) => p1.position - p2.position);
+                if (playerJoinMsg.data.playerName == user!.username) {
+                    console.log('Joined room with id: ', playerJoinMsg.data.roomId);
                     
-                    if (playerJoineMsg.data.playersInRoom.length > 1){
-                        if (gameOptions?.mode === 'tournament') {
-                            playerJoineMsg.data.playersInRoom.forEach((p) => {
-                                if (p.name !== user!.username) {
-                                    const existingPlayer: PlayerInfo = {
-                                        id: p.id,
-                                        username: p.name,
-                                        picture: user?.avatar
-                                    };
-                                    (loadingComponent as any).addOpponent(existingPlayer, playerJoineMsg.data.roomId);
-                                }
-                            });
-                        } else {
-                            player = {
-                                id: playerJoineMsg.data.playersInRoom[0].id,
-                                username: playerJoineMsg.data.playersInRoom[0].name,
-                                picture: playerJoineMsg.data.picture
+                    playerJoinMsg.data.playersInRoom.forEach((p) => {
+                        if (p.name !== user!.username) {
+                            const existingPlayer: PlayerInfo = {
+                                id: p.id,
+                                username: p.name,
+                                picture: p.picture
                             };
-                            (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId);
+                            (loadingComponent as any).addOpponent(existingPlayer, playerJoinMsg.data.roomId);
                         }
-                    }
+                    });
                     break;
                 }
                 
                 // Another player joined the room
-                console.log(`Player ${playerJoineMsg.data.playerName} joined`)
+                console.log(`Player ${playerJoinMsg.data.playerName} joined`)
                 player = {
-                    id: playerJoineMsg.data.playerId,
-                    username: playerJoineMsg.data.playerName,
-                    picture: playerJoineMsg.data.picture
+                    id: playerJoinMsg.data.playerId,
+                    username: playerJoinMsg.data.playerName,
+                    picture: playerJoinMsg.data.picture
                 };
                 
                 if (gameOptions?.mode === 'tournament')
-                    (loadingComponent as any).addOpponent(player, playerJoineMsg.data.roomId);
+                    (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId);
                 else
-                    (loadingComponent as any).setOpponent(player, playerJoineMsg.data.roomId);
+                    (loadingComponent as any).setOpponent(player, playerJoinMsg.data.roomId);
                 break;
             case 'playerLeft':
                 const playerLeftMsg = message as PlayerLeftMessage;
@@ -177,9 +165,11 @@ function matchMaking(container: HTMLElement) {
                 console.log(`Player ${playerReadyMsg.data.playerName} is ${playerReadyMsg.data.ready ? "ready" : "not ready"}!`);
                 break;
             case 'gameStart':
+                const gameStartMsg = message as GameStartMessage
+
                 if (loadingComponent)
                     loadingComponent.remove();
-                startGame(container);
+                startGame(container, gameStartMsg.data.tournamentState);
                 break;
             default:
                 console.log("Unexpected message from server: ", message);
@@ -188,20 +178,22 @@ function matchMaking(container: HTMLElement) {
     }
 }
 
-function startGame(container: HTMLElement) {
+function startGame(container: HTMLElement, tournamentState?: TournamentState) {
     const canvas = createGameWrapper(container);
     setTimeout(() => {  
-        currentGame = new GameClient(canvas, gameOptions!.config!, gameOptions?.type == 'local' ? undefined : socket, onGameOver);
+        currentGame = new GameClient(
+            canvas, gameOptions!.config!,
+            gameOptions?.type == 'local' ? undefined : socket,
+            onGameOver,
+            tournamentState
+        );
         currentGame.start();
     }, 0);
 }
 
 function onGameOver() {
-    if (socket){
+    if (gameOptions!.mode == 'standard'){
         socket.onmessage = null;
-        socket.close();
-    }
-    if (gameOptions?.config!.mode == 'standard'){
         setTimeout(() => {
             navigate('lobby');
         }, 3 * 1000)
@@ -331,10 +323,12 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
         queueContainer.appendChild(queueTitle);
         queueContainer.appendChild(queue);
         
-        for (let i = 0; i < gameOptions!.config!.numPlayers!; i++){
-            if (i < 2)
-                continue;
-            queue.appendChild(createPlayerContainer(gameOptions!.config!.playerNames[i], undefined));
+        if (gameOptions!.type == 'local'){
+            for (let i = 0; i < gameOptions!.config!.numPlayers!; i++){
+                if (i < 2)
+                    continue;
+                queue.appendChild(createPlayerContainer(gameOptions!.config!.playerNames[i], undefined));
+            }
         }
 
         gameContentContainer.appendChild(queueContainer);
@@ -367,10 +361,22 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 }
 
 export function cleanupGamePage(): void {
+    clearTimeout(timeout);
+    if (currentGame){
+        currentGame?.stop();
+        currentGame = null;
+    }
+    timeout = undefined;
     playersInRoom = [];
     gameStorage.clearGameOptions();
-    socket?.close()
-    currentGame?.stop();
+    gameOptions = null;
+    if (socket) {
+        socket.onmessage = null;
+        socket.onerror = null;
+        socket.onclose = null;
+        socket.close();
+        socket = null as any;
+    }
     document.body.style.overflow = '';
     document.body.style.margin = '';
     document.body.style.padding = '';

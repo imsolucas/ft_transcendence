@@ -1,5 +1,5 @@
 import { GameEngine } from "shared"
-import type { ConnectionMessage, GameConfig, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, TournamentState } from "shared";
+import type { ConnectionMessage, GameConfig, GameEndMessage, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, serializablePlayer, TournamentState, TournamentStateMessage } from "shared";
 import { drawCircle, drawRectangle, drawRoundRect, drawString } from "./utils/drawUtils";
 
 export class GameClient {
@@ -13,16 +13,22 @@ export class GameClient {
     private gameState!: GameState;
     private tournamentState?: TournamentState;
     private config: GameConfig;
+    private winner?: serializablePlayer
     private socket?: WebSocket
     private scale_x: number = 0
     private scale_y: number = 0
     private aspectRatio!: number
     onGameOver?: () => void
 
-    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket, onGameOver?: () => void)
+    private resizeHandler: () => void;
+    private keydownHandler: (ev: KeyboardEvent) => void;
+    private keyupHandler: (ev: KeyboardEvent) => void;
+
+    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket, onGameOver?: () => void, tournamentState?: TournamentState)
     {
         this.onGameOver = onGameOver;
         this.socket = socket
+        this.tournamentState = tournamentState;
         if (!socket)
             this.gameEngine = new GameEngine(config);
         this.config = config;
@@ -31,6 +37,14 @@ export class GameClient {
         this.ctx = canvas.getContext('2d')!;
         const inputs: PlayerInputs = {up: false, down: false, left: false, right: false, action_1: false, action_2: false}
         this.playerInputs = [{...inputs}, {...inputs}]
+        
+        this.resizeHandler = () => {
+            this.fillWindow();
+            cancelAnimationFrame(this.animationId!);
+        };
+        this.keydownHandler = (ev: KeyboardEvent) => this.handleKeyInput(ev, true);
+        this.keyupHandler = (ev: KeyboardEvent) => this.handleKeyInput(ev, false);
+        
         if (this.socket)
             this.initSocket();
         this.fillWindow();
@@ -46,23 +60,15 @@ export class GameClient {
 
     public stop(): void {
         this.isRunning = false;
-        this.socket?.close()
         if (this.animationId){
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
+        // 🧹 Remove event listeners
+        this.removeEvents();
     }
 
     private initSocket(): void {
-        this.socket!.onopen = () => {
-            const message: ConnectionMessage = {
-                type: 'connection',
-                data: { playerName: 'test'},
-                timestamp: Date.now()
-            }
-            this.socket!.send(JSON.stringify(message));
-        }
-
         this.socket!.onmessage = (event: MessageEvent) => {
             const message: GameMessage = (JSON.parse(event.data.toString())) as GameMessage;
 
@@ -70,17 +76,28 @@ export class GameClient {
                 case 'gameState':
                     const gameStateMessage = (message as GameStateMessage)
                     this.gameState = gameStateMessage.data.gameState
-                    console.log("Recieved game state", this.gameState);
+                    console.log("Recieved game state");
+                    break;
+                case 'tournamentState':
+                    const tournamentStateMsg = message as TournamentStateMessage
+                    this.tournamentState = tournamentStateMsg.data.state;
+                    console.log('Recieved Tournament state');
                     break;
                 case 'playerLeft':
                     alert("Opponent left");
                     this.onGameOver?.();
                     break;
+                case 'gameEnd':
+                    const gameEndMsg = message as GameEndMessage
+
+                    this.winner = gameEndMsg.data.winner
+
+                    console.log(`Game Over, player ${this.winner.name} has won`);
+                    break;
                 default:
                     break;
             }
         }
-
         this.socket!.onclose = () => {
             this.onGameOver?.();
         }
@@ -124,16 +141,25 @@ export class GameClient {
     }
 
     private initEvents(): void {
-        window.addEventListener('resize', () => {
-            this.fillWindow();
-            cancelAnimationFrame(this.animationId!);
-        })
-        document.addEventListener("keydown", (ev) => this.handleKeyInput(ev, true));
-        document.addEventListener("keyup", (ev) => this.handleKeyInput(ev, false));
+        window.addEventListener('resize', this.resizeHandler);
+        document.addEventListener("keydown", this.keydownHandler);
+        document.addEventListener("keyup", this.keyupHandler);
+    }
+
+    private removeEvents(): void {
+        window.removeEventListener('resize', this.resizeHandler);
+        document.removeEventListener("keydown", this.keydownHandler);
+        document.removeEventListener("keyup", this.keyupHandler);
     }
 
     private fillWindow(): void {
-        const canvasContainer = document.getElementById('canvas-container')! as HTMLDivElement;
+        const canvasContainer = document.getElementById('canvas-container') as HTMLDivElement;
+        
+        if (!canvasContainer) {
+            console.warn('Canvas container not found, stopping game');
+            this.stop();
+            return;
+        }
         
         // Get the available space from the container
         const containerRect = canvasContainer.getBoundingClientRect();
@@ -159,6 +185,50 @@ export class GameClient {
         this.canvas.height = newHeight;
         this.scale_x = this.canvas.width / this.config!.courtSize!.x;
         this.scale_y = this.canvas.height / this.config!.courtSize!.y;
+    }
+
+    private render_tournament_state(): void {
+        if (!this.tournamentState) return;
+
+        // Update player names in the header
+        const leftPlayerContainer = document.getElementById('left-player-name');
+        const rightPlayerContainer = document.getElementById('right-player-name');
+        
+        if (leftPlayerContainer && this.tournamentState.kingName) {
+            const leftPlayerNameSpan = leftPlayerContainer.querySelector('span');
+            if (leftPlayerNameSpan) {
+                leftPlayerNameSpan.textContent = this.tournamentState.kingName;
+            }
+        }
+        
+        if (rightPlayerContainer && this.tournamentState.challengerName) {
+            const rightPlayerNameSpan = rightPlayerContainer.querySelector('span');
+            if (rightPlayerNameSpan) {
+                rightPlayerNameSpan.textContent = this.tournamentState.challengerName;
+            }
+        }
+
+        // Update the queue
+        const queue = document.getElementById('queue');
+        if (!queue) return;
+
+        // Clear current queue
+        queue.innerHTML = '';
+
+        // Populate queue with waiting players
+        if (this.tournamentState.queue && this.tournamentState.queue.length > 0) {
+            this.tournamentState.queue.forEach(player => {
+                const playerContainer = document.createElement('div');
+                playerContainer.className = 'flex items-center justify-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3 min-w-0 w-full';
+                
+                const playerName = document.createElement('span');
+                playerName.className = 'text-gray-900 font-bold text-lg truncate';
+                playerName.textContent = player.playerName;
+                
+                playerContainer.appendChild(playerName);
+                queue.appendChild(playerContainer);
+            });
+        }
     }
 
     private render_game_state(): void {
@@ -189,8 +259,13 @@ export class GameClient {
             )
         }
 
-        if (this.gameState.name == "GameOverState"){
-            const winner: string = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1]; 
+        if (this.gameState.name == "GameOverState" || this.winner){
+            let winner: string;
+
+            if (this.winner)
+                winner = this.winner.name;
+            else
+                winner = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1]
             drawString(
                 `${winner} has won!`,
                 {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
@@ -225,9 +300,10 @@ export class GameClient {
             this.render_ui();
             this.render_game_state();
         }
+        if (this.tournamentState)
+            this.render_tournament_state();
         if (this.gameState?.name == 'GameOverState'){
             this.onGameOver?.();
-            return ;
         }
         requestAnimationFrame(this.loop.bind(this));
     }
