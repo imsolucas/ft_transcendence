@@ -51,8 +51,8 @@ function matchMaking(container: HTMLElement) {
 
     socket.onerror = (ev: Event) => {
         console.log('Error connecting to server', ev);
-        alert('Error connecting to server, try again later');
         navigate('lobby');
+        alert('Error connecting to server, try again later');
     }
 
     const onSuccessfulConnect = () => {
@@ -105,9 +105,9 @@ function matchMaking(container: HTMLElement) {
                 break;
             case 'connectionError':
                 const errorMsg = message as ConnectionErrorMessage
-                alert(`Error from server: ${message.data.message}`);
                 console.log("Error from server:", errorMsg.data.message);
                 navigate('lobby');
+                alert(`Error from server: ${message.data.message}`);
                 break;
             case 'playerJoined':
                 const playerJoinMsg = message as PlayerJoinedMessage
@@ -177,20 +177,31 @@ function matchMaking(container: HTMLElement) {
 function startGame(container: HTMLElement, tournamentState?: TournamentState) {
     const canvas = createGameWrapper(container);
     setTimeout(() => {  
-        currentGame = new GameClient(canvas, gameOptions!.config!, gameOptions?.type == 'local' ? undefined : socket, onGameOver, tournamentState);
+        currentGame = new GameClient(
+            canvas,
+            gameOptions!.config!,
+            onGameOver,
+            gameOptions?.type == 'local' ? undefined : socket,
+            tournamentState,
+            playersInRoom ? playersInRoom : undefined
+        );
         currentGame.start();
     }, 0);
 }
 
-function onGameOver(type: 'error' | 'finished') {
-    if (type == 'error'){
+function onGameOver(error?: string) {
+    if (error){
         currentGame!.stop();
         navigate('lobby');
+        alert(error);
     }
 
-    if (gameOptions!.config?.mode == 'standard'){
+    if (gameOptions!.mode == 'standard'){
         currentGame!.stop();
         addBackToLobbyButton();
+    }
+    if (gameOptions!.mode == 'tournament'){
+        
     }
 }
 

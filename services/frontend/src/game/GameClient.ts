@@ -1,9 +1,8 @@
 import { GameEngine } from "shared"
-import type { ConnectionMessage, GameConfig, GameEndMessage, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, serializablePlayer, TournamentState, TournamentStateMessage } from "shared";
+import type { GameConfig, GameEndMessage, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, PlayerLeftMessage, serializablePlayer, TournamentRoundEndMessage, TournamentState, TournamentStateMessage } from "shared";
 import { drawCircle, drawRectangle, drawRoundRect, drawString } from "./utils/drawUtils";
 
 export class GameClient {
-    private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private animationId: number | null = null;
     private isRunning = false;
@@ -11,27 +10,27 @@ export class GameClient {
     private playerInputs: PlayerInputs[]
     private gameEngine?: GameEngine;
     private gameState!: GameState;
-    private tournamentState?: TournamentState
-    private config: GameConfig;
     private winner?: serializablePlayer
-    private socket?: WebSocket
+    private roundWinner?: serializablePlayer
     private scale_x: number = 0
     private scale_y: number = 0
     private aspectRatio!: number
-    onGameOver?: (type: 'error' | 'finished') => void
 
     private resizeHandler: () => void;
     private keydownHandler: (ev: KeyboardEvent) => void;
     private keyupHandler: (ev: KeyboardEvent) => void;
 
-    constructor (canvas: HTMLCanvasElement, config: GameConfig, socket?: WebSocket, onGameOver?: (type: 'error' | 'finished') => void, tournamentState?: TournamentState)
+    constructor (
+        private canvas: HTMLCanvasElement,
+        private config: GameConfig,
+        private onGameOver: (error?: string) => void,
+        private socket?: WebSocket,
+        private tournamentState?: TournamentState,
+        private playersInRoom?: serializablePlayer[]
+    )
     {
-        this.onGameOver = onGameOver;
-        this.socket = socket
-        this.tournamentState = tournamentState;
         if (!socket)
             this.gameEngine = new GameEngine(config);
-        this.config = config;
         this.aspectRatio = config.courtSize!.x / config.courtSize!.y
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
@@ -99,7 +98,8 @@ export class GameClient {
             }
         }
         this.socket!.onclose = () => {
-            this.onGameOver?.('error');
+            this.stop();
+            this.onGameOver?.('Lost connection to server');
         }
     }
 
@@ -302,8 +302,8 @@ export class GameClient {
         }
         if (this.tournamentState)
             this.render_tournament_state();
-        if (this.gameState?.name == 'GameOverState'){
-            this.onGameOver?.('finished');
+        if (this.gameState?.name == 'GameOverState' || this.winner ){
+            this.onGameOver()
         }
         requestAnimationFrame(this.loop.bind(this));
     }
