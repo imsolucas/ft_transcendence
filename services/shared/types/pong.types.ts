@@ -21,10 +21,10 @@ export interface GameState {
 }
 
 export interface TournamentState {
-    kingId?: string;
-    kingName?: string;
-    challengerId?: string;
-    challengerName?: string;
+    kingId: string;
+    kingName: string;
+    challengerId: string;
+    challengerName: string;
     queue: Array<{
         playerId: string;
         playerName: string;
