@@ -26,7 +26,8 @@ export default class GameService {
 
     checkReady(room: Room): boolean {
         const players = this.roomManager.getPlayersInRoom(room.id);
-        return players.every(p => p.isReady) && players.length >= 2;
+        const minPlayers = room.mode == 'standard' ? 2 : 3;
+        return players.every(p => p.isReady) && players.length >= minPlayers;
     }
 
     startGame(room: Room): boolean {

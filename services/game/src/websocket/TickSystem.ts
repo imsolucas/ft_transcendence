@@ -1,4 +1,6 @@
+import { toSerializablePlayer, type GameEndMessage } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
+import type { MessageBroadcaster } from "./Broadcaster.js";
 import type TournamentService from "./TournamentService.js";
 
 export default class TickSystem {
@@ -7,7 +9,7 @@ export default class TickSystem {
     private readonly TICK_INTERVAL = (1000 / this.TICK_RATE);
     private tickInterval: NodeJS.Timeout | null = null;
 
-    constructor(private roomManager: RoomManager, private tournamentService: TournamentService) {}
+    constructor(private roomManager: RoomManager, private tournamentService: TournamentService, private broadcaster: MessageBroadcaster) {}
 
     startTickSystem(): void {
         if (this.tickInterval) clearInterval(this.tickInterval);
@@ -26,6 +28,7 @@ export default class TickSystem {
     private tick(deltaTime: number): void {
         const activeRooms = this.roomManager.getActiveRooms();
 
+        // console.log("activeRooms:", activeRooms);
         for (const room of activeRooms) {
             if (!room.gameServer) continue;
 
@@ -50,6 +53,16 @@ export default class TickSystem {
                 } else {
                     // standard game
                     room.status = 'finished';
+
+                    const gameEndMsg: GameEndMessage = {
+                        type: 'gameEnd',
+                        data: {
+                            winner: toSerializablePlayer(this.roomManager.getPlayer(winnerId!)!)
+                        },
+                        timestamp: Date.now()
+                    }
+
+                    this.broadcaster.broadcastToRoom(room.id, gameEndMsg);
                 }
             }
         }

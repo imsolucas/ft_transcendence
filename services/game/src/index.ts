@@ -18,7 +18,7 @@ const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
 const tournamentService = new TournamentService(roomManager, broadcaster);
 const messageHandler = new NewMessageHandler(roomManager);
-const tickSystem = new TickSytem(roomManager, tournamentService);
+const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
 
 server.register(ws);
 

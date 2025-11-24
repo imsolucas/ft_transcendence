@@ -78,7 +78,7 @@ export class RoomManager {
   getActiveRooms(): Room[] {
     const activeRooms: Room[] = [];
     for (const room of this.rooms.values()) {
-      if (room.playerIds.length === 2 && room.status === 'playing') {
+      if (room.status === 'playing') {
         activeRooms.push(room);
       }
     }

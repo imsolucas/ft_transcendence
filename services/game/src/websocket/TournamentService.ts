@@ -1,7 +1,7 @@
 import { RoomManager } from "../game/roomManager.js"
 import type { Room } from "../types/room.types.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
-import type { TournamentStateMessage } from "shared/index.js";
+import type { TournamentState, TournamentStateMessage } from "shared/index.js";
 
 export default class TournamentService {
     constructor (
@@ -99,17 +99,15 @@ export default class TournamentService {
         return { tournamentOver: false };
     }
 
-    broadcastTournamentState(roomId: string): void {
+    getRoomTournamentState(roomId: string): TournamentState | null{
         const room = this.roomManager.getRoom(roomId);
-        if (!room || room.mode !== 'tournament') return;
+        if (!room || room.mode !== 'tournament') return null;
 
         const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
         const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
         const queuePlayers = (room.queueIds || []).map(id => this.roomManager.getPlayer(id));
 
-        const tournamentState: TournamentStateMessage = {
-            type: 'tournamentState',
-            data: { state: {
+        const tournamentState: TournamentState = {
                 kingId: king ? king.id : '',
                 kingName: king ? king.name : '',
                 challengerId: challenger ? challenger.id : '',
@@ -118,11 +116,24 @@ export default class TournamentService {
                     playerId: p!.id,
                     playerName: p!.name
                     }))
-            }
+            };
+
+        return tournamentState
+    }
+
+    broadcastTournamentState(roomId: string): void {
+        const tournamentState = this.getRoomTournamentState(roomId);
+
+        if (!tournamentState) return ;
+
+        const tournamentStateMessage: TournamentStateMessage = {
+            type: 'tournamentState',
+            data: {
+                state: tournamentState!
             },
             timestamp: Date.now()
-        };
+        }
 
-        this.broadcaster.broadcastToRoom(roomId, tournamentState);
+        this.broadcaster.broadcastToRoom(roomId, tournamentStateMessage);
     }
 }

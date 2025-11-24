@@ -1,12 +1,10 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage } from "shared/index.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage, TournamentState } from "shared/index.js";
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
 import GameService from "./GameService.js";
 import RoomService from "./RoomService.js";
 import TournamentService from "./TournamentService.js";
-import { timeStamp } from "console";
-import { measureMemory } from "vm";
 
 export default class NewMessageHandler {
     private tournamentService: TournamentService
@@ -14,7 +12,7 @@ export default class NewMessageHandler {
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
 
-    constructor (private roomManager: RoomManager) {
+    constructor ( private roomManager: RoomManager ) {
         this.broadcaster = new MessageBroadcaster(roomManager);
         this.tournamentService = new TournamentService(roomManager, this.broadcaster);
         this.gameService = new GameService(roomManager, this.broadcaster);
@@ -108,6 +106,7 @@ export default class NewMessageHandler {
                 playerId: player.id,
                 roomId: room.id,
                 position: player.position,
+                picture: player.picture,
                 playersInRoom: this.roomService.getPlayersInRoom(room.id).map(toSerializablePlayer)
             },
             timestamp: Date.now()
@@ -149,6 +148,7 @@ export default class NewMessageHandler {
                     playerId: player.id,
                     roomId: result.room.id,
                     position: player.position,
+                    picture: player.picture,
                     playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
                 },
                 timestamp: Date.now()
@@ -165,6 +165,7 @@ export default class NewMessageHandler {
                         playerId: result.matchedPlayer.id,
                         roomId: result.room.id,
                         position: result.matchedPlayer.position,
+                        picture: result.matchedPlayer.picture,
                         playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
                     },
                     timestamp: Date.now()
@@ -195,6 +196,7 @@ export default class NewMessageHandler {
                 playerId: player.id,
                 roomId: roomId,
                 position: player.position,
+                picture: player.picture,
                 playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
             },
             timestamp: Date.now()
@@ -261,24 +263,28 @@ export default class NewMessageHandler {
             if (!room) return;
             const playersInRoom = this.roomManager.getPlayersInRoom(room.id);
 
+            let tournamentState: TournamentState | null = null;
+            if (room.mode === 'tournament') {
+                this.tournamentService.assignRoles(room);
+                tournamentState = this.tournamentService.getRoomTournamentState(room.id);
+            }
+
             const startMessage: GameStartMessage = {
                 type: 'gameStart',
                 data: {
                     players: playersInRoom.map(p => ({
                     playerId: p.id,
                     playerName: p.name,
-                    position: p.position
-                    }))
+                    position: p.position,
+                    })),
+                    tournamentState: tournamentState ? tournamentState : undefined
                 },
                 timestamp: Date.now()
             };
+            
+            console.log("GameStartState", startMessage);
 
             this.broadcaster.broadcastToRoom(room.id, startMessage);
-
-            if (room.mode === 'tournament') {
-                this.tournamentService.assignRoles(room);
-                this.tournamentService.broadcastTournamentState(room.id);
-            }
         }
     }
 
