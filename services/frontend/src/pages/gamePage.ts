@@ -12,7 +12,6 @@ let user: UserData | null = null;
 let gameOptions: GameOptionsData | null = null;
 let currentGame: GameClient | null = null;
 let playersInRoom: serializablePlayer[] | null = null;
-let timeout: NodeJS.Timeout | undefined;
 
 function matchMaking(container: HTMLElement) {
 
@@ -192,11 +191,9 @@ function startGame(container: HTMLElement, tournamentState?: TournamentState) {
 }
 
 function onGameOver() {
-    if (gameOptions!.mode == 'standard'){
-        socket.onmessage = null;
-        setTimeout(() => {
-            navigate('lobby');
-        }, 3 * 1000)
+    if (gameOptions!.config?.mode == 'standard'){
+        currentGame!.stop();
+        addBackToLobbyButton();
     }
 }
 
@@ -222,6 +219,21 @@ export function GamePage(): HTMLElement {
     })
 
     return container;
+}
+
+function addBackToLobbyButton() {
+    const canvasContainer = document.getElementById('canvas-container') as HTMLDivElement;
+    const backToLobbyButton = document.createElement('button') as HTMLButtonElement;
+
+    backToLobbyButton.className = 'absolute bottom-8 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition-colors duration-200';
+    backToLobbyButton.id = 'back-to-lobby-button';
+    backToLobbyButton.textContent = 'Back To Lobby';
+    backToLobbyButton.onclick = () => navigate('lobby');
+
+    // Make canvas container relative for absolute positioning
+    canvasContainer.style.position = 'relative';
+    
+    canvasContainer.appendChild(backToLobbyButton);
 }
 
 function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
@@ -361,12 +373,10 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 }
 
 export function cleanupGamePage(): void {
-    clearTimeout(timeout);
     if (currentGame){
         currentGame?.stop();
         currentGame = null;
     }
-    timeout = undefined;
     playersInRoom = [];
     gameStorage.clearGameOptions();
     gameOptions = null;
