@@ -99,20 +99,7 @@ export default class NewMessageHandler {
             return;
         }
 
-        const response: PlayerJoinedMessage = {
-            type: 'playerJoined',
-            data: {
-                playerName: player.name,
-                playerId: player.id,
-                roomId: room.id,
-                position: player.position,
-                picture: player.picture,
-                playersInRoom: this.roomService.getPlayersInRoom(room.id).map(toSerializablePlayer)
-            },
-            timestamp: Date.now()
-        };
-
-        this.broadcaster.broadcastToRoom(room.id, response);
+        this.broadcastPlayerJoined(room.id, player);
     }
 
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
@@ -141,36 +128,9 @@ export default class NewMessageHandler {
 
         // Match found - notify all players in room
         if (result.room) {
-            const response: PlayerJoinedMessage = {
-                type: 'playerJoined',
-                data: {
-                    playerName: player.name,
-                    playerId: player.id,
-                    roomId: result.room.id,
-                    position: player.position,
-                    picture: player.picture,
-                    playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
-                },
-                timestamp: Date.now()
-            };
-
-            this.broadcaster.broadcastToRoom(result.room.id, response);
-
-            // If we matched with a waiting player, they need notification too
+            this.broadcastPlayerJoined(result.room.id, player);
             if (result.matchedPlayer) {
-                const matchedResponse: PlayerJoinedMessage = {
-                    type: 'playerJoined',
-                    data: {
-                        playerName: result.matchedPlayer.name,
-                        playerId: result.matchedPlayer.id,
-                        roomId: result.room.id,
-                        position: result.matchedPlayer.position,
-                        picture: result.matchedPlayer.picture,
-                        playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
-                    },
-                    timestamp: Date.now()
-                };
-                this.broadcaster.broadcastToRoom(result.room.id, matchedResponse);
+                this.broadcastPlayerJoined(result.room.id, result.matchedPlayer);
             }
         }
     }
@@ -189,20 +149,7 @@ export default class NewMessageHandler {
             return;
         }
 
-        const response: PlayerJoinedMessage = {
-            type: 'playerJoined',
-            data: {
-                playerName: player.name,
-                playerId: player.id,
-                roomId: roomId,
-                position: player.position,
-                picture: player.picture,
-                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
-            },
-            timestamp: Date.now()
-        };
-
-        this.broadcaster.broadcastToRoom(roomId, response);
+        this.broadcastPlayerJoined(roomId, player);
     }
 
     handleLeaveRoom(player: Player) {
@@ -303,5 +250,21 @@ export default class NewMessageHandler {
             timestamp: Date.now()
           };
         socket.send(JSON.stringify(errorResponse));
+    }
+
+    private broadcastPlayerJoined(roomId: string, player: Player): void {
+        const response: PlayerJoinedMessage = {
+            type: 'playerJoined',
+            data: {
+                playerName: player.name,
+                playerId: player.id,
+                roomId: roomId,
+                position: player.position,
+                picture: player.picture,
+                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
+            },
+            timestamp: Date.now()
+        };
+        this.broadcaster.broadcastToRoom(roomId, response);
     }
 }
