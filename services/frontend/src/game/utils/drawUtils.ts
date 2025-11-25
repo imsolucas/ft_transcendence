@@ -67,3 +67,52 @@ export function drawString(txt: string, pos: Vector, color: string,style: string
     }
     ctx.restore();
 }
+
+export function drawWrappedString(
+    text: string,
+    position: { x: number; y: number },
+    color: string,
+    font: string,
+    maxWidth: number,
+    lineHeight: number,
+    scale: { x: number; y: number },
+    ctx: CanvasRenderingContext2D
+): void {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.font = font;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    // Build lines that fit within maxWidth
+    for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width / scale.x;
+
+        if (testWidth > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+        } else {
+            currentLine = testLine;
+        }
+    }
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+
+    // Draw each line
+    const totalHeight = lines.length * lineHeight;
+    const startY = position.y - (totalHeight / 2) + (lineHeight / 2);
+
+    lines.forEach((line, index) => {
+        const y = (startY + (index * lineHeight)) * scale.y;
+        ctx.fillText(line, position.x * scale.x, y);
+    });
+
+    ctx.restore();
+}

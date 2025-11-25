@@ -1,7 +1,6 @@
 import { GameEngine } from "shared"
 import type { GameConfig, GameEndMessage, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, PlayerLeftMessage, serializablePlayer, TournamentEndMessage, TournamentRoundEndMessage, TournamentState, TournamentStateMessage } from "shared";
-import { drawCircle, drawRectangle, drawRoundRect, drawString } from "./utils/drawUtils";
-import { UserData } from "../types/user";
+import { drawCircle, drawRectangle, drawRoundRect, drawString, drawWrappedString } from "./utils/drawUtils";
 
 export class GameClient {
     private ctx: CanvasRenderingContext2D;
@@ -99,6 +98,8 @@ export class GameClient {
                 case 'playerLeft':
                     const playerLeftMsg = message as PlayerLeftMessage
 
+                    if (this.winner || this.roundWinner || this.gameState.name == 'GameOverState')
+                        break;
                     this.stop();
                     this.onGameOver(`Opponent ${playerLeftMsg.data.playerName} left`);
                     break;
@@ -305,11 +306,17 @@ export class GameClient {
             winner = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1];
         }
         if (winner){
-            drawString(
-                `${winner} has won${this.tournamentWinner ? 'the tournament' : ''}!`,
+            const message = `${winner} has won${this.tournamentWinner ? ' the tournament' : ''}!`;
+            drawWrappedString(
+                message,
                 {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
-                "#8f40de", "bold 16px Poppins",
-                {x: this.scale_x, y: this.scale_y}, this.ctx);
+                "#8f40de",
+                "bold 50px Poppins",
+                this.config.courtSize!.x * 0.8, // Max width (80% of court width)
+                20, // Line height
+                {x: this.scale_x, y: this.scale_y},
+                this.ctx
+            );
         }
     }
 
