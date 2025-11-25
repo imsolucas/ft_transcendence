@@ -1,6 +1,7 @@
 import { GameEngine } from "shared"
-import type { GameConfig, GameEndMessage, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, PlayerLeftMessage, serializablePlayer, TournamentRoundEndMessage, TournamentState, TournamentStateMessage } from "shared";
+import type { GameConfig, GameEndMessage, GameMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs, PlayerLeftMessage, serializablePlayer, TournamentEndMessage, TournamentRoundEndMessage, TournamentState, TournamentStateMessage } from "shared";
 import { drawCircle, drawRectangle, drawRoundRect, drawString } from "./utils/drawUtils";
+import { UserData } from "../types/user";
 
 export class GameClient {
     private ctx: CanvasRenderingContext2D;
@@ -12,6 +13,7 @@ export class GameClient {
     private gameState!: GameState;
     private winner?: serializablePlayer
     private roundWinner?: serializablePlayer
+    private tournamentWinner?: serializablePlayer
     private scale_x: number = 0
     private scale_y: number = 0
     private aspectRatio!: number
@@ -25,6 +27,7 @@ export class GameClient {
         private config: GameConfig,
         private onGameOver: (error?: string) => void,
         private socket?: WebSocket,
+        private currentUserName?: string,
         private tournamentState?: TournamentState,
         private playersInRoom?: serializablePlayer[]
     )
@@ -59,11 +62,15 @@ export class GameClient {
 
     public stop(): void {
         this.isRunning = false;
+        if (this.socket){
+            this.socket.onclose = null
+            this.socket.onmessage = null
+            this.socket.close()
+        }
         if (this.animationId){
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
-        // 🧹 Remove event listeners
         this.removeEvents();
     }
 
@@ -73,6 +80,8 @@ export class GameClient {
 
             switch (message.type) {
                 case 'gameState':
+                    this.winner = undefined;
+                    this.roundWinner = undefined;
                     const gameStateMessage = (message as GameStateMessage)
                     this.gameState = gameStateMessage.data.gameState
                     console.log("Recieved game state");
@@ -82,9 +91,16 @@ export class GameClient {
                     this.tournamentState = tournamentStateMsg.data.state;
                     console.log('Recieved Tournament state');
                     break;
+                case 'tournamentRoundEnd':
+                    const tournamentRoundEndMsg = message as TournamentRoundEndMessage
+
+                    this.roundWinner = tournamentRoundEndMsg.data.winner
+                    break;
                 case 'playerLeft':
-                    alert("Opponent left");
-                    this.onGameOver?.('error');
+                    const playerLeftMsg = message as PlayerLeftMessage
+
+                    this.stop();
+                    this.onGameOver(`Opponent ${playerLeftMsg.data.playerName} left`);
                     break;
                 case 'gameEnd':
                     const gameEndMsg = message as GameEndMessage
@@ -92,6 +108,11 @@ export class GameClient {
                     this.winner = gameEndMsg.data.winner
 
                     console.log(`Game Over, player ${this.winner.name} has won`);
+                    break;
+                case 'tournamentEnd':
+                    const tournamentEndMsg = message as TournamentEndMessage
+
+                    this.tournamentWinner = tournamentEndMsg.data.winner;
                     break;
                 default:
                     break;
@@ -190,23 +211,31 @@ export class GameClient {
     private render_tournament_state(): void {
         if (!this.tournamentState) return;
 
-        // Update player names in the header
-        const leftPlayerContainer = document.getElementById('left-player-name');
-        const rightPlayerContainer = document.getElementById('right-player-name');
-        
-        if (leftPlayerContainer && this.tournamentState.kingName) {
-            const leftPlayerNameSpan = leftPlayerContainer.querySelector('span');
-            if (leftPlayerNameSpan) {
-                leftPlayerNameSpan.textContent = this.tournamentState.kingName;
+
+        const updatePlayerContainer = (containerId: string, playerName: string, picture?: string) => {
+            const playerContainer = document.getElementById(containerId) as HTMLDivElement;
+
+            if (!playerContainer){
+                console.warn('could not find player container with id: ', containerId);
+                return ;
             }
-        }
-        
-        if (rightPlayerContainer && this.tournamentState.challengerName) {
-            const rightPlayerNameSpan = rightPlayerContainer.querySelector('span');
-            if (rightPlayerNameSpan) {
-                rightPlayerNameSpan.textContent = this.tournamentState.challengerName;
+
+            const span = playerContainer.querySelector('span') as HTMLSpanElement;
+            const img = playerContainer.querySelector('img') as HTMLImageElement;
+
+            if (span)
+                span.textContent = playerName == this.currentUserName ? `${playerName} (you)` : playerName
+
+            if (img){
+                if (!picture)
+                    picture = this.playersInRoom!.find(player => { if (player.name == playerName) return player })?.picture
+                img.src = picture ? picture : '';
             }
+
         }
+
+        updatePlayerContainer('left-player-container', this.tournamentState.kingName);
+        updatePlayerContainer('right-player-container', this.tournamentState.challengerName);
 
         // Update the queue
         const queue = document.getElementById('queue');
@@ -223,12 +252,14 @@ export class GameClient {
                 
                 const playerName = document.createElement('span');
                 playerName.className = 'text-gray-900 font-bold text-lg truncate';
-                playerName.textContent = player.playerName;
+                playerName.textContent = player.playerName == this.currentUserName ? `${player.playerName} (you)` : player.playerName;
                 
                 playerContainer.appendChild(playerName);
                 queue.appendChild(playerContainer);
             });
         }
+    
+        this.tournamentState = undefined
     }
 
     private render_game_state(): void {
@@ -259,15 +290,23 @@ export class GameClient {
             )
         }
 
-        if (this.gameState.name == "GameOverState" || this.winner){
-            let winner: string;
-
-            if (this.winner)
+        let winner: string | undefined = undefined
+        if (this.socket){
+            if (this.winner){
                 winner = this.winner.name;
-            else
-                winner = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1]
+            }
+            if (this.roundWinner){
+                winner = this.roundWinner.name;
+            }
+            if (this.tournamentWinner)
+                winner = this.tournamentWinner.name;
+        }
+        else if (this.gameState.name == "GameOverState"){
+            winner = this.gameState.scores[0] > this.gameState.scores[1] ? this.config.playerNames[0] : this.config.playerNames[1];
+        }
+        if (winner){
             drawString(
-                `${winner} has won!`,
+                `${winner} has won${this.tournamentWinner ? 'the tournament' : ''}!`,
                 {x: this.config.courtSize!.x / 2, y: this.config.courtSize!.y / 2},
                 "#8f40de", "bold 16px Poppins",
                 {x: this.scale_x, y: this.scale_y}, this.ctx);
@@ -302,7 +341,7 @@ export class GameClient {
         }
         if (this.tournamentState)
             this.render_tournament_state();
-        if (this.gameState?.name == 'GameOverState' || this.winner ){
+        if ((this.gameState?.name == 'GameOverState' && !this.socket) || this.winner || this.tournamentWinner){
             this.onGameOver()
         }
         requestAnimationFrame(this.loop.bind(this));

@@ -182,6 +182,7 @@ function startGame(container: HTMLElement, tournamentState?: TournamentState) {
             gameOptions!.config!,
             onGameOver,
             gameOptions?.type == 'local' ? undefined : socket,
+            user!.username,
             tournamentState,
             playersInRoom ? playersInRoom : undefined
         );
@@ -194,15 +195,10 @@ function onGameOver(error?: string) {
         currentGame!.stop();
         navigate('lobby');
         alert(error);
+        return ;
     }
-
-    if (gameOptions!.mode == 'standard'){
-        currentGame!.stop();
-        addBackToLobbyButton();
-    }
-    if (gameOptions!.mode == 'tournament'){
-        
-    }
+    currentGame?.stop();
+    addBackToLobbyButton();
 }
 
 export function GamePage(): HTMLElement {
@@ -304,8 +300,8 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
         });
     }
 
-    const leftPlayerContainer = createPlayerContainer(leftPlayerName!, 'left-player-name', gameOptions?.config?.mode == 'tournament', leftPlayerAvatar);
-    const rightPlayerContainer = createPlayerContainer(rightPlayerName!, 'right-player-name', false, rightPlayerAvatar);
+    const leftPlayerContainer = createPlayerContainer(leftPlayerName!, 'left-player-container', gameOptions?.config?.mode == 'tournament', leftPlayerAvatar);
+    const rightPlayerContainer = createPlayerContainer(rightPlayerName!, 'right-player-container', false, rightPlayerAvatar);
 
     // VS text
     const vsText = document.createElement('span');

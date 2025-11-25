@@ -17,6 +17,7 @@ export type GameMessage =
 | GameStartMessage
 | GameEndMessage
 | TournamentRoundEndMessage
+| TournamentEndMessage
 | PlayerJoinedMessage
 | TournamentStateMessage;
 
@@ -173,6 +174,13 @@ export interface TournamentRoundEndMessage extends BaseMessage {
 	data: {
 		winner: serializablePlayer
 	};
+}
+
+export interface TournamentEndMessage extends BaseMessage {
+	type: 'tournamentEnd';
+	data: {
+		winner: serializablePlayer
+	}
 }
 
 export interface TournamentStateMessage extends BaseMessage {

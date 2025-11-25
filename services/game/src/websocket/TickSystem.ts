@@ -1,4 +1,4 @@
-import { toSerializablePlayer, type GameEndMessage, type TournamentRoundEndMessage } from "shared/index.js";
+import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, type TournamentRoundEndMessage } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import type { MessageBroadcaster } from "./Broadcaster.js";
 import type TournamentService from "./TournamentService.js";
@@ -39,14 +39,25 @@ export default class TickSystem {
             const continueGame = room.gameServer.tick(deltaTime);
 
             if (!continueGame) {
-                const winnerId = room.gameServer.getWinner();
+                const roundWinner = room.gameServer.getWinner();
 
+                const winnerId = room.mode == "tournament"
+                    ? (roundWinner == 0 ? room.kingId! : room.challengerId!)
+                    : (roundWinner == 0 ? room.playerIds[0] : room.playerIds[1]);
                 if (room.mode === 'tournament' && winnerId) {
                     const tournamentResult = this.tournamentService.endRound(room, winnerId);
 
                     if (tournamentResult.tournamentOver) {
                         console.log(`Tournament finished! Winner: ${tournamentResult.tournamentWinnerId}`);
                         room.status = 'finished';
+                        
+                        const tournamentEndMsg: TournamentEndMessage = {
+                            type: 'tournamentEnd',
+                            data: { winner: toSerializablePlayer(this.roomManager.getPlayer(winnerId)!)! },
+                            timestamp: Date.now()
+                        }
+
+                        this.broadcaster.broadcastToRoom(room.id, tournamentEndMsg);
                         //frontend has to read the tourney state to come up with winnner screen
                     } else {
                         console.log(`Round ended. Preparing for next round...`);
@@ -77,7 +88,6 @@ export default class TickSystem {
                         }, this.DELAY_AFTER_ROUND_END);
                     }
                 } else {
-                    // standard game
                     room.status = 'finished';
 
                     const gameEndMsg: GameEndMessage = {

@@ -55,7 +55,7 @@ export class GameServer {
     return (gameState.name !== 'GameOverState');
   }
 
-  getWinner(): string | null {
+  getWinner(): number | null{
     const gameState = this.gameEngine.getGameState();
 
     if (gameState.name !== 'GameOverState' || !gameState.scores) {
@@ -64,6 +64,6 @@ export class GameServer {
 
     const scores = gameState.scores;
     const winnerIndex = (scores[0] ?? 0) > (scores[1] ?? 0) ? 0 : 1;
-    return this.playerIds[winnerIndex] ?? null;
+    return winnerIndex;
   }
 }
