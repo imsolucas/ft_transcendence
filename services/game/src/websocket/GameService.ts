@@ -42,6 +42,8 @@ export default class GameService {
 
         if (!room.gameServer) return false;
 
+        if (room.mode == 'tournament' && room.queueIds?.includes(player.id)) return true;
+
         if (this.roomManager.getPlayer(room.playerIds[0]!)!.name == player.name)
             room.gameServer.input(message.data.inputs, undefined);
         else
