@@ -128,10 +128,9 @@ export default class NewMessageHandler {
 
         // Match found - notify all players in room
         if (result.room) {
+            // When a match is found, both players are already in the room
+            // Just broadcast once for the player who just joined (the second player)
             this.broadcastPlayerJoined(result.room.id, player);
-            if (result.matchedPlayer) {
-                this.broadcastPlayerJoined(result.room.id, result.matchedPlayer);
-            }
         }
     }
 
@@ -224,11 +223,11 @@ export default class NewMessageHandler {
                     playerName: p.name,
                     position: p.position,
                     })),
-                    tournamentState: tournamentState ? tournamentState : undefined
+                    ...(tournamentState && { tournamentState })
                 },
                 timestamp: Date.now()
             };
-            
+
             console.log("GameStartState", startMessage);
 
             this.broadcaster.broadcastToRoom(room.id, startMessage);

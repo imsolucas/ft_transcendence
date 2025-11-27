@@ -3,7 +3,8 @@ import type { RoomManager } from "../game/roomManager.js";
 import type { Room } from "../types/room.types.js";
 
 export default class RoomService {
-    private waitingQueue: Player[] = [];
+    private standardQueue: Player[] = [];
+    private tournamentQueue: Player[] = [];
 
     constructor (
         private roomManager: RoomManager
@@ -53,16 +54,19 @@ export default class RoomService {
             }
         }
 
-        if (this.waitingQueue.length > 0) {
-            const waitingPlayer = this.waitingQueue.shift()!;
+        const queue = mode === 'tournament' ? this.tournamentQueue : this.standardQueue;
 
-            const config = default_config.standardGame;
-            config.mode = mode;
+        if (queue.length > 0) {
+            const waitingPlayer = queue.shift()!;
+
+            const config = mode === 'tournament'
+                ? { ...default_config.tournamentGame }
+                : { ...default_config.standardGame };
             const room = this.roomManager.createRoom(config);
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);
             this.roomManager.addPlayerToRoom(room.id, player.id);
-            
+
             if (this.roomManager.isRoomFull(room.id)) {
                 room.status = 'full';
             }
@@ -70,16 +74,25 @@ export default class RoomService {
             return { room, queued: false, matchedPlayer: waitingPlayer };
         }
 
-        this.waitingQueue.push(player);
+        queue.push(player);
         return { queued: true };
     }
 
     leaveQueue(player: Player): boolean {
-        const index = this.waitingQueue.findIndex(p => p.id === player.id);
-        if (index === -1) return false;
+        // Check both queues
+        let index = this.standardQueue.findIndex(p => p.id === player.id);
+        if (index !== -1) {
+            this.standardQueue.splice(index, 1);
+            return true;
+        }
 
-        this.waitingQueue.splice(index, 1);
-        return true;
+        index = this.tournamentQueue.findIndex(p => p.id === player.id);
+        if (index !== -1) {
+            this.tournamentQueue.splice(index, 1);
+            return true;
+        }
+
+        return false;
     }
 
     leaveRoom(player: Player): Room | null {
@@ -100,16 +113,23 @@ export default class RoomService {
     }
 
     getQueuePosition(playerId: string): number {
-        const index = this.waitingQueue.findIndex(p => p.id === playerId);
-        return index === -1 ? -1 : index + 1; // 1-indexed position
+        // Check standard queue first
+        let index = this.standardQueue.findIndex(p => p.id === playerId);
+        if (index !== -1) return index + 1; // 1-indexed position
+
+        // Check tournament queue
+        index = this.tournamentQueue.findIndex(p => p.id === playerId);
+        return index === -1 ? -1 : index + 1;
     }
 
     getQueueLength(): number {
-        return this.waitingQueue.length;
+        // Return the total length of both queues (or could be split by mode if needed)
+        return this.standardQueue.length + this.tournamentQueue.length;
     }
 
     isInQueue(playerId: string): boolean {
-        return this.waitingQueue.some(p => p.id === playerId);
+        return this.standardQueue.some(p => p.id === playerId) ||
+               this.tournamentQueue.some(p => p.id === playerId);
     }
 
     private createStandardConfig(): GameConfig {
