@@ -38,8 +38,17 @@ export const MatchHistory = {
     end_at: { type: 'string', format: 'date-time' }
   }
 };
+
 export const UnauthorizedError = {
   $id: "UnauthorizedError",
+  type: "object",
+  properties: {
+    error: { type: "string" }
+  }
+};
+
+export const UnauthorizedApiKey = {
+  $id: "UnauthorizedApiKey",
   type: "object",
   properties: {
     error: { type: "string" }
