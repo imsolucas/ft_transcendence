@@ -6,6 +6,6 @@ export namespace defaults {
     export const COURT_HEIGHT = 100
     export const COURT_WIDTH = 160
     export const BALL_SIZE = 4
-    export const BALL_SPEED_MAX = 95
+    export const BALL_SPEED_MAX = 50
     export const WIN_POINT = 5
 }

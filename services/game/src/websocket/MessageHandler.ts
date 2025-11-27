@@ -1,12 +1,10 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage } from "shared/index.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage, TournamentState } from "shared/index.js";
 import { toSerializablePlayer } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import { MessageBroadcaster } from "./Broadcaster.js";
 import GameService from "./GameService.js";
 import RoomService from "./RoomService.js";
 import TournamentService from "./TournamentService.js";
-import { timeStamp } from "console";
-import { measureMemory } from "vm";
 
 export default class NewMessageHandler {
     private tournamentService: TournamentService
@@ -14,33 +12,27 @@ export default class NewMessageHandler {
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
 
-    constructor (private roomManager: RoomManager) {
+    constructor ( private roomManager: RoomManager ) {
         this.broadcaster = new MessageBroadcaster(roomManager);
-        this.tournamentService = new TournamentService(roomManager);
+        this.tournamentService = new TournamentService(roomManager, this.broadcaster);
         this.gameService = new GameService(roomManager, this.broadcaster);
         this.roomService = new RoomService(roomManager);
     }
 
-    handleConnection(data: any, connection: any): Player | null {
-        const playerId = 'player_' + crypto.randomUUID().substring(0, 8).toLowerCase();
-        const roomId = "";
-        const position = 0;
-
+    handleConnection(message: ConnectionMessage, connection: any): Player | null {
         const newPlayer: Player = {
-            id: playerId,
-            name: data.data.playerName,
+            id: message.data.playerId,
+            name: message.data.playerName,
             socket: connection,
-            roomId: roomId,
-            position: position,
+            roomId: '',
+            position: 0,
             connectedAt: Date.now(),
-            isReady: false
+            isReady: false,
+            picture: message.data.picture
         };
 
         const response = {
             type: 'connectionSuccess',
-            data: {
-                playerId: playerId,
-            },
             timestamp: Date.now()
         };
 
@@ -54,7 +46,7 @@ export default class NewMessageHandler {
         const room = this.roomService.leaveRoom(player);
 
         if (room) {
-            const leaveMessage = {
+            const leaveMessage: PlayerLeftMessage = {
                 type: 'playerLeft',
                 data: { playerName: player.name },
                 timestamp: Date.now()
@@ -107,23 +99,11 @@ export default class NewMessageHandler {
             return;
         }
 
-        const response: PlayerJoinedMessage = {
-            type: 'playerJoined',
-            data: {
-                playerName: player.name,
-                playerId: player.id,
-                roomId: room.id,
-                position: player.position,
-                playersInRoom: this.roomService.getPlayersInRoom(room.id).map(toSerializablePlayer)
-            },
-            timestamp: Date.now()
-        };
-
-        this.broadcaster.broadcastToRoom(room.id, response);
+        this.broadcastPlayerJoined(room.id, player);
     }
 
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
-        const result = this.roomService.joinQueue(player);
+        const result = this.roomService.joinQueue(player, message.data.roomType);
         if (!result) {
             this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
             return;
@@ -134,7 +114,7 @@ export default class NewMessageHandler {
             const position = this.roomService.getQueuePosition(player.id);
             const queueLength = this.roomService.getQueueLength();
 
-            const response = {
+            const response: QueueJoinedMessage = {
                 type: 'queueJoined',
                 data: {
                     position: position,
@@ -148,34 +128,9 @@ export default class NewMessageHandler {
 
         // Match found - notify all players in room
         if (result.room) {
-            const response: PlayerJoinedMessage = {
-                type: 'playerJoined',
-                data: {
-                    playerName: player.name,
-                    playerId: player.id,
-                    roomId: result.room.id,
-                    position: player.position,
-                    playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
-                },
-                timestamp: Date.now()
-            };
-
-            this.broadcaster.broadcastToRoom(result.room.id, response);
-
-            // If we matched with a waiting player, they need notification too
+            this.broadcastPlayerJoined(result.room.id, player);
             if (result.matchedPlayer) {
-                const matchedResponse: PlayerJoinedMessage = {
-                    type: 'playerJoined',
-                    data: {
-                        playerName: result.matchedPlayer.name,
-                        playerId: result.matchedPlayer.id,
-                        roomId: result.room.id,
-                        position: result.matchedPlayer.position,
-                        playersInRoom: this.roomService.getPlayersInRoom(result.room.id).map(toSerializablePlayer)
-                    },
-                    timestamp: Date.now()
-                };
-                this.broadcaster.broadcastToRoom(result.room.id, matchedResponse);
+                this.broadcastPlayerJoined(result.room.id, result.matchedPlayer);
             }
         }
     }
@@ -194,19 +149,7 @@ export default class NewMessageHandler {
             return;
         }
 
-        const response: PlayerJoinedMessage = {
-            type: 'playerJoined',
-            data: {
-                playerName: player.name,
-                playerId: player.id,
-                roomId: roomId,
-                position: player.position,
-                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
-            },
-            timestamp: Date.now()
-        };
-
-        this.broadcaster.broadcastToRoom(roomId, response);
+        this.broadcastPlayerJoined(roomId, player);
     }
 
     handleLeaveRoom(player: Player) {
@@ -216,7 +159,7 @@ export default class NewMessageHandler {
             return;
         }
 
-        const response = {
+        const response: PlayerLeftMessage = {
             type: 'playerLeft',
             data: {
                 playerName: player.name
@@ -267,24 +210,28 @@ export default class NewMessageHandler {
             if (!room) return;
             const playersInRoom = this.roomManager.getPlayersInRoom(room.id);
 
+            let tournamentState: TournamentState | null = null;
+            if (room.mode === 'tournament') {
+                this.tournamentService.assignRoles(room);
+                tournamentState = this.tournamentService.getRoomTournamentState(room.id);
+            }
+
             const startMessage: GameStartMessage = {
                 type: 'gameStart',
                 data: {
                     players: playersInRoom.map(p => ({
                     playerId: p.id,
                     playerName: p.name,
-                    position: p.position
-                    }))
+                    position: p.position,
+                    })),
+                    tournamentState: tournamentState ? tournamentState : undefined
                 },
                 timestamp: Date.now()
             };
+            
+            console.log("GameStartState", startMessage);
 
             this.broadcaster.broadcastToRoom(room.id, startMessage);
-
-            if (room.mode === 'tournament') {
-                this.tournamentService.assignRoles(room);
-                this.broadcastTournamentState(room.id);
-            }
         }
     }
 
@@ -305,30 +252,19 @@ export default class NewMessageHandler {
         socket.send(JSON.stringify(errorResponse));
     }
 
-    private broadcastTournamentState(roomId: string): void {
-        const room = this.roomManager.getRoom(roomId);
-        if (!room || room.mode !== 'tournament') return;
-
-        const king = room.kingId ? this.roomManager.getPlayer(room.kingId) : undefined;
-        const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
-        const queuePlayers = (room.queueIds || []).map(id => this.roomManager.getPlayer(id));
-
-        const tournamentState: TournamentStateMessage = {
-            type: 'tournamentState',
-            data: { state: {
-                kingId: king ? king.id : '',
-                kingName: king ? king.name : '',
-                challengerId: challenger ? challenger.id : '',
-                challengerName: challenger ? challenger.name : '',
-                queue: queuePlayers.map(p => ({
-                    playerId: p!.id,
-                    playerName: p!.name
-                    }))
-            }
+    private broadcastPlayerJoined(roomId: string, player: Player): void {
+        const response: PlayerJoinedMessage = {
+            type: 'playerJoined',
+            data: {
+                playerName: player.name,
+                playerId: player.id,
+                roomId: roomId,
+                position: player.position,
+                picture: player.picture,
+                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
             },
             timestamp: Date.now()
         };
-
-        this.broadcaster.broadcastToRoom(roomId, tournamentState);
+        this.broadcaster.broadcastToRoom(roomId, response);
     }
 }

@@ -1,4 +1,4 @@
-import type { GameConfig, Player } from "shared/index.js";
+import { default_config, type GameConfig, type Player } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import type { Room } from "../types/room.types.js";
 
@@ -31,19 +31,24 @@ export default class RoomService {
         return true
     }
 
-    joinQueue(player: Player): { room?: Room; queued: boolean; matchedPlayer?: Player } | null {
+    joinQueue(player: Player, mode: 'tournament' | 'standard'): { room?: Room; queued: boolean; matchedPlayer?: Player } | null {
         if (player.roomId) {
             return null;
         }
 
-        const availableRooms = this.roomManager.getAvailableRooms() || [];
+        var availableRooms: Room[] = []
+        this.roomManager.getAvailableRooms().forEach((val) => {
+            if (val.mode == mode)
+                availableRooms.push(val);
+        });
         const firstRoom = availableRooms[0]
-
         if (firstRoom) {
             const success = this.roomManager.addPlayerToRoom(firstRoom.id, player.id);
             if (success) {
                 const room = this.roomManager.getRoom(firstRoom.id);
-                if (room) room.status = 'full';
+                if (room && this.roomManager.isRoomFull(room.id)) {
+                    room.status = 'full';
+                }
                 return { room: firstRoom, queued: false };
             }
         }
@@ -51,12 +56,16 @@ export default class RoomService {
         if (this.waitingQueue.length > 0) {
             const waitingPlayer = this.waitingQueue.shift()!;
 
-            const config = this.createStandardConfig();
+            const config = default_config.standardGame;
+            config.mode = mode;
             const room = this.roomManager.createRoom(config);
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);
             this.roomManager.addPlayerToRoom(room.id, player.id);
-            room.status = 'full';
+            
+            if (this.roomManager.isRoomFull(room.id)) {
+                room.status = 'full';
+            }
 
             return { room, queued: false, matchedPlayer: waitingPlayer };
         }
@@ -79,10 +88,10 @@ export default class RoomService {
         const room = this.roomManager.getRoom(player.roomId);
         if (!room) return null;
 
-        room.status = 'finished';
         const success = this.roomManager.removePlayerFromRoom(player.roomId, player.id);
         if (!success) return null;
 
+        room.status = 'waiting';
         return room;
     }
 

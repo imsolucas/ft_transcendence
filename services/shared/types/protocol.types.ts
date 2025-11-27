@@ -15,6 +15,9 @@ export type GameMessage =
 | GameStateMessage
 | PlayerInputMessage
 | GameStartMessage
+| GameEndMessage
+| TournamentRoundEndMessage
+| TournamentEndMessage
 | PlayerJoinedMessage
 | TournamentStateMessage;
 
@@ -39,6 +42,9 @@ export interface ConnectionMessage extends BaseMessage {
 	type: 'connection';
 	data: {
 		playerName: string;
+		playerId: string;
+		picture: string;
+		token?: string;
 	} ;
 }
 
@@ -107,9 +113,6 @@ export interface ErrorMessage extends BaseMessage {
 
 export interface ConnectionSuccessMessage extends BaseMessage {
 	type: 'connectionSuccess';
-	data: {
-		playerId: string;
-	};
 }
 
 export interface ConnectionErrorMessage extends BaseMessage {
@@ -120,6 +123,14 @@ export interface ConnectionErrorMessage extends BaseMessage {
 	};
 }
 
+export interface QueueJoinedMessage extends BaseMessage {
+	type: 'queueJoined';
+	data: {
+		position: number
+		queueLength: number
+	}
+}
+
 export interface PlayerJoinedMessage extends BaseMessage {
 	type: 'playerJoined';
 	data: {
@@ -127,6 +138,7 @@ export interface PlayerJoinedMessage extends BaseMessage {
 		playerId: string;
 		roomId: string;
 		position: number;
+		picture: string;
 		playersInRoom: serializablePlayer[]
 	}
 }
@@ -147,6 +159,27 @@ export interface GameStartMessage extends BaseMessage {
 			position?: number;
 		}[];
 		tournamentState?: TournamentState
+	}
+}
+
+export interface GameEndMessage extends BaseMessage {
+	type: 'gameEnd';
+	data: {
+		winner: serializablePlayer
+	};
+}
+
+export interface TournamentRoundEndMessage extends BaseMessage {
+	type: 'tournamentRoundEnd';
+	data: {
+		winner: serializablePlayer
+	};
+}
+
+export interface TournamentEndMessage extends BaseMessage {
+	type: 'tournamentEnd';
+	data: {
+		winner: serializablePlayer
 	}
 }
 

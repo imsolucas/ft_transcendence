@@ -1,9 +1,7 @@
 import { navigate } from '../router';
 import type { Screen } from '../router';
-import { updateNavbar } from '../components/Navbar';
+import { updateNavbar } from '../components/layout/Navbar';
 import type { UserData } from '../types/user';
-import { verify2FACode } from './api';
-import { t } from '../i18n';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -48,7 +46,7 @@ export function initializeAuthPage(): void {
   const container = document.querySelector('.container') as HTMLElement;
   const registerBtn = document.querySelector('.register-btn') as HTMLButtonElement;
   const loginBtn = document.querySelector('.login-btn') as HTMLButtonElement;
-  
+
   if (!container || !registerBtn || !loginBtn) {
     console.warn('Landing page elements not found');
     return;
@@ -62,7 +60,7 @@ export function initializeAuthPage(): void {
     switchToRegister(container);
   });
 
-  // Toggle to login form  
+  // Toggle to login form
   loginBtn.addEventListener('click', () => {
     console.log('Login button clicked - switching to login');
     switchToLogin(container);
@@ -100,11 +98,11 @@ export function initializeAuthPage(): void {
 function switchToRegister(container: HTMLElement): void {
   const loginForm = document.querySelector('.form-box.login') as HTMLElement;
   const registerForm = document.querySelector('.form-box.register') as HTMLElement;
-  
+
   if (!loginForm || !registerForm) return;
-  
+
   container.classList.add('active');
-  
+
   // Switch forms halfway through the animation
   setTimeout(() => {
     loginForm.style.visibility = 'hidden';
@@ -115,11 +113,11 @@ function switchToRegister(container: HTMLElement): void {
 function switchToLogin(container: HTMLElement): void {
   const loginForm = document.querySelector('.form-box.login') as HTMLElement;
   const registerForm = document.querySelector('.form-box.register') as HTMLElement;
-  
+
   if (!loginForm || !registerForm) return;
-  
+
   container.classList.remove('active');
-  
+
   // Switch forms halfway through the animation
   setTimeout(() => {
     registerForm.style.visibility = 'hidden';
@@ -131,7 +129,7 @@ async function handleLogin(): Promise<void> {
   const usernameInput = document.querySelector('.form-box.login input[type="text"]') as HTMLInputElement;
   const passwordInput = document.querySelector('.form-box.login input[type="password"]') as HTMLInputElement;
   const loginBtn = document.querySelector('.login-submit-btn') as HTMLButtonElement;
-  
+
   const name = usernameInput?.value.trim();
   const password = passwordInput?.value.trim();
 
@@ -146,7 +144,7 @@ async function handleLogin(): Promise<void> {
 
   try {
     const response = await apiLogin({ name, password });
-    
+
     if (response.success) {
       // Store auth token
       if (response.token && response.user) {
@@ -158,12 +156,12 @@ async function handleLogin(): Promise<void> {
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
       }
-      
+
       showNotification('Login successful!', 'success');
-      
+
       // Update navbar to show logged-in state
       updateNavbar();
-      
+
       // Navigate to lobby page after successful login
       setTimeout(() => {
         navigate('lobby' as Screen);
@@ -186,7 +184,7 @@ async function handleRegistration(): Promise<void> {
   const emailInput = document.querySelector('.form-box.register input[type="email"]') as HTMLInputElement;
   const passwordInput = document.querySelector('.form-box.register input[type="password"]') as HTMLInputElement;
   const registerBtn = document.querySelector('.register-submit-btn') as HTMLButtonElement;
-  
+
   const name = usernameInput?.value.trim();
   const email = emailInput?.value.trim();
   const password = passwordInput?.value.trim();
@@ -213,15 +211,15 @@ async function handleRegistration(): Promise<void> {
 
   try {
     const response = await apiRegister({ name, email, password });
-    
+
     if (response.success) {
       showNotification('Registration successful! Please check your email to verify your account.', 'success');
-      
+
       // Clear registration form first
       usernameInput.value = '';
       emailInput.value = '';
       passwordInput.value = '';
-      
+
       // Switch back to login form after a short delay
       setTimeout(() => {
         const container = document.querySelector('.container') as HTMLElement;
@@ -229,7 +227,7 @@ async function handleRegistration(): Promise<void> {
           switchToLogin(container);
         }
       }, 1000);
-      
+
     } else {
       showNotification(response.message || 'Registration failed', 'error');
     }
@@ -247,7 +245,7 @@ function handleSocialLogin(platform: string): void {
   // Redirect to OAuth provider
   const redirectUrl = `${API_BASE_URL}/auth/${platform}`;
   window.location.href = redirectUrl;
-  
+
   // Or show modal/popup for OAuth flow
   // const popup = window.open(redirectUrl, 'oauth', 'width=600,height=600');
   // Handle popup response...
@@ -287,7 +285,7 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
     }
 
     const data: BackendLoginResponse = await response.json();
-    
+
     return {
       success: true,
       message: 'Login successful',
@@ -355,7 +353,7 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
   // Create notification element
   const notification = document.createElement('div');
   notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
-  
+
   // Set notification style based on type
   switch (type) {
     case 'success':
@@ -368,16 +366,16 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
       notification.className += ' bg-blue-500 text-white';
       break;
   }
-  
+
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   // Animate in
   setTimeout(() => {
     notification.classList.remove('translate-x-full');
     notification.classList.add('translate-x-0');
   }, 100);
-  
+
   // Remove notification after 5 seconds (longer for registration success)
   const timeout = type === 'success' && message.includes('Registration') ? 5000 : 3000;
   setTimeout(() => {
@@ -404,20 +402,20 @@ export async function getCurrentUser(): Promise<UserData | null> {
 		const user = JSON.parse(storedUser);
 		return user;
 	  }
-	  
+
 	  // If not in localStorage, fetch from backend using profile endpoint
 	  const token = getAuthToken();
 	  if (!token) {
 		return null;
 	  }
-	  
+
 	  const response = await fetch(`${API_BASE_URL}/user/profile`, {
 		headers: {
 		  'Authorization': `Bearer ${token}`,
 		  'Content-Type': 'application/json',
 		},
 	  });
-	  
+
       if (response.ok) {
 		const userData = await response.json();
 		const user: UserData = {
@@ -430,14 +428,14 @@ export async function getCurrentUser(): Promise<UserData | null> {
 		localStorage.setItem('user', JSON.stringify(user));
 		return user;
 	  }
-	  
+
 	  return null;
 	} catch (error) {
 	  console.error("Error fetching current user:", error);
 	  return null;
 	}
   }
-  
+
 
 export function isAuthenticated(): boolean {
   return !!getAuthToken();
@@ -465,12 +463,12 @@ export function cleanupAuthPage(): void {
     // Remove all event listeners by cloning and replacing the elements
     const registerBtn = document.querySelector('.register-btn');
     const loginBtn = document.querySelector('.login-btn');
-    
+
     if (registerBtn) {
       const newRegisterBtn = registerBtn.cloneNode(true);
       registerBtn.parentNode?.replaceChild(newRegisterBtn, registerBtn);
     }
-    
+
     if (loginBtn) {
       const newLoginBtn = loginBtn.cloneNode(true);
       loginBtn.parentNode?.replaceChild(newLoginBtn, loginBtn);
@@ -487,12 +485,12 @@ export function ensureIconsLoaded(): void {
       // Check if the icon is actually displaying (has content)
       const computedStyle = window.getComputedStyle(icon);
       const fontFamily = computedStyle.getPropertyValue('font-family');
-      
+
       if (!fontFamily.includes('boxicons')) {
         // Boxicons didn't load, add emoji fallback
         const className = icon.className;
         let fallbackText = '';
-        
+
         if (className.includes('bxs-user')) fallbackText = '👤';
         else if (className.includes('bxs-lock-alt')) fallbackText = '🔒';
         else if (className.includes('bxs-envelope')) fallbackText = '📧';
@@ -500,7 +498,7 @@ export function ensureIconsLoaded(): void {
         else if (className.includes('bxl-facebook')) fallbackText = '📘';
         else if (className.includes('bxl-github')) fallbackText = '🙀';
         else if (className.includes('bxl-linkedin')) fallbackText = '💼';
-        
+
         if (fallbackText) {
           icon.textContent = fallbackText;
           (icon as HTMLElement).style.fontFamily = 'Arial, sans-serif';

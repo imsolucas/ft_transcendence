@@ -42,7 +42,7 @@ export class GameServer {
 
     const gameState = this.gameEngine.getGameState()
 
-    console.log(`Tick for room ${this.id}`);
+    // console.log(`Tick for room ${this.id}`);
 
     const message: GameStateMessage = {
       type: "gameState",
@@ -53,5 +53,17 @@ export class GameServer {
     this.broadcaster.broadcastToRoom(this.id, message);
 
     return (gameState.name !== 'GameOverState');
+  }
+
+  getWinner(): number | null{
+    const gameState = this.gameEngine.getGameState();
+
+    if (gameState.name !== 'GameOverState' || !gameState.scores) {
+      return null;
+    }
+
+    const scores = gameState.scores;
+    const winnerIndex = (scores[0] ?? 0) > (scores[1] ?? 0) ? 0 : 1;
+    return winnerIndex;
   }
 }

@@ -8,6 +8,7 @@ export interface Player {
 	connectedAt: number;
 	isReady: boolean;
 	socket: WebSocket;
+	picture: string;
 }
 
 
