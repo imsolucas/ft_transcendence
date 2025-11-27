@@ -221,14 +221,12 @@ export class GameClient {
                 return ;
             }
 
-            const span = playerContainer.querySelector('span') as HTMLSpanElement;
+            const name = playerContainer.querySelectorAll('span')[0] as HTMLSpanElement;
+            const score = playerContainer.querySelectorAll('span')[1] as HTMLSpanElement;
             const img = playerContainer.querySelector('img') as HTMLImageElement;
 
-            const score = (this.tournamentState!.scores as Record<string, number>)[playerName];
-            if (span){
-                span.textContent = playerName == this.currentUserName ? `${playerName} (you)` : playerName
-                span.textContent += `: ${score}`
-            }
+            if (name)
+                name.textContent = playerName
 
             if (img){
                 if (!picture)
@@ -236,6 +234,9 @@ export class GameClient {
                 img.src = picture ? picture : '';
             }
 
+            if (score){
+                score.textContent = (this.tournamentState!.scores as Record<string, number>)[playerName].toString();
+            }
         }
 
         updatePlayerContainer('left-player-container', this.tournamentState.kingName);
@@ -252,16 +253,20 @@ export class GameClient {
         if (this.tournamentState.queue && this.tournamentState.queue.length > 0) {
             this.tournamentState.queue.forEach(player => {
                 const playerContainer = document.createElement('div');
-                playerContainer.className = 'flex items-center justify-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3 min-w-0 w-full';
-                
+                playerContainer.className = `flex items-center justify-center gap-3 bg-gradient-to-r from-pink-400 to-pink-300 rounded-full px-6 py-3 min-w-0 w-full`;
+
                 const playerName = document.createElement('span');
                 playerName.className = 'text-gray-900 font-bold text-lg truncate';
-                const tourneyScore = (this.tournamentState!.scores as Record<string, number>)[player.playerName];
+
+                const playerScore = document.createElement('span');
+                playerScore.className = 'text-gray-900 font-bold text-lg';
+
+                playerScore.textContent = (this.tournamentState!.scores as Record<string, number>)[player.playerName].toString();
                 console.log("Tourney score: ", this.tournamentState!.scores);
-                playerName.textContent = player.playerName == this.currentUserName ? `${player.playerName} (you)` : player.playerName;
-                playerName.textContent += `: ${tourneyScore}`;
+                playerName.textContent = player.playerName;
                 
                 playerContainer.appendChild(playerName);
+                playerContainer.appendChild(playerScore);
                 queue.appendChild(playerContainer);
             });
         }

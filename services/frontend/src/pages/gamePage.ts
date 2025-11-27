@@ -273,6 +273,12 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 
             playerContainer.appendChild(kingLogo)
         }
+        if (gameOptions!.mode == 'tournament'){
+            const playerScore = document.createElement('span');
+            playerScore.className = 'text-gray-900 font-bold text-lg';
+
+            playerContainer.appendChild(playerScore);
+        }
 
         return playerContainer;
     };
