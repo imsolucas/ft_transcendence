@@ -224,8 +224,11 @@ export class GameClient {
             const span = playerContainer.querySelector('span') as HTMLSpanElement;
             const img = playerContainer.querySelector('img') as HTMLImageElement;
 
-            if (span)
+            const score = (this.tournamentState!.scores as Record<string, number>)[playerName];
+            if (span){
                 span.textContent = playerName == this.currentUserName ? `${playerName} (you)` : playerName
+                span.textContent += `: ${score}`
+            }
 
             if (img){
                 if (!picture)
@@ -253,7 +256,10 @@ export class GameClient {
                 
                 const playerName = document.createElement('span');
                 playerName.className = 'text-gray-900 font-bold text-lg truncate';
+                const tourneyScore = (this.tournamentState!.scores as Record<string, number>)[player.playerName];
+                console.log("Tourney score: ", this.tournamentState!.scores);
                 playerName.textContent = player.playerName == this.currentUserName ? `${player.playerName} (you)` : player.playerName;
+                playerName.textContent += `: ${tourneyScore}`;
                 
                 playerContainer.appendChild(playerName);
                 queue.appendChild(playerContainer);

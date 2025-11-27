@@ -95,6 +95,16 @@ export default class TournamentService {
         const challenger = room.challengerId ? this.roomManager.getPlayer(room.challengerId) : undefined;
         const queuePlayers = (room.queueIds || []).map(id => this.roomManager.getPlayer(id));
 
+        // Convert Map to plain object for JSON serialization
+        const scoresObject: Record<string, number> = {};
+        room.tournamentScores!.forEach((value, key) => {
+            const playerName = this.roomManager.getPlayer(key)!.name;
+            scoresObject[playerName] = value;
+        });
+        
+        console.log('tournamentScores: ', room.tournamentScores);
+        console.log('scores object: ', scoresObject);
+        
         const tournamentState: TournamentState = {
                 kingId: king ? king.id : '',
                 kingName: king ? king.name : '',
@@ -103,7 +113,8 @@ export default class TournamentService {
                 queue: queuePlayers.map(p => ({
                     playerId: p!.id,
                     playerName: p!.name
-                    }))
+                    })),    
+                scores: scoresObject // Use plain object instead of Map
             };
 
         return tournamentState

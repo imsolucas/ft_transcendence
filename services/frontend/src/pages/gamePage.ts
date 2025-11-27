@@ -325,7 +325,7 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
     // Queue section (only for tournament mode)
     if (gameOptions?.mode == 'tournament'){
         const queueContainer = document.createElement('div');
-        queueContainer.className = 'flex flex-col gap-4 h-full w-64 min-w-64 max-w-64 justify-start items-center flex-shrink-0';
+        queueContainer.className = 'flex flex-col gap-4 h-full w-64 min-w-64 max-w-74 justify-start items-center flex-shrink-0';
         queueContainer.id = 'queue-container';
 
         const queueTitle = document.createElement('span');
