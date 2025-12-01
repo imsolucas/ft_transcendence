@@ -29,9 +29,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    ports:
-      - "${USERS_PORT}:${USERS_PORT}"
-      - "5555:5555"
     volumes:
       - ../services/users/:/usr/src/app/:rw
       - users_db:/usr/src/app/db/
@@ -40,6 +37,28 @@ services:
       - devnet
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS ${USERS_HEALTH_HOST} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  api-gateway:
+    container_name: api-gateway
+    image: api-gateway
+    build:
+      context: ../services/api-gateway
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${API_GATEWAY_PORT}:80"
+    volumes:
+      - ../services/api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - devnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS ${API_GATEWAY_HEALTH_HOST} || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
