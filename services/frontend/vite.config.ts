@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import path from "path"
 
 export default defineConfig({
   appType: 'spa', // enable spa fallback
@@ -7,6 +8,12 @@ export default defineConfig({
     outDir: 'dist'
   },
   
+  resolve: {
+    alias: {
+      'shared': path.resolve(__dirname, '../shared'),
+    }
+  },
+
   server: {
 	watch: {
       usePolling: true,
