@@ -42,12 +42,16 @@ export default class GameService {
 
         if (!room.gameServer) return false;
 
+        // In tournament, only king and challenger can send input
         if (room.mode == 'tournament' && room.queueIds?.includes(player.id)) return true;
 
-        if (this.roomManager.getPlayer(room.playerIds[0]!)!.name == player.name)
+        // Use player position to determine which paddle to control
+        // Position 1 = left paddle (player 1), Position 2 = right paddle (player 2)
+        if (player.position === 1)
             room.gameServer.input(message.data.inputs, undefined);
-        else
+        else if (player.position === 2)
             room.gameServer.input(undefined, message.data.inputs);
+
         return true;
     }
 }
