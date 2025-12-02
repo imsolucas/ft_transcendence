@@ -1,6 +1,6 @@
 import Fastify  from "fastify";
 import type { FastifyInstance } from "fastify";
-import { FriendRequest, InternalServerError, MatchHistory, UnauthorizedError, UserProfile } from "./schemas/index.ts";
+import { FriendRequest, InternalServerError, MatchHistory, UnauthorizedApiKey, UnauthorizedError, UserProfile } from "./schemas/index.ts";
 import jwt from "jsonwebtoken";
 import dbPlugin from "./db/plugin.ts";
 import routes from "./routes/routes.ts";
@@ -20,24 +20,25 @@ export async function buildApp(): Promise<FastifyInstance> {
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
   });
 
   app.addSchema(UserProfile);
   app.addSchema(FriendRequest);
   app.addSchema(MatchHistory);
   app.addSchema(UnauthorizedError);
+  app.addSchema(UnauthorizedApiKey);
   app.addSchema(InternalServerError);
 
   const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret";
 
   app.addHook("preHandler", async (req, reply) => {
-    // Only check for routes that require auth (exclude auth routes)
     const path = req.routeOptions?.url;
+
+    // JWT verification for /user and /game (except /auth)
     if (
       path &&
-      (path.startsWith("/user") || path.startsWith("/game")) &&
-      !path.startsWith("/auth")
+      path.startsWith("/user") && !path.startsWith("/auth")
     ) {
       const auth = req.headers.authorization;
       if (!auth || !auth.startsWith("Bearer ")) {
@@ -49,6 +50,17 @@ export async function buildApp(): Promise<FastifyInstance> {
         req.user = payload as any;
       } catch {
         return reply.code(401).send({ error: "Unauthorized" });
+      }
+    }
+
+    // API key verification for routes that declare apiKeyAuth security
+    if (
+      req.routeOptions?.schema?.security &&
+      req.routeOptions.schema.security.some((s: any) => s.apiKeyAuth)
+    ) {
+      const apiKey = req.headers["x-api-key"];
+      if (!apiKey || apiKey !== process.env.INTERNAL_API_KEY) {
+        return reply.code(401).send({ error: "Invalid or missing API key." });
       }
     }
   });
@@ -66,6 +78,11 @@ export async function buildApp(): Promise<FastifyInstance> {
             type: "http",
             scheme: "bearer",
             bearerFormat: "JWT"
+          },
+          apiKeyAuth: {
+            type: "apiKey",
+            in: "header",
+            name: "x-api-key"
           }
         }
       }
