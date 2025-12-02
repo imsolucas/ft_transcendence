@@ -1,23 +1,22 @@
-import type { GameConfig } from "shared/index";
-
-export interface GameOptionsData {
-	type: 'local' | 'join-room' | 'random' | 'create-room';
-  mode: 'tournament' | 'standard';
-	config?: GameConfig;
-	roomId?: string
+export interface PaddleConfig {
+	color: string;
+	speed: number;
 }
 
-export const gameStorage = {
-  setGameOptions(data: GameOptionsData): void {
-    sessionStorage.setItem('gameOptions', JSON.stringify(data));
-  },
+export interface BallConfig {
+	color: string;
+	speed: number;
+}
 
-  getGameOptions(): GameOptionsData | null {
-    const data = sessionStorage.getItem('gameOptions');
-    return data ? JSON.parse(data) : null;
-  },
+export interface GameConfig {
+	paddleConfig: PaddleConfig | PaddleConfig[]; // Single config for local, array for multiplayer (per player)
+	ballConfig: BallConfig;
+	playerNames: string[]; // Only for local games
+	backgroundColor: string;
+	pointsToWin: number;
+	isPrivate: boolean;
+	mode: 'tournament' | 'standard';
+	numPlayers?: number; // For tournament mode
+	lobbyId?: string; // For multiplayer lobbies
+}
 
-  clearGameOptions(): void {
-    sessionStorage.removeItem('gameOptions');
-  }
-};

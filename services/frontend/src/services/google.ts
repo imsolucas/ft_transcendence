@@ -1,4 +1,4 @@
-import { updateNavbar } from '../components/layout/Navbar';
+import { updateNavbar } from '../components/Navbar';
 import { navigate } from '../router';
 
 type CredentialResponse = google.accounts.id.CredentialResponse;
@@ -72,14 +72,14 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
 
     // Process the Google authentication
     const success = await processGoogleAuth(responsePayload, response.credential);
-
+    
     if (success) {
       // Show success notification
       showNotification('Google Sign-In successful!', 'success');
-
+      
       // Update navbar and navigate to lobby page
       updateNavbar();
-
+      
       setTimeout(() => {
         navigate('lobby');
       }, 1500);
@@ -93,7 +93,7 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
 async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: string): Promise<boolean> {
   try {
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
-
+    
     // Send the Google credential to backend for verification
     const response = await fetch(`${API_URL}/auth/google`, {
       method: 'POST',
@@ -120,7 +120,7 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     if (data.token && data.user) {
       // Store the real JWT token from backend
       localStorage.setItem('authToken', data.token);
-
+      
       // Store user data with both picture and avatar for compatibility
       const userToStore = {
         ...data.user,
@@ -128,7 +128,7 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
         avatar: data.user.avatar || payload.picture,
       };
       localStorage.setItem('user', JSON.stringify(userToStore));
-
+      
       return true;
     } else {
       console.error('Invalid response from backend:', data);
@@ -147,7 +147,7 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
   // Create notification element
   const notification = document.createElement('div');
   notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
-
+  
   // Set notification style based on type
   switch (type) {
     case 'success':
@@ -160,16 +160,16 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
       notification.className += ' bg-blue-500 text-white';
       break;
   }
-
+  
   notification.textContent = message;
   document.body.appendChild(notification);
-
+  
   // Animate in
   setTimeout(() => {
     notification.classList.remove('translate-x-full');
     notification.classList.add('translate-x-0');
   }, 100);
-
+  
   // Remove notification after 3 seconds
   setTimeout(() => {
     notification.classList.remove('translate-x-0');

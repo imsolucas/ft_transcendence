@@ -67,8 +67,7 @@
     "edit": "Editar",
     "profileUpdated": "¡Perfil actualizado exitosamente!",
     "updateFailed": "Error al actualizar el perfil. Por favor intente nuevamente.",
-    "twoFAEnabled": "2FA Ha Sido Habilitado",
-    "setup2FA": "Configurar 2FA"
+    "twoFAEnabled": "2FA Ha Sido Habilitado"
   },
   "twoFA": {
     "setupTitle": "CONFIGURAR AUTENTICACIÓN DE DOS FACTORES",
