@@ -1,6 +1,6 @@
 import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
 import { navigate } from "../router";
-import { updateNavbar } from "../components/layout/Navbar";
+import { updateNavbar } from "../components/Navbar";
 import type { Screen } from "../router";
 import { verify2FACode } from "../utils/api";
 import { t } from "../i18n";
@@ -63,7 +63,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
     }
 
     const data: BackendLoginResponse = await response.json();
-
+    
     return {
       success: true,
       message: 'Login successful',
@@ -121,7 +121,7 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
   // Create notification element
   const notification = document.createElement('div');
   notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
-
+  
   // Set notification style based on type
   switch (type) {
     case 'success':
@@ -134,15 +134,15 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
       notification.className += ' bg-blue-500 text-white';
       break;
   }
-
+  
   notification.textContent = message;
   document.body.appendChild(notification);
-
+  
   // Animate in
   setTimeout(() => {
     notification.classList.remove('translate-x-full');
   }, 100);
-
+  
   // Auto-remove after 3 seconds
   setTimeout(() => {
     notification.classList.add('translate-x-full');
@@ -156,18 +156,18 @@ export function AuthPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-screen flex justify-center items-center font-poppins';
   container.classList.add('bg-gradient-to-b', 'from-[#4B1B67]', 'via-[#872481]', 'via-[#DC25A3]', 'via-[#F34C94]', 'to-[#F3796A]');
-
+  
   container.innerHTML = `
     <div class="container relative w-[850px] h-[550px] bg-gradient-to-br from-gray-900/95 to-purple-900/95 backdrop-blur-sm m-5 rounded-[30px] shadow-[0_0_50px_rgba(255,20,147,0.4)] overflow-hidden max-w-[90vw] font-poppins border-2 border-pink-400/30">
       <!-- Retro grid overlay -->
       <div class="absolute inset-0 opacity-10 pointer-events-none">
         <div class="grid-pattern"></div>
       </div>
-
+      
       <!-- Glowing orbs -->
       <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_20px_#00ffff]"></div>
       <div class="absolute bottom-4 left-4 w-6 h-6 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_#ff1493] animation-delay-500"></div>
-
+      
       <!-- Welcome Screen (initially hidden) -->
       <div class="welcome-screen absolute inset-0 bg-gradient-to-br from-gray-900/98 to-purple-900/98 backdrop-blur-md flex flex-col justify-center items-center text-white z-50 opacity-0 invisible transition-all duration-1000 ease-in-out">
         <div class="welcome-content text-center transform scale-75 transition-all duration-1000 ease-out delay-500">
@@ -175,7 +175,7 @@ export function AuthPage(): HTMLElement {
             <h1 class="text-7xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-400 drop-shadow-[0_0_30px_rgba(0,255,255,1)] mb-4 animate-pulse">WELCOME</h1>
             <h2 class="text-5xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-white to-cyan-400 drop-shadow-[0_0_30px_rgba(255,20,147,1)] animate-pulse animation-delay-300">TO SUPER PONG</h2>
           </div>
-
+          
           <div class="loading-indicator mb-8">
             <div class="flex justify-center items-center space-x-2">
               <div class="w-3 h-3 bg-cyan-400 rounded-full animate-bounce shadow-[0_0_10px_#00ffff]"></div>
@@ -183,7 +183,7 @@ export function AuthPage(): HTMLElement {
               <div class="w-3 h-3 bg-cyan-400 rounded-full animate-bounce animation-delay-400 shadow-[0_0_10px_#00ffff]"></div>
             </div>
           </div>
-
+          
           <p class="text-xl text-cyan-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(0,255,255,0.5)] animate-pulse">INITIALIZING GAME...</p>
         </div>
       </div>
@@ -192,36 +192,36 @@ export function AuthPage(): HTMLElement {
       <div class="form-box login absolute right-0 w-1/2 h-full bg-gradient-to-br from-gray-800/90 to-purple-900/90 backdrop-blur-md flex items-center text-white text-center p-10 z-10 transition-all duration-[600ms] ease-in-out delay-[1200ms] border-l border-pink-400/20">
         <form class="w-full" id="login-form">
           <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">LOGIN</h1>
-
+          
           <div class="input-box relative my-8">
             <input type="text" placeholder="USERNAME" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-cyan-400"></i>
           </div>
-
+          
           <div class="input-box relative my-8">
             <input type="password" placeholder="PASSWORD" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-cyan-400"></i>
           </div>
-
+          
           <div class="forgot-link -mt-4 mb-6">
             <a href="#" class="text-sm text-pink-300 hover:text-pink-400 hover:drop-shadow-[0_0_5px_rgba(255,20,147,0.8)] transition-all font-poppins">FORGOT PASSWORD?</a>
           </div>
-
+          
           <!-- Error message display -->
           <div id="login-error" class="error-message hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins">
             <span class="error-text"></span>
           </div>
-
+          
           <button type="submit" class="btn login-submit-btn w-full h-12 rounded-lg border-2 border-cyan-400 cursor-pointer text-base text-white font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all font-poppins bg-gradient-to-r from-cyan-500/20 to-pink-500/20 backdrop-blur-sm uppercase tracking-wider">
             ► LOGIN
           </button>
-
+          
           <div class="retro-divider my-6 flex items-center">
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-pink-400/50 to-transparent"></div>
             <span class="px-4 text-xs text-pink-300 uppercase tracking-widest">OR</span>
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-pink-400/50 to-transparent"></div>
           </div>
-
+          
           <div class="social-icons flex justify-center gap-3">
             <div id="google-signin-btn-login" class="google-signin-placeholder inline-flex p-3 border-2 border-pink-400/50 rounded-lg hover:border-pink-400 hover:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all bg-gray-900/30 backdrop-blur-sm"></div>
           </div>
@@ -232,37 +232,37 @@ export function AuthPage(): HTMLElement {
       <div class="form-box register absolute right-0 w-1/2 h-full bg-gradient-to-br from-gray-800/90 to-purple-900/90 backdrop-blur-md flex items-center text-white text-center p-10 z-10 transition-all duration-[600ms] ease-in-out delay-[1200ms] invisible border-l border-pink-400/20">
         <form class="w-full" id="register-form">
           <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_0_10px_rgba(255,20,147,0.5)]">REGISTER</h1>
-
+          
           <div class="input-box relative my-6">
             <input type="text" placeholder="USERNAME" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
           </div>
-
+          
           <div class="input-box relative my-6">
             <input type="email" placeholder="EMAIL" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-envelope absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
           </div>
-
+          
           <div class="input-box relative my-6">
             <input type="password" placeholder="PASSWORD" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
           </div>
-
+          
           <!-- Error message display -->
           <div id="register-error" class="error-message hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins">
             <span class="error-text"></span>
           </div>
-
+          
           <button type="submit" class="btn register-submit-btn w-full h-12 rounded-lg border-2 border-pink-400 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/20 to-cyan-500/20 backdrop-blur-sm uppercase tracking-wider">
             ► REGISTER
           </button>
-
+          
           <div class="retro-divider my-6 flex items-center">
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
             <span class="px-4 text-xs text-cyan-300 uppercase tracking-widest">OR</span>
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
           </div>
-
+          
           <div class="social-icons flex justify-center gap-3">
             <div id="google-signin-btn-register" class="google-signin-placeholder inline-flex p-3 border-2 border-cyan-400/50 rounded-lg hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all bg-gray-900/30 backdrop-blur-sm"></div>
           </div>
@@ -301,34 +301,34 @@ export function AuthPage(): HTMLElement {
     <!-- Enhanced Retro Arcade Styles -->
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-
+      
       /* Retro grid pattern */
       .grid-pattern {
-        background-image:
+        background-image: 
           linear-gradient(rgba(0,255,255,0.1) 1px, transparent 1px),
           linear-gradient(90deg, rgba(0,255,255,0.1) 1px, transparent 1px);
         background-size: 20px 20px;
         width: 100%;
         height: 100%;
       }
-
+      
       /* Animation delays */
       .animation-delay-200 {
         animation-delay: 200ms;
       }
-
+      
       .animation-delay-300 {
         animation-delay: 300ms;
       }
-
+      
       .animation-delay-400 {
         animation-delay: 400ms;
       }
-
+      
       .animation-delay-500 {
         animation-delay: 500ms;
       }
-
+      
       /* Custom glow animations */
       @keyframes neon-glow {
         0%, 100% {
@@ -338,11 +338,11 @@ export function AuthPage(): HTMLElement {
           text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
         }
       }
-
+      
       .arcade-title h1 {
         animation: neon-glow 2s ease-in-out infinite alternate;
       }
-
+      
       /* Zoom transition keyframes */
       @keyframes zoomToNavigation {
         0% {
@@ -354,22 +354,22 @@ export function AuthPage(): HTMLElement {
           opacity: 0;
         }
       }
-
+      
       .container.navigating {
         animation: zoomToNavigation 1s ease-in forwards;
         animation-delay: 2s;
       }
-
+      
       /* Welcome screen animations */
       .container.welcome .welcome-screen {
         opacity: 1;
         visibility: visible;
       }
-
+      
       .container.welcome .welcome-content {
         transform: scale(1);
       }
-
+      
       /* Hide forms during welcome */
       .container.welcome .form-box,
       .container.welcome .toggle-panel,
@@ -377,13 +377,13 @@ export function AuthPage(): HTMLElement {
         opacity: 0;
         transition: opacity 500ms ease-out;
       }
-
+      
       /* Retro button effects */
       .btn {
         position: relative;
         overflow: hidden;
       }
-
+      
       .btn:before {
         content: '';
         position: absolute;
@@ -394,11 +394,11 @@ export function AuthPage(): HTMLElement {
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
         transition: left 0.5s;
       }
-
+      
       .btn:hover:before {
         left: 100%;
       }
-
+      
       /* Responsive design */
       @media screen and (max-width: 650px) {
         .container {
@@ -456,15 +456,15 @@ export function AuthPage(): HTMLElement {
         .container.active .toggle-panel.toggle-right {
           bottom: 0;
         }
-
+        
         .arcade-title h1 {
           font-size: 2.5rem;
         }
-
+        
         .welcome-content .arcade-title h1:first-child {
           font-size: 3rem;
         }
-
+        
         .welcome-content .arcade-title h2 {
           font-size: 2rem;
         }
@@ -478,21 +478,21 @@ export function AuthPage(): HTMLElement {
         .arcade-title h1 {
           font-size: 2rem;
         }
-
+        
         .toggle-panel p {
           font-size: 0.875rem;
         }
-
+        
         .toggle-panel button {
           width: 160px;
           height: 48px;
           font-size: 0.875rem;
         }
-
+        
         .welcome-content .arcade-title h1:first-child {
           font-size: 2.5rem;
         }
-
+        
         .welcome-content .arcade-title h2 {
           font-size: 1.5rem;
         }
@@ -531,7 +531,7 @@ export function AuthPage(): HTMLElement {
         justify-content: center;
         position: relative;
       }
-
+      
       .google-signin-placeholder:hover {
         transform: translateY(-1px);
       }
@@ -540,7 +540,7 @@ export function AuthPage(): HTMLElement {
       .google-signin-placeholder iframe {
         border-radius: 8px !important;
       }
-
+      
       /* Scanline effect */
       .container:before {
         content: '';
@@ -559,16 +559,16 @@ export function AuthPage(): HTMLElement {
         pointer-events: none;
         z-index: 100;
       }
-
+      
       /* Error message styling */
       .error-message {
         animation: slideIn 0.3s ease-out;
       }
-
+      
       .error-message.hidden {
         display: none;
       }
-
+      
       @keyframes slideIn {
         from {
           opacity: 0;
@@ -591,28 +591,28 @@ export function AuthPage(): HTMLElement {
 // Enhanced authentication handler
 async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
   const containerEl = container.querySelector('.container');
-
+  
   // Form toggle functionality
   const loginBtn = container.querySelector('.login-btn');
   const registerBtn = container.querySelector('.register-btn');
-
+  
   loginBtn?.addEventListener('click', () => {
     containerEl?.classList.remove('active');
   });
-
+  
   registerBtn?.addEventListener('click', () => {
     containerEl?.classList.add('active');
   });
-
+  
   // Form submission handlers
   const loginForm = container.querySelector('#login-form');
   const registerForm = container.querySelector('#register-form');
-
+  
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     await handleLoginSubmit(container);
   });
-
+  
   registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     await handleRegisterSubmit(container);
@@ -624,12 +624,12 @@ async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
 
     const google = (window as any).google;
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-
+    
     if (!google?.accounts?.id) {
       console.warn('Google Identity SDK not available after load.');
       return;
     }
-
+    
     if (!clientId) {
       console.warn('VITE_GOOGLE_CLIENT_ID is not set.');
       return;
@@ -672,7 +672,7 @@ async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
 
   } catch (err) {
     console.error('Failed to load/initialize Google Sign-In:', err);
-
+    
     // Show fallback Google icons
     const placeholders = container.querySelectorAll('.google-signin-placeholder');
     placeholders.forEach(placeholder => {
@@ -693,11 +693,11 @@ async function initializeAuthHandlers(container: HTMLElement): Promise<void> {
 function showError(container: HTMLElement, formType: 'login' | 'register', message: string): void {
   const errorElement = container.querySelector(`#${formType}-error`) as HTMLElement;
   const errorText = errorElement?.querySelector('.error-text') as HTMLElement;
-
+  
   if (errorElement && errorText) {
     errorText.textContent = message;
     errorElement.classList.remove('hidden');
-
+    
     // Auto-hide error after 5 seconds
     setTimeout(() => {
       errorElement.classList.add('hidden');
@@ -718,10 +718,10 @@ function show2FAModal(container: HTMLElement, userId: number): void {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm';
   modal.id = '2fa-modal';
-
+  
   const modalContent = document.createElement('div');
   modalContent.className = 'relative w-[850px] max-w-[90vw] bg-gradient-to-br from-gray-900/95 to-purple-900/95 backdrop-blur-sm rounded-[30px] shadow-[0_0_50px_rgba(255,20,147,0.4)] border-2 border-pink-400/30 p-8 md:p-12 font-poppins';
-
+  
   // Retro grid overlay
   const gridOverlay = document.createElement('div');
   gridOverlay.className = 'absolute inset-0 opacity-10 pointer-events-none rounded-[30px]';
@@ -729,29 +729,29 @@ function show2FAModal(container: HTMLElement, userId: number): void {
   gridPattern.className = 'grid-pattern';
   gridOverlay.appendChild(gridPattern);
   modalContent.appendChild(gridOverlay);
-
+  
   // Glowing orbs
   const orb1 = document.createElement('div');
   orb1.className = 'absolute top-4 right-4 w-8 h-8 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_20px_#00ffff]';
   modalContent.appendChild(orb1);
-
+  
   const orb2 = document.createElement('div');
   orb2.className = 'absolute bottom-4 left-4 w-6 h-6 rounded-full bg-pink-400 animate-pulse shadow-[0_0_15px_#ff1493] animation-delay-500';
   modalContent.appendChild(orb2);
-
+  
   const contentWrapper = document.createElement('div');
   contentWrapper.className = 'relative z-10 text-center';
-
+  
   const title = document.createElement('h2');
   title.className = 'text-3xl md:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]';
   title.textContent = t('auth.enter2FACode') || 'ENTER 2FA CODE';
   contentWrapper.appendChild(title);
-
+  
   const descText = document.createElement('p');
   descText.className = 'text-pink-300 mb-6 text-sm md:text-base';
   descText.textContent = t('twoFA.enterCodeDesc') || 'Please enter the 6-digit code from your authenticator app';
   contentWrapper.appendChild(descText);
-
+  
   const inputContainer = document.createElement('div');
   inputContainer.className = 'mb-6';
   const codeInput = document.createElement('input');
@@ -764,7 +764,7 @@ function show2FAModal(container: HTMLElement, userId: number): void {
   codeInput.autocomplete = 'off';
   inputContainer.appendChild(codeInput);
   contentWrapper.appendChild(inputContainer);
-
+  
   const errorDiv = document.createElement('div');
   errorDiv.id = '2fa-error';
   errorDiv.className = 'error-message hidden mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-300 text-sm font-poppins';
@@ -772,59 +772,59 @@ function show2FAModal(container: HTMLElement, userId: number): void {
   errorText.className = 'error-text';
   errorDiv.appendChild(errorText);
   contentWrapper.appendChild(errorDiv);
-
+  
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'flex gap-4 justify-center';
-
+  
   const verifyBtn = document.createElement('button');
   verifyBtn.id = '2fa-verify-btn';
   verifyBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-cyan-400 cursor-pointer text-base text-white font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all font-poppins bg-gradient-to-r from-cyan-500/20 to-pink-500/20 backdrop-blur-sm uppercase tracking-wider';
   verifyBtn.textContent = t('auth.verify') || 'VERIFY';
   buttonContainer.appendChild(verifyBtn);
-
+  
   const cancelBtn = document.createElement('button');
   cancelBtn.id = '2fa-cancel-btn';
   cancelBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-pink-400/50 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/10 to-cyan-500/10 backdrop-blur-sm uppercase tracking-wider';
   cancelBtn.textContent = t('common.cancel') || 'CANCEL';
   buttonContainer.appendChild(cancelBtn);
-
+  
   contentWrapper.appendChild(buttonContainer);
   modalContent.appendChild(contentWrapper);
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
-
+  
   // Auto-focus and format input
   codeInput.focus();
   codeInput.addEventListener('input', (e) => {
     const target = e.target as HTMLInputElement;
     target.value = target.value.replace(/\D/g, '').slice(0, 6);
   });
-
+  
   // Handle Enter key
   codeInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && codeInput.value.length === 6) {
       verifyBtn.click();
     }
   });
-
+  
   // Verify button handler
   verifyBtn.addEventListener('click', async () => {
     const code = codeInput.value.trim();
-
+    
     if (code.length !== 6) {
       errorText.textContent = t('twoFA.invalidCodeLength') || 'Please enter a 6-digit code';
       errorDiv.classList.remove('hidden');
       return;
     }
-
+    
     errorDiv.classList.add('hidden');
     verifyBtn.disabled = true;
     const originalText = verifyBtn.textContent;
     verifyBtn.textContent = t('auth.verifying2FA') || 'VERIFYING...';
-
+    
     try {
       const result = await verify2FACode(userId, code);
-
+      
       // Store auth token
       if (result.token && result.user) {
         localStorage.setItem('authToken', result.token);
@@ -834,10 +834,10 @@ function show2FAModal(container: HTMLElement, userId: number): void {
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
       }
-
+      
       showNotification(t('auth.loginSuccessful') || 'Login successful!', 'success');
       updateNavbar();
-
+      
       // Remove modal and proceed with auth
       if (document.body.contains(modal)) {
         document.body.removeChild(modal);
@@ -854,7 +854,7 @@ function show2FAModal(container: HTMLElement, userId: number): void {
       verifyBtn.textContent = originalText || '';
     }
   });
-
+  
   // Close modal helper
   const closeModal = () => {
     if (document.body.contains(modal)) {
@@ -866,10 +866,10 @@ function show2FAModal(container: HTMLElement, userId: number): void {
       loginBtn.disabled = false;
     }
   };
-
+  
   // Cancel button handler
   cancelBtn.addEventListener('click', closeModal);
-
+  
   // Close on backdrop click
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
@@ -883,7 +883,7 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
   const usernameInput = container.querySelector('.form-box.login input[type="text"]') as HTMLInputElement;
   const passwordInput = container.querySelector('.form-box.login input[type="password"]') as HTMLInputElement;
   const loginBtn = container.querySelector('.login-submit-btn') as HTMLButtonElement;
-
+  
   const name = usernameInput?.value.trim();
   const password = passwordInput?.value.trim();
 
@@ -902,7 +902,7 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
 
   try {
     const response = await apiLogin(name, password);
-
+    
     if (response.twoFARequired && response.userId) {
       // Show 2FA modal
       loginBtn.textContent = originalText;
@@ -910,7 +910,7 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
       show2FAModal(container, response.userId);
       return;
     }
-
+    
     if (response.success) {
       // Store auth token
       if (response.token && response.user) {
@@ -922,7 +922,7 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
       }
-
+      
       showNotification('Login successful!', 'success');
       updateNavbar();
       handleSuccessfulAuth(container);
@@ -941,7 +941,7 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     showError(container, 'login', 'Network error. Please try again.');
     return;
   }
-
+  
   // Only reset button state here if login was successful
   loginBtn.textContent = originalText;
   loginBtn.disabled = false;
@@ -953,7 +953,7 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
   const emailInput = container.querySelector('.form-box.register input[type="email"]') as HTMLInputElement;
   const passwordInput = container.querySelector('.form-box.register input[type="password"]') as HTMLInputElement;
   const registerBtn = container.querySelector('.register-submit-btn') as HTMLButtonElement;
-
+  
   const name = usernameInput?.value.trim();
   const email = emailInput?.value.trim();
   const password = passwordInput?.value.trim();
@@ -985,15 +985,15 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
 
   try {
     const response = await apiRegister(name, email, password);
-
+    
     if (response.success) {
       showNotification('Registration successful! Please login with your credentials.', 'success');
-
+      
       // Clear form and switch to login
       usernameInput.value = '';
       emailInput.value = '';
       passwordInput.value = '';
-
+      
       // Switch to login form after a delay
       setTimeout(() => {
         const containerEl = container.querySelector('.container');
@@ -1020,7 +1020,7 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
     showError(container, 'register', 'Network error. Please try again.');
     return;
   }
-
+  
   // Only reset button state here if registration was successful
   registerBtn.textContent = originalText;
   registerBtn.disabled = false;
@@ -1029,14 +1029,14 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
 // Handle successful authentication
 function handleSuccessfulAuth(container: HTMLElement): void {
   const containerEl = container.querySelector('.container');
-
+  
   // Show welcome screen
   containerEl?.classList.add('welcome');
-
+  
   // After 3 seconds, start zoom transition to navigation
   setTimeout(() => {
     containerEl?.classList.add('navigating');
-
+    
     // After zoom animation completes, navigate to lobby
     setTimeout(() => {
       navigate('lobby' as Screen);

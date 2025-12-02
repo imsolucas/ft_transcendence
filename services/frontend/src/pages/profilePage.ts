@@ -1,25 +1,21 @@
-import { ProfileData } from '../components/profile/ProfileData';
-import { gradients, spacing } from '../styles/theme';
+import { ProfileData } from '../components/ProfileData';
 
 export function ProfilePage(): HTMLElement {
   const container = document.createElement('div');
-  container.className = `min-h-screen ${gradients.pageBackground} pt-16`;
+  container.className = 'min-h-screen bg-gradient-to-b from-[#4B1B67] via-[#872481] to-[#F3796A] font-poppins text-white';
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'relative min-h-screen flex items-center justify-center overflow-hidden py-8';
+  const mainContent = document.createElement('main');
+  mainContent.className = 'container mx-auto px-2 sm:px-4 md:px-6 py-8 sm:py-12 md:py-16';
+  
+  mainContent.appendChild(ProfileData());
 
-  const content = document.createElement('div');
-  content.className = `relative z-10 ${spacing.container}`;
-
-  content.appendChild(ProfileData());
-  wrapper.appendChild(content);
-  container.appendChild(wrapper);
+  container.appendChild(mainContent);
 
   // Add styles
   const style = document.createElement('style');
   style.textContent = `
     .grid-pattern {
-      background-image:
+      background-image: 
         linear-gradient(rgba(0,255,255,0.1) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,255,255,0.1) 1px, transparent 1px);
       background-size: 20px 20px;

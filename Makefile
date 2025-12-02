@@ -6,7 +6,7 @@ all: up
 
 # basic lifecycle
 up:
-	docker compose -f $(FILE) up -d --build $(SERVICE)
+	docker compose -f $(FILE) up -d --build
 
 start:
 	docker compose -f $(FILE) start
@@ -15,10 +15,10 @@ stop:
 	docker compose -f $(FILE) stop
 
 down:
-	docker compose -f $(FILE) down $(SERVICE)
+	docker compose -f $(FILE) down
 
 build:
-	docker compose -f $(FILE) build $(SERVICE)
+	docker compose -f $(FILE) build
 
 re: down up
 
@@ -26,7 +26,7 @@ rebuild: fclean up
 
 # logs / status
 logs:
-	docker compose -f $(FILE) logs -f --tail=200 $(SERVICE)
+	docker compose -f $(FILE) logs -f --tail=200
 
 ps:
 	docker compose -f $(FILE) ps

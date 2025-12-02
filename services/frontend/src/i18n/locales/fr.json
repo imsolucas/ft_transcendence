@@ -67,8 +67,7 @@
     "edit": "Modifier",
     "profileUpdated": "Profil mis à jour avec succès !",
     "updateFailed": "Échec de la mise à jour du profil. Veuillez réessayer.",
-    "twoFAEnabled": "2FA a été activé",
-    "setup2FA": "Configurer 2FA"
+    "twoFAEnabled": "2FA a été activé"
   },
   "twoFA": {
     "setupTitle": "CONFIGURER L'AUTHENTIFICATION À DEUX FACTEURS",
