@@ -29,6 +29,7 @@ export interface TournamentState {
         playerId: string;
         playerName: string;
     }>
+    scores: Map<string, number> | Record<string, number>;
 }
 
 export interface PlayerInputs {
