@@ -37,12 +37,14 @@
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #00ff00;
-            height: 300px;
+            height: 400px;
             overflow-y: auto;
+            font-size: 11px;
         }
         .log-entry {
-            margin: 5px 0;
+            margin: 2px 0;
             word-wrap: break-word;
+            font-size: 11px;
         }
         .sent {
             color: #ffff00;
@@ -53,6 +55,10 @@
         .error {
             color: #ff0000;
         }
+        .info {
+            color: #00ff00;
+        }
+
         .input-group {
             margin: 10px 0;
         }
@@ -183,12 +189,12 @@
             };
 
             ws.onmessage = (event) => {
-                log(`RECEIVED: ${event.data}`, 'received');
                 try {
                     const message = JSON.parse(event.data);
-                    log(`Parsed: ${JSON.stringify(message, null, 2)}`, 'received');
+                    log(`📥 ${message.type}`, 'received');
+                    log(JSON.stringify(message.data, null, 2), 'received');
                 } catch (e) {
-                    log(`Failed to parse message: ${e.message}`, 'error');
+                    log(`Failed to parse: ${e.message}`, 'error');
                 }
             };
 
@@ -288,6 +294,61 @@
         function clearLog() {
             document.getElementById('log').innerHTML = '';
         }
+
+        // Keyboard input for game controls
+        let currentInputs = {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            action_1: false,
+            action_2: false
+        };
+
+        function sendPlayerInput() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+            const message = {
+                type: 'playerInput',
+                data: {
+                    inputs: {...currentInputs}
+                },
+                timestamp: Date.now()
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        document.addEventListener('keydown', (event) => {
+            let changed = false;
+            if (event.key === 'w' || event.key === 'W') {
+                if (!currentInputs.up) {
+                    currentInputs.up = true;
+                    changed = true;
+                }
+            } else if (event.key === 's' || event.key === 'S') {
+                if (!currentInputs.down) {
+                    currentInputs.down = true;
+                    changed = true;
+                }
+            }
+            if (changed) sendPlayerInput();
+        });
+
+        document.addEventListener('keyup', (event) => {
+            let changed = false;
+            if (event.key === 'w' || event.key === 'W') {
+                if (currentInputs.up) {
+                    currentInputs.up = false;
+                    changed = true;
+                }
+            } else if (event.key === 's' || event.key === 'S') {
+                if (currentInputs.down) {
+                    currentInputs.down = false;
+                    changed = true;
+                }
+            }
+            if (changed) sendPlayerInput();
+        });
 
         // Update status on load
         updateStatus(false);
