@@ -8,11 +8,11 @@ export default class TickSystem {
     private readonly TICK_RATE = 60;
     private readonly TICK_INTERVAL = (1000 / this.TICK_RATE);
     private tickInterval: NodeJS.Timeout | null = null;
-    
+
     // Delays for tournament transitions (in milliseconds)
     private readonly DELAY_AFTER_ROUND_END = 2000; // 2 seconds to see winner
     private readonly DELAY_AFTER_STATE_UPDATE = 2000; // 2 seconds to see role changes
-    
+
     constructor(private roomManager: RoomManager, private tournamentService: TournamentService, private broadcaster: MessageBroadcaster) {}
 
     startTickSystem(): void {
@@ -50,7 +50,7 @@ export default class TickSystem {
                     if (tournamentResult.tournamentOver) {
                         console.log(`Tournament finished! Winner: ${tournamentResult.tournamentWinnerId}`);
                         room.status = 'finished';
-                        
+
                         const tournamentEndMsg: TournamentEndMessage = {
                             type: 'tournamentEnd',
                             data: { winner: toSerializablePlayer(this.roomManager.getPlayer(winnerId)!)! },
@@ -61,7 +61,7 @@ export default class TickSystem {
                         //frontend has to read the tourney state to come up with winnner screen
                     } else {
                         console.log(`Round ended. Preparing for next round...`);
-                        
+
                         // Pause the game during transitions
                         room.status = 'waiting';
 

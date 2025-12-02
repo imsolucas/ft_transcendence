@@ -72,7 +72,11 @@ export default class RoomService {
         if (queue.length > 0) {
             const waitingPlayer = queue.shift()!;
 
-            const config = { ...default_config.standardGame, mode: mode };
+            const config = {
+                ...default_config.standardGame,
+                mode: mode,
+                pointsToWin: mode === 'tournament' ? 2 : default_config.standardGame.pointsToWin
+            };
             const room = this.roomManager.createRoom(config);
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);

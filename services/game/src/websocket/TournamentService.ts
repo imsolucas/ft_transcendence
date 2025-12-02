@@ -60,11 +60,11 @@ export default class TournamentService {
         }
 
         const currentScore = room.tournamentScores.get(winnerId) || 0;
-        room.tournamentScores.set(winnerId, currentScore + 1);
-
+        const newScore = currentScore + 1;
+        room.tournamentScores.set(winnerId, newScore);
 
         // when score is 5, tourney over
-        if (currentScore + 1 >= 5) {
+        if (newScore >= 5) {
             console.log(`Tournament over! Winner: ${winnerId}`);
             room.status = 'finished';
             return { tournamentOver: true, tournamentWinnerId: winnerId };
