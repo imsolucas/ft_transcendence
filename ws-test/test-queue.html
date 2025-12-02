@@ -37,12 +37,14 @@
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #00ff00;
-            height: 300px;
+            height: 400px;
             overflow-y: auto;
+            font-size: 11px;
         }
         .log-entry {
-            margin: 5px 0;
+            margin: 2px 0;
             word-wrap: break-word;
+            font-size: 11px;
         }
         .sent {
             color: #ffff00;
@@ -52,6 +54,37 @@
         }
         .error {
             color: #ff0000;
+        }
+        .info {
+            color: #00ff00;
+        }
+        .input-log {
+            color: #888;
+            font-size: 10px;
+        }
+        .game-state {
+            background: #000;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+        }
+        .controls {
+            background: #222;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #00ff00;
+        }
+        .controls h3 {
+            margin-top: 0;
+        }
+        .key-hint {
+            display: inline-block;
+            background: #000;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            margin: 5px;
+            font-weight: bold;
         }
         .input-group {
             margin: 10px 0;
@@ -118,23 +151,64 @@
             <button onclick="leaveRoom()">Leave Room</button>
         </div>
 
+        <div class="controls">
+            <h3>🎮 Game Controls</h3>
+            <p>Use keyboard when game starts:</p>
+            <span class="key-hint">W</span> Move Up
+            <span class="key-hint">S</span> Move Down
+            <br><br>
+            <label>
+                <input type="checkbox" id="quietMode" onchange="toggleQuietMode()">
+                Quiet Mode (Hide input spam)
+            </label>
+        </div>
+
+        <div class="game-state">
+            <h3>Game Status</h3>
+            <div id="gameStatus">Not in game</div>
+        </div>
+
         <div>
             <h3>Message Log</h3>
             <button onclick="clearLog()">Clear Log</button>
+            <button onclick="pauseLog()">Pause/Resume</button>
             <div class="log" id="log"></div>
         </div>
     </div>
 
     <script>
         let ws = null;
+        let quietMode = false;
+        let logPaused = false;
 
         function log(message, type = 'info') {
+            if (logPaused) return;
+
+            // Skip input logs in quiet mode
+            if (quietMode && type === 'input-log') return;
+
             const logDiv = document.getElementById('log');
             const entry = document.createElement('div');
             entry.className = `log-entry ${type}`;
             entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logDiv.appendChild(entry);
+
+            // Keep only last 100 entries to prevent lag
+            while (logDiv.children.length > 100) {
+                logDiv.removeChild(logDiv.firstChild);
+            }
+
             logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function toggleQuietMode() {
+            quietMode = document.getElementById('quietMode').checked;
+            log(quietMode ? 'Quiet mode ON - hiding input spam' : 'Quiet mode OFF', 'info');
+        }
+
+        function pauseLog() {
+            logPaused = !logPaused;
+            log(logPaused ? 'Log PAUSED' : 'Log RESUMED', 'info');
         }
 
         function updateStatus(connected) {
@@ -183,12 +257,29 @@
             };
 
             ws.onmessage = (event) => {
-                log(`RECEIVED: ${event.data}`, 'received');
                 try {
                     const message = JSON.parse(event.data);
-                    log(`Parsed: ${JSON.stringify(message, null, 2)}`, 'received');
+
+                    // Update game status
+                    if (message.type === 'gameStart') {
+                        document.getElementById('gameStatus').innerHTML = '<span style="color:#0f0">🎮 GAME STARTED - Use W/S to move!</span>';
+                    } else if (message.type === 'gameEnd' || message.type === 'tournamentEnd') {
+                        document.getElementById('gameStatus').innerHTML = '<span style="color:#f00">🏁 Game Ended</span>';
+                    } else if (message.type === 'tournamentRoundEnd') {
+                        document.getElementById('gameStatus').innerHTML = '<span style="color:#ff0">⏸️ Round Ended - Next round starting...</span>';
+                    } else if (message.type === 'playerJoined') {
+                        document.getElementById('gameStatus').innerHTML = '<span style="color:#0ff">👥 In Room - Waiting for ready...</span>';
+                    }
+
+                    // Only log important messages
+                    if (message.type !== 'gameState') {
+                        log(`📥 ${message.type}`, 'received');
+                        if (!quietMode) {
+                            log(`   ${JSON.stringify(message.data, null, 2)}`, 'received');
+                        }
+                    }
                 } catch (e) {
-                    log(`Failed to parse message: ${e.message}`, 'error');
+                    log(`Failed to parse: ${e.message}`, 'error');
                 }
             };
 
@@ -288,6 +379,65 @@
         function clearLog() {
             document.getElementById('log').innerHTML = '';
         }
+
+        // Keyboard input for game controls
+        let currentInputs = {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            action_1: false,
+            action_2: false
+        };
+
+        function sendPlayerInput() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+            const message = {
+                type: 'playerInput',
+                data: {
+                    inputs: {...currentInputs}
+                },
+                timestamp: Date.now()
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        document.addEventListener('keydown', (event) => {
+            let changed = false;
+            if (event.key === 'w' || event.key === 'W') {
+                if (!currentInputs.up) {
+                    currentInputs.up = true;
+                    changed = true;
+                    log('⬆️ UP', 'input-log');
+                }
+            } else if (event.key === 's' || event.key === 'S') {
+                if (!currentInputs.down) {
+                    currentInputs.down = true;
+                    changed = true;
+                    log('⬇️ DOWN', 'input-log');
+                }
+            }
+            if (changed) sendPlayerInput();
+        });
+
+        document.addEventListener('keyup', (event) => {
+            let changed = false;
+            if (event.key === 'w' || event.key === 'W') {
+                if (currentInputs.up) {
+                    currentInputs.up = false;
+                    changed = true;
+                    log('⬆️ Stop', 'input-log');
+                }
+            } else if (event.key === 's' || event.key === 'S') {
+                if (currentInputs.down) {
+                    currentInputs.down = false;
+                    changed = true;
+                    log('⬇️ Stop', 'input-log');
+                }
+            }
+            if (changed) sendPlayerInput();
+        });
 
         // Update status on load
         updateStatus(false);
