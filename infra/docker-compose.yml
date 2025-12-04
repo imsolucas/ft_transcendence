@@ -6,8 +6,6 @@ services:
       context: ../services/frontend/
       dockerfile: Dockerfile
     command: ["${FRONTEND_CMD:-dev}"]
-    ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     volumes:
       - ../services/frontend/:/usr/src/app/:rw
       - frontend_node_modules:/usr/src/app/node_modules/
@@ -59,6 +57,9 @@ services:
       - ../services/api-gateway/server.key:/etc/nginx/ssl/server.key:ro
     networks:
       - devnet
+    depends_on:
+      - frontend
+      - users
     healthcheck:
       test: ["CMD-SHELL", "curl -k -fsS ${API_GATEWAY_HEALTH_HOST} || exit 1"]
       interval: 30s
