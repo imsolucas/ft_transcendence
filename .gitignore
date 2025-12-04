@@ -25,6 +25,8 @@ dist-ssr
 
 # Credentials and secrets
 .env
+server.crt
+server.key
 
 # Database
 *.sqlite
