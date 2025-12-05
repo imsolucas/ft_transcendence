@@ -1,7 +1,7 @@
 import { getCurrentUser } from './auth-script';
 
 // API Configuration
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
 
 // Helper function to get auth token
 const getToken = () => {
@@ -30,7 +30,7 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     console.error('Unauthorized: Token invalid or expired');
-    
+
     // Only redirect if we're not already on auth/landing page
     const currentPath = window.location.pathname;
     if (!currentPath.includes('/auth') && !currentPath.includes('/landing') && currentPath !== '/') {
@@ -41,7 +41,7 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
         window.location.href = '/';
       }, 100);
     }
-    
+
     const errorData = await response.json().catch(() => ({ error: 'Unauthorized' }));
     throw new Error(errorData.error || 'Unauthorized: Please login again');
   }
@@ -93,7 +93,7 @@ export const fetchUserProfile = async () => {
   try {
     // Use authenticated endpoint to get current user profile
     const user = await apiFetch(`${API_URL}/user/profile`);
-    
+
     // Calculate wins/losses from match history
     let wins = 0;
     let losses = 0;
@@ -106,10 +106,10 @@ export const fetchUserProfile = async () => {
     } catch (error) {
       console.error('Error calculating stats from match history:', error);
     }
-    
+
     const totalGames = wins + losses;
     const winRate = totalGames > 0 ? `${Math.round((wins / totalGames) * 100)}%` : '0%';
-    
+
     return {
       id: user.id,
       username: user.username || user.name,
@@ -159,7 +159,7 @@ export const fetchUserByUsername = async (username: string) => {
 export const updateUserProfile = async (data: any) => {
   try {
     const updateData: any = {};
-    
+
     // Backend expects 'username' field, not 'name' for updates
     if (data.username) updateData.username = data.username;
     if (data.email) updateData.email = data.email;
@@ -193,7 +193,7 @@ export const fetchMatchHistory = async () => {
       const myScore = isPlayer1 ? match.player1Score : match.player2Score;
       const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
       const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
-      
+
       return {
         opponent: {
           username: opponent || 'Unknown',
@@ -244,7 +244,7 @@ export const uploadProfilePicture = async (file: File) => {
     // Compress and resize image before converting to base64 to avoid NetworkError
     return new Promise<{ picture: string }>((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onloadend = async () => {
         const img = new Image();
         img.onload = () => {
@@ -253,10 +253,10 @@ export const uploadProfilePicture = async (file: File) => {
           const MAX_WIDTH = 800;
           const MAX_HEIGHT = 800;
           const QUALITY = 0.8; // 80% quality
-          
+
           let width = img.width;
           let height = img.height;
-          
+
           // Calculate new dimensions while maintaining aspect ratio
           if (width > height) {
             if (width > MAX_WIDTH) {
@@ -269,22 +269,22 @@ export const uploadProfilePicture = async (file: File) => {
               height = MAX_HEIGHT;
             }
           }
-          
+
           canvas.width = width;
           canvas.height = height;
-          
+
           // Draw and compress
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             reject(new Error('Failed to get canvas context'));
             return;
           }
-          
+
           ctx.drawImage(img, 0, 0, width, height);
-          
+
           // Convert to data URL with compression
           const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
-          
+
           // Check if compressed size is still too large (max ~500KB base64 = ~375KB original)
           if (dataUrl.length > 500000) {
             // Try with lower quality
@@ -298,14 +298,14 @@ export const uploadProfilePicture = async (file: File) => {
             updateProfileWithAvatar(dataUrl, resolve, reject);
           }
         };
-        
+
         img.onerror = () => {
           reject(new Error('Failed to load image'));
         };
-        
+
         img.src = reader.result as string;
       };
-      
+
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
