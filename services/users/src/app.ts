@@ -13,6 +13,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register CORS plugin
   await app.register(import("@fastify/cors"), {
     origin: [
+      "https://localhost:8443",
       "http://localhost:4000",  // Local dev server
       "http://localhost:3000",  // Frontend dev server
       "http://127.0.0.1:3000",  // Alternative localhost
