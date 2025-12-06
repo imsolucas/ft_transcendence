@@ -95,6 +95,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     uiConfig: {
       docExpansion: "full",
       deepLinking: false
+    },
+    staticCSP: true,
+    transformSpecification: (spec) => {
+      // Ensure the spec is served from the correct gateway path
+      spec.servers = [{ url: "https://localhost:8443/users" }];
+      return spec;
     }
   });
 
