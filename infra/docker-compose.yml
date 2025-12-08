@@ -8,6 +8,7 @@ services:
     command: ["${FRONTEND_CMD:-dev}"]
     volumes:
       - ../services/frontend/:/usr/src/app/:rw
+      - ../services/shared/:/usr/src/shared/
       - frontend_node_modules:/usr/src/app/node_modules/
     networks:
       - devnet
@@ -41,6 +42,24 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  game:
+    build:
+      context: ../services/game/
+      args:
+        PORT: ${GAME_PORT:-3001}
+    image: game
+    container_name: game
+    command: ["${GAME_CMD:-dev}"]
+    ports:
+      - "${GAME_PORT:-3001}:${GAME_PORT:-3001}"
+    networks:
+      - devnet
+    volumes:
+      - ../services/game:/usr/src/app:rw
+      - ../services/shared/:/usr/src/shared/:rw
+      - game_node_modules:/usr/src/app/node_modules/
+    restart: unless-stopped
+
   api-gateway:
     container_name: api-gateway
     image: api-gateway
@@ -72,6 +91,7 @@ volumes:
   frontend_node_modules:
   users_db:
   users_node_modules:
+  game_node_modules:
 
 networks:
   devnet:

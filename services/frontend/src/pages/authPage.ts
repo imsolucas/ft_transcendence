@@ -1,6 +1,6 @@
 import { loadGoogleSignInService, handleCredentialResponse } from "../services/google";
 import { navigate } from "../router";
-import { updateNavbar } from "../components/Navbar";
+import { updateNavbar } from "../components/layout/Navbar";
 import type { Screen } from "../router";
 import { verify2FACode } from "../utils/api";
 import { t } from "../i18n";

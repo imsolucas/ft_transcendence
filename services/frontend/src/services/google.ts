@@ -1,4 +1,4 @@
-import { updateNavbar } from '../components/Navbar';
+import { updateNavbar } from '../components/layout/Navbar';
 import { navigate } from '../router';
 
 type CredentialResponse = google.accounts.id.CredentialResponse;

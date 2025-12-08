@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@types/google.accounts": "^0.0.17",
+    "@types/node": "^24.10.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",

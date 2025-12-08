@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    "module": "nodenext"  ,
+    "strict": true,
+    "skipDefaultLibCheck": true,
+    // "emitDeclarationOnly": true,
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    "rootDir": ".",
+    "outDir": "./dist",
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
