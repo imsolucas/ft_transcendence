@@ -27,6 +27,13 @@ export default class RoomService {
         if (!this.roomManager.addPlayerToRoom(roomId, player.id))
             return false
 
+        // Update player object with room info from storage
+        const updatedPlayer = this.roomManager.getPlayer(player.id);
+        if (updatedPlayer) {
+            player.roomId = updatedPlayer.roomId;
+            player.position = updatedPlayer.position;
+        }
+
         if (this.roomManager.isRoomFull(roomId))
             room.status = 'full';
         return true
@@ -46,6 +53,12 @@ export default class RoomService {
         if (firstRoom) {
             const success = this.roomManager.addPlayerToRoom(firstRoom.id, player.id);
             if (success) {
+                // Update player object with room info from storage
+                const updatedPlayer = this.roomManager.getPlayer(player.id);
+                if (updatedPlayer) {
+                    player.roomId = updatedPlayer.roomId;
+                    player.position = updatedPlayer.position;
+                }
                 const room = this.roomManager.getRoom(firstRoom.id);
                 if (room && this.roomManager.isRoomFull(room.id)) {
                     room.status = 'full';
@@ -59,11 +72,27 @@ export default class RoomService {
         if (queue.length > 0) {
             const waitingPlayer = queue.shift()!;
 
-            const config = { ...default_config.standardGame, mode: mode };
+            const config = {
+                ...default_config.standardGame,
+                mode: mode,
+                pointsToWin: mode === 'tournament' ? 2 : default_config.standardGame.pointsToWin
+            };
             const room = this.roomManager.createRoom(config);
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);
             this.roomManager.addPlayerToRoom(room.id, player.id);
+
+            // Update both player objects with room info from storage
+            const updatedWaitingPlayer = this.roomManager.getPlayer(waitingPlayer.id);
+            if (updatedWaitingPlayer) {
+                waitingPlayer.roomId = updatedWaitingPlayer.roomId;
+                waitingPlayer.position = updatedWaitingPlayer.position;
+            }
+            const updatedPlayer = this.roomManager.getPlayer(player.id);
+            if (updatedPlayer) {
+                player.roomId = updatedPlayer.roomId;
+                player.position = updatedPlayer.position;
+            }
 
             if (this.roomManager.isRoomFull(room.id)) {
                 room.status = 'full';

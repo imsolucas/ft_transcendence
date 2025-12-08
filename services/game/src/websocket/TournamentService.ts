@@ -25,10 +25,20 @@ export default class TournamentService {
         if (playerIds.length >= 2 && playerIds[0] && playerIds[1]) {
             room.kingId = playerIds[0];
             room.challengerId = playerIds[1];
+
+            // Set positions: king = position 1, challenger = position 2
+            const king = this.roomManager.getPlayer(room.kingId);
+            const challenger = this.roomManager.getPlayer(room.challengerId);
+            if (king) king.position = 1;
+            if (challenger) challenger.position = 2;
         }
 
-        // Remaining players go to queue
+        // Remaining players go to queue (position 0 means not playing)
         room.queueIds = playerIds.slice(2) || [];
+        room.queueIds.forEach(id => {
+            const player = this.roomManager.getPlayer(id);
+            if (player) player.position = 0;
+        });
     }
 
     private popNextChallenger(room: Room): void {
@@ -50,11 +60,11 @@ export default class TournamentService {
         }
 
         const currentScore = room.tournamentScores.get(winnerId) || 0;
-        room.tournamentScores.set(winnerId, currentScore + 1);
-
+        const newScore = currentScore + 1;
+        room.tournamentScores.set(winnerId, newScore);
 
         // when score is 5, tourney over
-        if (currentScore + 1 >= 5) {
+        if (newScore >= 5) {
             console.log(`Tournament over! Winner: ${winnerId}`);
             room.status = 'finished';
             return { tournamentOver: true, tournamentWinnerId: winnerId };
@@ -66,22 +76,42 @@ export default class TournamentService {
         if (kingWon) {
             // King wins: challenger goes to back of queue
             if (room.challengerId) {
+                const oldChallenger = this.roomManager.getPlayer(room.challengerId);
+                if (oldChallenger) oldChallenger.position = 0; // Not playing
+
                 if (!room.queueIds) room.queueIds = [];
                 room.queueIds.push(room.challengerId);
             }
             this.popNextChallenger(room);
+
+            // Update new challenger's position
+            if (room.challengerId) {
+                const newChallenger = this.roomManager.getPlayer(room.challengerId);
+                if (newChallenger) newChallenger.position = 2;
+            }
         } else {
             // Challenger wins: becomes new king, old king goes to back of queue
             if (room.kingId) {
+                const oldKing = this.roomManager.getPlayer(room.kingId);
+                if (oldKing) oldKing.position = 0; // Not playing
+
                 if (!room.queueIds) room.queueIds = [];
                 room.queueIds.push(room.kingId);
             }
 
             // Challenger becomes new king
             if (room.challengerId) {
+                const newKing = this.roomManager.getPlayer(room.challengerId);
+                if (newKing) newKing.position = 1;
                 room.kingId = room.challengerId;
             }
             this.popNextChallenger(room);
+
+            // Update new challenger's position
+            if (room.challengerId) {
+                const newChallenger = this.roomManager.getPlayer(room.challengerId);
+                if (newChallenger) newChallenger.position = 2;
+            }
         }
 
         return { tournamentOver: false };
@@ -101,10 +131,10 @@ export default class TournamentService {
             const playerName = this.roomManager.getPlayer(key)!.name;
             scoresObject[playerName] = value;
         });
-        
+
         console.log('tournamentScores: ', room.tournamentScores);
         console.log('scores object: ', scoresObject);
-        
+
         const tournamentState: TournamentState = {
                 kingId: king ? king.id : '',
                 kingName: king ? king.name : '',
@@ -113,7 +143,7 @@ export default class TournamentService {
                 queue: queuePlayers.map(p => ({
                     playerId: p!.id,
                     playerName: p!.name
-                    })),    
+                    })),
                 scores: scoresObject // Use plain object instead of Map
             };
 

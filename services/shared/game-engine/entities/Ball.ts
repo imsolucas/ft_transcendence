@@ -97,8 +97,19 @@ export default class Ball extends Entity {
         
         this.velocity.x *= -1;
 
+        // Calculate where the ball hit on the paddle (relative to center)
+        const paddleCenterY = (other.top + other.bottom) / 2;
+        const ballCenterY = (border.top + border.bottom) / 2;
+        const hitOffset = ballCenterY - paddleCenterY;
+        const paddleHeight = other.bottom - other.top;
+        const normalizedHit = hitOffset / (paddleHeight / 2); // -1 to 1
+
+        // Set Y velocity based on hit position, plus paddle velocity
+        const maxAngleVelocity = this.config.ballConfig.speed * 0.75;
+        this.velocity.y = normalizedHit * maxAngleVelocity;
+
         if (otherVelocity){
-            this.velocity.y += otherVelocity.y
+            this.velocity.y += otherVelocity.y * 0.3; // Reduced paddle influence
         }
 
         if (border.right >= other.left && old_border.right <= old_other.left){
