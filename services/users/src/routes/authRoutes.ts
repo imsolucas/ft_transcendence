@@ -161,4 +161,54 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.verify2FA);
+
+  // POST /auth/refresh
+  app.post("/auth/refresh", {
+    schema: {
+      summary: "Refresh access token",
+      description: "Uses refresh token from HTTP-only cookie to generate new access and refresh tokens. Refresh tokens are single-use. No request body required.",
+      // No body schema - refresh token comes from HTTP-only cookie
+      response: {
+        200: {
+          description: "Token refresh successful",
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            user: { $ref: "UserProfile#" }
+          }
+        },
+        401: {
+          description: "Invalid or expired refresh token",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          $ref: "InternalServerError#"
+        }
+      }
+    }
+    // No body schema needed - refresh token comes from HTTP-only cookie
+  }, controllers.refreshToken);
+
+  // POST /auth/logout
+  app.post("/auth/logout", {
+    schema: {
+      summary: "Logout user",
+      description: "Invalidates refresh token and blacklists current access token. Clears refresh token cookie.",
+      response: {
+        200: {
+          description: "Logout successful",
+          type: "object",
+          properties: {
+            message: { type: "string" }
+          }
+        },
+        500: {
+          $ref: "InternalServerError#"
+        }
+      }
+    }
+  }, controllers.logout);
 }

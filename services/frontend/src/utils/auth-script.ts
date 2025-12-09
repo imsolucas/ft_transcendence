@@ -2,6 +2,7 @@ import { navigate } from '../router';
 import type { Screen } from '../router';
 import { updateNavbar } from '../components/layout/Navbar';
 import type { UserData } from '../types/user';
+import { getAccessToken, clearAccessToken, setAccessToken } from './tokenManager';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -146,15 +147,10 @@ async function handleLogin(): Promise<void> {
     const response = await apiLogin({ name, password });
 
     if (response.success) {
-      // Store auth token
+      // Store auth token (using new token manager)
       if (response.token && response.user) {
-        localStorage.setItem('authToken', response.token);
-        // Store user with both picture and avatar for compatibility
-        const userToStore = {
-          ...response.user,
-          picture: response.user.avatar,
-        };
-        localStorage.setItem('user', JSON.stringify(userToStore));
+        setAccessToken(response.token);
+        // User data is fetched from API when needed, not stored in localStorage
       }
 
       showNotification('Login successful!', 'success');
@@ -256,6 +252,7 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
+      credentials: 'include', // Include cookies - critical for refresh token!
       headers: {
         'Content-Type': 'application/json',
       },
@@ -391,25 +388,20 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
 
 // Auth utility functions
 export function getAuthToken(): string | null {
-  return localStorage.getItem('authToken');
+  return getAccessToken();
 }
 
 export async function getCurrentUser(): Promise<UserData | null> {
 	try {
-	  // Get user from localStorage first
-	  const storedUser = localStorage.getItem('user');
-	  if (storedUser) {
-		const user = JSON.parse(storedUser);
-		return user;
-	  }
-
-	  // If not in localStorage, fetch from backend using profile endpoint
+	  // Always fetch from backend - no localStorage caching
 	  const token = getAuthToken();
 	  if (!token) {
 		return null;
 	  }
 
 	  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+		method: 'GET',
+		credentials: 'include', // Include cookies for consistency
 		headers: {
 		  'Authorization': `Bearer ${token}`,
 		  'Content-Type': 'application/json',
@@ -425,8 +417,15 @@ export async function getCurrentUser(): Promise<UserData | null> {
 		  picture: userData.avatar,
 		  avatar: userData.avatar, // Store both for compatibility
 		};
-		localStorage.setItem('user', JSON.stringify(user));
+		// No longer storing in localStorage
 		return user;
+	  }
+
+	  // Handle 401 - token might be expired, but don't try to refresh here
+	  // to avoid circular dependency with api.ts
+	  if (response.status === 401) {
+		console.warn("getCurrentUser: Unauthorized - token may be expired");
+		return null;
 	  }
 
 	  return null;
@@ -443,17 +442,39 @@ export function isAuthenticated(): boolean {
 
 import { setUserStatus } from './api';
 
-export function logout(): void {
-  // Try to mark user offline before clearing token
-  setUserStatus('OFFLINE', { keepalive: true }).finally(() => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
+export async function logout(): Promise<void> {
+  try {
+    // Call backend logout endpoint to invalidate tokens
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+    const token = getAccessToken();
+    
+    await fetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include', // Include cookies (refresh token)
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    }).catch(() => {
+      // Ignore errors - continue with local cleanup
+    });
+  } catch (error) {
+    console.error('Logout API error:', error);
+  } finally {
+    // Clear local state regardless of API call success
+    clearAccessToken();
+    
+    // Try to mark user offline (non-blocking)
+    setUserStatus('OFFLINE', { keepalive: true }).catch(() => {
+      // Ignore errors
+    });
+    
     updateNavbar();
     // Force navigation to landing page
     setTimeout(() => {
       navigate('landing' as Screen);
     }, 100);
-  });
+  }
 }
 
 // Clean up event listeners when navigating away

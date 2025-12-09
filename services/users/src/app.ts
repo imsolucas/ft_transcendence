@@ -6,21 +6,48 @@ import dbPlugin from "./db/plugin.ts";
 import routes from "./routes/routes.ts";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+
+const prisma = new PrismaClient();
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
 
   // Register CORS plugin
   await app.register(import("@fastify/cors"), {
-    origin: [
-      "http://localhost:4000",  // Local dev server
-      "http://localhost:3000",  // Frontend dev server
-      "http://127.0.0.1:3000",  // Alternative localhost
-      "http://localhost:5173",  // Vite default port (fallback)
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        "http://localhost:4000",  // Local dev server
+        "http://localhost:3000",  // Frontend dev server
+        "http://127.0.0.1:3000",  // Alternative localhost
+        "http://localhost:5173",  // Vite default port
+        "http://127.0.0.1:5173",  // Alternative localhost Vite
+      ];
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // In development, allow any localhost origin
+        if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"), false);
+        }
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
+  });
+
+  // Register cookie plugin
+  await app.register(import("@fastify/cookie"), {
+    secret: process.env.COOKIE_SECRET || "dev_cookie_secret_change_in_production",
+    hook: "onRequest",
   });
 
   app.addSchema(UserProfile);
@@ -46,6 +73,27 @@ export async function buildApp(): Promise<FastifyInstance> {
       }
       try {
         const token = auth.replace("Bearer ", "");
+        
+        // Check if token is blacklisted
+        const blacklistedTokens = await prisma.tokenBlacklist.findMany({
+          where: {
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        let isBlacklisted = false;
+        for (const blacklistedToken of blacklistedTokens) {
+          const matches = await bcrypt.compare(token, blacklistedToken.tokenHash);
+          if (matches) {
+            isBlacklisted = true;
+            break;
+          }
+        }
+
+        if (isBlacklisted) {
+          return reply.code(401).send({ error: "Token has been revoked" });
+        }
+
         const payload = jwt.verify(token, JWT_SECRET);
         req.user = payload as any;
       } catch {

@@ -1,5 +1,6 @@
 import { updateNavbar } from '../components/layout/Navbar';
 import { navigate } from '../router';
+import { setAccessToken } from '../utils/tokenManager';
 
 type CredentialResponse = google.accounts.id.CredentialResponse;
 
@@ -97,6 +98,7 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     // Send the Google credential to backend for verification
     const response = await fetch(`${API_URL}/auth/google`, {
       method: 'POST',
+      credentials: 'include', // Include cookies - critical for refresh token!
       headers: {
         'Content-Type': 'application/json',
       },
@@ -118,16 +120,9 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     }
 
     if (data.token && data.user) {
-      // Store the real JWT token from backend
-      localStorage.setItem('authToken', data.token);
-
-      // Store user data with both picture and avatar for compatibility
-      const userToStore = {
-        ...data.user,
-        picture: data.user.avatar || payload.picture,
-        avatar: data.user.avatar || payload.picture,
-      };
-      localStorage.setItem('user', JSON.stringify(userToStore));
+      // Store access token in memory (not localStorage)
+      setAccessToken(data.token);
+      // User data is fetched from API when needed, not stored in localStorage
 
       return true;
     } else {

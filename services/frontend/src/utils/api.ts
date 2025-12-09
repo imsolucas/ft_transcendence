@@ -1,11 +1,41 @@
 import { getCurrentUser } from './auth-script';
+import { getAccessToken, setAccessToken, clearAccessToken } from './tokenManager';
 
 // API Configuration
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
-// Helper function to get auth token
+// Helper function to get auth token (from memory)
 const getToken = () => {
-  return localStorage.getItem('authToken');
+  return getAccessToken();
+};
+
+// Helper function to refresh access token
+const refreshAccessToken = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include', // Include cookies (refresh token)
+      // Don't send Content-Type header - refresh endpoint uses cookies, no body needed
+    });
+
+    if (!response.ok) {
+      clearAccessToken();
+      return false;
+    }
+
+    const data = await response.json();
+    if (data.token) {
+      setAccessToken(data.token);
+      // User data is fetched from API when needed, not stored in localStorage
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    clearAccessToken();
+    return false;
+  }
 };
 
 // Helper function for making authenticated API requests
@@ -26,17 +56,57 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
 
   // Handle 401 Unauthorized - token might be invalid or expired
   if (response.status === 401) {
-    // Clear invalid token
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
+    // Attempt to refresh token (only if not already a refresh request)
+    if (!url.includes('/auth/refresh')) {
+      const refreshed = await refreshAccessToken();
+      
+      if (refreshed) {
+        // Retry original request with new token
+        const newHeaders = {
+          ...headers,
+          'Authorization': `Bearer ${getAccessToken()}`,
+        };
+        const retryResponse = await fetch(url, { ...options, headers: newHeaders });
+        
+        if (retryResponse.status === 401) {
+          // Still unauthorized after refresh, clear everything
+          clearAccessToken();
+          
+          // Only redirect if we're not already on auth/landing page
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('/auth') && !currentPath.includes('/landing') && currentPath !== '/') {
+            window.dispatchEvent(new CustomEvent('authExpired'));
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 100);
+          }
+          
+          const errorData = await retryResponse.json().catch(() => ({ error: 'Unauthorized' }));
+          throw new Error(errorData.error || 'Unauthorized: Please login again');
+        }
+        
+        // Handle retry response
+        if (!retryResponse.ok) {
+          const errorData = await retryResponse.json().catch(() => ({ error: retryResponse.statusText }));
+          throw new Error(errorData.error || `API request failed: ${retryResponse.statusText}`);
+        }
+        
+        if (retryResponse.status === 204) {
+          return null;
+        }
+        
+        return retryResponse.json();
+      }
+    }
+    
+    // Refresh failed or was refresh endpoint - clear everything
+    clearAccessToken();
     console.error('Unauthorized: Token invalid or expired');
     
     // Only redirect if we're not already on auth/landing page
     const currentPath = window.location.pathname;
     if (!currentPath.includes('/auth') && !currentPath.includes('/landing') && currentPath !== '/') {
-      // Dispatch event to trigger navbar update and redirect
       window.dispatchEvent(new CustomEvent('authExpired'));
-      // Small delay to allow event handlers to process
       setTimeout(() => {
         window.location.href = '/';
       }, 100);
@@ -94,36 +164,22 @@ export const fetchUserProfile = async () => {
     // Use authenticated endpoint to get current user profile
     const user = await apiFetch(`${API_URL}/user/profile`);
     
-    // Calculate wins/losses from match history
-    let wins = 0;
-    let losses = 0;
-    try {
-      const matches = await fetchMatchHistory();
-      matches.forEach((match: any) => {
-        if (match.result === 'WIN') wins++;
-        else if (match.result === 'LOSS') losses++;
-      });
-    } catch (error) {
-      console.error('Error calculating stats from match history:', error);
-    }
-    
-    const totalGames = wins + losses;
-    const winRate = totalGames > 0 ? `${Math.round((wins / totalGames) * 100)}%` : '0%';
-    
+    // Return profile immediately - don't calculate stats here to avoid circular dependency
+    // Stats can be calculated separately if needed
     return {
       id: user.id,
       username: user.username || user.name,
       email: user.email,
       picture: user.avatar,
       level: user.level || 1,
-      wins: wins,
-      losses: losses,
-      winRate: winRate,
+      wins: 0, // Will be calculated separately from match history if needed
+      losses: 0,
+      winRate: '0%',
       is2FAEnabled: user.is2FAEnabled || false,
     };
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    // Fallback to current user data from localStorage
+    // Fallback to current user data
     const currentUser = await getCurrentUser();
     return {
       id: currentUser?.id,
@@ -185,26 +241,50 @@ export const updateUserProfile = async (data: any) => {
 export const fetchMatchHistory = async () => {
   try {
     const matches = await apiFetch(`${API_URL}/user/match-history`);
-    return matches.map((match: any) => {
-      // Determine if current user is player1 or player2
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const isPlayer1 = match.player1Id === currentUser.id;
-      const opponent = isPlayer1 ? match.player2DisplayName : match.player1DisplayName;
-      const myScore = isPlayer1 ? match.player1Score : match.player2Score;
-      const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
-      const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
+    // Get current user ID from token or simple API call to avoid circular dependency
+    const token = getToken();
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+    
+    // Decode token to get user ID (simple base64 decode, no verification needed for ID extraction)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentUserId = payload.id;
       
-      return {
+      return matches.map((match: any) => {
+        // Determine if current user is player1 or player2
+        const isPlayer1 = match.player1Id === currentUserId;
+        const opponent = isPlayer1 ? match.player2DisplayName : match.player1DisplayName;
+        const myScore = isPlayer1 ? match.player1Score : match.player2Score;
+        const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
+        const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
+        
+        return {
+          opponent: {
+            username: opponent || 'Unknown',
+            picture: '/images/pong.png'
+          },
+          result: result,
+          score: `${myScore} - ${opponentScore}`,
+          type: 'Match',
+          timestamp: new Date(match.played_at).toLocaleDateString()
+        };
+      });
+    } catch (decodeError) {
+      console.error('Error decoding token for user ID:', decodeError);
+      // Fallback: return matches without result calculation
+      return matches.map((match: any) => ({
         opponent: {
-          username: opponent || 'Unknown',
+          username: match.player2DisplayName || match.player1DisplayName || 'Unknown',
           picture: '/images/pong.png'
         },
-        result: result,
-        score: `${myScore} - ${opponentScore}`,
+        result: 'DRAW',
+        score: `${match.player1Score} - ${match.player2Score}`,
         type: 'Match',
         timestamp: new Date(match.played_at).toLocaleDateString()
-      };
-    });
+      }));
+    }
   } catch (error) {
     console.error('Error fetching match history:', error);
     return [];
@@ -415,6 +495,7 @@ export const verify2FACode = async (userId: number, code: string) => {
   try {
     const result = await fetch(`${API_URL}/auth/verify-2fa`, {
       method: 'POST',
+      credentials: 'include', // Include cookies - critical for refresh token!
       headers: {
         'Content-Type': 'application/json',
       },

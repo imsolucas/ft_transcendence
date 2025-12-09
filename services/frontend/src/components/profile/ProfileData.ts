@@ -67,12 +67,7 @@ export function ProfileData() {
       // Update localStorage with new picture
       const currentUser = await getCurrentUser();
       if (currentUser && result.picture) {
-        const updatedUser = {
-          ...currentUser,
-          picture: result.picture,
-          avatar: result.picture,
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // User data is fetched from API when needed, not stored in localStorage
       }
 
       // Update navbar and reload profile
@@ -101,19 +96,7 @@ export function ProfileData() {
       const result = await updateUserProfile(updatedData);
       showNotification(String(t('profile.profileUpdated') || 'Profile updated successfully!'), 'success');
 
-      // Update localStorage user data
-      if (result) {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          const updatedUser = {
-            ...currentUser,
-            username: String(result.username || currentUser.username),
-            email: String(result.email || currentUser.email),
-            picture: String(result.picture || currentUser.picture),
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        }
-      }
+      // User data is fetched from API when needed, not stored in localStorage
 
       // Reload profile to show updated info
       await loadProfileData();
@@ -400,14 +383,16 @@ export function ProfileData() {
   const loadProfileData = async () => {
     renderLoading();
     try {
-      user = await getCurrentUser();
-      if (!user) {
-        renderError({ message: t('profile.mustBeLoggedIn') });
+      // Fetch profile data directly - getCurrentUser() is redundant since fetchUserProfile() does the same
+      const profileData = await fetchUserProfile();
+      if (!profileData || !profileData.id) {
+        renderError({ message: t('profile.mustBeLoggedIn') || 'You must be logged in to view your profile' });
         return;
       }
-      const profileData = await fetchUserProfile();
+      user = profileData; // Store for later use
       render(profileData);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
       renderError(error);
     }
   };
@@ -423,6 +408,24 @@ export function ProfileData() {
         date: match.timestamp || new Date().toLocaleDateString(),
       }));
       renderMatchHistory(container, matches);
+      
+      // Update stats based on match history
+      let wins = 0;
+      let losses = 0;
+      matches.forEach((match) => {
+        if (match.result === 'win') wins++;
+        else if (match.result === 'loss') losses++;
+      });
+      const totalGames = wins + losses;
+      const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+      
+      // Update stats display
+      const winsElement = container.querySelector('#profile-wins');
+      const lossesElement = container.querySelector('#profile-losses');
+      const winRateElement = container.querySelector('#profile-winrate');
+      if (winsElement) winsElement.textContent = wins.toString();
+      if (lossesElement) lossesElement.textContent = losses.toString();
+      if (winRateElement) winRateElement.textContent = `${winRate}%`;
     } catch (error) {
       console.error('Failed to load match history:', error);
       const matchHistoryContainer = container.querySelector('#match-history > div');
