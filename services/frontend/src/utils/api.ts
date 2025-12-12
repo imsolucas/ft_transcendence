@@ -291,6 +291,43 @@ export const fetchMatchHistory = async () => {
   }
 };
 
+// Calculate user statistics from match history
+export const calculateUserStats = async () => {
+  try {
+    const matches = await fetchMatchHistory();
+    let wins = 0;
+    let losses = 0;
+    
+    matches.forEach((match: any) => {
+      if (match.result === 'WIN') {
+        wins++;
+      } else if (match.result === 'LOSS') {
+        losses++;
+      }
+    });
+    
+    const totalGames = wins + losses;
+    const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+    // Calculate level based on wins (simple formula: level = 1 + Math.floor(wins / 5))
+    const level = 1 + Math.floor(wins / 5);
+    
+    return {
+      wins,
+      losses,
+      winRate: `${winRate}%`,
+      level,
+    };
+  } catch (error) {
+    console.error('Error calculating user stats:', error);
+    return {
+      wins: 0,
+      losses: 0,
+      winRate: '0%',
+      level: 1,
+    };
+  }
+};
+
 export const fetchFriends = async () => {
   try {
     const friends = await apiFetch(`${API_URL}/user/friends`);
