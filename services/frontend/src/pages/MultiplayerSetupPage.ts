@@ -38,7 +38,8 @@ export function MultiplayerGamePage(): HTMLElement {
 					selectedGameMode = 'tournament';
 					renderLobbySelection();
 				},
-				() => navigate('lobby')
+				() => navigate('lobby'),
+				true // isMultiplayer = true
 			);
 		} catch (error) {
 			console.error('Error rendering mode selection:', error);

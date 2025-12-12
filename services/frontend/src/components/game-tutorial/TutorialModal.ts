@@ -1,4 +1,3 @@
-import { t } from '../../i18n';
 import { escapeHtml } from '../../utils/sanitize';
 
 export type GameMode = '1v1' | 'tournament' | 'multiplayer';
@@ -22,7 +21,7 @@ const tutorialContent: Record<GameMode, TutorialContent> = {
     },
     controls: {
       title: 'Controls',
-      content: 'Player 1: Use W and S keys to move your paddle up and down.\n\nPlayer 2: Use ↑ and ↓ arrow keys to move your paddle up and down.\n\nShare the keyboard with your opponent!',
+      content: 'Use W and S keys OR ↑ and ↓ arrow keys to move your paddle up and down.\n\nShare the keyboard with your opponent!',
     },
     gameplay: {
       title: 'How to Play',
@@ -50,7 +49,7 @@ const tutorialContent: Record<GameMode, TutorialContent> = {
     },
     controls: {
       title: 'Controls',
-      content: 'Use W and S keys OR ↑ and ↓ arrow keys to move your paddle up and down.\n\nYour opponent controls their own paddle remotely.',
+      content: 'Use W and S keys to move your paddle up and down. Your opponent controls their own paddle remotely.',
     },
     gameplay: {
       title: 'How to Play',

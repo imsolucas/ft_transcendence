@@ -43,7 +43,8 @@ export function setupGameModeSelection(
 	container: HTMLElement,
 	onSelect1v1: () => void,
 	onSelectTournament: () => void,
-	onBack: () => void
+	onBack: () => void,
+	isMultiplayer: boolean = false
 ): void {
 	setTimeout(() => {
 		const btn1v1 = container.querySelector('#one-vs-one-btn');
@@ -58,7 +59,8 @@ export function setupGameModeSelection(
 		btn1v1.addEventListener('click', () => {
 			const skipTutorial = localStorage.getItem('skipTutorial') === 'true';
 			if (!skipTutorial) {
-				showTutorialModal('1v1', onSelect1v1);
+				// Show multiplayer tutorial if in multiplayer mode, otherwise show 1v1 local tutorial
+				showTutorialModal(isMultiplayer ? 'multiplayer' : '1v1', onSelect1v1);
 			} else {
 				onSelect1v1();
 			}
@@ -67,6 +69,7 @@ export function setupGameModeSelection(
 		btnTournament.addEventListener('click', () => {
 			const skipTutorial = localStorage.getItem('skipTutorial') === 'true';
 			if (!skipTutorial) {
+				// Tournament mode is only for local games, so always show tournament tutorial
 				showTutorialModal('tournament', onSelectTournament);
 			} else {
 				onSelectTournament();
