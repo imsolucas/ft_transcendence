@@ -1,6 +1,6 @@
 import { escapeHtml } from '../../utils/sanitize';
 
-export type GameMode = '1v1' | 'tournament' | 'multiplayer';
+export type GameMode = '1v1' | 'tournament' | 'multiplayer' | 'multiplayer-tournament';
 
 interface TutorialSlide {
   title: string;
@@ -56,6 +56,21 @@ const tutorialContent: Record<GameMode, TutorialContent> = {
       content: '• Real-time gameplay via WebSocket connection\n• Score by making the ball pass your opponent\'s paddle\n• First player to reach the target score wins\n• Matches are recorded in your match history',
     },
   },
+  'multiplayer-tournament': {
+    welcome: {
+      title: 'Online Tournament',
+      content: 'Compete in an online tournament bracket! Multiple players join, winners advance to the next round until one champion remains.',
+    },
+    controls: {
+      title: 'Controls',
+      content: 'Use W and S keys to move your paddle up and down. Each player controls their own paddle remotely during their match.',
+    },
+    gameplay: {
+      title: 'How to Play',
+      content: '• Join a tournament lobby or create your own\n• Players are matched in tournament brackets\n• Winners advance to the next round automatically\n• The tournament bracket shows who plays next\n• Last player standing wins the tournament!\n• All matches are recorded in your match history',
+    },
+  },
+  
 };
 
 export function showTutorialModal(

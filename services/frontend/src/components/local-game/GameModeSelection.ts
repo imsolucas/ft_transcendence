@@ -69,8 +69,8 @@ export function setupGameModeSelection(
 		btnTournament.addEventListener('click', () => {
 			const skipTutorial = localStorage.getItem('skipTutorial') === 'true';
 			if (!skipTutorial) {
-				// Tournament mode is only for local games, so always show tournament tutorial
-				showTutorialModal('tournament', onSelectTournament);
+				// Show multiplayer tournament tutorial if in multiplayer mode, otherwise show local tournament tutorial
+				showTutorialModal(isMultiplayer ? 'multiplayer-tournament' : 'tournament', onSelectTournament);
 			} else {
 				onSelectTournament();
 			}
