@@ -163,6 +163,68 @@
     "searching": "Buscando oponente...",
     "creatingLobby": "Creando sala...",
     "joiningLobby": "Uniéndose a sala..."
+  },
+  "tutorial": {
+    "prev": "◄ ANT",
+    "next": "SIG ►",
+    "startGame": "INICIAR JUEGO",
+    "dontShowAgain": "No mostrar este tutorial de nuevo",
+    "1v1": {
+      "welcome": {
+        "title": "Partida Local 1v1",
+        "content": "¡Juega contra un amigo en el mismo teclado! El primer jugador en alcanzar el puntaje objetivo gana."
+      },
+      "controls": {
+        "title": "Controles",
+        "content": "Usa las teclas W y S O las flechas ↑ y ↓ para mover tu paleta hacia arriba y hacia abajo.\n\n¡Comparte el teclado con tu oponente!"
+      },
+      "gameplay": {
+        "title": "Cómo Jugar",
+        "content": "• Golpea la pelota con tu paleta para mantenerla en juego\n• Anota haciendo pasar la pelota por la paleta de tu oponente\n• El primer jugador en alcanzar el puntaje objetivo gana\n• La pelota acelera a medida que avanza el juego"
+      }
+    },
+    "tournament": {
+      "welcome": {
+        "title": "Modo Torneo",
+        "content": "¡Compite en un cuadro de torneo! Los jugadores juegan por turnos, los ganadores avanzan a la siguiente ronda."
+      },
+      "controls": {
+        "title": "Controles",
+        "content": "Jugador 1: Usa las teclas W y S para mover tu paleta hacia arriba y hacia abajo.\n\nJugador 2: Usa las flechas ↑ y ↓ para mover tu paleta hacia arriba y hacia abajo.\n\nLos jugadores juegan por turnos."
+      },
+      "gameplay": {
+        "title": "Cómo Jugar",
+        "content": "• Cada partida sigue las reglas estándar de Pong\n• Los ganadores avanzan a la siguiente ronda\n• El cuadro de torneo muestra quién juega a continuación\n• ¡El último jugador en pie gana el torneo!"
+      }
+    },
+    "multiplayer": {
+      "welcome": {
+        "title": "Multijugador en Línea",
+        "content": "¡Juega contra jugadores de todo el mundo en partidas en tiempo real!"
+      },
+      "controls": {
+        "title": "Controles",
+        "content": "Usa las teclas W y S para mover tu paleta hacia arriba y hacia abajo. Tu oponente controla su propia paleta de forma remota."
+      },
+      "gameplay": {
+        "title": "Cómo Jugar",
+        "content": "• Gameplay en tiempo real vía conexión WebSocket\n• Anota haciendo pasar la pelota por la paleta de tu oponente\n• El primer jugador en alcanzar el puntaje objetivo gana\n• Las partidas se registran en tu historial"
+      }
+    },
+    "multiplayerTournament": {
+      "welcome": {
+        "title": "Torneo en Línea",
+        "content": "¡Compite en un cuadro de torneo en línea! Múltiples jugadores se unen, los ganadores avanzan a la siguiente ronda hasta que quede un solo campeón."
+      },
+      "controls": {
+        "title": "Controles",
+        "content": "Usa las teclas W y S para mover tu paleta hacia arriba y hacia abajo. Cada jugador controla su propia paleta de forma remota durante su partida."
+      },
+      "gameplay": {
+        "title": "Cómo Jugar",
+        "content": "• Únete a un lobby de torneo o crea el tuyo\n• Los jugadores se emparejan en cuadros de torneo\n• Los ganadores avanzan automáticamente a la siguiente ronda\n• El cuadro de torneo muestra quién juega a continuación\n• ¡El último jugador en pie gana el torneo!\n• Todas las partidas se registran en tu historial"
+      }
+    }
   }
 }
 

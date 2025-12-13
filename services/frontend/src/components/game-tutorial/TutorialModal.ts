@@ -1,4 +1,5 @@
 import { escapeHtml } from '../../utils/sanitize';
+import { t } from '../../i18n';
 
 export type GameMode = '1v1' | 'tournament' | 'multiplayer' | 'multiplayer-tournament';
 
@@ -13,71 +14,31 @@ interface TutorialContent {
   gameplay: TutorialSlide;
 }
 
-const tutorialContent: Record<GameMode, TutorialContent> = {
-  '1v1': {
-    welcome: {
-      title: '1v1 Local Match',
-      content: 'Play against a friend on the same keyboard! First player to reach the target score wins.',
-    },
-    controls: {
-      title: 'Controls',
-      content: 'Use W and S keys OR ↑ and ↓ arrow keys to move your paddle up and down.\n\nShare the keyboard with your opponent!',
-    },
-    gameplay: {
-      title: 'How to Play',
-      content: '• Hit the ball with your paddle to keep it in play\n• Score by making the ball pass your opponent\'s paddle\n• First player to reach the target score wins\n• The ball speeds up as the game progresses',
-    },
-  },
-  tournament: {
-    welcome: {
-      title: 'Tournament Mode',
-      content: 'Compete in a tournament bracket! Players take turns, winners advance to the next round.',
-    },
-    controls: {
-      title: 'Controls',
-      content: 'Player 1: Use W and S keys to move your paddle up and down.\n\nPlayer 2: Use ↑ and ↓ arrow keys to move your paddle up and down.\n\nPlayers take turns playing matches.',
-    },
-    gameplay: {
-      title: 'How to Play',
-      content: '• Each match follows standard Pong rules\n• Winners advance to the next round\n• The tournament bracket shows who plays next\n• Last player standing wins the tournament!',
-    },
-  },
-  multiplayer: {
-    welcome: {
-      title: 'Online Multiplayer',
-      content: 'Play against players from around the world in real-time matches!',
-    },
-    controls: {
-      title: 'Controls',
-      content: 'Use W and S keys to move your paddle up and down. Your opponent controls their own paddle remotely.',
-    },
-    gameplay: {
-      title: 'How to Play',
-      content: '• Real-time gameplay via WebSocket connection\n• Score by making the ball pass your opponent\'s paddle\n• First player to reach the target score wins\n• Matches are recorded in your match history',
-    },
-  },
-  'multiplayer-tournament': {
-    welcome: {
-      title: 'Online Tournament',
-      content: 'Compete in an online tournament bracket! Multiple players join, winners advance to the next round until one champion remains.',
-    },
-    controls: {
-      title: 'Controls',
-      content: 'Use W and S keys to move your paddle up and down. Each player controls their own paddle remotely during their match.',
-    },
-    gameplay: {
-      title: 'How to Play',
-      content: '• Join a tournament lobby or create your own\n• Players are matched in tournament brackets\n• Winners advance to the next round automatically\n• The tournament bracket shows who plays next\n• Last player standing wins the tournament!\n• All matches are recorded in your match history',
-    },
-  },
+// Get tutorial content from i18n translations
+const getTutorialContent = (gameMode: GameMode): TutorialContent => {
+  const modeKey = gameMode === 'multiplayer-tournament' ? 'multiplayerTournament' : gameMode;
   
+  return {
+    welcome: {
+      title: t(`tutorial.${modeKey}.welcome.title`),
+      content: t(`tutorial.${modeKey}.welcome.content`),
+    },
+    controls: {
+      title: t(`tutorial.${modeKey}.controls.title`),
+      content: t(`tutorial.${modeKey}.controls.content`),
+    },
+    gameplay: {
+      title: t(`tutorial.${modeKey}.gameplay.title`),
+      content: t(`tutorial.${modeKey}.gameplay.content`),
+    },
+  };
 };
 
 export function showTutorialModal(
   gameMode: GameMode,
   onComplete: () => void
 ): void {
-  const content = tutorialContent[gameMode];
+  const content = getTutorialContent(gameMode);
   let currentSlide = 0;
   const slides = ['welcome', 'controls', 'gameplay'] as const;
 
@@ -136,7 +97,7 @@ export function showTutorialModal(
 
   const prevBtn = document.createElement('button');
   prevBtn.className = 'btn px-6 py-3 rounded-lg border-2 border-cyan-400/50 cursor-pointer text-sm text-white font-bold hover:bg-cyan-400/20 hover:border-cyan-400 transition-all font-poppins uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed';
-  prevBtn.textContent = '◄ PREV';
+  prevBtn.textContent = t('tutorial.prev');
   prevBtn.disabled = true;
 
   const slideIndicator = document.createElement('div');
@@ -145,7 +106,7 @@ export function showTutorialModal(
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'btn px-6 py-3 rounded-lg border-2 border-pink-400 cursor-pointer text-sm text-white font-bold hover:bg-pink-400/20 hover:border-pink-400 transition-all font-poppins uppercase tracking-wider';
-  nextBtn.textContent = 'NEXT ►';
+  nextBtn.textContent = t('tutorial.next');
 
   navContainer.appendChild(prevBtn);
   navContainer.appendChild(slideIndicator);
@@ -162,14 +123,14 @@ export function showTutorialModal(
   checkbox.type = 'checkbox';
   checkbox.id = 'skip-tutorial-checkbox';
   skipCheckbox.appendChild(checkbox);
-  skipCheckbox.appendChild(document.createTextNode('Don\'t show this tutorial again'));
+  skipCheckbox.appendChild(document.createTextNode(t('tutorial.dontShowAgain')));
 
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'flex gap-4 justify-center';
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-pink-400 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/20 to-cyan-500/20 backdrop-blur-sm uppercase tracking-wider';
-  closeBtn.textContent = 'START GAME';
+  closeBtn.textContent = t('tutorial.startGame');
 
   buttonContainer.appendChild(closeBtn);
   actionContainer.appendChild(skipCheckbox);
@@ -202,7 +163,7 @@ export function showTutorialModal(
 
     // Update navigation buttons
     prevBtn.disabled = currentSlide === 0;
-    nextBtn.textContent = currentSlide === slides.length - 1 ? 'START GAME ►' : 'NEXT ►';
+    nextBtn.textContent = currentSlide === slides.length - 1 ? `${t('tutorial.startGame')} ►` : t('tutorial.next');
   };
 
   // Navigation handlers

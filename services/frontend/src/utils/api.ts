@@ -41,6 +41,9 @@ const refreshAccessToken = async (): Promise<boolean> => {
 // Helper function for making authenticated API requests
 const apiFetch = async (url: string, options: RequestInit = {}) => {
   const token = getToken();
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/d7920797-0f4b-4541-bc50-f6cc0d7ce821',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:42',message:'apiFetch called',data:{url,hasToken:!!token,tokenLength:token?.length || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+  // #endregion
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -53,12 +56,22 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
   }
 
   const response = await fetch(url, { ...options, headers });
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/d7920797-0f4b-4541-bc50-f6cc0d7ce821',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:55',message:'apiFetch response',data:{url,status:response.status,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+  // #endregion
 
   // Handle 401 Unauthorized - token might be invalid or expired
   if (response.status === 401) {
+    // #region agent log
+    const errorText = await response.clone().json().catch(() => ({ error: 'Unknown' }));
+    fetch('http://127.0.0.1:7243/ingest/d7920797-0f4b-4541-bc50-f6cc0d7ce821',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:58',message:'401 received - checking error',data:{url,error:errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
     // Attempt to refresh token (only if not already a refresh request)
     if (!url.includes('/auth/refresh')) {
       const refreshed = await refreshAccessToken();
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/d7920797-0f4b-4541-bc50-f6cc0d7ce821',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:62',message:'token refresh attempt result',data:{url,refreshed,newToken:!!getAccessToken()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion
       
       if (refreshed) {
         // Retry original request with new token
@@ -164,17 +177,13 @@ export const fetchUserProfile = async () => {
     // Use authenticated endpoint to get current user profile
     const user = await apiFetch(`${API_URL}/user/profile`);
     
-    // Return profile immediately - don't calculate stats here to avoid circular dependency
-    // Stats can be calculated separately if needed
+    // Return profile - stats should be calculated separately using calculateUserStats()
     return {
       id: user.id,
       username: user.username || user.name,
       email: user.email,
       picture: user.avatar,
       level: user.level || 1,
-      wins: 0, // Will be calculated separately from match history if needed
-      losses: 0,
-      winRate: '0%',
       is2FAEnabled: user.is2FAEnabled || false,
     };
   } catch (error) {
@@ -187,9 +196,6 @@ export const fetchUserProfile = async () => {
       email: currentUser?.email || '',
       picture: currentUser?.picture,
       level: 1,
-      wins: 0,
-      losses: 0,
-      winRate: '0%',
       is2FAEnabled: (currentUser as any)?.is2FAEnabled || false,
     };
   }

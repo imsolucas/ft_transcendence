@@ -74,29 +74,135 @@ export async function buildApp(): Promise<FastifyInstance> {
       try {
         const token = auth.replace("Bearer ", "");
         
+        // Decode token to get expiration and issued time for optimization
+        const tokenPayload = jwt.decode(token) as { exp?: number; iat?: number; id?: number } | null;
+        const tokenExp = tokenPayload?.exp ? new Date(tokenPayload.exp * 1000) : null;
+        const tokenIat = tokenPayload?.iat ? new Date(tokenPayload.iat * 1000) : null;
+        
+        // #region agent log
+        try {
+          const fs = await import('fs');
+          const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+          fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:75',message:'JWT validation starting',data:{path,hasToken:!!token,tokenLength:token.length,tokenUserId:tokenPayload?.id,tokenExp:tokenExp?.toISOString(),tokenIat:tokenIat?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+        } catch (logErr) {}
+        // #endregion
+        
         // Check if token is blacklisted
-        const blacklistedTokens = await prisma.tokenBlacklist.findMany({
+        // First, clean up expired blacklist entries
+        await prisma.tokenBlacklist.deleteMany({
           where: {
-            expiresAt: { gt: new Date() },
+            expiresAt: { lte: new Date() },
           },
         });
-
+        
         let isBlacklisted = false;
-        for (const blacklistedToken of blacklistedTokens) {
-          const matches = await bcrypt.compare(token, blacklistedToken.tokenHash);
-          if (matches) {
-            isBlacklisted = true;
-            break;
+        
+        // Optimization: Skip blacklist check for tokens issued in the last 5 minutes
+        // These tokens are too new to have been blacklisted (logout happens before new token is issued)
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const shouldCheckBlacklist = tokenExp && tokenExp > new Date() && 
+                                     (!tokenIat || tokenIat < fiveMinutesAgo);
+        
+        if (shouldCheckBlacklist) {
+          // Only check blacklist entries that could potentially match (not expired yet)
+          const blacklistedTokens = await prisma.tokenBlacklist.findMany({
+            where: {
+              expiresAt: { gt: new Date() },
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 100, // Limit to most recent 100 entries for performance
+          });
+
+          // #region agent log
+          try {
+            const fs = await import('fs');
+            const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+            fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:103',message:'checking blacklist',data:{blacklistCount:blacklistedTokens.length,tokenUserId:tokenPayload?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+          } catch (logErr) {}
+          // #endregion
+          
+          if (blacklistedTokens.length > 0) {
+            // Use Promise.all for parallel comparison (faster)
+            const comparisonPromises = blacklistedTokens.map(async (blacklistedToken) => {
+              try {
+                const matches = await bcrypt.compare(token, blacklistedToken.tokenHash);
+                // #region agent log
+                if (matches) {
+                  try {
+                    const fs = await import('fs');
+                    const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+                    fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:115',message:'token found in blacklist',data:{blacklistId:blacklistedToken.id,blacklistExpiresAt:blacklistedToken.expiresAt.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+                  } catch (logErr) {}
+                }
+                // #endregion
+                return matches;
+              } catch (err) {
+                // If comparison fails, assume not blacklisted
+                return false;
+              }
+            });
+            
+            const results = await Promise.all(comparisonPromises);
+            isBlacklisted = results.some(match => match === true);
           }
+        } else {
+          // #region agent log
+          try {
+            const fs = await import('fs');
+            const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+            fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:130',message:'skipping blacklist check - token too recent',data:{tokenIat:tokenIat?.toISOString(),fiveMinutesAgo:fiveMinutesAgo.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+          } catch (logErr) {}
+          // #endregion
         }
 
+        // #region agent log
+        try {
+          const fs = await import('fs');
+          const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+          fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:158',message:'blacklist check complete',data:{isBlacklisted,shouldCheckBlacklist},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+        } catch (logErr) {}
+        // #endregion
+
         if (isBlacklisted) {
+          // #region agent log
+          try {
+            const fs = await import('fs');
+            const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+            fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:123',message:'returning token revoked',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+          } catch (logErr) {}
+          // #endregion
           return reply.code(401).send({ error: "Token has been revoked" });
         }
 
+        // #region agent log
+        try {
+          const fs = await import('fs');
+          const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+          fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:128',message:'attempting JWT verify',data:{tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+        } catch (logErr) {}
+        // #endregion
+        
         const payload = jwt.verify(token, JWT_SECRET);
+        // #region agent log
+        try {
+          const fs = await import('fs');
+          const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+          fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:133',message:'JWT verified successfully',data:{userId:(payload as any).id,username:(payload as any).username},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+        } catch (logErr) {}
+        // #endregion
         req.user = payload as any;
-      } catch {
+      } catch (error) {
+        // #region agent log
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorName = error instanceof Error ? error.name : 'Unknown';
+        try {
+          const fs = await import('fs');
+          const logPath = '/home/imsolucas/42project/ft_transcendence/.cursor/debug.log';
+          fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:140',message:'JWT verification failed',data:{error:errorMsg,errorName,isJwtError:errorName.includes('JsonWebToken') || errorName.includes('TokenExpired')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
+        } catch (logErr) {}
+        // #endregion
         return reply.code(401).send({ error: "Unauthorized" });
       }
     }

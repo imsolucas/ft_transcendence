@@ -1,4 +1,4 @@
-import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture, setup2FA } from '../../utils/api';
+import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture, setup2FA, calculateUserStats } from '../../utils/api';
 import { getCurrentUser } from '../../utils/auth-script';
 import { t } from '../../i18n';
 import { LanguageSelector } from '../shared/LanguageSelector';
@@ -389,8 +389,33 @@ export function ProfileData() {
         renderError({ message: t('profile.mustBeLoggedIn') || 'You must be logged in to view your profile' });
         return;
       }
-      user = profileData; // Store for later use
-      render(profileData);
+      
+      // Fetch real stats from match history
+      try {
+        const stats = await calculateUserStats();
+        // Merge stats with profile data
+        const profileWithStats = {
+          ...profileData,
+          wins: stats.wins,
+          losses: stats.losses,
+          winRate: stats.winRate,
+          level: stats.level,
+        };
+        user = profileWithStats; // Store for later use
+        render(profileWithStats);
+      } catch (statsError) {
+        console.error('Error loading stats, using defaults:', statsError);
+        // Fallback to profile data without stats (will show 0s)
+        const profileWithDefaults = {
+          ...profileData,
+          wins: 0,
+          losses: 0,
+          winRate: '0%',
+          level: profileData.level || 1,
+        };
+        user = profileWithDefaults;
+        render(profileWithDefaults);
+      }
     } catch (error: any) {
       console.error('Error loading profile:', error);
       renderError(error);

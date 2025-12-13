@@ -452,9 +452,9 @@ export async function logout(): Promise<void> {
       method: 'POST',
       credentials: 'include', // Include cookies (refresh token)
       headers: {
-        'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
       },
+      // No Content-Type header and no body - logout doesn't need a body
     }).catch(() => {
       // Ignore errors - continue with local cleanup
     });

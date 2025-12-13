@@ -14,11 +14,11 @@ const isProduction = process.env.NODE_ENV === "production";
 
 // Helper function to generate token pair
 async function generateTokenPair(userId: number, username: string, email: string) {
-  // Generate access token (15 minutes)
+  // Generate access token (30 minutes)
   const accessToken = jwt.sign(
     { id: userId, username, email },
     JWT_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "30m" }
   );
 
   // Generate refresh token (7 days)
