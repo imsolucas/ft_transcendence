@@ -13,7 +13,7 @@ COPY . .
 
 RUN ./init.sh dev
 
-EXPOSE 3000
+EXPOSE 4000
 
 ENTRYPOINT [ "npm", "run" ]
 CMD [ "dev" ]

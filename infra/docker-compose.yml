@@ -50,8 +50,6 @@ services:
     image: game
     container_name: game
     command: ["${GAME_CMD:-dev}"]
-    ports:
-      - "${GAME_PORT:-3001}:${GAME_PORT:-3001}"
     networks:
       - devnet
     volumes:
