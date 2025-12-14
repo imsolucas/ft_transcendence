@@ -6,6 +6,7 @@ import { OAuth2Client } from "google-auth-library";
 import speakeasy from "speakeasy";
 import { error } from "console";
 import crypto from "crypto";
+import { validateSignupInput, validateLoginInput, isValidEmail } from "../utils/validation.ts";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret";
@@ -71,18 +72,24 @@ function clearRefreshTokenCookie(reply: FastifyReply) {
 export async function signup(req: FastifyRequest, reply: FastifyReply) {
   const { name, email, password } = req.body as { name: string; email: string; password: string };
 
-  if (!name || !email || !password) {
-    return reply.code(400).send({ error: "Invalid input." });
+  // Validate input format and length
+  const validation = validateSignupInput(name, email, password);
+  if (!validation.valid) {
+    return reply.code(400).send({ error: validation.error });
   }
 
+  // Trim and normalize inputs
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim().toLowerCase();
+
   // Check for existing username
-  const existingUsername = await prisma.user.findUnique({ where: { username: name } });
+  const existingUsername = await prisma.user.findUnique({ where: { username: trimmedName } });
   if (existingUsername) {
     return reply.code(409).send({ error: "User name already exists." });
   }
 
   // Check for existing email
-  const existingEmail = await prisma.user.findUnique({ where: { email } });
+  const existingEmail = await prisma.user.findUnique({ where: { email: trimmedEmail } });
   if (existingEmail) {
     return reply.code(409).send({ error: "Email already registered." });
   }
@@ -90,8 +97,8 @@ export async function signup(req: FastifyRequest, reply: FastifyReply) {
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
-      username: name,
-      email,
+      username: trimmedName,
+      email: trimmedEmail,
       password: hashed,
       avatar: "",
     },
@@ -109,11 +116,15 @@ export async function signup(req: FastifyRequest, reply: FastifyReply) {
 export async function login(req: FastifyRequest, reply: FastifyReply) {
   const { name, password } = req.body as { name: string; password: string };
 
-  if (!name || !password) {
-    return reply.code(400).send({ error: "Invalid input." });
+  // Validate input format
+  const validation = validateLoginInput(name, password);
+  if (!validation.valid) {
+    return reply.code(400).send({ error: validation.error });
   }
 
-  const user = await prisma.user.findUnique({ where: { username: name } });
+  // Trim username
+  const trimmedName = name.trim();
+  const user = await prisma.user.findUnique({ where: { username: trimmedName } });
   if (!user) {
     return reply.code(401).send({ error: "Invalid username or password" });
   }
@@ -192,13 +203,37 @@ export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
     // Extract user info from payload
     const { email, name, picture } = payload;
 
+    // Validate email from Google
+    if (!email || !isValidEmail(email)) {
+      return reply.code(400).send({ error: "Invalid Google email" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Find or create user
-    let user = await prisma.user.findUnique({ where: { email } });
+    let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
+      // Generate username from name or email
+      const baseUsername = name ? name.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 30) : email.split("@")[0].substring(0, 30);
+      let username = baseUsername || "user";
+      
+      // Ensure username meets requirements
+      if (username.length < 3) {
+        username = username.padEnd(3, '0');
+      }
+      
+      // Check if username already exists and append number if needed
+      let finalUsername = username;
+      let counter = 1;
+      while (await prisma.user.findUnique({ where: { username: finalUsername } })) {
+        finalUsername = `${username}${counter}`.substring(0, 30);
+        counter++;
+      }
+
       user = await prisma.user.create({
         data: {
-          username: name ?? email.split("@")[0],
-          email,
+          username: finalUsername,
+          email: normalizedEmail,
           avatar: picture ?? "",
           password: "",
         }
