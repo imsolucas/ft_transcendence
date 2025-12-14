@@ -393,12 +393,25 @@ export async function logout(req: FastifyRequest, reply: FastifyReply) {
   const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
   const authHeader = req.headers.authorization;
   let accessToken: string | null = null;
+  let userId: number | null = null;
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
     accessToken = authHeader.replace("Bearer ", "");
   }
 
-  // Delete refresh token from database if provided
+  // Get user ID from access token if available
+  if (accessToken) {
+    try {
+      const decoded = jwt.decode(accessToken) as { id?: number; exp?: number } | null;
+      if (decoded && decoded.id) {
+        userId = decoded.id;
+      }
+    } catch (err) {
+      // Token might be invalid, ignore
+    }
+  }
+
+  // Delete refresh token from database if provided and get user ID if not already found
   if (refreshToken) {
     const refreshTokens = await prisma.refreshToken.findMany({
       where: {
@@ -410,11 +423,28 @@ export async function logout(req: FastifyRequest, reply: FastifyReply) {
     for (const record of refreshTokens) {
       const isValid = await bcrypt.compare(refreshToken, record.tokenHash);
       if (isValid) {
+        // Get user ID from refresh token if not already found from access token
+        if (!userId) {
+          userId = record.userId;
+        }
         await prisma.refreshToken.delete({
           where: { id: record.id },
         });
         break;
       }
+    }
+  }
+
+  // Update user status to OFFLINE if we have a user ID
+  if (userId) {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { status: "OFFLINE" }
+      });
+    } catch (err) {
+      // User might not exist, ignore
+      console.error('Error updating user status on logout:', err);
     }
   }
 
