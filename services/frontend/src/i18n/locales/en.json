@@ -163,6 +163,68 @@
     "searching": "Searching for opponent...",
     "creatingLobby": "Creating lobby...",
     "joiningLobby": "Joining lobby..."
+  },
+  "tutorial": {
+    "prev": "◄ PREV",
+    "next": "NEXT ►",
+    "startGame": "START GAME",
+    "dontShowAgain": "Don't show this tutorial again",
+    "1v1": {
+      "welcome": {
+        "title": "1v1 Local Match",
+        "content": "Play against a friend on the same keyboard! First player to reach the target score wins."
+      },
+      "controls": {
+        "title": "Controls",
+        "content": "Use W and S keys OR ↑ and ↓ arrow keys to move your paddle up and down.\n\nShare the keyboard with your opponent!"
+      },
+      "gameplay": {
+        "title": "How to Play",
+        "content": "• Hit the ball with your paddle to keep it in play\n• Score by making the ball pass your opponent's paddle\n• First player to reach the target score wins\n• The ball speeds up as the game progresses"
+      }
+    },
+    "tournament": {
+      "welcome": {
+        "title": "Tournament Mode",
+        "content": "Compete in a tournament bracket! Players take turns, winners advance to the next round."
+      },
+      "controls": {
+        "title": "Controls",
+        "content": "Player 1: Use W and S keys to move your paddle up and down.\n\nPlayer 2: Use ↑ and ↓ arrow keys to move your paddle up and down.\n\nPlayers take turns playing matches."
+      },
+      "gameplay": {
+        "title": "How to Play",
+        "content": "• Each match follows standard Pong rules\n• Winners advance to the next round\n• The tournament bracket shows who plays next\n• Last player standing wins the tournament!"
+      }
+    },
+    "multiplayer": {
+      "welcome": {
+        "title": "Online Multiplayer",
+        "content": "Play against players from around the world in real-time matches!"
+      },
+      "controls": {
+        "title": "Controls",
+        "content": "Use W and S keys to move your paddle up and down. Your opponent controls their own paddle remotely."
+      },
+      "gameplay": {
+        "title": "How to Play",
+        "content": "• Real-time gameplay via WebSocket connection\n• Score by making the ball pass your opponent's paddle\n• First player to reach the target score wins\n• Matches are recorded in your match history"
+      }
+    },
+    "multiplayerTournament": {
+      "welcome": {
+        "title": "Online Tournament",
+        "content": "Compete in an online tournament bracket! Multiple players join, winners advance to the next round until one champion remains."
+      },
+      "controls": {
+        "title": "Controls",
+        "content": "Use W and S keys to move your paddle up and down. Each player controls their own paddle remotely during their match."
+      },
+      "gameplay": {
+        "title": "How to Play",
+        "content": "• Join a tournament lobby or create your own\n• Players are matched in tournament brackets\n• Winners advance to the next round automatically\n• The tournament bracket shows who plays next\n• Last player standing wins the tournament!\n• All matches are recorded in your match history"
+      }
+    }
   }
 }
 

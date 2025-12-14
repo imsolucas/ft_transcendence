@@ -212,6 +212,7 @@ export function GamePage(): HTMLElement {
         user = currentUser;
 
         if (!user || !gameOptions){
+            console.error('Game page: Missing user or game options');
             navigate('lobby');
             return ;
         }
@@ -220,7 +221,10 @@ export function GamePage(): HTMLElement {
         else
             matchMaking(container);
 
-    })
+    }).catch((error) => {
+        console.error('Game page: Failed to get current user:', error);
+        navigate('lobby');
+    });
 
     return container;
 }

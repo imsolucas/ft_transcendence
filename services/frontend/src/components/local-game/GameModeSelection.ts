@@ -1,6 +1,7 @@
 import { t } from '../../i18n';
 import { escapeHtml } from '../../utils/sanitize';
 import { typography, effects, gradients } from '../../styles/theme';
+import { showTutorialModal } from '../game-tutorial/TutorialModal';
 
 export function createGameModeSelection(): string {
 	return `
@@ -42,7 +43,8 @@ export function setupGameModeSelection(
 	container: HTMLElement,
 	onSelect1v1: () => void,
 	onSelectTournament: () => void,
-	onBack: () => void
+	onBack: () => void,
+	isMultiplayer: boolean = false
 ): void {
 	setTimeout(() => {
 		const btn1v1 = container.querySelector('#one-vs-one-btn');
@@ -54,8 +56,26 @@ export function setupGameModeSelection(
 			return;
 		}
 
-		btn1v1.addEventListener('click', onSelect1v1);
-		btnTournament.addEventListener('click', onSelectTournament);
+		btn1v1.addEventListener('click', () => {
+			const skipTutorial = localStorage.getItem('skipTutorial') === 'true';
+			if (!skipTutorial) {
+				// Show multiplayer tutorial if in multiplayer mode, otherwise show 1v1 local tutorial
+				showTutorialModal(isMultiplayer ? 'multiplayer' : '1v1', onSelect1v1);
+			} else {
+				onSelect1v1();
+			}
+		});
+
+		btnTournament.addEventListener('click', () => {
+			const skipTutorial = localStorage.getItem('skipTutorial') === 'true';
+			if (!skipTutorial) {
+				// Show multiplayer tournament tutorial if in multiplayer mode, otherwise show local tournament tutorial
+				showTutorialModal(isMultiplayer ? 'multiplayer-tournament' : 'tournament', onSelectTournament);
+			} else {
+				onSelectTournament();
+			}
+		});
+
 		btnBack.addEventListener('click', onBack);
 	}, 0);
 }
