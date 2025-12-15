@@ -1,7 +1,7 @@
 import { navigate } from "../router";
 import { AddFriend } from '../components/shared/AddFriend';
 import { t } from '../i18n';
-import { fetchUserProfile } from '../utils/api';
+import { calculateUserStats } from '../utils/api';
 import { gradients, spacing } from '../styles/theme';
 import { createLobbyHeader } from '../components/lobby/LobbyHeader';
 import { createGameModeButtons, setupGameModeButtons } from '../components/lobby/GameModeButtons';
@@ -50,11 +50,11 @@ export function LobbyPage(): HTMLElement {
 
 	const loadStats = async (): Promise<void> => {
 		try {
-			const profileData = await fetchUserProfile();
+			const stats = await calculateUserStats();
 			const winsElement = container.querySelector('#lobby-wins');
 			const lossesElement = container.querySelector('#lobby-losses');
-			if (winsElement) winsElement.textContent = String(profileData.wins || 0);
-			if (lossesElement) lossesElement.textContent = String(profileData.losses || 0);
+			if (winsElement) winsElement.textContent = String(stats.wins || 0);
+			if (lossesElement) lossesElement.textContent = String(stats.losses || 0);
 		} catch (error) {
 			console.error('Failed to load stats:', error);
 			const winsElement = container.querySelector('#lobby-wins');

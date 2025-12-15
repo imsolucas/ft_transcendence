@@ -2,6 +2,7 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient, FriendshipStatus } from "@prisma/client";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
+import { validateProfileUpdate } from "../utils/validation.ts";
 
 const prisma = new PrismaClient();
 
@@ -32,11 +33,35 @@ export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply
     return reply.code(400).send({ error: "Invalid fields." });
   }
 
+  // Validate username and email if provided
+  const validation = validateProfileUpdate(username, email);
+  if (!validation.valid) {
+    return reply.code(400).send({ error: validation.error });
+  }
+
+  // Check for username conflicts if username is being updated
+  if (username) {
+    const trimmedUsername = username.trim();
+    const existingUser = await prisma.user.findUnique({ where: { username: trimmedUsername } });
+    if (existingUser && existingUser.id !== userId) {
+      return reply.code(409).send({ error: "Username already taken." });
+    }
+  }
+
+  // Check for email conflicts if email is being updated
+  if (email) {
+    const trimmedEmail = email.trim().toLowerCase();
+    const existingUser = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+    if (existingUser && existingUser.id !== userId) {
+      return reply.code(409).send({ error: "Email already registered." });
+    }
+  }
+
   const updated = await prisma.user.update({
     where: { id: userId },
     data: {
-      ...(username && { username: username }),
-      ...(email && { email }),
+      ...(username && { username: username.trim() }),
+      ...(email && { email: email.trim().toLowerCase() }),
       ...(avatar && { avatar }),
     },
   });

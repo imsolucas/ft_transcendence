@@ -163,6 +163,68 @@
     "searching": "Recherche d'adversaire...",
     "creatingLobby": "Création du salon...",
     "joiningLobby": "Rejoindre le salon..."
+  },
+  "tutorial": {
+    "prev": "◄ PRÉC",
+    "next": "SUIV ►",
+    "startGame": "DÉMARRER LE JEU",
+    "dontShowAgain": "Ne plus afficher ce tutoriel",
+    "1v1": {
+      "welcome": {
+        "title": "Match Local 1v1",
+        "content": "Jouez contre un ami sur le même clavier ! Le premier joueur à atteindre le score cible gagne."
+      },
+      "controls": {
+        "title": "Contrôles",
+        "content": "Utilisez les touches W et S OU les flèches ↑ et ↓ pour déplacer votre raquette de haut en bas.\n\nPartagez le clavier avec votre adversaire !"
+      },
+      "gameplay": {
+        "title": "Comment Jouer",
+        "content": "• Frappez la balle avec votre raquette pour la garder en jeu\n• Marquez en faisant passer la balle derrière la raquette de votre adversaire\n• Le premier joueur à atteindre le score cible gagne\n• La balle accélère au fur et à mesure que le jeu progresse"
+      }
+    },
+    "tournament": {
+      "welcome": {
+        "title": "Mode Tournoi",
+        "content": "Participez à un tableau de tournoi ! Les joueurs jouent à tour de rôle, les gagnants passent au tour suivant."
+      },
+      "controls": {
+        "title": "Contrôles",
+        "content": "Joueur 1 : Utilisez les touches W et S pour déplacer votre raquette de haut en bas.\n\nJoueur 2 : Utilisez les flèches ↑ et ↓ pour déplacer votre raquette de haut en bas.\n\nLes joueurs jouent à tour de rôle."
+      },
+      "gameplay": {
+        "title": "Comment Jouer",
+        "content": "• Chaque match suit les règles standard du Pong\n• Les gagnants passent au tour suivant\n• Le tableau de tournoi montre qui joue ensuite\n• Le dernier joueur debout remporte le tournoi !"
+      }
+    },
+    "multiplayer": {
+      "welcome": {
+        "title": "Multijoueur en Ligne",
+        "content": "Jouez contre des joueurs du monde entier en temps réel !"
+      },
+      "controls": {
+        "title": "Contrôles",
+        "content": "Utilisez les touches W et S pour déplacer votre raquette de haut en bas. Votre adversaire contrôle sa propre raquette à distance."
+      },
+      "gameplay": {
+        "title": "Comment Jouer",
+        "content": "• Gameplay en temps réel via connexion WebSocket\n• Marquez en faisant passer la balle derrière la raquette de votre adversaire\n• Le premier joueur à atteindre le score cible gagne\n• Les matchs sont enregistrés dans votre historique"
+      }
+    },
+    "multiplayerTournament": {
+      "welcome": {
+        "title": "Tournoi en Ligne",
+        "content": "Participez à un tableau de tournoi en ligne ! Plusieurs joueurs rejoignent, les gagnants passent au tour suivant jusqu'à ce qu'un seul champion reste."
+      },
+      "controls": {
+        "title": "Contrôles",
+        "content": "Utilisez les touches W et S pour déplacer votre raquette de haut en bas. Chaque joueur contrôle sa propre raquette à distance pendant son match."
+      },
+      "gameplay": {
+        "title": "Comment Jouer",
+        "content": "• Rejoignez un salon de tournoi ou créez le vôtre\n• Les joueurs sont appariés dans des tableaux de tournoi\n• Les gagnants passent automatiquement au tour suivant\n• Le tableau de tournoi montre qui joue ensuite\n• Le dernier joueur debout remporte le tournoi !\n• Tous les matchs sont enregistrés dans votre historique"
+      }
+    }
   }
 }
 

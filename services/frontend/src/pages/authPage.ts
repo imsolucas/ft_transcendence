@@ -4,6 +4,7 @@ import { updateNavbar } from "../components/layout/Navbar";
 import type { Screen } from "../router";
 import { verify2FACode } from "../utils/api";
 import { t } from "../i18n";
+import { setAccessToken } from "../utils/tokenManager";
 
 // Import API functions from auth-script
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
@@ -37,6 +38,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
+      credentials: 'include', // Include cookies - critical for refresh token!
       headers: {
         'Content-Type': 'application/json',
       },
@@ -744,12 +746,12 @@ function show2FAModal(container: HTMLElement, userId: number): void {
 
   const title = document.createElement('h2');
   title.className = 'text-3xl md:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]';
-  title.textContent = t('auth.enter2FACode') || 'ENTER 2FA CODE';
+  title.textContent = String(t('auth.enter2FACode') || 'ENTER 2FA CODE');
   contentWrapper.appendChild(title);
 
   const descText = document.createElement('p');
   descText.className = 'text-pink-300 mb-6 text-sm md:text-base';
-  descText.textContent = t('twoFA.enterCodeDesc') || 'Please enter the 6-digit code from your authenticator app';
+  descText.textContent = String(t('twoFA.enterCodeDesc') || 'Please enter the 6-digit code from your authenticator app');
   contentWrapper.appendChild(descText);
 
   const inputContainer = document.createElement('div');
@@ -779,13 +781,13 @@ function show2FAModal(container: HTMLElement, userId: number): void {
   const verifyBtn = document.createElement('button');
   verifyBtn.id = '2fa-verify-btn';
   verifyBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-cyan-400 cursor-pointer text-base text-white font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all font-poppins bg-gradient-to-r from-cyan-500/20 to-pink-500/20 backdrop-blur-sm uppercase tracking-wider';
-  verifyBtn.textContent = t('auth.verify') || 'VERIFY';
+  verifyBtn.textContent = String(t('auth.verify') || 'VERIFY');
   buttonContainer.appendChild(verifyBtn);
 
   const cancelBtn = document.createElement('button');
   cancelBtn.id = '2fa-cancel-btn';
   cancelBtn.className = 'btn w-48 h-12 rounded-lg border-2 border-pink-400/50 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/10 to-cyan-500/10 backdrop-blur-sm uppercase tracking-wider';
-  cancelBtn.textContent = t('common.cancel') || 'CANCEL';
+  cancelBtn.textContent = String(t('common.cancel') || 'CANCEL');
   buttonContainer.appendChild(cancelBtn);
 
   contentWrapper.appendChild(buttonContainer);
@@ -812,7 +814,7 @@ function show2FAModal(container: HTMLElement, userId: number): void {
     const code = codeInput.value.trim();
 
     if (code.length !== 6) {
-      errorText.textContent = t('twoFA.invalidCodeLength') || 'Please enter a 6-digit code';
+      errorText.textContent = String(t('twoFA.invalidCodeLength') || 'Please enter a 6-digit code');
       errorDiv.classList.remove('hidden');
       return;
     }
@@ -820,22 +822,18 @@ function show2FAModal(container: HTMLElement, userId: number): void {
     errorDiv.classList.add('hidden');
     verifyBtn.disabled = true;
     const originalText = verifyBtn.textContent;
-    verifyBtn.textContent = t('auth.verifying2FA') || 'VERIFYING...';
+    verifyBtn.textContent = String(t('auth.verifying2FA') || 'VERIFYING...');
 
     try {
       const result = await verify2FACode(userId, code);
 
-      // Store auth token
+      // Store access token in memory (not localStorage)
       if (result.token && result.user) {
-        localStorage.setItem('authToken', result.token);
-        const userToStore = {
-          ...result.user,
-          picture: result.user.avatar,
-        };
-        localStorage.setItem('user', JSON.stringify(userToStore));
+        setAccessToken(result.token);
+        // User data is fetched from API when needed, not stored in localStorage
       }
 
-      showNotification(t('auth.loginSuccessful') || 'Login successful!', 'success');
+      showNotification(String(t('auth.loginSuccessful') || 'Login successful!'), 'success');
       updateNavbar();
 
       // Remove modal and proceed with auth
@@ -912,15 +910,10 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     }
 
     if (response.success) {
-      // Store auth token
+      // Store access token in memory (not localStorage)
       if (response.token && response.user) {
-        localStorage.setItem('authToken', response.token);
-        // Store user with both picture and avatar for compatibility
-        const userToStore = {
-          ...response.user,
-          picture: response.user.avatar,
-        };
-        localStorage.setItem('user', JSON.stringify(userToStore));
+        setAccessToken(response.token);
+        // User data is fetched from API when needed, not stored in localStorage
       }
 
       showNotification('Login successful!', 'success');
@@ -994,16 +987,10 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
       emailInput.value = '';
       passwordInput.value = '';
 
-      // Switch to login form after a delay
+      // Switch to login form after a delay - let CSS handle visibility
       setTimeout(() => {
         const containerEl = container.querySelector('.container');
         containerEl?.classList.remove('active');
-        const loginForm = container.querySelector('.form-box.login') as HTMLElement;
-        const registerForm = container.querySelector('.form-box.register') as HTMLElement;
-        if (loginForm && registerForm) {
-          registerForm.style.visibility = 'hidden';
-          loginForm.style.visibility = 'visible';
-        }
       }, 1500);
     } else {
       // Reset button state immediately on error

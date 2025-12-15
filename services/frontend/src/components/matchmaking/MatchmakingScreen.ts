@@ -1,4 +1,5 @@
 import { getCurrentUser } from '../../utils/auth-script';
+import { calculateUserStats } from '../../utils/api';
 import { escapeHtml } from '../../utils/sanitize';
 import { typography, gradients } from '../../styles/theme';
 import { injectMatchmakingStyles } from './MatchmakingStyles';
@@ -54,20 +55,38 @@ export function MatchmakingScreen(events?: MatchmakingEvents): HTMLElement {
 		try {
 			const currentUser = await getCurrentUser();
 			if (currentUser) {
+				// Fetch real stats from database
+				const stats = await calculateUserStats();
+				
 				matchmakingState.currentUser = {
 					id: currentUser.id,
 					username: currentUser.username,
 					picture: currentUser.picture,
-					level: 10, // Mock data - should come from backend
-					wins: 15,
-					losses: 5,
-					winRate: '75%'
+					level: stats.level,
+					wins: stats.wins,
+					losses: stats.losses,
+					winRate: stats.winRate
 				};
 				render();
 			}
 		} catch (error) {
 			console.error('Error initializing current user:', error);
-			setError('Failed to load user data');
+			// Fallback to default values if stats fetch fails
+			const currentUser = await getCurrentUser();
+			if (currentUser) {
+				matchmakingState.currentUser = {
+					id: currentUser.id,
+					username: currentUser.username,
+					picture: currentUser.picture,
+					level: 1,
+					wins: 0,
+					losses: 0,
+					winRate: '0%'
+				};
+				render();
+			} else {
+				setError('Failed to load user data');
+			}
 		}
 	};
 
