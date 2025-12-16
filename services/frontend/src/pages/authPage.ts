@@ -7,7 +7,7 @@ import { t } from "../i18n";
 import { setAccessToken } from "../utils/tokenManager";
 
 // Import API functions from auth-script
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
 
 interface BackendLoginResponse {
   token: string;

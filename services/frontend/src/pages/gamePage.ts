@@ -33,7 +33,7 @@ function matchMaking(container: HTMLElement) {
 	}
 
 	const loadingComponent = MatchmakingScreen(events);
-	container.appendChild(loadingComponent);    socket = new WebSocket('ws://localhost:3001/ws/game');
+	container.appendChild(loadingComponent);    socket = new WebSocket('wss://localhost:8443/ws/game');
     socket.onopen = () => {
         const connectionMsg: ConnectionMessage = {
             type: 'connection',
@@ -117,7 +117,7 @@ function matchMaking(container: HTMLElement) {
                 playersInRoom = playerJoinMsg.data.playersInRoom;
                 if (playerJoinMsg.data.playerName == user!.username) {
                     console.log('Joined room with id: ', playerJoinMsg.data.roomId);
-                    
+
                     // When current user joins, add all existing players as opponents
                     if (playerJoinMsg.data.playersInRoom.length > 1){
                         playerJoinMsg.data.playersInRoom.forEach((existingPlayer) => {
@@ -127,14 +127,14 @@ function matchMaking(container: HTMLElement) {
                                     username: existingPlayer.name,
                                     picture: existingPlayer.picture
                                 };
-                                
+
                                 (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId);
                             }
                         });
                     }
                     break;
                 }
-                
+
                 // Another player joined the room
                 console.log(`Player ${playerJoinMsg.data.playerName} joined`)
                 player = {
@@ -142,12 +142,12 @@ function matchMaking(container: HTMLElement) {
                     username: playerJoinMsg.data.playerName,
                     picture: playerJoinMsg.data.picture
                 };
-                
+
                 (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId);
                 break;
             case 'playerLeft':
                 const playerLeftMsg = message as PlayerLeftMessage;
-                
+
                 // For tournament mode, remove specific opponent by username
                 if (gameOptions?.mode === 'tournament') {
                     (loadingComponent as any).removeOpponentByUsername(playerLeftMsg.data.playerName);
@@ -176,7 +176,7 @@ function matchMaking(container: HTMLElement) {
 
 function startGame(container: HTMLElement, tournamentState?: TournamentState) {
     const canvas = createGameWrapper(container);
-    setTimeout(() => {  
+    setTimeout(() => {
         currentGame = new GameClient(
             canvas,
             gameOptions!.config!,
@@ -240,7 +240,7 @@ function addBackToLobbyButton() {
 
     // Make canvas container relative for absolute positioning
     canvasContainer.style.position = 'relative';
-    
+
     canvasContainer.appendChild(backToLobbyButton);
 }
 
@@ -348,7 +348,7 @@ function createGameWrapper(container: HTMLElement): HTMLCanvasElement {
 
         queueContainer.appendChild(queueTitle);
         queueContainer.appendChild(queue);
-        
+
         for (let i = 0; i < gameOptions.config!.numPlayers!; i++){
             if (i < 2)
                 continue;

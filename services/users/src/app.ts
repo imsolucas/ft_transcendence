@@ -1,6 +1,6 @@
 import Fastify  from "fastify";
 import type { FastifyInstance } from "fastify";
-import { FriendRequest, InternalServerError, MatchHistory, UnauthorizedApiKey, UnauthorizedError, UserProfile } from "./schemas/index.ts";
+import { FriendRequest, InternalServerError, MatchHistory, UnauthorizedError, UserProfile } from "./schemas/index.ts";
 import jwt from "jsonwebtoken";
 import dbPlugin from "./db/plugin.ts";
 import routes from "./routes/routes.ts";
@@ -19,15 +19,16 @@ export async function buildApp(): Promise<FastifyInstance> {
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
+
       const allowedOrigins = [
+      "https://localhost:8443",
         "http://localhost:4000",  // Local dev server
         "http://localhost:3000",  // Frontend dev server
         "http://127.0.0.1:3000",  // Alternative localhost
         "http://localhost:5173",  // Vite default port
         "http://127.0.0.1:5173",  // Alternative localhost Vite
       ];
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -41,7 +42,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   });
 
   // Register cookie plugin
@@ -54,15 +55,13 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.addSchema(FriendRequest);
   app.addSchema(MatchHistory);
   app.addSchema(UnauthorizedError);
-  app.addSchema(UnauthorizedApiKey);
   app.addSchema(InternalServerError);
 
   const JWT_SECRET = process.env.JWT_SECRET ?? "dev_secret";
 
   app.addHook("preHandler", async (req, reply) => {
+    // Only check for routes that require auth (exclude auth routes)
     const path = req.routeOptions?.url;
-
-    // JWT verification for /user and /game (except /auth)
     if (
       path &&
       path.startsWith("/user") && !path.startsWith("/auth")
@@ -73,12 +72,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       }
       try {
         const token = auth.replace("Bearer ", "");
-        
+
         // Decode token to get expiration and issued time for optimization
         const tokenPayload = jwt.decode(token) as { exp?: number; iat?: number; id?: number } | null;
         const tokenExp = tokenPayload?.exp ? new Date(tokenPayload.exp * 1000) : null;
         const tokenIat = tokenPayload?.iat ? new Date(tokenPayload.iat * 1000) : null;
-        
+
         // #region agent log
         try {
           const fs = await import('fs');
@@ -86,7 +85,7 @@ export async function buildApp(): Promise<FastifyInstance> {
           fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:75',message:'JWT validation starting',data:{path,hasToken:!!token,tokenLength:token.length,tokenUserId:tokenPayload?.id,tokenExp:tokenExp?.toISOString(),tokenIat:tokenIat?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
         } catch (logErr) {}
         // #endregion
-        
+
         // Check if token is blacklisted
         // First, clean up expired blacklist entries
         await prisma.tokenBlacklist.deleteMany({
@@ -94,15 +93,15 @@ export async function buildApp(): Promise<FastifyInstance> {
             expiresAt: { lte: new Date() },
           },
         });
-        
+
         let isBlacklisted = false;
-        
+
         // Optimization: Skip blacklist check for tokens issued in the last 5 minutes
         // These tokens are too new to have been blacklisted (logout happens before new token is issued)
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        const shouldCheckBlacklist = tokenExp && tokenExp > new Date() && 
+        const shouldCheckBlacklist = tokenExp && tokenExp > new Date() &&
                                      (!tokenIat || tokenIat < fiveMinutesAgo);
-        
+
         if (shouldCheckBlacklist) {
           // Only check blacklist entries that could potentially match (not expired yet)
           const blacklistedTokens = await prisma.tokenBlacklist.findMany({
@@ -122,7 +121,7 @@ export async function buildApp(): Promise<FastifyInstance> {
             fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:103',message:'checking blacklist',data:{blacklistCount:blacklistedTokens.length,tokenUserId:tokenPayload?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
           } catch (logErr) {}
           // #endregion
-          
+
           if (blacklistedTokens.length > 0) {
             // Use Promise.all for parallel comparison (faster)
             const comparisonPromises = blacklistedTokens.map(async (blacklistedToken) => {
@@ -143,7 +142,7 @@ export async function buildApp(): Promise<FastifyInstance> {
                 return false;
               }
             });
-            
+
             const results = await Promise.all(comparisonPromises);
             isBlacklisted = results.some(match => match === true);
           }
@@ -183,7 +182,7 @@ export async function buildApp(): Promise<FastifyInstance> {
           fs.appendFileSync(logPath, JSON.stringify({location:'app.ts:128',message:'attempting JWT verify',data:{tokenLength:token.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})+'\n');
         } catch (logErr) {}
         // #endregion
-        
+
         const payload = jwt.verify(token, JWT_SECRET);
         // #region agent log
         try {
@@ -206,17 +205,6 @@ export async function buildApp(): Promise<FastifyInstance> {
         return reply.code(401).send({ error: "Unauthorized" });
       }
     }
-
-    // API key verification for routes that declare apiKeyAuth security
-    if (
-      req.routeOptions?.schema?.security &&
-      req.routeOptions.schema.security.some((s: any) => s.apiKeyAuth)
-    ) {
-      const apiKey = req.headers["x-api-key"];
-      if (!apiKey || apiKey !== process.env.INTERNAL_API_KEY) {
-        return reply.code(401).send({ error: "Invalid or missing API key." });
-      }
-    }
   });
 
   await app.register(fastifySwagger, {
@@ -232,11 +220,6 @@ export async function buildApp(): Promise<FastifyInstance> {
             type: "http",
             scheme: "bearer",
             bearerFormat: "JWT"
-          },
-          apiKeyAuth: {
-            type: "apiKey",
-            in: "header",
-            name: "x-api-key"
           }
         }
       }
@@ -248,6 +231,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     uiConfig: {
       docExpansion: "full",
       deepLinking: false
+    },
+    staticCSP: true,
+    transformSpecification: (spec) => {
+      // Ensure the spec is served from the correct gateway path
+      spec.servers = [{ url: "https://localhost:8443/users" }];
+      return spec;
     }
   });
 

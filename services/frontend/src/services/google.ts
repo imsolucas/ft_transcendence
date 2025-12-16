@@ -93,7 +93,7 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
 
 async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: string): Promise<boolean> {
   try {
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
 
     // Send the Google credential to backend for verification
     const response = await fetch(`${API_URL}/auth/google`, {

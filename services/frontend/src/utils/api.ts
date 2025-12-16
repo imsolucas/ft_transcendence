@@ -2,7 +2,7 @@ import { getCurrentUser } from './auth-script';
 import { getAccessToken, setAccessToken, clearAccessToken } from './tokenManager';
 
 // API Configuration
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
 
 // Helper function to get auth token (from memory)
 const getToken = () => {
@@ -59,7 +59,11 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
     // Attempt to refresh token (only if not already a refresh request)
     if (!url.includes('/auth/refresh')) {
       const refreshed = await refreshAccessToken();
-      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/d7920797-0f4b-4541-bc50-f6cc0d7ce821',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:62',message:'token refresh attempt result',data:{url,refreshed,newToken:!!getAccessToken()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion
+
+
       if (refreshed) {
         // Retry original request with new token
         const newHeaders = {
@@ -67,11 +71,11 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
           'Authorization': `Bearer ${getAccessToken()}`,
         };
         const retryResponse = await fetch(url, { ...options, headers: newHeaders });
-        
+
         if (retryResponse.status === 401) {
           // Still unauthorized after refresh, clear everything
           clearAccessToken();
-          
+
           // Only redirect if we're not already on auth/landing page
           const currentPath = window.location.pathname;
           if (!currentPath.includes('/auth') && !currentPath.includes('/landing') && currentPath !== '/') {
@@ -80,29 +84,29 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
               window.location.href = '/';
             }, 100);
           }
-          
+
           const errorData = await retryResponse.json().catch(() => ({ error: 'Unauthorized' }));
           throw new Error(errorData.error || 'Unauthorized: Please login again');
         }
-        
+
         // Handle retry response
         if (!retryResponse.ok) {
           const errorData = await retryResponse.json().catch(() => ({ error: retryResponse.statusText }));
           throw new Error(errorData.error || `API request failed: ${retryResponse.statusText}`);
         }
-        
+
         if (retryResponse.status === 204) {
           return null;
         }
-        
+
         return retryResponse.json();
       }
     }
-    
+
     // Refresh failed or was refresh endpoint - clear everything
     clearAccessToken();
     console.error('Unauthorized: Token invalid or expired');
-    
+
     // Only redirect if we're not already on auth/landing page
     const currentPath = window.location.pathname;
     if (!currentPath.includes('/auth') && !currentPath.includes('/landing') && currentPath !== '/') {
@@ -111,7 +115,7 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
         window.location.href = '/';
       }, 100);
     }
-    
+
     const errorData = await response.json().catch(() => ({ error: 'Unauthorized' }));
     throw new Error(errorData.error || 'Unauthorized: Please login again');
   }
@@ -163,7 +167,24 @@ export const fetchUserProfile = async () => {
   try {
     // Use authenticated endpoint to get current user profile
     const user = await apiFetch(`${API_URL}/user/profile`);
-    
+
+    // Calculate wins/losses from match history
+    let wins = 0;
+    let losses = 0;
+    try {
+      const matches = await fetchMatchHistory();
+      matches.forEach((match: any) => {
+        if (match.result === 'WIN') wins++;
+        else if (match.result === 'LOSS') losses++;
+      });
+    } catch (error) {
+      console.error('Error calculating stats from match history:', error);
+    }
+
+    const totalGames = wins + losses;
+    const winRate = totalGames > 0 ? `${Math.round((wins / totalGames) * 100)}%` : '0%';
+
+
     // Return profile - stats should be calculated separately using calculateUserStats()
     return {
       id: user.id,
@@ -208,7 +229,7 @@ export const fetchUserByUsername = async (username: string) => {
 export const updateUserProfile = async (data: any) => {
   try {
     const updateData: any = {};
-    
+
     // Backend expects 'username' field, not 'name' for updates
     if (data.username) updateData.username = data.username;
     if (data.email) updateData.email = data.email;
@@ -234,17 +255,37 @@ export const updateUserProfile = async (data: any) => {
 export const fetchMatchHistory = async () => {
   try {
     const matches = await apiFetch(`${API_URL}/user/match-history`);
+    return matches.map((match: any) => {
+      // Determine if current user is player1 or player2
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const isPlayer1 = match.player1Id === currentUser.id;
+      const opponent = isPlayer1 ? match.player2DisplayName : match.player1DisplayName;
+      const myScore = isPlayer1 ? match.player1Score : match.player2Score;
+      const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
+      const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
+
+      return {
+        opponent: {
+          username: opponent || 'Unknown',
+          picture: '/images/pong.png'
+        },
+        result: result,
+        score: `${myScore} - ${opponentScore}`,
+        type: 'Match',
+        timestamp: new Date(match.played_at).toLocaleDateString()
+      };
+    });
     // Get current user ID from token or simple API call to avoid circular dependency
     const token = getToken();
     if (!token) {
       throw new Error('Not authenticated');
     }
-    
+
     // Decode token to get user ID (simple base64 decode, no verification needed for ID extraction)
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentUserId = payload.id;
-      
+
       return matches.map((match: any) => {
         // Determine if current user is player1 or player2
         const isPlayer1 = match.player1Id === currentUserId;
@@ -252,7 +293,7 @@ export const fetchMatchHistory = async () => {
         const myScore = isPlayer1 ? match.player1Score : match.player2Score;
         const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
         const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
-        
+
         return {
           opponent: {
             username: opponent || 'Unknown',
@@ -290,7 +331,7 @@ export const calculateUserStats = async () => {
     const matches = await fetchMatchHistory();
     let wins = 0;
     let losses = 0;
-    
+
     matches.forEach((match: any) => {
       if (match.result === 'WIN') {
         wins++;
@@ -298,12 +339,12 @@ export const calculateUserStats = async () => {
         losses++;
       }
     });
-    
+
     const totalGames = wins + losses;
     const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
     // Calculate level based on wins (simple formula: level = 1 + Math.floor(wins / 5))
     const level = 1 + Math.floor(wins / 5);
-    
+
     return {
       wins,
       losses,
@@ -354,7 +395,7 @@ export const uploadProfilePicture = async (file: File) => {
     // Compress and resize image before converting to base64 to avoid NetworkError
     return new Promise<{ picture: string }>((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onloadend = async () => {
         const img = new Image();
         img.onload = () => {
@@ -363,10 +404,10 @@ export const uploadProfilePicture = async (file: File) => {
           const MAX_WIDTH = 800;
           const MAX_HEIGHT = 800;
           const QUALITY = 0.8; // 80% quality
-          
+
           let width = img.width;
           let height = img.height;
-          
+
           // Calculate new dimensions while maintaining aspect ratio
           if (width > height) {
             if (width > MAX_WIDTH) {
@@ -379,22 +420,22 @@ export const uploadProfilePicture = async (file: File) => {
               height = MAX_HEIGHT;
             }
           }
-          
+
           canvas.width = width;
           canvas.height = height;
-          
+
           // Draw and compress
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             reject(new Error('Failed to get canvas context'));
             return;
           }
-          
+
           ctx.drawImage(img, 0, 0, width, height);
-          
+
           // Convert to data URL with compression
           const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
-          
+
           // Check if compressed size is still too large (max ~500KB base64 = ~375KB original)
           if (dataUrl.length > 500000) {
             // Try with lower quality
@@ -408,14 +449,14 @@ export const uploadProfilePicture = async (file: File) => {
             updateProfileWithAvatar(dataUrl, resolve, reject);
           }
         };
-        
+
         img.onerror = () => {
           reject(new Error('Failed to load image'));
         };
-        
+
         img.src = reader.result as string;
       };
-      
+
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });

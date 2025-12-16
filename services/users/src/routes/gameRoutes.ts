@@ -46,7 +46,6 @@ export default async function registerGameRoutes(app: FastifyInstance) {
       summary: "Upload match result",
       description: "Uploads a completed match record from the Game service. The request should include both player IDs, scores, display names, match timestamps, and optionally tournament and winner information.",
       tags: ["game"],
-      security: [{ apiKeyAuth: [] }],
       body: {
         type: "object",
         required: [
@@ -78,7 +77,6 @@ export default async function registerGameRoutes(app: FastifyInstance) {
           $ref: "MatchHistory#"
         },
         400: { description: "Invalid input." },
-        401: { $ref: "UnauthorizedApiKey#" },
         500: { $ref: "InternalServerError#" }
       }
     }
@@ -90,7 +88,6 @@ export default async function registerGameRoutes(app: FastifyInstance) {
       summary: "Post tournament result",
       description: "Creates a tournament record with all details after the tournament ends. The request must include tournament ID, name, winner ID, start/end times, players, and matches.",
       tags: ["game"],
-      security: [{ apiKeyAuth: [] }],
       body: {
         type: "object",
         required: ["tournamentId", "winnerId", "start_at", "end_at", "players", "matches"],
@@ -181,7 +178,6 @@ export default async function registerGameRoutes(app: FastifyInstance) {
           }
         },
         400: { description: "Invalid input." },
-        401: { $ref: "UnauthorizedApiKey#" },
         500: { $ref: "InternalServerError#" }
       }
     }

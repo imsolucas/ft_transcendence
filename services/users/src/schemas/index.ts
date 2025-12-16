@@ -47,14 +47,6 @@ export const UnauthorizedError = {
   }
 };
 
-export const UnauthorizedApiKey = {
-  $id: "UnauthorizedApiKey",
-  type: "object",
-  properties: {
-    error: { type: "string" }
-  }
-};
-
 export const InternalServerError = {
   $id: "InternalServerError",
   type: "object",

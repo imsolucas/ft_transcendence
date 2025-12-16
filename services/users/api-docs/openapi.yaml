@@ -532,8 +532,6 @@ paths:
       description: |
         Uploads a completed match record from the Game service.
         The request should include both player IDs, scores, display names, and match timestamps.
-      security:
-        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -585,8 +583,6 @@ paths:
                 $ref: '#/components/schemas/MatchHistory'
         '400':
           description: Invalid input.
-        '401':
-          $ref: '#/components/responses/UnauthorizedApiKey'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -595,8 +591,6 @@ paths:
       summary: Post tournament result
       description: |
         Creates a tournament record with all details after the tournament ends. The request must include tournament ID, name, winner ID, start/end times, players, and matches.
-      security:
-        - apiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -759,8 +753,6 @@ paths:
                           example: "2025-11-16T10:40:00Z"
         '400':
           description: Invalid input.
-        '401':
-          $ref: '#/components/responses/UnauthorizedApiKey'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -782,10 +774,6 @@ paths:
 
 components:
   securitySchemes:
-    apiKeyAuth:
-      type: apiKey
-      in: header
-      name: x-api-key
     bearerAuth:
       type: http
       scheme: bearer
@@ -835,17 +823,6 @@ components:
               error:
                 type: string
                 example: Unauthorized
-
-    UnauthorizedApiKey:
-      description: Missing or invalid API key.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Invalid or missing API key.
 
     InternalServerError:
       description: Internal server error

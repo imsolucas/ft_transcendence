@@ -6,8 +6,6 @@ services:
       context: ../services/frontend/
       dockerfile: Dockerfile
     command: ["${FRONTEND_CMD:-dev}"]
-    ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     volumes:
       - ../services/frontend/:/usr/src/app/:rw
       - ../services/shared/:/usr/src/shared/
@@ -30,9 +28,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    ports:
-      - "${USERS_PORT}:${USERS_PORT}"
-      - "5555:5555"
     volumes:
       - ../services/users/:/usr/src/app/:rw
       - users_db:/usr/src/app/db/
@@ -50,19 +45,44 @@ services:
   game:
     build:
       context: ../services/game/
-      args: 
+      args:
         PORT: ${GAME_PORT:-3001}
     image: game
     container_name: game
     command: ["${GAME_CMD:-dev}"]
-    ports:
-      - "${GAME_PORT:-3001}:${GAME_PORT:-3001}"
     networks:
       - devnet
     volumes:
       - ../services/game:/usr/src/app:rw
       - ../services/shared/:/usr/src/shared/:rw
       - game_node_modules:/usr/src/app/node_modules/
+    restart: unless-stopped
+
+  api-gateway:
+    container_name: api-gateway
+    image: api-gateway
+    build:
+      context: ../services/api-gateway
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${API_GATEWAY_PORT}:443"
+    volumes:
+      - ../services/api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../services/api-gateway/server.crt:/etc/nginx/ssl/server.crt:ro
+      - ../services/api-gateway/server.key:/etc/nginx/ssl/server.key:ro
+    networks:
+      - devnet
+    depends_on:
+      - frontend
+      - users
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -fsS ${API_GATEWAY_HEALTH_HOST} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
