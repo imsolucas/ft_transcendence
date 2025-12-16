@@ -4,7 +4,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import speakeasy from "speakeasy";
-import { error } from "console";
 import crypto from "crypto";
 import { validateSignupInput, validateLoginInput, isValidEmail } from "../utils/validation.ts";
 
@@ -25,7 +24,7 @@ async function generateTokenPair(userId: number, username: string, email: string
   // Generate refresh token (7 days)
   const refreshToken = crypto.randomBytes(32).toString("hex");
   const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-  
+
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -46,14 +45,14 @@ function setRefreshTokenCookie(reply: FastifyReply, refreshToken: string) {
     maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
     path: "/",
   };
-  
+
   // Don't set domain in development - let browser handle it for localhost
   // Setting domain explicitly can prevent cookies from working across ports
   if (isProduction) {
     // In production, you might want to set domain based on your setup
     // cookieOptions.domain = '.yourdomain.com';
   }
-  
+
   reply.setCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, cookieOptions);
   console.log('Cookie set:', REFRESH_TOKEN_COOKIE_NAME, 'Options:', JSON.stringify(cookieOptions));
 }
@@ -70,6 +69,7 @@ function clearRefreshTokenCookie(reply: FastifyReply) {
 
 // Signup controller
 export async function signup(req: FastifyRequest, reply: FastifyReply) {
+  const DEFAULT_AVATAR = "https://i.pravatar.cc/150?u=default";
   const { name, email, password } = req.body as { name: string; email: string; password: string };
 
   // Validate input format and length
@@ -100,7 +100,7 @@ export async function signup(req: FastifyRequest, reply: FastifyReply) {
       username: trimmedName,
       email: trimmedEmail,
       password: hashed,
-      avatar: "",
+      avatar: DEFAULT_AVATAR,
     },
   });
 
@@ -216,12 +216,12 @@ export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
       // Generate username from name or email
       const baseUsername = name ? name.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 30) : email.split("@")[0].substring(0, 30);
       let username = baseUsername || "user";
-      
+
       // Ensure username meets requirements
       if (username.length < 3) {
         username = username.padEnd(3, '0');
       }
-      
+
       // Check if username already exists and append number if needed
       let finalUsername = username;
       let counter = 1;
@@ -345,7 +345,7 @@ export async function refreshToken(req: FastifyRequest, reply: FastifyReply) {
   console.log('Refresh endpoint called. Request origin:', req.headers.origin);
   console.log('All cookies received:', Object.keys(req.cookies));
   console.log('Cookie header:', req.headers.cookie);
-  
+
   const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
   if (!refreshToken) {
@@ -490,7 +490,7 @@ export async function logout(req: FastifyRequest, reply: FastifyReply) {
       if (decoded && decoded.exp) {
         const expiresAt = new Date(decoded.exp * 1000);
         const tokenHash = await bcrypt.hash(accessToken, 10);
-        
+
         await prisma.tokenBlacklist.create({
           data: {
             tokenHash,
