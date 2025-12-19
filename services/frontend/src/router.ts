@@ -4,6 +4,7 @@ export {
   navigate,
   getActiveTab,
   getCurrentScreen,
+  getQueryParams,
   initializeApp
 } from './router/navigation';
 

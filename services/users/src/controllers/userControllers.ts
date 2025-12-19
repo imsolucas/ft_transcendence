@@ -23,6 +23,27 @@ export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
   });
 }
 
+// Get user profile by username
+export async function getUserProfileByUsername(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { username } = req.params as { username: string };
+  if (!username) return reply.code(400).send({ error: "Username is required." });
+
+  const user = await prisma.user.findUnique({ where: { username } });
+  if (!user) return reply.code(404).send({ error: "User not found." });
+
+  return reply.send({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    avatar: user.avatar,
+    status: user.status,
+    is2FAEnabled: (user as any).is2FAEnabled || false,
+  });
+}
+
 // Update user profile
 export async function updateUserProfile(req: FastifyRequest, reply: FastifyReply) {
   const userId = req.user?.id;
@@ -277,4 +298,84 @@ export async function updateUserStatus(req: FastifyRequest, reply: FastifyReply)
   });
 
   return reply.send({ status });
+}
+
+// Remove a friend
+export async function removeFriend(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { username } = req.params as { username: string };
+  if (!username) return reply.code(400).send({ error: "Username is required." });
+
+  const target = await prisma.user.findUnique({ where: { username } });
+  if (!target) return reply.code(404).send({ error: "User not found." });
+  if (target.id === userId) return reply.code(400).send({ error: "Cannot remove yourself as a friend." });
+
+  const friendship = await prisma.friendship.findFirst({
+    where: {
+      status: FriendshipStatus.ACCEPTED,
+      OR: [
+        { requesterId: userId, addresseeId: target.id },
+        { requesterId: target.id, addresseeId: userId }
+      ]
+    }
+  });
+
+  if (!friendship) {
+    return reply.code(404).send({ error: "Friendship not found." });
+  }
+
+  await prisma.friendship.delete({
+    where: { id: friendship.id }
+  });
+
+  return reply.send({ message: "Friend removed successfully." });
+}
+
+// Search users by username
+export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { q } = req.query as { q?: string };
+  if (!q || q.trim().length < 2) {
+    return reply.code(400).send({ error: "Search query must be at least 2 characters." });
+  }
+
+  try {
+    const searchQuery = q.trim();
+    // SQLite doesn't support mode: "insensitive" in Prisma
+    // Use raw query or fetch all and filter, but better: use Prisma's case-insensitive filter
+    // For SQLite, we'll fetch and filter client-side for case-insensitive search
+    const allUsers = await prisma.user.findMany({
+    where: {
+      id: {
+        not: userId // Exclude the current user from search results
+      }
+    },
+    select: {
+      id: true,
+      username: true,
+      avatar: true,
+      status: true
+      }
+    });
+
+    // Case-insensitive search filter
+    const searchLower = searchQuery.toLowerCase();
+    const filteredUsers = allUsers
+      .filter(user => user.username.toLowerCase().includes(searchLower))
+      .slice(0, 20); // Limit results to 20
+
+    return reply.send(filteredUsers);
+  } catch (error: any) {
+    console.error('Error searching users:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Error message:', error?.message);
+    return reply.code(500).send({ 
+      error: "Internal server error while searching users.",
+      message: error?.message || "Unknown error"
+    });
+  }
 }

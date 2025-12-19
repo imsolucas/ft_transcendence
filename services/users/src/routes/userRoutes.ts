@@ -49,6 +49,30 @@ export default async function registerUserRoutes(app: FastifyInstance) {
     }
   }, controllers.updateUserProfile);
 
+  app.get("/user/profile/:username", {
+    schema: {
+      summary: "Get user profile by username",
+      description: "Retrieves the profile information of a user by their username.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          username: { type: "string" }
+        }
+      },
+      response: {
+        200: {
+          description: "User profile retrieved successfully.",
+          $ref: "UserProfile#"
+        },
+        401: { $ref: "UnauthorizedError#" },
+        404: { description: "User not found." },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.getUserProfileByUsername);
+
   // Friends
   app.get("/user/friends", {
     schema: {
@@ -163,6 +187,62 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.updateFriendRequest);
+
+  app.delete("/user/friends/:username", {
+    schema: {
+      summary: "Remove a friend",
+      description: "Removes a friendship between the authenticated user and another user.",
+      tags: ["friends"],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          username: { type: "string" }
+        }
+      },
+      response: {
+        200: { description: "Friend removed successfully." },
+        400: { description: "Cannot remove yourself as a friend." },
+        401: { $ref: "UnauthorizedError#" },
+        404: { description: "Friendship not found." },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.removeFriend);
+
+  app.get("/user/search", {
+    schema: {
+      summary: "Search users by username",
+      description: "Searches for users by username. Returns a list of users matching the query.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: "object",
+        properties: {
+          q: { type: "string", description: "Search query (username)" }
+        },
+        required: ["q"]
+      },
+      response: {
+        200: {
+          description: "Users found successfully.",
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "integer" },
+              username: { type: "string" },
+              avatar: { type: "string", format: "uri" },
+              status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] }
+            }
+          }
+        },
+        400: { description: "Search query is required." },
+        401: { $ref: "UnauthorizedError#" },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.searchUsers);
 
   // 2FA setup
   app.post("/user/2fa/setup", {

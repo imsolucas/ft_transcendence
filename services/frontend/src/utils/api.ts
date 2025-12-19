@@ -4,7 +4,7 @@ import { getAccessToken, setAccessToken, clearAccessToken } from './tokenManager
 // API Configuration
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
 
-// Helper function to get auth token (from memory)
+// Helper function to get auth token (from localStorage)
 const getToken = () => {
   return getAccessToken();
 };
@@ -26,7 +26,6 @@ const refreshAccessToken = async (): Promise<boolean> => {
     const data = await response.json();
     if (data.token) {
       setAccessToken(data.token);
-      // User data is fetched from API when needed, not stored in localStorage
       return true;
     }
 
@@ -59,10 +58,6 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
     // Attempt to refresh token (only if not already a refresh request)
     if (!url.includes('/auth/refresh')) {
       const refreshed = await refreshAccessToken();
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/d7920797-0f4b-4541-bc50-f6cc0d7ce821',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:62',message:'token refresh attempt result',data:{url,refreshed,newToken:!!getAccessToken()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
-
 
       if (refreshed) {
         // Retry original request with new token
@@ -209,9 +204,25 @@ export const fetchUserProfile = async () => {
   }
 };
 
+export const getUserProfileByUsername = async (username: string) => {
+  try {
+    const user = await apiFetch(`${API_URL}/user/profile/${encodeURIComponent(username)}`);
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+      status: user.status,
+      is2FAEnabled: user.is2FAEnabled || false,
+    };
+  } catch (error) {
+    console.error('Error fetching user profile by username:', error);
+    throw error;
+  }
+};
+
 export const fetchUserByUsername = async (username: string) => {
-  // Note: Backend doesn't have a username lookup endpoint
-  // This function is kept for compatibility but will fail
+  // Deprecated: Use getUserProfileByUsername instead
   // Use fetchUserProfile() instead for authenticated users
   try {
     // Try to use the profile endpoint if authenticated
@@ -520,6 +531,28 @@ export const updateFriendRequest = async (requestId: number, status: 'ACCEPTED' 
   }
 };
 
+export const removeFriend = async (username: string) => {
+  try {
+    const result = await apiFetch(`${API_URL}/user/friends/${username}`, {
+      method: 'DELETE',
+    });
+    return result;
+  } catch (error) {
+    console.error('Error removing friend:', error);
+    throw error;
+  }
+};
+
+export const searchUsers = async (query: string) => {
+  try {
+    const result = await apiFetch(`${API_URL}/user/search?q=${encodeURIComponent(query)}`);
+    return result;
+  } catch (error) {
+    console.error('Error searching users:', error);
+    throw error;
+  }
+};
+
 // Delete user (for admin functionality)
 // Note: Backend doesn't have a delete user endpoint in the OpenAPI spec
 // This function is kept for compatibility but will fail
@@ -566,7 +599,7 @@ export const verify2FACode = async (userId: number, code: string) => {
   try {
     const result = await fetch(`${API_URL}/auth/verify-2fa`, {
       method: 'POST',
-      credentials: 'include', // Include cookies - critical for refresh token!
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },

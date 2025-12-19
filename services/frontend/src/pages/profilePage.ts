@@ -1,5 +1,9 @@
 import { ProfileData } from '../components/profile/ProfileData';
 import { gradients, spacing } from '../styles/theme';
+import { getQueryParams } from '../router';
+import { Button } from '../components/ui/Button';
+import { navigate } from '../router';
+import { t } from '../i18n';
 
 export function ProfilePage(): HTMLElement {
   const container = document.createElement('div');
@@ -11,7 +15,27 @@ export function ProfilePage(): HTMLElement {
   const content = document.createElement('div');
   content.className = `relative z-10 ${spacing.container}`;
 
-  content.appendChild(ProfileData());
+  // Check for username query parameter
+  const queryParams = getQueryParams();
+  const viewUsername = queryParams?.username;
+
+  // Add back button if viewing another user's profile
+  if (viewUsername) {
+    const backButtonContainer = document.createElement('div');
+    backButtonContainer.className = 'mb-4';
+    const backButton = Button({
+      text: String(t('common.back') || '← Back'),
+      variant: 'outline',
+      size: 'default',
+      onClick: () => {
+        window.history.back();
+      },
+    });
+    backButtonContainer.appendChild(backButton);
+    content.appendChild(backButtonContainer);
+  }
+
+  content.appendChild(ProfileData(viewUsername));
   wrapper.appendChild(content);
   container.appendChild(wrapper);
 

@@ -4,6 +4,7 @@ export type Screen =
   | "lobby"
   | "game"
   | "profile"
+  | "friends"
   | "email-verification"
   | "local-game"
   | "multiplayer-game";
@@ -17,4 +18,5 @@ export interface PageComponent {
 export interface NavigationState {
   currentScreen: Screen | null;
   activeTab?: string;
+  queryParams?: Record<string, string>;
 }

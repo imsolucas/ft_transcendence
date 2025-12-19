@@ -22,13 +22,13 @@ const root = document.getElementById("app");
 if (root) {
   root.appendChild(App());
 
-  // Attempt silent refresh to restore session if refresh token exists
+  // Attempt to restore session from localStorage or refresh token
   // This must complete before initializing navbar and app routing to prevent auth guard redirect
   attemptSilentRefresh().then(async (success) => {
     if (success) {
-      console.log('Session restored via refresh token');
+      console.log('Session restored');
     } else {
-      console.log('No valid refresh token found');
+      console.log('No valid session found');
     }
     
     // Initialize navbar after silent refresh completes so it shows correct auth state

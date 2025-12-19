@@ -1,4 +1,4 @@
-import { fetchUserProfile, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture, setup2FA, calculateUserStats } from '../../utils/api';
+import { fetchUserProfile, getUserProfileByUsername, updateUserProfile, fetchMatchHistory, fetchFriends, uploadProfilePicture, setup2FA, calculateUserStats } from '../../utils/api';
 import { getCurrentUser } from '../../utils/auth-script';
 import { t } from '../../i18n';
 import { LanguageSelector } from '../shared/LanguageSelector';
@@ -12,9 +12,10 @@ import { createMatchHistory, renderMatchHistory, type Match } from './MatchHisto
 import { createFriendsList, renderFriendsList, type Friend } from './FriendsList';
 import { createProfileStyles } from './ProfileStyles';
 
-export function ProfileData() {
+export function ProfileData(viewUsername?: string) {
   const container = document.createElement('div');
   container.className = 'relative w-full max-w-6xl mx-auto';
+  const isViewingOtherUser = !!viewUsername;
 
   let user: any = null;
 
@@ -143,8 +144,9 @@ export function ProfileData() {
     `;
 
     // Setup modular components
+    // Only enable photo upload and settings when viewing own profile
+    if (!isViewingOtherUser) {
     setupProfileHeader(container, handlePhotoUpload);
-
     // Get active tab from router or default to 'profile-settings'
     const activeTab = getActiveTab() || 'profile-settings';
     setupProfileTabs(container, activeTab);
@@ -154,6 +156,16 @@ export function ProfileData() {
       on2FASetup: show2FASetupModal,
     };
     setupProfileSettings(container, settingsHandlers);
+    } else {
+      // When viewing another user, only show header (no photo upload) and default to match history tab
+      setupProfileHeader(container, () => Promise.resolve()); // Empty handler for viewing other users
+      setupProfileTabs(container, 'match-history');
+      // Hide settings tab when viewing another user's profile
+      const settingsTab = container.querySelector('[data-tab="profile-settings"]');
+      if (settingsTab) {
+        (settingsTab as HTMLElement).style.display = 'none';
+      }
+    }
 
     // Add language selector to profile settings
     setTimeout(() => {
@@ -383,10 +395,25 @@ export function ProfileData() {
   const loadProfileData = async () => {
     renderLoading();
     try {
-      // Fetch profile data directly - getCurrentUser() is redundant since fetchUserProfile() does the same
-      const profileData = await fetchUserProfile();
+      // Fetch profile data - use getUserProfileByUsername if viewing another user's profile
+      let profileData: any;
+      if (viewUsername) {
+        profileData = await getUserProfileByUsername(viewUsername);
+        // Convert to expected format
+        profileData = {
+          id: profileData.id,
+          username: profileData.username,
+          email: profileData.email,
+          picture: profileData.avatar,
+          level: 1, // Will be calculated from stats if available
+          is2FAEnabled: profileData.is2FAEnabled || false,
+        };
+      } else {
+        profileData = await fetchUserProfile();
+      }
+      
       if (!profileData || !profileData.id) {
-        renderError({ message: t('profile.mustBeLoggedIn') || 'You must be logged in to view your profile' });
+        renderError({ message: viewUsername ? (t('profile.userNotFound') || 'User not found') : (t('profile.mustBeLoggedIn') || 'You must be logged in to view your profile') });
         return;
       }
       

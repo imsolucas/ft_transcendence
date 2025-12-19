@@ -98,7 +98,7 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     // Send the Google credential to backend for verification
     const response = await fetch(`${API_URL}/auth/google`, {
       method: 'POST',
-      credentials: 'include', // Include cookies - critical for refresh token!
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -120,10 +120,8 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     }
 
     if (data.token && data.user) {
-      // Store access token in memory (not localStorage)
+      // Store access token in localStorage (persists across page reloads)
       setAccessToken(data.token);
-      // User data is fetched from API when needed, not stored in localStorage
-
       return true;
     } else {
       console.error('Invalid response from backend:', data);

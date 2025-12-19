@@ -38,7 +38,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      credentials: 'include', // Include cookies - critical for refresh token!
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -827,10 +827,9 @@ function show2FAModal(container: HTMLElement, userId: number): void {
     try {
       const result = await verify2FACode(userId, code);
 
-      // Store access token in memory (not localStorage)
+      // Store access token in localStorage (persists across page reloads)
       if (result.token && result.user) {
         setAccessToken(result.token);
-        // User data is fetched from API when needed, not stored in localStorage
       }
 
       showNotification(String(t('auth.loginSuccessful') || 'Login successful!'), 'success');
@@ -910,10 +909,9 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     }
 
     if (response.success) {
-      // Store access token in memory (not localStorage)
+      // Store access token in localStorage (persists across page reloads)
       if (response.token && response.user) {
         setAccessToken(response.token);
-        // User data is fetched from API when needed, not stored in localStorage
       }
 
       showNotification('Login successful!', 'success');
