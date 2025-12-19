@@ -18,9 +18,19 @@ export function Modal({
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
   
+  // Add Alpine.js directive for reactive state (framework usage)
+  modal.setAttribute('x-data', '{ open: true }');
+  modal.setAttribute('x-show', 'open');
+  modal.setAttribute('x-transition', '');
+  
   // Backdrop
   const backdrop = document.createElement('div');
   backdrop.className = 'absolute inset-0 bg-black/50 backdrop-blur-sm';
+  
+  // Add Alpine.js click handler (framework usage)
+  backdrop.setAttribute('@click', 'open = false; $nextTick(() => { if (typeof onClose === "function") onClose(); modal.remove(); })');
+  
+  // Keep existing event listener for backward compatibility
   backdrop.addEventListener('click', () => {
     if (onClose) {
       onClose();
@@ -37,6 +47,7 @@ export function Modal({
     xl: 'max-w-xl',
   };
   container.className = `relative ${sizeClasses[size]} w-full mx-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700`;
+  container.setAttribute('@click.stop', '');
   
   // Header
   const header = document.createElement('div');
@@ -51,6 +62,11 @@ export function Modal({
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&times;';
     closeBtn.className = 'text-gray-400 hover:text-white text-3xl leading-none transition-colors';
+    
+    // Add Alpine.js click handler (framework usage)
+    closeBtn.setAttribute('@click', 'open = false; $nextTick(() => { if (typeof onClose === "function") onClose(); modal.remove(); })');
+    
+    // Keep existing event listener for backward compatibility
     closeBtn.addEventListener('click', () => {
       if (onClose) onClose();
       modal.remove();

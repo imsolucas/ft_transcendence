@@ -3,6 +3,21 @@ import './i18n';
 import { initializeApp } from "./router";
 import { initializeNavbar, updateNavbar } from "./components/layout/Navbar";
 import { attemptSilentRefresh } from "./utils/tokenManager";
+import Alpine from 'alpinejs';
+
+// Initialize Alpine.js framework
+declare global {
+  interface Window {
+    Alpine: typeof Alpine;
+  }
+  interface HTMLElement {
+    __x?: {
+      $data: Record<string, any>;
+    };
+  }
+}
+window.Alpine = Alpine;
+Alpine.start();
 
 export function App(): HTMLElement {
   const app = document.createElement("div");

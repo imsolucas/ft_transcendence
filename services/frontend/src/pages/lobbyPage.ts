@@ -119,6 +119,9 @@ export function LobbyPage(): HTMLElement {
 			const searchContainer = document.createElement('div');
 			searchContainer.className = 'relative flex-1 min-w-[200px]';
 			
+			// Add Alpine.js directive for reactive state (framework usage)
+			searchContainer.setAttribute('x-data', '{ searchQuery: "", showResults: false }');
+			
 			const searchInputWrapper = document.createElement('div');
 			searchInputWrapper.className = 'flex gap-2';
 			const searchInputElement = Input({
@@ -126,15 +129,25 @@ export function LobbyPage(): HTMLElement {
 				placeholder: String(t('lobby.searchPlayers') || 'Search players...'),
 				className: 'flex-1',
 			});
+			
+			// Add Alpine.js x-model for two-way data binding (framework usage)
+			searchInputElement.setAttribute('x-model', 'searchQuery');
+			
 			searchInputWrapper.appendChild(searchInputElement);
 			
 			// Search results container - positioned relative to searchContainer
 			const searchResultsContainer = document.createElement('div');
 			searchResultsContainer.id = 'lobby-search-results';
-			searchResultsContainer.className = 'absolute top-full left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 hidden max-h-60 overflow-y-auto';
+			searchResultsContainer.className = 'absolute top-full left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto';
+			
+			// Add Alpine.js directive for conditional rendering (framework usage)
+			searchResultsContainer.setAttribute('x-show', 'showResults');
+			searchResultsContainer.setAttribute('@click.away', 'showResults = false');
+			
 			searchContainer.appendChild(searchResultsContainer);
 			
 			// Search functionality - only triggered by button click
+			// Alpine.js reactive state is available via x-data, but we keep existing logic for compatibility
 			const performSearch = async () => {
 				if (!searchInputElement) {
 					console.error('Search input element not found');
@@ -143,7 +156,12 @@ export function LobbyPage(): HTMLElement {
 				
 				const query = searchInputElement.value.trim();
 				if (query.length < 2) {
-					searchResultsContainer.classList.add('hidden');
+					// Update Alpine state if available
+					if (window.Alpine && searchContainer.__x) {
+						searchContainer.__x.$data.showResults = false;
+					} else {
+						searchResultsContainer.classList.add('hidden');
+					}
 					showToast({ 
 						message: String(t('friends.enterUsername') || 'Please enter at least 2 characters'), 
 						variant: 'warning',
@@ -171,7 +189,13 @@ export function LobbyPage(): HTMLElement {
 							userItem.addEventListener('click', () => {
 								navigate('profile', `username=${encodeURIComponent(user.username)}`);
 								searchInputElement.value = '';
-								searchResultsContainer.classList.add('hidden');
+								// Update Alpine state if available
+								if (window.Alpine && searchContainer.__x) {
+									searchContainer.__x.$data.searchQuery = '';
+									searchContainer.__x.$data.showResults = false;
+								} else {
+									searchResultsContainer.classList.add('hidden');
+								}
 							});
 							
 							const avatar = Avatar({
@@ -191,10 +215,20 @@ export function LobbyPage(): HTMLElement {
 						});
 					}
 					
-					searchResultsContainer.classList.remove('hidden');
+					// Update Alpine state if available
+					if (window.Alpine && searchContainer.__x) {
+						searchContainer.__x.$data.showResults = true;
+					} else {
+						searchResultsContainer.classList.remove('hidden');
+					}
 				} catch (error: any) {
 					console.error('Error searching users:', error);
-					searchResultsContainer.classList.add('hidden');
+					// Update Alpine state if available
+					if (window.Alpine && searchContainer.__x) {
+						searchContainer.__x.$data.showResults = false;
+					} else {
+						searchResultsContainer.classList.add('hidden');
+					}
 					const errorMessage = error?.message || String(t('friends.searchError') || 'Search failed');
 					showToast({ 
 						message: errorMessage, 

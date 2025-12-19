@@ -89,9 +89,17 @@
 
 ### Minor Modules (6 points)
 
-#### 6. Frontend Framework (Vite) - 1pt ✅
-- **Stack:** Vite + Vanilla TypeScript + Tailwind CSS
+#### 6. Frontend Framework (Alpine.js) - 1pt ✅
+- **Framework:** Alpine.js (reactive UI framework)
+- **Stack:** Alpine.js + Vite + TypeScript + Tailwind CSS
 - **Status:** Complete
+- **Usage:**
+  - Reactive state management (x-data)
+  - Two-way data binding (x-model)
+  - Event handling (@click, @click.away)
+  - Conditional rendering (x-show)
+  - Transitions (x-transition)
+  - Used in: Dropdown, Modal, Search components
 
 #### 7. Backend Framework (Fastify) - 1pt ✅
 - **Implementation:** All services use Fastify
@@ -366,12 +374,23 @@ Complete these for additional credit or project enhancement.
 ## 📚 **TECHNICAL DOCUMENTATION**
 
 ### Architecture
-- **Frontend:** Vite + Vanilla TypeScript + Tailwind CSS
+- **Frontend:** Alpine.js (framework) + Vite + Vanilla TypeScript + Tailwind CSS
 - **Backend:** Fastify (Node.js + TypeScript)
 - **Database:** SQLite + Prisma ORM
 - **Deployment:** Docker + Docker Compose
 - **API Gateway:** Nginx (reverse proxy, SSL/TLS)
 - **Real-time:** WebSocket (@fastify/websocket)
+
+### Alpine.js Framework Usage
+- **Reactive State:** `x-data` for component state management
+- **Data Binding:** `x-model` for two-way data binding in forms
+- **Event Handling:** `@click`, `@click.away` for user interactions
+- **Conditional Rendering:** `x-show` for show/hide functionality
+- **Transitions:** `x-transition` for smooth animations
+- **Components Using Alpine:**
+  - Dropdown: Toggle state, outside click detection
+  - Modal: Show/hide state, backdrop click handling
+  - Search: Reactive query state, results visibility
 
 ### Services
 1. **Users Service** (Port 3000)
