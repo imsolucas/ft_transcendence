@@ -163,7 +163,7 @@ export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply
     where = { addresseeId: userId, status: FriendshipStatus.PENDING };
   }
 
-  const requests = await prisma.friendship.findMany({ 
+  const requests = await prisma.friendship.findMany({
     where,
     include: {
       requester: {
@@ -182,7 +182,7 @@ export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply
       }
     }
   });
-  
+
   const result = requests.map(r => {
     // For received requests, show requester info; for sent requests, show addressee info
     const otherUser = direction === "received" ? r.requester : r.addressee;
@@ -219,6 +219,14 @@ export async function updateFriendRequest(req: FastifyRequest, reply: FastifyRep
     return reply.code(404).send({ error: "Friend request not found." });
   }
 
+  if (status === "REJECTED") {
+    await prisma.friendship.delete({
+      where: { id: Number(requestId) }
+    });
+    return reply.send({ message: "Friend request rejected and removed." });
+  }
+
+  // If accepted, update status
   await prisma.friendship.update({
     where: { id: Number(requestId) },
     data: { status: status as FriendshipStatus }
