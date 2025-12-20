@@ -184,7 +184,7 @@ export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply
     where = { addresseeId: userId, status: FriendshipStatus.PENDING };
   }
 
-  const requests = await prisma.friendship.findMany({ 
+  const requests = await prisma.friendship.findMany({
     where,
     include: {
       requester: {
@@ -203,7 +203,7 @@ export async function getFriendRequests(req: FastifyRequest, reply: FastifyReply
       }
     }
   });
-  
+
   const result = requests.map(r => {
     // For received requests, show requester info; for sent requests, show addressee info
     const otherUser = direction === "received" ? r.requester : r.addressee;
@@ -373,7 +373,7 @@ export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
     console.error('Error searching users:', error);
     console.error('Error stack:', error?.stack);
     console.error('Error message:', error?.message);
-    return reply.code(500).send({ 
+    return reply.code(500).send({
       error: "Internal server error while searching users.",
       message: error?.message || "Unknown error"
     });

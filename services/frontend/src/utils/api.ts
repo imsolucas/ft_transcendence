@@ -535,6 +535,7 @@ export const removeFriend = async (username: string) => {
   try {
     const result = await apiFetch(`${API_URL}/user/friends/${username}`, {
       method: 'DELETE',
+      body: '{}',
     });
     return result;
   } catch (error) {
