@@ -263,8 +263,6 @@ erDiagram
 - **Users ↔ Tournaments:** Many-to-many (via TournamentPlayers)
 - **Tournaments → Matches:** One-to-many (tournament matches)
 
-For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATABASE_SCHEMA.md).
-
 ---
 
 ## Features List
