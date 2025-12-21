@@ -46,7 +46,7 @@ export async function createNavbar(): Promise<HTMLElement> {
 	logoButton.addEventListener('click', () => {
 		toggleMobileMenu();
 	});
-	logoButton.title = 'Menu';
+	logoButton.title = String(t('navbar.menu') || 'Menu');
 
 	leftSection.appendChild(logoButton);
 
@@ -68,7 +68,7 @@ export async function createNavbar(): Promise<HTMLElement> {
 	const arrowIcon = document.createElement('img');
 	arrowIcon.className = 'w-5 h-5 object-contain transition-transform duration-200';
 	arrowIcon.src = isNavbarHidden ? '/images/down.png' : '/images/up.png';
-	arrowIcon.alt = isNavbarHidden ? 'Show navbar' : 'Hide navbar';
+	arrowIcon.alt = isNavbarHidden ? String(t('navbar.showNavbar') || 'Show navbar') : String(t('navbar.hideNavbar') || 'Hide navbar');
 
 	navbarToggleBtn.appendChild(arrowIcon);
 
@@ -120,7 +120,7 @@ export async function createNavbar(): Promise<HTMLElement> {
 		const profileText = document.createElement('span');
 		// Changed to white text for better visibility
 		profileText.className = 'text-sm font-medium bg-gradient-to-l from-[#F49752] to-[#F031A5] text-transparent bg-clip-text hidden sm:block';
-		profileText.textContent = user?.username || 'User';
+		profileText.textContent = user?.username || String(t('navbar.user') || 'User');
 
 		const chevronIcon = document.createElement('svg');
 		chevronIcon.setAttribute('class', 'w-4 h-4 text-white/60 transition-transform duration-200');
@@ -145,17 +145,17 @@ export async function createNavbar(): Promise<HTMLElement> {
 
 		dropdown.innerHTML = `
 	  <a href="#" data-link="profile" data-tab="profile-settings" class="dropdown-item block px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">
-		Settings
+		${String(t('navbar.settings') || 'Settings')}
 	  </a>
 	  <a href="#" data-link="profile" data-tab="friends" class="dropdown-item block px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">
-		Friends
+		${String(t('navbar.friends') || 'Friends')}
 	  </a>
 	  <a href="#" data-link="profile" data-tab="match-history" class="dropdown-item block px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors">
-		History
+		${String(t('navbar.history') || 'History')}
 	  </a>
 	  <hr class="my-1">
 	  <button class="logout-btn w-full text-left px-4 py-2 text-sm text-[#ff9b94] hover:bg-red-50/80 transition-colors">
-		${t('navbar.logout')}
+		${String(t('navbar.logout') || 'Logout')} 
 	  </button>
 	`;
 
@@ -566,11 +566,11 @@ export function toggleNavbarVisibility(): void {
 			if (isHidden) {
 				// Now showing navbar → next action hides it
 				iconImg.src = '/images/up.png';
-				iconImg.alt = 'Hide navbar';
+				iconImg.alt = String(t('navbar.hideNavbar') || 'Hide navbar');
 			} else {
 				// Now hiding navbar → next action shows it
 				iconImg.src = '/images/down.png';
-				iconImg.alt = 'Show navbar';
+				iconImg.alt = String(t('navbar.showNavbar') || 'Show navbar');
 			}
 		}
 	}
@@ -584,13 +584,13 @@ function createFloatingToggleButton(): void {
 	const floatingBtn = document.createElement('button');
 	floatingBtn.id = 'floating-navbar-toggle';
 	floatingBtn.className = 'fixed top-4 right-4 z-50 flex items-center justify-center w-10 h-10 bg-[#F34C94]/90 hover:bg-[#F34C94] backdrop-blur-sm rounded-full shadow-lg border-2 border-white/20 transition-all duration-200 hover:scale-110 cursor-pointer';
-	const floatingBtnText = String(t('navbar.toggleNavbar') || 'Show Navbar');
+	const floatingBtnText = String(t('navbar.showNavbar') || 'Show Navbar');
 	floatingBtn.title = floatingBtnText;
 
 	const icon = document.createElement('img');
 	icon.className = 'w-5 h-5 object-contain';
 	icon.src = '/images/down.png';
-	icon.alt = 'Toggle navbar';
+	icon.alt = String(t('navbar.toggleNavbarAlt') || 'Toggle navbar');
 
 	floatingBtn.appendChild(icon);
 	floatingBtn.addEventListener('click', () => {
