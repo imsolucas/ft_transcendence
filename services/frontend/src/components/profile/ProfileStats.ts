@@ -1,4 +1,5 @@
 import { typography } from '../../styles/theme';
+import { t } from '../../i18n';
 
 export interface ProfileStatsData {
   wins: number;
@@ -17,7 +18,7 @@ export function createProfileStats(data: ProfileStatsData): string {
           ${wins}
         </div>
         <div class="text-white/90 ${typography.body} text-xs sm:text-sm uppercase tracking-wider mt-1 sm:mt-2 ${typography.weights.semibold}">
-          Wins
+          ${String(t('profile.wins') || 'Wins')}
         </div>
       </div>
 
@@ -27,7 +28,7 @@ export function createProfileStats(data: ProfileStatsData): string {
           ${losses}
         </div>
         <div class="text-white/90 ${typography.body} text-xs sm:text-sm uppercase tracking-wider mt-1 sm:mt-2 ${typography.weights.semibold}">
-          Losses
+          ${String(t('profile.losses') || 'Losses')}
         </div>
       </div>
 
@@ -37,7 +38,7 @@ export function createProfileStats(data: ProfileStatsData): string {
           ${winRate.toFixed(1)}%
         </div>
         <div class="text-white/90 ${typography.body} text-xs sm:text-sm uppercase tracking-wider mt-1 sm:mt-2 ${typography.weights.semibold}">
-          Win Rate
+          ${String(t('profile.winRate') || 'Win Rate')}
         </div>
       </div>
     </div>

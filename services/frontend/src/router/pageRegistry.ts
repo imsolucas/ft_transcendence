@@ -2,6 +2,7 @@ import { LandingPage } from '../pages/landingPage';
 import { AuthPage } from '../pages/authPage';
 import { LobbyPage } from '../pages/lobbyPage';
 import { ProfilePage } from '../pages/profilePage';
+import { FriendsPage } from '../pages/friendsPage';
 import { LocalGamePage } from '../pages/LocalGameSetupPage';
 import { MultiplayerGamePage } from '../pages/MultiplayerSetupPage';
 import { GamePage, cleanupGamePage } from '../pages/gamePage';
@@ -31,6 +32,11 @@ export const pageRegistry: Record<Screen, PageComponent> = {
 
   profile: {
     render: () => ProfilePage(),
+    requiresAuth: true,
+  },
+
+  friends: {
+    render: () => FriendsPage(),
     requiresAuth: true,
   },
 

@@ -1,4 +1,11 @@
-import type { PlayerInfo } from "./loadingGame";
+import { t } from '../i18n';
+
+interface PlayerInfo {
+  username?: string;
+  picture?: string;
+  wins?: number;
+  winRate?: string;
+}
 
 function createStat(label: string, value: string | number, isActive: boolean = true): HTMLElement {
     const statDiv = document.createElement('div');
@@ -21,8 +28,8 @@ function createStatsGrid(player: PlayerInfo | null, isActive: boolean = true): H
     const grid = document.createElement('div');
     grid.className = 'grid grid-cols-2 gap-2 text-xs';
 
-    grid.appendChild(createStat('WINS', player?.wins || (isActive ? 0 : '-'), isActive));
-    grid.appendChild(createStat('WIN RATE', player?.winRate || (isActive ? '0%' : '-'), isActive));
+    grid.appendChild(createStat(String(t('lobby.wins') || 'WINS'), player?.wins || (isActive ? 0 : '-'), isActive));
+    grid.appendChild(createStat(String(t('lobby.winRate') || 'WIN RATE'), player?.winRate || (isActive ? '0%' : '-'), isActive));
 
     return grid;
 }
@@ -34,7 +41,7 @@ function createAvatar(player: PlayerInfo | null, isOpponent: boolean = false): H
     if (player) {
         const img = document.createElement('img');
         img.src = player.picture || '/images/pong.png';
-        img.alt = isOpponent ? 'Opponent Avatar' : 'Your Avatar';
+        img.alt = isOpponent ? String(t('lobby.opponentAvatar') || 'Opponent Avatar') : String(t('lobby.yourAvatar') || 'Your Avatar');
         img.className = 'w-24 h-24 rounded-full border-4 border-[#F34C94] shadow-[0_0_20px_rgba(243,76,148,0.6)] object-cover mx-auto';
         avatarContainer.appendChild(img);
 
@@ -80,12 +87,12 @@ export function createPlayerCard (
     // Title
     const title = document.createElement('h3');
     title.className = `font-['Press_Start_2P'] text-lg ${isActive ? 'text-[#F34C94]' : 'text-gray-500'} mb-2`;
-    title.textContent = isOpponent ? 'OPPONENT' : 'YOU';
+    title.textContent = isOpponent ? String(t('lobby.opponent') || 'OPPONENT') : String(t('lobby.you') || 'YOU');
 
     // Username
     const username = document.createElement('p');
     username.className = `font-['Orbitron'] ${isActive ? 'text-white' : 'text-gray-400'} text-xl mb-2`;
-    username.textContent = player?.username || (isOpponent ? 'Searching...' : 'Player');
+    username.textContent = player?.username || (isOpponent ? String(t('lobby.searching') || 'Searching...') : String(t('lobby.player') || 'Player'));
 
     // Stats grid
     const statsGrid = createStatsGrid(player, isActive);

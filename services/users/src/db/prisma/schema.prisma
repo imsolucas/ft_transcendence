@@ -30,6 +30,7 @@ model User {
   tournamentPlayers TournamentPlayer[] @relation("TournamentPlayers")
   tournamentsWon Tournament[] @relation("Tournament_winner")
   refreshTokens RefreshToken[] @relation("RefreshTokens")
+  apiKeys ApiKey[] @relation("UserApiKeys")
 
   @@map("Users")
 }
@@ -127,4 +128,17 @@ model TokenBlacklist {
   createdAt DateTime @default(now())
 
   @@map("TokenBlacklist")
+}
+
+model ApiKey {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  keyHash    String   @unique
+  name       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime?
+  user       User     @relation("UserApiKeys", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ApiKeys")
 }

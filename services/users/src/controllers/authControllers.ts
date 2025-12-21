@@ -240,6 +240,21 @@ export async function googleAuth(req: FastifyRequest, reply: FastifyReply) {
       });
     }
 
+    // Check if user needs to set a password (OAuth users with empty password)
+    const needsPassword = !user.password || user.password.trim() === "";
+    
+    if (needsPassword) {
+      // Return special response indicating password is required
+      return reply.code(202).send({
+        passwordRequired: true,
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        message: "Password required. Please set a password to continue.",
+      });
+    }
+
     // Update user status
     await prisma.user.update({
       where: { id: user.id },
@@ -507,4 +522,81 @@ export async function logout(req: FastifyRequest, reply: FastifyReply) {
   clearRefreshTokenCookie(reply);
 
   return reply.send({ message: "Logged out successfully" });
+}
+
+// Set password for OAuth users
+export async function setPassword(req: FastifyRequest, reply: FastifyReply) {
+  const { userId, password } = req.body as { userId: number; password: string };
+
+  if (!userId || !password) {
+    return reply.code(400).send({ error: "User ID and password are required." });
+  }
+
+  // Validate password
+  if (password.length < 6) {
+    return reply.code(400).send({ error: "Password must be at least 6 characters long." });
+  }
+
+  try {
+    // Find user
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return reply.code(404).send({ error: "User not found." });
+    }
+
+    // Check if user already has a password
+    if (user.password && user.password.trim() !== "") {
+      return reply.code(400).send({ error: "User already has a password set." });
+    }
+
+    // Hash and set password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    // Update user status
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { status: "ONLINE" }
+    });
+
+    // Generate token pair now that password is set
+    const { accessToken, refreshToken, refreshTokenHash, expiresAt } = await generateTokenPair(
+      user.id,
+      user.username,
+      user.email
+    );
+
+    // Store refresh token in database
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: refreshTokenHash,
+        expiresAt,
+      },
+    });
+
+    // Set refresh token as HTTP-only cookie
+    setRefreshTokenCookie(reply, refreshToken);
+
+    // Return access token
+    return reply.send({
+      token: accessToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+      },
+      message: "Password set successfully.",
+    });
+  } catch (error: any) {
+    req.log?.error("Error setting password:", error);
+    return reply.code(500).send({
+      error: "Failed to set password.",
+      message: error?.message || "Unknown error",
+    });
+  }
 }

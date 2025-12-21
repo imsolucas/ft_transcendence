@@ -112,6 +112,18 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
             }
           }
         },
+        202: {
+          description: "Password required for OAuth user",
+          type: "object",
+          properties: {
+            passwordRequired: { type: "boolean" },
+            userId: { type: "integer" },
+            username: { type: "string" },
+            email: { type: "string" },
+            avatar: { type: "string" },
+            message: { type: "string" }
+          }
+        },
         400: {
           description: "Invalid Google token.",
           type: "object",
@@ -211,4 +223,48 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.logout);
+
+  // POST /auth/set-password
+  app.post("/auth/set-password", {
+    schema: {
+      summary: "Set password for OAuth users",
+      description: "Sets a password for users who signed up via OAuth. Required before accessing the application.",
+      body: {
+        type: "object",
+        required: ["userId", "password"],
+        properties: {
+          userId: { type: "integer", description: "User ID from OAuth response" },
+          password: { type: "string", format: "password", description: "Password to set (minimum 6 characters)" }
+        }
+      },
+      response: {
+        200: {
+          description: "Password set successfully",
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            user: { $ref: "UserProfile#" },
+            message: { type: "string" }
+          }
+        },
+        400: {
+          description: "Invalid input or password already set",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        404: {
+          description: "User not found",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          $ref: "InternalServerError#"
+        }
+      }
+    }
+  }, controllers.setPassword);
 }

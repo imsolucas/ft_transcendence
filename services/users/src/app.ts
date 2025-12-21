@@ -220,6 +220,12 @@ export async function buildApp(): Promise<FastifyInstance> {
             type: "http",
             scheme: "bearer",
             bearerFormat: "JWT"
+          },
+          apiKeyAuth: {
+            type: "apiKey",
+            in: "header",
+            name: "X-API-Key",
+            description: "API key for public API access. Obtain an API key from /user/api-keys endpoint."
           }
         }
       }

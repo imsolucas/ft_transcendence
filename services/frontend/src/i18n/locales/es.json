@@ -8,7 +8,13 @@
     "gameHistory": "Historial de Juegos",
     "logout": "Cerrar Sesión",
     "loginSignup": "Iniciar Sesión / Registrarse",
-    "toggleNavbar": "Alternar Barra de Navegación (Pantalla Completa)"
+    "toggleNavbar": "Alternar Barra de Navegación (Pantalla Completa)",
+    "settings": "Configuración",
+    "history": "Historial",
+    "showNavbar": "Mostrar barra de navegación",
+    "hideNavbar": "Ocultar barra de navegación",
+    "toggleNavbarAlt": "Alternar barra de navegación",
+    "user": "Usuario"
   },
   "landing": {
     "title": "Super Pong",
@@ -37,12 +43,39 @@
     "sending": "ENVIANDO...",
     "accept": "Aceptar",
     "reject": "Rechazar",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "searchPlayers": "Buscar Jugadores",
+    "actions": "Acciones",
+    "helpTitle": "Ayuda del Lobby",
+    "helpText": "¡Bienvenido al lobby! Aquí puedes:",
+    "helpItem1": "Iniciar un juego local",
+    "helpItem2": "Unirse a juegos multijugador",
+    "helpItem3": "Ver tus estadísticas",
+    "helpItem4": "Buscar jugadores",
+    "helpItem5": "Chatear con otros",
+    "infoTitle": "Información del Lobby",
+    "infoText": "Estás en el lobby principal.",
+    "infoActivePlayers": "Jugadores activos en línea:",
+    "infoTip": "Consejo: ¡Usa la búsqueda rápida para encontrar otros jugadores!",
+    "quickActions": "Acciones Rápidas",
+    "lobbyChat": "Chat del Lobby",
+    "opponent": "OPONENTE",
+    "you": "TÚ",
+    "searching": "Buscando...",
+    "player": "Jugador",
+    "opponentAvatar": "Avatar del Oponente",
+    "yourAvatar": "Tu Avatar",
+    "winRate": "TASA DE VICTORIAS"
   },
   "profile": {
     "profileSettings": "Configuración del Perfil",
+    "settings": "Configuración",
+    "settingsShort": "Conf",
     "friends": "Amigos",
+    "friendsShort": "Ami",
     "matchHistory": "Historial de Partidas",
+    "history": "Historial",
+    "historyShort": "His",
     "recentMatches": "Partidas Recientes",
     "friendsList": "Lista de Amigos",
     "username": "Nombre de Usuario",
@@ -68,7 +101,16 @@
     "profileUpdated": "¡Perfil actualizado exitosamente!",
     "updateFailed": "Error al actualizar el perfil. Por favor intente nuevamente.",
     "twoFAEnabled": "2FA Ha Sido Habilitado",
-    "setup2FA": "Configurar 2FA"
+    "setup2FA": "Configurar 2FA",
+    "language": "Idioma",
+    "noFriends": "Aún no tienes amigos",
+    "noMatchHistory": "Aún no hay historial de partidas",
+    "win": "VICTORIA",
+    "loss": "DERROTA",
+    "online": "En Línea",
+    "offline": "Desconectado",
+    "userNotFound": "Usuario no encontrado",
+    "noChanges": "No hay cambios para guardar"
   },
   "twoFA": {
     "setupTitle": "CONFIGURAR AUTENTICACIÓN DE DOS FACTORES",
@@ -85,6 +127,14 @@
   "auth": {
     "login": "INICIAR SESIÓN",
     "register": "REGISTRARSE",
+    "username": "NOMBRE DE USUARIO",
+    "password": "CONTRASEÑA",
+    "email": "CORREO ELECTRÓNICO",
+    "forgotPassword": "¿OLVIDASTE TU CONTRASEÑA?",
+    "newPlayer": "► ¿NUEVO JUGADOR?",
+    "returningPlayer": "► ¿JUGADOR REGISTRADO?",
+    "or": "O",
+    "initializingGame": "INICIALIZANDO JUEGO...",
     "loggingIn": "Iniciando sesión...",
     "registering": "Registrando...",
     "fillAllFields": "Por favor complete todos los campos",
@@ -99,11 +149,33 @@
     "enter2FACode": "INGRESAR CÓDIGO 2FA",
     "verifying2FA": "VERIFICANDO...",
     "invalid2FACode": "Código 2FA inválido",
-    "verify": "VERIFICAR"
+    "verify": "VERIFICAR",
+    "passwordRequired": "Contraseña Requerida",
+    "passwordRequiredMessage": "Por favor establezca una contraseña para proteger su cuenta y continuar.",
+    "setPassword": "Establecer Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+    "passwordSetSuccess": "¡Contraseña establecida exitosamente!",
+    "enterPassword": "Ingrese su contraseña",
+    "confirmPasswordPlaceholder": "Confirme su contraseña"
   },
   "friends": {
+    "title": "AMIGOS",
+    "subtitle": "Administra tus amigos y solicitudes de amistad",
+    "myFriends": "Mis Amigos",
+    "findPlayers": "Buscar Jugadores",
+    "searchByUsername": "Buscar por nombre de usuario...",
+    "noFriendsYet": "Aún no tienes amigos. ¡Agrega algunos amigos para comenzar!",
+    "failedToLoad": "Error al cargar amigos",
+    "view": "Ver",
+    "remove": "Eliminar",
+    "confirmRemove": "¿Estás seguro de que quieres eliminar a este amigo?",
+    "requestCancelled": "Solicitud de amistad cancelada",
+    "failedToCancel": "Error al cancelar solicitud de amistad",
     "sendRequest": "Enviar Solicitud de Amistad",
     "requestSent": "¡Solicitud de amistad enviada a {{username}}!",
+    "requestSentSimple": "Solicitud enviada",
     "requestAccepted": "¡Solicitud de amistad aceptada!",
     "requestRejected": "Solicitud de amistad rechazada",
     "failedToSend": "Error al enviar solicitud de amistad",
@@ -111,7 +183,9 @@
     "failedToReject": "Error al rechazar solicitud",
     "online": "En Línea",
     "offline": "Desconectado",
-    "inGame": "En Juego"
+    "inGame": "En Juego",
+    "friendRemoved": "Amigo eliminado",
+    "friendRemovedError": "Error al eliminar amigo"
   },
   "common": {
     "save": "Guardar",
@@ -121,7 +195,36 @@
     "close": "Cerrar",
     "loading": "Cargando...",
     "error": "Error",
-    "success": "Éxito"
+    "success": "Éxito",
+    "search": "Buscar",
+    "help": "Ayuda",
+    "info": "Información",
+    "saving": "Guardando...",
+    "noUsersFound": "No se encontraron usuarios",
+    "searchFailed": "Búsqueda fallida",
+    "messageSent": "¡Mensaje enviado!",
+    "pleaseEnterUsername": "Por favor ingrese un nombre de usuario",
+    "back": "← Atrás"
+  },
+  "chat": {
+    "noMessages": "Aún no hay mensajes. ¡Inicia la conversación!",
+    "typeMessage": "Escribe un mensaje...",
+    "send": "Enviar"
+  },
+  "user": {
+    "profile": "Perfil de Usuario",
+    "status": {
+      "online": "En Línea",
+      "offline": "Desconectado",
+      "inGame": "En Juego"
+    },
+    "email": "Correo Electrónico:",
+    "twoFA": {
+      "label": "2FA:",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado"
+    },
+    "viewFullProfile": "Ver Perfil Completo"
   },
   "gameConfig": {
     "title": "Configuración del Juego",

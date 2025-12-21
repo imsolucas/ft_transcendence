@@ -1,6 +1,7 @@
 import { updateNavbar } from '../components/layout/Navbar';
 import { navigate } from '../router';
 import { setAccessToken } from '../utils/tokenManager';
+import { t } from '../i18n';
 
 type CredentialResponse = google.accounts.id.CredentialResponse;
 
@@ -98,7 +99,7 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     // Send the Google credential to backend for verification
     const response = await fetch(`${API_URL}/auth/google`, {
       method: 'POST',
-      credentials: 'include', // Include cookies - critical for refresh token!
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -119,11 +120,16 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
       return false;
     }
 
-    if (data.token && data.user) {
-      // Store access token in memory (not localStorage)
-      setAccessToken(data.token);
-      // User data is fetched from API when needed, not stored in localStorage
+    // Check if password is required (OAuth user without password)
+    if (response.status === 202 && data.passwordRequired) {
+      // Show password setup modal
+      showPasswordSetupModal(data);
+      return false; // Don't navigate yet, wait for password to be set
+    }
 
+    if (data.token && data.user) {
+      // Store access token in localStorage (persists across page reloads)
+      setAccessToken(data.token);
       return true;
     } else {
       console.error('Invalid response from backend:', data);
@@ -175,4 +181,188 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
       }
     }, 300);
   }, 3000);
+}
+
+// Show password setup modal for OAuth users
+function showPasswordSetupModal(data: { userId: number; username: string; email: string; avatar: string; message: string }): void {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm';
+  modal.setAttribute('x-data', '{ open: true }');
+  modal.setAttribute('x-show', 'open');
+  modal.setAttribute('x-transition', '');
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'absolute inset-0 bg-black/50';
+  backdrop.setAttribute('@click', 'open = false');
+  backdrop.addEventListener('click', () => {
+    if (window.Alpine && modal.__x) {
+      modal.__x.$data.open = false;
+      setTimeout(() => modal.remove(), 200);
+    } else {
+      modal.remove();
+    }
+  });
+  modal.appendChild(backdrop);
+
+  const container = document.createElement('div');
+  container.className = 'relative max-w-md w-full mx-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700';
+  container.setAttribute('@click.stop', '');
+
+  const header = document.createElement('div');
+  header.className = 'flex items-center justify-between p-6 border-b border-gray-700';
+  
+  const title = document.createElement('h2');
+  title.className = 'text-xl font-semibold text-white';
+  title.textContent = String(t('auth.passwordRequired') || 'Password Required');
+  header.appendChild(title);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '&times;';
+  closeBtn.className = 'text-gray-400 hover:text-white text-3xl leading-none transition-colors';
+  closeBtn.setAttribute('@click', 'open = false');
+  closeBtn.addEventListener('click', () => {
+    if (window.Alpine && modal.__x) {
+      modal.__x.$data.open = false;
+      setTimeout(() => modal.remove(), 200);
+    } else {
+      modal.remove();
+    }
+  });
+  header.appendChild(closeBtn);
+  container.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = 'p-6 space-y-4';
+
+  const message = document.createElement('p');
+  message.className = 'text-gray-300';
+  message.textContent = String(t('auth.passwordRequiredMessage') || 'Please set a password to secure your account and continue.');
+  body.appendChild(message);
+
+  const form = document.createElement('form');
+  form.className = 'space-y-4';
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await handleSetPassword(data.userId, passwordInput.value, modal);
+  });
+
+  const passwordLabel = document.createElement('label');
+  passwordLabel.className = 'block text-sm font-medium text-gray-300 mb-2';
+  passwordLabel.textContent = String(t('auth.setPassword') || 'Password (minimum 6 characters)');
+  form.appendChild(passwordLabel);
+
+  const passwordInput = document.createElement('input');
+  passwordInput.type = 'password';
+  passwordInput.required = true;
+  passwordInput.minLength = 6;
+  passwordInput.className = 'w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+  passwordInput.placeholder = String(t('auth.enterPassword') || 'Enter your password');
+  form.appendChild(passwordInput);
+
+  const confirmLabel = document.createElement('label');
+  confirmLabel.className = 'block text-sm font-medium text-gray-300 mb-2';
+  confirmLabel.textContent = String(t('auth.confirmPassword') || 'Confirm Password');
+  form.appendChild(confirmLabel);
+
+  const confirmInput = document.createElement('input');
+  confirmInput.type = 'password';
+  confirmInput.required = true;
+  confirmInput.minLength = 6;
+  confirmInput.className = 'w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+  confirmInput.placeholder = String(t('auth.confirmPasswordPlaceholder') || 'Confirm your password');
+  form.appendChild(confirmInput);
+
+  const errorMsg = document.createElement('div');
+  errorMsg.className = 'hidden text-red-400 text-sm';
+  form.appendChild(errorMsg);
+
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'submit';
+  submitBtn.className = 'w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors';
+  submitBtn.textContent = String(t('auth.setPassword') || 'Set Password');
+  form.appendChild(submitBtn);
+
+  body.appendChild(form);
+  container.appendChild(body);
+  modal.appendChild(container);
+  document.body.appendChild(modal);
+
+  // Validate password match
+  confirmInput.addEventListener('input', () => {
+    if (passwordInput.value !== confirmInput.value) {
+      errorMsg.textContent = String(t('auth.passwordMismatch') || 'Passwords do not match');
+      errorMsg.classList.remove('hidden');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      errorMsg.classList.add('hidden');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  });
+
+  passwordInput.addEventListener('input', () => {
+    if (passwordInput.value.length < 6) {
+      errorMsg.textContent = String(t('auth.passwordMinLength') || 'Password must be at least 6 characters');
+      errorMsg.classList.remove('hidden');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else if (passwordInput.value !== confirmInput.value && confirmInput.value.length > 0) {
+      errorMsg.textContent = String(t('auth.passwordMismatch') || 'Passwords do not match');
+      errorMsg.classList.remove('hidden');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else if (passwordInput.value === confirmInput.value && confirmInput.value.length >= 6) {
+      errorMsg.classList.add('hidden');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  });
+}
+
+// Handle setting password for OAuth users
+async function handleSetPassword(userId: number, password: string, modal: HTMLElement): Promise<void> {
+  try {
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
+    
+    const response = await fetch(`${API_URL}/auth/set-password`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showNotification(data.error || 'Failed to set password', 'error');
+      return;
+    }
+
+    if (data.token && data.user) {
+      // Store access token
+      setAccessToken(data.token);
+      
+      // Close modal
+      if (window.Alpine && modal.__x) {
+        modal.__x.$data.open = false;
+        setTimeout(() => modal.remove(), 200);
+      } else {
+        modal.remove();
+      }
+
+      // Show success and navigate
+      showNotification(String(t('auth.passwordSetSuccess') || 'Password set successfully!'), 'success');
+      updateNavbar();
+      
+      setTimeout(() => {
+        navigate('lobby');
+      }, 1500);
+    }
+  } catch (error) {
+    console.error('Error setting password:', error);
+    showNotification('Network error. Please try again.', 'error');
+  }
 }

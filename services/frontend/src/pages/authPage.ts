@@ -38,7 +38,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      credentials: 'include', // Include cookies - critical for refresh token!
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -60,7 +60,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
       const errorData = await response.json().catch(() => ({ error: response.statusText }));
       return {
         success: false,
-        message: errorData.error || 'Invalid username or password',
+        message: errorData.error || String(t('auth.invalidCredentials') || 'Invalid username or password'),
       };
     }
 
@@ -68,7 +68,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
 
     return {
       success: true,
-      message: 'Login successful',
+      message: String(t('auth.loginSuccessful') || 'Login successful'),
       token: data.token,
       user: {
         id: data.user.id,
@@ -81,7 +81,7 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
     console.error('Login API error:', error);
     return {
       success: false,
-      message: 'Network error. Please try again.',
+      message: String(t('auth.networkError') || 'Network error. Please try again.'),
     };
   }
 }
@@ -100,20 +100,20 @@ async function apiRegister(name: string, email: string, password: string): Promi
       const errorData = await response.json().catch(() => ({ error: response.statusText }));
       return {
         success: false,
-        message: errorData.error || 'Registration failed',
+        message: errorData.error || String(t('auth.registrationFailed') || 'Registration failed'),
       };
     }
 
     // Signup returns 201, user needs to login to get token
     return {
       success: true,
-      message: 'Registration successful! Please login with your credentials.',
+      message: String(t('auth.registrationSuccessful') || 'Registration successful! Please login with your credentials.'),
     };
   } catch (error) {
     console.error('Registration API error:', error);
     return {
       success: false,
-      message: 'Network error. Please try again.',
+      message: String(t('auth.networkError') || 'Network error. Please try again.'),
     };
   }
 }
@@ -186,27 +186,27 @@ export function AuthPage(): HTMLElement {
             </div>
           </div>
 
-          <p class="text-xl text-cyan-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(0,255,255,0.5)] animate-pulse">INITIALIZING GAME...</p>
+          <p class="text-xl text-cyan-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(0,255,255,0.5)] animate-pulse">${String(t('auth.initializingGame') || 'INITIALIZING GAME...')}</p>
         </div>
       </div>
 
       <!-- Login Form -->
       <div class="form-box login absolute right-0 w-1/2 h-full bg-gradient-to-br from-gray-800/90 to-purple-900/90 backdrop-blur-md flex items-center text-white text-center p-10 z-10 transition-all duration-[600ms] ease-in-out delay-[1200ms] border-l border-pink-400/20">
         <form class="w-full" id="login-form">
-          <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">LOGIN</h1>
+          <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">${String(t('auth.login') || 'LOGIN')}</h1>
 
           <div class="input-box relative my-8">
-            <input type="text" placeholder="USERNAME" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm" />
+            <input type="text" placeholder="${String(t('auth.username') || 'USERNAME')}" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-cyan-400"></i>
           </div>
 
           <div class="input-box relative my-8">
-            <input type="password" placeholder="PASSWORD" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm" />
+            <input type="password" placeholder="${String(t('auth.password') || 'PASSWORD')}" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-cyan-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-cyan-400"></i>
           </div>
 
           <div class="forgot-link -mt-4 mb-6">
-            <a href="#" class="text-sm text-pink-300 hover:text-pink-400 hover:drop-shadow-[0_0_5px_rgba(255,20,147,0.8)] transition-all font-poppins">FORGOT PASSWORD?</a>
+            <a href="#" class="text-sm text-pink-300 hover:text-pink-400 hover:drop-shadow-[0_0_5px_rgba(255,20,147,0.8)] transition-all font-poppins">${String(t('auth.forgotPassword') || 'FORGOT PASSWORD?')}</a>
           </div>
 
           <!-- Error message display -->
@@ -215,12 +215,12 @@ export function AuthPage(): HTMLElement {
           </div>
 
           <button type="submit" class="btn login-submit-btn w-full h-12 rounded-lg border-2 border-cyan-400 cursor-pointer text-base text-white font-bold hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.5)] transition-all font-poppins bg-gradient-to-r from-cyan-500/20 to-pink-500/20 backdrop-blur-sm uppercase tracking-wider">
-            ► LOGIN
+            ► ${String(t('auth.login') || 'LOGIN')}
           </button>
 
           <div class="retro-divider my-6 flex items-center">
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-pink-400/50 to-transparent"></div>
-            <span class="px-4 text-xs text-pink-300 uppercase tracking-widest">OR</span>
+            <span class="px-4 text-xs text-pink-300 uppercase tracking-widest">${String(t('auth.or') || 'OR')}</span>
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-pink-400/50 to-transparent"></div>
           </div>
 
@@ -233,20 +233,20 @@ export function AuthPage(): HTMLElement {
       <!-- Registration Form -->
       <div class="form-box register absolute right-0 w-1/2 h-full bg-gradient-to-br from-gray-800/90 to-purple-900/90 backdrop-blur-md flex items-center text-white text-center p-10 z-10 transition-all duration-[600ms] ease-in-out delay-[1200ms] invisible border-l border-pink-400/20">
         <form class="w-full" id="register-form">
-          <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_0_10px_rgba(255,20,147,0.5)]">REGISTER</h1>
+          <h1 class="text-4xl -mt-2 mb-6 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400 drop-shadow-[0_0_10px_rgba(255,20,147,0.5)]">${String(t('auth.register') || 'REGISTER')}</h1>
 
           <div class="input-box relative my-6">
-            <input type="text" placeholder="USERNAME" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
+            <input type="text" placeholder="${String(t('auth.username') || 'USERNAME')}" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
           </div>
 
           <div class="input-box relative my-6">
-            <input type="email" placeholder="EMAIL" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
+            <input type="email" placeholder="${String(t('auth.email') || 'EMAIL')}" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-envelope absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
           </div>
 
           <div class="input-box relative my-6">
-            <input type="password" placeholder="PASSWORD" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
+            <input type="password" placeholder="${String(t('auth.password') || 'PASSWORD')}" required class="w-full py-3 px-5 pr-12 bg-gray-900/50 border-2 border-pink-400/30 rounded-lg outline-none text-base text-white font-medium placeholder-gray-400 focus:border-pink-400 focus:shadow-[0_0_15px_rgba(255,20,147,0.3)] transition-all backdrop-blur-sm" />
             <i class="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-pink-400"></i>
           </div>
 
@@ -256,12 +256,12 @@ export function AuthPage(): HTMLElement {
           </div>
 
           <button type="submit" class="btn register-submit-btn w-full h-12 rounded-lg border-2 border-pink-400 cursor-pointer text-base text-white font-bold hover:bg-pink-400/20 hover:shadow-[0_0_20px_rgba(255,20,147,0.5)] transition-all font-poppins bg-gradient-to-r from-pink-500/20 to-cyan-500/20 backdrop-blur-sm uppercase tracking-wider">
-            ► REGISTER
+            ► ${String(t('auth.register') || 'REGISTER')}
           </button>
 
           <div class="retro-divider my-6 flex items-center">
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
-            <span class="px-4 text-xs text-cyan-300 uppercase tracking-widest">OR</span>
+            <span class="px-4 text-xs text-cyan-300 uppercase tracking-widest">${String(t('auth.or') || 'OR')}</span>
             <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
           </div>
 
@@ -282,9 +282,9 @@ export function AuthPage(): HTMLElement {
           <h1 class="text-5xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-400 drop-shadow-[0_0_20px_rgba(0,255,255,0.8)] mb-2 animate-pulse">SUPER</h1>
           <h1 class="text-5xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-white to-cyan-400 drop-shadow-[0_0_20px_rgba(255,20,147,0.8)] animate-pulse animation-delay-300">PONG</h1>
         </div>
-        <p class="text-base mb-8 text-cyan-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">► NEW PLAYER?</p>
+        <p class="text-base mb-8 text-cyan-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">${String(t('auth.newPlayer') || '► NEW PLAYER?')}</p>
         <button class="btn register-btn w-48 h-12 bg-transparent border-2 border-cyan-400 rounded-lg cursor-pointer text-base text-white font-bold shadow-[0_0_20px_rgba(0,255,255,0.3)] hover:bg-cyan-400/20 hover:shadow-[0_0_30px_rgba(0,255,255,0.6)] transition-all font-poppins uppercase tracking-wider">
-          ► REGISTER
+          ► ${String(t('auth.register') || 'REGISTER')}
         </button>
       </div>
 
@@ -293,9 +293,9 @@ export function AuthPage(): HTMLElement {
           <h1 class="text-5xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-white to-cyan-400 drop-shadow-[0_0_20px_rgba(255,20,147,0.8)] mb-2 animate-pulse">SUPER</h1>
           <h1 class="text-5xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-400 drop-shadow-[0_0_20px_rgba(0,255,255,0.8)] animate-pulse animation-delay-300">PONG</h1>
         </div>
-        <p class="text-base mb-8 text-pink-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(255,20,147,0.5)]">► RETURNING PLAYER?</p>
+        <p class="text-base mb-8 text-pink-200 font-poppins uppercase tracking-wider drop-shadow-[0_0_10px_rgba(255,20,147,0.5)]">${String(t('auth.returningPlayer') || '► RETURNING PLAYER?')}</p>
         <button class="btn login-btn w-48 h-12 bg-transparent border-2 border-pink-400 rounded-lg cursor-pointer text-base text-white font-bold shadow-[0_0_20px_rgba(255,20,147,0.3)] hover:bg-pink-400/20 hover:shadow-[0_0_30px_rgba(255,20,147,0.6)] transition-all font-poppins uppercase tracking-wider">
-          ► LOGIN
+          ► ${String(t('auth.login') || 'LOGIN')}
         </button>
       </div>
     </div>
@@ -827,10 +827,9 @@ function show2FAModal(container: HTMLElement, userId: number): void {
     try {
       const result = await verify2FACode(userId, code);
 
-      // Store access token in memory (not localStorage)
+      // Store access token in localStorage (persists across page reloads)
       if (result.token && result.user) {
         setAccessToken(result.token);
-        // User data is fetched from API when needed, not stored in localStorage
       }
 
       showNotification(String(t('auth.loginSuccessful') || 'Login successful!'), 'success');
@@ -860,7 +859,7 @@ function show2FAModal(container: HTMLElement, userId: number): void {
     }
     const loginBtn = container.querySelector('.login-submit-btn') as HTMLButtonElement;
     if (loginBtn) {
-      loginBtn.textContent = '► LOGIN';
+      loginBtn.textContent = `► ${String(t('auth.login') || 'LOGIN')}`;
       loginBtn.disabled = false;
     }
   };
@@ -889,13 +888,13 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
   hideError(container, 'login');
 
   if (!name || !password) {
-    showError(container, 'login', 'Please fill in all fields');
+    showError(container, 'login', String(t('auth.fillAllFields') || 'Please fill in all fields'));
     return;
   }
 
   // Show loading state
   const originalText = loginBtn.textContent;
-  loginBtn.textContent = 'LOGGING IN...';
+  loginBtn.textContent = String(t('auth.loggingIn') || 'LOGGING IN...');
   loginBtn.disabled = true;
 
   try {
@@ -910,20 +909,19 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     }
 
     if (response.success) {
-      // Store access token in memory (not localStorage)
+      // Store access token in localStorage (persists across page reloads)
       if (response.token && response.user) {
         setAccessToken(response.token);
-        // User data is fetched from API when needed, not stored in localStorage
       }
 
-      showNotification('Login successful!', 'success');
+      showNotification(String(t('auth.loginSuccessful') || 'Login successful!'), 'success');
       updateNavbar();
       handleSuccessfulAuth(container);
     } else {
       // Reset button state immediately on error
       loginBtn.textContent = originalText;
       loginBtn.disabled = false;
-      showError(container, 'login', response.message || 'Invalid username or password');
+      showError(container, 'login', response.message || String(t('auth.invalidCredentials') || 'Invalid username or password'));
       return;
     }
   } catch (error) {
@@ -931,7 +929,7 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     // Reset button state immediately on error
     loginBtn.textContent = originalText;
     loginBtn.disabled = false;
-    showError(container, 'login', 'Network error. Please try again.');
+    showError(container, 'login', String(t('auth.networkError') || 'Network error. Please try again.'));
     return;
   }
 
@@ -955,32 +953,32 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
   hideError(container, 'register');
 
   if (!name || !email || !password) {
-    showError(container, 'register', 'Please fill in all fields');
+    showError(container, 'register', String(t('auth.fillAllFields') || 'Please fill in all fields'));
     return;
   }
 
   // Basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    showError(container, 'register', 'Please enter a valid email address');
+    showError(container, 'register', String(t('auth.invalidEmail') || 'Please enter a valid email address'));
     return;
   }
 
   if (password.length < 6) {
-    showError(container, 'register', 'Password must be at least 6 characters long');
+    showError(container, 'register', String(t('auth.passwordTooShort') || 'Password must be at least 6 characters long'));
     return;
   }
 
   // Show loading state
   const originalText = registerBtn.textContent;
-  registerBtn.textContent = 'REGISTERING...';
+  registerBtn.textContent = String(t('auth.registering') || 'REGISTERING...');
   registerBtn.disabled = true;
 
   try {
     const response = await apiRegister(name, email, password);
 
     if (response.success) {
-      showNotification('Registration successful! Please login with your credentials.', 'success');
+      showNotification(String(t('auth.registrationSuccessful') || 'Registration successful! Please login with your credentials.'), 'success');
 
       // Clear form and switch to login
       usernameInput.value = '';
@@ -996,7 +994,7 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
       // Reset button state immediately on error
       registerBtn.textContent = originalText;
       registerBtn.disabled = false;
-      showError(container, 'register', response.message || 'Registration failed');
+      showError(container, 'register', response.message || String(t('auth.registrationFailed') || 'Registration failed'));
       return;
     }
   } catch (error) {
@@ -1004,7 +1002,7 @@ async function handleRegisterSubmit(container: HTMLElement): Promise<void> {
     // Reset button state immediately on error
     registerBtn.textContent = originalText;
     registerBtn.disabled = false;
-    showError(container, 'register', 'Network error. Please try again.');
+    showError(container, 'register', String(t('auth.networkError') || 'Network error. Please try again.'));
     return;
   }
 

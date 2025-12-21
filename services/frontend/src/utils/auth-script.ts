@@ -147,10 +147,9 @@ async function handleLogin(): Promise<void> {
     const response = await apiLogin({ name, password });
 
     if (response.success) {
-      // Store auth token (using new token manager)
+      // Store auth token in localStorage (persists across page reloads)
       if (response.token && response.user) {
         setAccessToken(response.token);
-        // User data is fetched from API when needed, not stored in localStorage
       }
 
       showNotification('Login successful!', 'success');
@@ -252,7 +251,7 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      credentials: 'include', // Include cookies - critical for refresh token!
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -393,7 +392,6 @@ export function getAuthToken(): string | null {
 
 export async function getCurrentUser(): Promise<UserData | null> {
 	try {
-	  // Always fetch from backend - no localStorage caching
 	  const token = getAuthToken();
 	  if (!token) {
 		return null;
@@ -401,7 +399,6 @@ export async function getCurrentUser(): Promise<UserData | null> {
 
 	  const response = await fetch(`${API_BASE_URL}/user/profile`, {
 		method: 'GET',
-		credentials: 'include', // Include cookies for consistency
 		headers: {
 		  'Authorization': `Bearer ${token}`,
 		  'Content-Type': 'application/json',
@@ -417,7 +414,6 @@ export async function getCurrentUser(): Promise<UserData | null> {
 		  picture: userData.avatar,
 		  avatar: userData.avatar, // Store both for compatibility
 		};
-		// No longer storing in localStorage
 		return user;
 	  }
 
@@ -445,16 +441,15 @@ import { setUserStatus } from './api';
 export async function logout(): Promise<void> {
   try {
     // Call backend logout endpoint to invalidate tokens
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
     const token = getAccessToken();
     
     await fetch(`${API_URL}/auth/logout`, {
       method: 'POST',
-      credentials: 'include', // Include cookies (refresh token)
+      credentials: 'include', // Include cookies for refresh token cleanup
       headers: {
         ...(token && { 'Authorization': `Bearer ${token}` }),
       },
-      // No Content-Type header and no body - logout doesn't need a body
     }).catch(() => {
       // Ignore errors - continue with local cleanup
     });

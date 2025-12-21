@@ -5,17 +5,48 @@ import { checkAuthGuard } from './authGuard';
 const state: NavigationState = {
   currentScreen: null,
   activeTab: undefined,
+  queryParams: undefined,
 };
 
-export function navigate(screen: Screen, tab?: string): void {
-  state.activeTab = tab;
-  const path = screen === "landing" ? "/" : `/${screen}`;
+export function navigate(screen: Screen, queryString?: string): void {
+  // Parse query string if provided (format: "key=value" or "key1=value1&key2=value2")
+  if (queryString) {
+    const params: Record<string, string> = {};
+    queryString.split('&').forEach(param => {
+      const [key, value] = param.split('=');
+      if (key && value) {
+        params[decodeURIComponent(key)] = decodeURIComponent(value);
+      }
+    });
+    state.queryParams = params;
+  } else {
+    state.queryParams = undefined;
+  }
 
-  if (window.location.pathname !== path) {
-    history.pushState({ screen }, "", path);
+  const path = screen === "landing" ? "/" : `/${screen}`;
+  const fullPath = queryString ? `${path}?${queryString}` : path;
+
+  if (window.location.pathname + window.location.search !== fullPath) {
+    history.pushState({ screen }, "", fullPath);
   }
 
   renderPage(screen);
+}
+
+export function getQueryParams(): Record<string, string> | undefined {
+  // Parse query params from URL if state doesn't have them
+  if (!state.queryParams) {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.toString()) {
+      const params: Record<string, string> = {};
+      searchParams.forEach((value, key) => {
+        params[key] = value;
+      });
+      return params;
+    }
+    return undefined;
+  }
+  return state.queryParams;
 }
 
 export function getActiveTab(): string | undefined {
@@ -63,6 +94,12 @@ export function renderPage(screen: Screen): void {
       container.innerHTML = "";
       const element = page.render();
       container.appendChild(element);
+      
+      // Initialize Alpine.js on newly added elements with directives
+      if (window.Alpine && window.Alpine.initTree) {
+        window.Alpine.initTree(element);
+      }
+      
       state.currentScreen = screen;
     } catch (error) {
       console.error(`Error rendering ${screen}:`, error);
@@ -90,6 +127,18 @@ function cleanupCurrentPage(): void {
 function handleLocationChange(): void {
   const path = window.location.pathname;
   const pathScreen = path.substring(1) || "landing";
+
+  // Parse query params from URL
+  const searchParams = new URLSearchParams(window.location.search);
+  if (searchParams.toString()) {
+    const params: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+    state.queryParams = params;
+  } else {
+    state.queryParams = undefined;
+  }
 
   // Validate the path is a valid screen
   const validScreens = Object.keys(pageRegistry);
