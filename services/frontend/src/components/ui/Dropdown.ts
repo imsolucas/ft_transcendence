@@ -27,15 +27,15 @@ export function Dropdown({
   container.className = `relative inline-block ${className}`;
   
   // Add Alpine.js directive for reactive state (framework usage)
-  container.setAttribute('x-data', '{ open: false }');
+  container.setAttribute('x-data', "{ open: false }");
   
   // Trigger button
   const triggerBtn = document.createElement('button');
   triggerBtn.className = 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-white transition-colors';
   
   // Add Alpine.js click handler (framework usage)
-  triggerBtn.setAttribute('@click', 'open = !open');
-  triggerBtn.setAttribute('@click.stop', '');
+  // Use @click.stop to prevent event bubbling
+  triggerBtn.setAttribute('@click.stop', 'open = !open');
   
   // Arrow icon - rotate if opening upward
   const arrowIcon = direction === 'up' 
@@ -58,8 +58,10 @@ export function Dropdown({
     : `${align === 'left' ? 'left-0' : 'right-0'} top-full mt-2`;
   
   // Add Alpine.js directives for show/hide and outside click (framework usage)
+  // x-show will handle visibility based on 'open' state (initially false)
   menu.className = `absolute ${positionClass} w-56 rounded-lg bg-gray-800 border border-gray-700 shadow-xl z-50`;
   menu.setAttribute('x-show', 'open');
+  menu.setAttribute('x-cloak', ''); // Hide until Alpine.js initializes
   menu.setAttribute('x-transition:enter', 'transition ease-out duration-100');
   menu.setAttribute('x-transition:enter-start', 'opacity-0 scale-95');
   menu.setAttribute('x-transition:enter-end', 'opacity-100 scale-100');

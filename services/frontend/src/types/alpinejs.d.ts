@@ -6,6 +6,7 @@ declare module 'alpinejs' {
     data(name: string, callback: () => any): void;
     store(name: string, value: any): void;
     version: string;
+    initTree?(el: Element): void; // Firefox compatibility: manually initialize Alpine tree
   }
 
   const Alpine: Alpine;

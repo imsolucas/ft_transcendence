@@ -2,6 +2,8 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { PrismaClient, FriendshipStatus } from "@prisma/client";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
+import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { validateProfileUpdate } from "../utils/validation.ts";
 
 const prisma = new PrismaClient();
@@ -343,46 +345,187 @@ export async function removeFriend(req: FastifyRequest, reply: FastifyReply) {
 
 // Search users by username
 export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
-  const userId = req.user?.id;
-  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
-
-  const { q } = req.query as { q?: string };
-  if (!q || q.trim().length < 2) {
-    return reply.code(400).send({ error: "Search query must be at least 2 characters." });
-  }
-
   try {
+    // Verify authentication
+    const userId = req.user?.id;
+    if (!userId) {
+      req.log?.warn('Search users: Unauthorized - no user ID in request');
+      return reply.code(401).send({ error: "Unauthorized" });
+    }
+
+    // Validate query parameter
+    const { q } = req.query as { q?: string };
+    if (!q || typeof q !== 'string') {
+      return reply.code(400).send({ error: "Search query parameter 'q' is required." });
+    }
+
     const searchQuery = q.trim();
-    // SQLite doesn't support mode: "insensitive" in Prisma
-    // Use raw query or fetch all and filter, but better: use Prisma's case-insensitive filter
-    // For SQLite, we'll fetch and filter client-side for case-insensitive search
+    if (searchQuery.length < 2) {
+      return reply.code(400).send({ error: "Search query must be at least 2 characters." });
+    }
+
+    // Verify Prisma client is available
+    if (!prisma) {
+      req.log?.error('Search users: Prisma client not initialized');
+      return reply.code(500).send({ error: "Database connection error." });
+    }
+
+    // Fetch all users (excluding current user) - SQLite compatibility
+    // SQLite doesn't support case-insensitive search natively in Prisma
+    // We fetch all and filter client-side for case-insensitive matching
     const allUsers = await prisma.user.findMany({
-    where: {
-      id: {
-        not: userId // Exclude the current user from search results
-      }
-    },
-    select: {
-      id: true,
-      username: true,
-      avatar: true,
-      status: true
+      where: {
+        id: {
+          not: userId // Exclude the current user from search results
+        }
+      },
+      select: {
+        id: true,
+        username: true,
+        avatar: true,
+        status: true
       }
     });
 
     // Case-insensitive search filter
     const searchLower = searchQuery.toLowerCase();
     const filteredUsers = allUsers
-      .filter(user => user.username.toLowerCase().includes(searchLower))
+      .filter(user => user.username && user.username.toLowerCase().includes(searchLower))
       .slice(0, 20); // Limit results to 20
 
+    req.log?.info(`Search users: Found ${filteredUsers.length} results for query "${searchQuery}"`);
     return reply.send(filteredUsers);
   } catch (error: any) {
+    req.log?.error('Error searching users:', error);
     console.error('Error searching users:', error);
     console.error('Error stack:', error?.stack);
     console.error('Error message:', error?.message);
+    
+    // Provide more specific error messages
+    if (error?.code === 'P2002') {
+      return reply.code(500).send({ error: "Database constraint error." });
+    }
+    if (error?.code?.startsWith('P')) {
+      return reply.code(500).send({ 
+        error: "Database error while searching users.",
+        message: error?.message || "Unknown database error"
+      });
+    }
+    
     return reply.code(500).send({
       error: "Internal server error while searching users.",
+      message: error?.message || "Unknown error"
+    });
+  }
+}
+
+// API Key Management Controllers
+
+// Generate new API key
+export async function generateApiKey(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { name } = req.body as { name?: string };
+  if (!name || name.trim().length === 0) {
+    return reply.code(400).send({ error: "API key name is required." });
+  }
+
+  try {
+    // Generate a secure random API key
+    const apiKey = `ft_${crypto.randomBytes(32).toString('hex')}`;
+    const keyHash = await bcrypt.hash(apiKey, 10);
+
+    // Store the hashed key in database
+    const apiKeyRecord = await prisma.apiKey.create({
+      data: {
+        userId,
+        keyHash,
+        name: name.trim(),
+        isActive: true,
+      },
+    });
+
+    // Return the plain API key only once (user must save it)
+    return reply.code(201).send({
+      id: apiKeyRecord.id,
+      name: apiKeyRecord.name,
+      apiKey, // Only returned once during creation
+      createdAt: apiKeyRecord.createdAt,
+      message: "API key created successfully. Please save this key securely - it will not be shown again."
+    });
+  } catch (error: any) {
+    req.log?.error('Error generating API key:', error);
+    return reply.code(500).send({
+      error: "Failed to generate API key.",
+      message: error?.message || "Unknown error"
+    });
+  }
+}
+
+// List user's API keys
+export async function listApiKeys(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  try {
+    const apiKeys = await prisma.apiKey.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        createdAt: true,
+        lastUsedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return reply.send(apiKeys);
+  } catch (error: any) {
+    req.log?.error('Error listing API keys:', error);
+    return reply.code(500).send({
+      error: "Failed to list API keys.",
+      message: error?.message || "Unknown error"
+    });
+  }
+}
+
+// Revoke API key
+export async function revokeApiKey(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { id } = req.params as { id?: string };
+  if (!id || isNaN(Number(id))) {
+    return reply.code(400).send({ error: "Invalid API key ID." });
+  }
+
+  try {
+    const apiKeyId = parseInt(id, 10);
+    
+    // Verify the API key belongs to the user
+    const apiKey = await prisma.apiKey.findFirst({
+      where: {
+        id: apiKeyId,
+        userId,
+      },
+    });
+
+    if (!apiKey) {
+      return reply.code(404).send({ error: "API key not found." });
+    }
+
+    // Delete the API key
+    await prisma.apiKey.delete({
+      where: { id: apiKeyId },
+    });
+
+    return reply.send({ message: "API key revoked successfully." });
+  } catch (error: any) {
+    req.log?.error('Error revoking API key:', error);
+    return reply.code(500).send({
+      error: "Failed to revoke API key.",
       message: error?.message || "Unknown error"
     });
   }

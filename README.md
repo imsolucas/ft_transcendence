@@ -275,6 +275,7 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 - User registration with email/password
 - JWT-based authentication (access + refresh tokens)
 - OAuth 2.0 integration (Google, GitHub, 42)
+- **OAuth password requirement** - OAuth users must set a password before accessing the app
 - Two-factor authentication (TOTP with QR codes)
 - Profile management (username, email, avatar upload)
 - Password hashing with bcrypt
@@ -286,8 +287,10 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 - Friend system (add, remove, accept, reject requests)
 - Online status tracking (ONLINE, OFFLINE, INGAME)
 - Real-time status updates via WebSocket
-- User profiles display
+- User profiles display (own and other users)
+- User profile modal with quick view
 - Friends list with status indicators
+- User search functionality
 
 ### Game Features
 **Assigned to:** [teammate3], imsolucas
@@ -314,10 +317,11 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 **Assigned to:** imsolucas, [teammate2]
 
 - Match history tracking
-- Win/loss statistics
+- Win/loss statistics (displayed on lobby page)
 - Player rankings
-- Leaderboard display
+- Leaderboard display (public API endpoint)
 - Performance analytics
+- User statistics calculation and display
 
 ### Real-time Features
 **Assigned to:** [teammate3]
@@ -339,11 +343,11 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 ### API & Documentation
 **Assigned to:** imsolucas
 
-- Public REST API with 5+ endpoints
-- API key authentication
-- Rate limiting (per IP, per API key)
+- Public REST API with 6 endpoints (users, matches, tournaments, leaderboard, stats)
+- API key authentication (generate, list, revoke)
+- Rate limiting (100 req/min per IP, 1000 req/min per API key)
 - Swagger/OpenAPI documentation
-- API key management
+- API key management endpoints
 
 ### DevOps & Infrastructure
 **Assigned to:** [teammate4], imsolucas
@@ -369,7 +373,7 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 | 1 | **Framework Usage** (Frontend + Backend) | 2 | ✅ Complete | Vite (Frontend) + Fastify (Backend) |
 | 2 | **Real-time Features** (WebSockets) | 2 | ✅ Complete | WebSocket for game and chat |
 | 3 | **User Interaction System** (Chat, Profiles, Friends) | 2 | ✅ Complete | Chat panel, profile pages, friends system UI implemented |
-| 4 | **Public API** (5+ endpoints, rate limiting, API key) | 2 | 🚧 In Progress | Structure planned, implementing endpoints |
+| 4 | **Public API** (5+ endpoints, rate limiting, API key) | 2 | ✅ Complete | 6 endpoints with API key auth, rate limiting, Swagger docs |
 | 5 | **Multiplayer Game** (3+ players) | 2 | 🚧 In Progress | Tournament mode supports 3-8 players |
 | 6 | **Microservices Architecture** | 2 | ✅ Complete | Users, Game, Chat services with API Gateway |
 | 7 | **Standard User Management** | 2 | ✅ Complete | Profile updates, avatar upload, friends, status tracking |
@@ -383,42 +387,44 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 | 3 | **ORM** (Prisma) | 1 | ✅ Complete | Type-safe database access |
 | 4 | **Custom Design System** (10+ components) | 1 | ✅ Complete | 10 components: Button, Input, Label, Modal, Card, Avatar, Badge, Dropdown, Toast, Spinner |
 | 5 | **Multiple Languages** (3+ languages, i18n) | 1 | ✅ Complete | EN, ES, FR with i18next |
-| 6 | **Browser Support** (Chrome + 2 others) | 1 | ✅ Complete | Tested in Chrome, Firefox, and Edge |
-| 7 | **Game Statistics** | 1 | 🚧 In Progress | Database ready, implementing calculations |
-| 8 | **OAuth 2.0** (Google, GitHub, 42) | 1 | 🚧 In Progress | Google OAuth implemented |
-| 9 | **2FA System** (TOTP) | 1 | 🚧 In Progress | Database schema ready, implementing flow |
+| 6 | **Browser Support** (Chrome + 2 others) | 1 | ⚠️ Partial | Tested in Chrome and Edge (Firefox not supported) |
+| 7 | **Game Statistics** | 1 | ✅ Complete | Win/loss tracking, match history, stats displayed on lobby |
+| 8 | **OAuth 2.0** (Google, GitHub, 42) | 1 | ✅ Complete | Google OAuth fully implemented |
+| 9 | **2FA System** (TOTP) | 1 | ✅ Complete | TOTP with QR codes fully implemented |
 | 10 | **Tournament System** | 1 | 🚧 In Progress | UI structure ready, implementing logic |
-| 11 | **Health Check System** | 1 | 🚧 In Progress | Docker health checks configured |
+| 11 | **Health Check System** | 1 | ⚠️ Partial | Endpoints implemented, missing game service endpoint and status page |
 
 ### Point Calculation
 
-- **Major Modules (Complete):** 5 × 2pts = **10 points**
+- **Major Modules (Complete):** 6 × 2pts = **12 points**
   - Framework Usage ✅
   - Real-time Features ✅
   - User Interaction System ✅
+  - Public API ✅
   - Microservices Architecture ✅
   - Standard User Management ✅
   
-- **Major Modules (In Progress):** 2 × 2pts = **4 points**
-  - Public API 🚧
+- **Major Modules (In Progress):** 1 × 2pts = **2 points**
   - Multiplayer Game 🚧
 
-- **Minor Modules (Complete):** 6 × 1pt = **6 points**
+- **Minor Modules (Complete):** 8 × 1pt = **8 points**
   - Frontend Framework ✅
   - Backend Framework ✅
   - ORM ✅
   - Custom Design System ✅
   - Multiple Languages ✅
-  - Browser Support ✅
+  - Game Statistics ✅
+  - OAuth 2.0 ✅
+  - 2FA System ✅
   
-- **Minor Modules (In Progress):** 5 × 1pt = **5 points**
-  - Game Statistics 🚧
-  - OAuth 2.0 🚧
-  - 2FA System 🚧
+- **Minor Modules (Partial):** 2 × 1pt = **0 points** (not counting partial modules)
+  - Browser Support ⚠️ (Chrome/Edge only, Firefox issues)
+  - Health Check System ⚠️ (Endpoints implemented, missing game service endpoint and status page)
+  
+- **Minor Modules (In Progress):** 1 × 1pt = **1 point**
   - Tournament System 🚧
-  - Health Check System 🚧
 
-- **Completed Total:** **16 points** ✅ (exceeds 14-point minimum)
+- **Completed Total:** **20 points** ✅ (exceeds 14-point minimum by 6 points)
 - **Selected Total:** **25 points** (when all modules complete)
 
 ### Module Implementation Details
@@ -466,8 +472,8 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 
 ### Team Member Module Contributions
 
-- **imsolucas:** Framework Usage, Microservices, ORM, OAuth 2.0, 2FA, Public API
-- **[teammate2]:** Frontend Framework, Custom Design System, Multiple Languages, Browser Support
+- **imsolucas:** Framework Usage, Microservices, ORM, OAuth 2.0, 2FA, Public API, Game Statistics
+- **[teammate2]:** Frontend Framework, Custom Design System, Multiple Languages
 - **[teammate3]:** Real-time Features, Multiplayer Game, Tournament System, User Interaction
 - **[teammate4]:** Health Check System, Game Statistics, DevOps infrastructure
 
@@ -479,20 +485,35 @@ For complete schema details, see [`documents/DATABASE_SCHEMA.md`](documents/DATA
 **Key Contributions:**
 - Designed overall system architecture (microservices pattern)
 - Implemented Users service with authentication (JWT, OAuth 2.0, 2FA)
-- Created database schema with Prisma ORM
+- Created database schema with Prisma ORM (including ApiKey model)
 - Set up Docker containerization and Docker Compose orchestration
 - Configured Nginx API Gateway with SSL/TLS
 - Implemented OAuth 2.0 integration (Google)
-- Designed and documented Public API structure
+- **Implemented complete Public API module** (6 endpoints, API key auth, rate limiting)
+- **Fixed user search endpoint** (improved error handling and validation)
+- **Created User Profile Modal component** (quick view with full profile navigation)
+- **Implemented OAuth password requirement** (OAuth users must set password before access)
 - Created comprehensive project documentation
 
 **Challenges Overcome:**
 - SQLite concurrency handling in microservices environment
 - JWT refresh token rotation security
 - OAuth 2.0 callback handling in containerized environment
+- API key authentication middleware and rate limiting implementation
+- Scoped route hooks in Fastify to prevent global middleware application
+- OAuth password requirement flow and modal integration
 
 **Files/Modules:**
 - `services/users/` - Complete Users service implementation
+- `services/users/src/routes/publicRoutes.ts` - Public API routes
+- `services/users/src/controllers/publicControllers.ts` - Public API controllers
+- `services/users/src/middleware/apiKeyAuth.ts` - API key authentication
+- `services/users/src/middleware/rateLimiter.ts` - Rate limiting middleware
+- `services/users/src/controllers/authControllers.ts` - OAuth password requirement
+- `services/users/src/routes/authRoutes.ts` - Set password endpoint
+- `services/frontend/src/components/user/UserProfileModal.ts` - User profile modal
+- `services/frontend/src/services/google.ts` - OAuth password setup modal
+- `services/frontend/src/i18n/locales/*.json` - Password setup translations
 - `infra/docker-compose.yml` - Docker orchestration
 - `services/api-gateway/` - Nginx configuration
 - `documents/` - Architecture and database documentation
@@ -844,7 +865,7 @@ AI tools were used throughout this project to assist with various tasks. All AI-
 - Public API rate limiting is configured but needs stress testing
 - Automated backups are documented but not yet scheduled
 - Game statistics calculations need optimization for large datasets
-- Cross-browser testing is ongoing (Chrome fully tested, Firefox/Safari in progress)
+- Browser support limited to Chrome and Edge (Chromium-based browsers) due to Alpine.js compatibility issues with Firefox
 
 ### Future Enhancements
 
@@ -894,6 +915,6 @@ For questions or issues, please contact the development team via:
 
 ---
 
-**Last Updated:** December 17, 2025  
-**Version:** 1.0.0  
-**Status:** In Development
+**Last Updated:** December 21, 2025  
+**Version:** 1.1.0  
+**Status:** In Development (20/25 points complete)

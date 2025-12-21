@@ -37,7 +37,20 @@
     "sending": "ENVIANDO...",
     "accept": "Aceptar",
     "reject": "Rechazar",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "searchPlayers": "Buscar Jugadores",
+    "actions": "Acciones",
+    "helpTitle": "Ayuda del Lobby",
+    "helpText": "¡Bienvenido al lobby! Aquí puedes:",
+    "helpItem1": "Iniciar un juego local",
+    "helpItem2": "Unirse a juegos multijugador",
+    "helpItem3": "Ver tus estadísticas",
+    "helpItem4": "Buscar jugadores",
+    "helpItem5": "Chatear con otros",
+    "infoTitle": "Información del Lobby",
+    "infoText": "Estás en el lobby principal.",
+    "infoActivePlayers": "Jugadores activos en línea:",
+    "infoTip": "Consejo: ¡Usa la búsqueda rápida para encontrar otros jugadores!"
   },
   "profile": {
     "profileSettings": "Configuración del Perfil",
@@ -68,7 +81,16 @@
     "profileUpdated": "¡Perfil actualizado exitosamente!",
     "updateFailed": "Error al actualizar el perfil. Por favor intente nuevamente.",
     "twoFAEnabled": "2FA Ha Sido Habilitado",
-    "setup2FA": "Configurar 2FA"
+    "setup2FA": "Configurar 2FA",
+    "language": "Idioma",
+    "noFriends": "Aún no tienes amigos",
+    "noMatchHistory": "Aún no hay historial de partidas",
+    "win": "VICTORIA",
+    "loss": "DERROTA",
+    "online": "En Línea",
+    "offline": "Desconectado",
+    "userNotFound": "Usuario no encontrado",
+    "noChanges": "No hay cambios para guardar"
   },
   "twoFA": {
     "setupTitle": "CONFIGURAR AUTENTICACIÓN DE DOS FACTORES",
@@ -99,7 +121,16 @@
     "enter2FACode": "INGRESAR CÓDIGO 2FA",
     "verifying2FA": "VERIFICANDO...",
     "invalid2FACode": "Código 2FA inválido",
-    "verify": "VERIFICAR"
+    "verify": "VERIFICAR",
+    "passwordRequired": "Contraseña Requerida",
+    "passwordRequiredMessage": "Por favor establezca una contraseña para proteger su cuenta y continuar.",
+    "setPassword": "Establecer Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+    "passwordSetSuccess": "¡Contraseña establecida exitosamente!",
+    "enterPassword": "Ingrese su contraseña",
+    "confirmPasswordPlaceholder": "Confirme su contraseña"
   },
   "friends": {
     "sendRequest": "Enviar Solicitud de Amistad",
@@ -111,7 +142,9 @@
     "failedToReject": "Error al rechazar solicitud",
     "online": "En Línea",
     "offline": "Desconectado",
-    "inGame": "En Juego"
+    "inGame": "En Juego",
+    "friendRemoved": "Amigo eliminado",
+    "friendRemovedError": "Error al eliminar amigo"
   },
   "common": {
     "save": "Guardar",
@@ -121,7 +154,30 @@
     "close": "Cerrar",
     "loading": "Cargando...",
     "error": "Error",
-    "success": "Éxito"
+    "success": "Éxito",
+    "search": "Buscar",
+    "help": "Ayuda",
+    "saving": "Guardando..."
+  },
+  "chat": {
+    "noMessages": "Aún no hay mensajes. ¡Inicia la conversación!",
+    "typeMessage": "Escribe un mensaje...",
+    "send": "Enviar"
+  },
+  "user": {
+    "profile": "Perfil de Usuario",
+    "status": {
+      "online": "En Línea",
+      "offline": "Desconectado",
+      "inGame": "En Juego"
+    },
+    "email": "Correo Electrónico:",
+    "twoFA": {
+      "label": "2FA:",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado"
+    },
+    "viewFullProfile": "Ver Perfil Completo"
   },
   "gameConfig": {
     "title": "Configuración del Juego",

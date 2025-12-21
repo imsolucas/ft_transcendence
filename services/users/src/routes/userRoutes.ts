@@ -302,4 +302,93 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.updateUserStatus);
+
+  // API Key Management
+  app.post("/user/api-keys", {
+    schema: {
+      summary: "Generate new API key",
+      description: "Generates a new API key for the authenticated user. The API key is returned only once and must be saved securely.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: "object",
+        required: ["name"],
+        properties: {
+          name: { type: "string", description: "Name for the API key (e.g., 'Production API', 'Development')" }
+        }
+      },
+      response: {
+        201: {
+          description: "API key created successfully.",
+          type: "object",
+          properties: {
+            id: { type: "integer" },
+            name: { type: "string" },
+            apiKey: { type: "string", description: "The API key (shown only once)" },
+            createdAt: { type: "string", format: "date-time" },
+            message: { type: "string" }
+          }
+        },
+        400: { description: "Invalid input." },
+        401: { $ref: "UnauthorizedError#" },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.generateApiKey);
+
+  app.get("/user/api-keys", {
+    schema: {
+      summary: "List user's API keys",
+      description: "Retrieves a list of all API keys for the authenticated user. The actual API key values are not returned for security.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          description: "API keys retrieved successfully.",
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "integer" },
+              name: { type: "string" },
+              isActive: { type: "boolean" },
+              createdAt: { type: "string", format: "date-time" },
+              lastUsedAt: { type: "string", format: "date-time", nullable: true }
+            }
+          }
+        },
+        401: { $ref: "UnauthorizedError#" },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.listApiKeys);
+
+  app.delete("/user/api-keys/:id", {
+    schema: {
+      summary: "Revoke API key",
+      description: "Revokes (deletes) an API key belonging to the authenticated user.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        required: ["id"],
+        properties: {
+          id: { type: "string", description: "API key ID" }
+        }
+      },
+      response: {
+        200: {
+          description: "API key revoked successfully.",
+          type: "object",
+          properties: {
+            message: { type: "string" }
+          }
+        },
+        400: { description: "Invalid API key ID." },
+        401: { $ref: "UnauthorizedError#" },
+        404: { description: "API key not found." },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.revokeApiKey);
 }

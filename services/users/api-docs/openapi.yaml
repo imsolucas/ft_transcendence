@@ -772,12 +772,277 @@ paths:
                     type: string
                     example: ok
 
+  # Public API Endpoints (require API key authentication)
+  /api/public/users/{username}:
+    get:
+      summary: Get public user profile
+      description: Retrieves public profile information for a user by username. Requires API key authentication.
+      tags: [public]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Username of the user
+      responses:
+        '200':
+          description: User profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  username: { type: string }
+                  avatar: { type: string, format: uri }
+                  status: { type: string, enum: [ONLINE, OFFLINE, INGAME] }
+                  createdAt: { type: string, format: date-time }
+        '400':
+          description: Invalid input.
+        '401':
+          description: API key required or invalid.
+        '404':
+          description: User not found.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/public/matches:
+    get:
+      summary: Get public match listing
+      description: Retrieves a paginated list of public matches. Requires API key authentication.
+      tags: [public]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: string
+            default: "1"
+          description: Page number (default: 1)
+        - name: limit
+          in: query
+          schema:
+            type: string
+            default: "20"
+          description: Items per page (default: 20, max: 100)
+      responses:
+        '200':
+          description: Matches retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        player1DisplayName: { type: string }
+                        player2DisplayName: { type: string }
+                        player1Score: { type: integer }
+                        player2Score: { type: integer }
+                        winnerId: { type: integer, nullable: true }
+                        played_at: { type: string, format: date-time }
+                        end_at: { type: string, format: date-time }
+                        tournamentId: { type: integer, nullable: true }
+                  pagination:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      limit: { type: integer }
+                      total: { type: integer }
+                      totalPages: { type: integer }
+        '401':
+          description: API key required or invalid.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/public/matches/{matchId}:
+    get:
+      summary: Get public match details
+      description: Retrieves detailed information about a specific match. Requires API key authentication.
+      tags: [public]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Match ID
+      responses:
+        '200':
+          description: Match details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  player1DisplayName: { type: string }
+                  player2DisplayName: { type: string }
+                  player1Score: { type: integer }
+                  player2Score: { type: integer }
+                  winnerId: { type: integer, nullable: true }
+                  played_at: { type: string, format: date-time }
+                  end_at: { type: string, format: date-time }
+                  tournamentId: { type: integer, nullable: true }
+        '400':
+          description: Invalid match ID.
+        '401':
+          description: API key required or invalid.
+        '404':
+          description: Match not found.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/public/tournaments:
+    get:
+      summary: Get public tournament listing
+      description: Retrieves a paginated list of public tournaments. Requires API key authentication.
+      tags: [public]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: string
+            default: "1"
+          description: Page number (default: 1)
+        - name: limit
+          in: query
+          schema:
+            type: string
+            default: "20"
+          description: Items per page (default: 20, max: 100)
+      responses:
+        '200':
+          description: Tournaments retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tournaments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+                        winnerId: { type: integer, nullable: true }
+                        start_at: { type: string, format: date-time }
+                        end_at: { type: string, format: date-time, nullable: true }
+                  pagination:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      limit: { type: integer }
+                      total: { type: integer }
+                      totalPages: { type: integer }
+        '401':
+          description: API key required or invalid.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/public/leaderboard:
+    get:
+      summary: Get public leaderboard
+      description: Retrieves the public leaderboard showing top players by wins and win rate. Requires API key authentication.
+      tags: [public]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: string
+            default: "50"
+          description: Number of players to return (default: 50, max: 100)
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId: { type: integer }
+                        username: { type: string }
+                        avatar: { type: string, format: uri }
+                        status: { type: string, enum: [ONLINE, OFFLINE, INGAME] }
+                        wins: { type: integer }
+                        losses: { type: integer }
+                        totalMatches: { type: integer }
+                        winRate: { type: number }
+                  limit: { type: integer }
+        '401':
+          description: API key required or invalid.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/public/stats/{username}:
+    get:
+      summary: Get public user statistics
+      description: Retrieves public statistics for a user by username. Requires API key authentication.
+      tags: [public]
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Username of the user
+      responses:
+        '200':
+          description: User statistics retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username: { type: string }
+                  avatar: { type: string, format: uri }
+                  wins: { type: integer }
+                  losses: { type: integer }
+                  totalMatches: { type: integer }
+                  winRate: { type: string }
+                  level: { type: integer }
+        '400':
+          description: Invalid input.
+        '401':
+          description: API key required or invalid.
+        '404':
+          description: User not found.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for public API access. Obtain an API key from /user/api-keys endpoint.
 
   schemas:
     UserProfile:

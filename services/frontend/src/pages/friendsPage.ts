@@ -40,12 +40,12 @@ export function FriendsPage(): HTMLElement {
   
   const title = document.createElement('h1');
   title.className = `${typography.title} text-3xl sm:text-5xl text-white mb-4`;
-  title.textContent = String(t('friends.title') || 'FRIENDS');
+  title.textContent = String(t('Friends') || 'FRIENDS');
   header.appendChild(title);
 
   const subtitle = document.createElement('p');
   subtitle.className = 'text-gray-300 text-lg';
-  subtitle.textContent = String(t('friends.subtitle') || 'Manage your friends and friend requests');
+  subtitle.textContent = String(t('Manage your friends and friend requests') || 'Manage your friends and friend requests');
   header.appendChild(subtitle);
 
   content.appendChild(header);
@@ -92,7 +92,7 @@ function createFriendsListSection(): HTMLElement {
   titleRow.className = 'flex items-center justify-between mb-4';
 
   const titleEl = CardTitle({
-    text: String(t('friends.myFriends') || 'My Friends'),
+    text: String(t('My Friends') || 'My Friends'),
   });
 
   const countBadge = Badge({
@@ -145,7 +145,7 @@ function createFriendRequestsSection(): HTMLElement {
   titleContainer.className = 'flex items-center gap-2';
 
   const titleEl = CardTitle({
-    text: String(t('friends.requests') || 'Friend Requests'),
+    text: String(t('Friend Requests') || 'Friend Requests'),
   });
 
   const countBadge = Badge({
@@ -188,7 +188,7 @@ function createAddFriendsSection(): HTMLElement {
 
   const headerEl = CardHeader({
     children: CardTitle({
-      text: String(t('friends.addFriend') || 'Add Friend'),
+      text: String(t('Add Friend') || 'Add Friend'),
     }),
   });
   card.appendChild(headerEl);
@@ -204,7 +204,7 @@ function createAddFriendsSection(): HTMLElement {
 
   // Add label for search input
   const searchLabel = Label({
-    text: String(t('friends.searchLabel') || 'Find Players'),
+    text: String(t('Search') || 'Find Players'),
     htmlFor: 'search-user-input',
     className: 'text-white',
   });
@@ -212,13 +212,13 @@ function createAddFriendsSection(): HTMLElement {
 
   const searchInput = Input({
     id: 'search-user-input',
-    placeholder: String(t('friends.searchByUsername') || 'Search by username...'),
+    placeholder: String(t('Search by username...') || 'Search by username...'),
     className: 'w-full',
   });
   form.appendChild(searchInput);
 
   const searchBtn = Button({
-    text: String(t('friends.search') || 'Search'),
+    text: String(t('Search') || 'Search'),
     variant: 'default',
     className: 'w-full',
   });
@@ -242,7 +242,7 @@ function createAddFriendsSection(): HTMLElement {
     const username = input.value.trim();
     
     if (!username) {
-      showToast({ message: t('friends.enterUsername') || 'Please enter a username', variant: 'warning' });
+      showToast({ message: String(t('Please enter a username') || 'Please enter a username'), variant: 'warning' });
       return;
     }
 
@@ -262,7 +262,7 @@ async function loadFriendsData(container: HTMLElement): Promise<void> {
     renderFriendRequests(container, requests);
   } catch (error) {
     console.error('Error loading friends data:', error);
-    showToast({ message: t('friends.errorLoading') || 'Failed to load friends', variant: 'error' });
+    showToast({ message: String(t('Failed to load friends') || 'Failed to load friends'), variant: 'error' });
   }
 }
 
@@ -281,7 +281,7 @@ function renderFriendsList(container: HTMLElement, friends: Friend[]): void {
   if (friends.length === 0) {
     const emptyDiv = document.createElement('div');
     emptyDiv.className = 'text-center py-12 text-gray-400';
-    emptyDiv.textContent = t('friends.noFriends') || 'No friends yet. Add some friends to get started!';
+    emptyDiv.textContent = String(t('No friends yet. Add some friends to get started!') || 'No friends yet. Add some friends to get started!');
     listContainer.appendChild(emptyDiv);
     return;
   }
@@ -319,7 +319,7 @@ function renderFriendsList(container: HTMLElement, friends: Friend[]): void {
     actions.className = 'flex gap-2';
 
     const viewBtn = Button({
-      text: String(t('common.view') || 'View'),
+      text: String(t('View') || 'View'),
       variant: 'outline',
       size: 'sm',
       onClick: () => viewProfile(friend.username),
@@ -327,7 +327,7 @@ function renderFriendsList(container: HTMLElement, friends: Friend[]): void {
     actions.appendChild(viewBtn);
 
     const removeBtn = Button({
-      text: String(t('common.remove') || 'Remove'),
+      text: String(t('Remove') || 'Remove'),
       variant: 'destructive',
       size: 'sm',
       onClick: () => removeFriendLocal(friend.username, container),
@@ -354,7 +354,7 @@ function renderFriendRequests(container: HTMLElement, requests: FriendRequest[])
   if (requests.length === 0) {
     const emptyDiv = document.createElement('div');
     emptyDiv.className = 'text-center py-8 text-gray-400 text-sm';
-    emptyDiv.textContent = t('friends.noRequests') || 'No pending requests';
+    emptyDiv.textContent = String(t('No pending requests') || 'No pending requests');
     listContainer.appendChild(emptyDiv);
     return;
   }
@@ -403,7 +403,7 @@ function renderFriendRequests(container: HTMLElement, requests: FriendRequest[])
       actions.appendChild(rejectBtn);
     } else {
       const cancelBtn = Button({
-        text: t('common.cancel') || 'Cancel',
+        text: String(t('Cancel') || 'Cancel'),
         variant: 'outline',
         size: 'sm',
         onClick: () => cancelFriendRequest(request.id, container),
@@ -432,7 +432,7 @@ async function searchUsersDisplay(username: string, resultsContainer: HTMLElemen
     if (users.length === 0) {
       const emptyDiv = document.createElement('div');
       emptyDiv.className = 'text-center py-4 text-gray-400 text-sm';
-      emptyDiv.textContent = t('friends.noUsersFound') || 'No users found';
+      emptyDiv.textContent = String(t('No users found') || 'No users found');
       resultsContainer.appendChild(emptyDiv);
       return;
     }
@@ -460,7 +460,7 @@ async function searchUsersDisplay(username: string, resultsContainer: HTMLElemen
       userItem.appendChild(leftSection);
 
       const addBtn = Button({
-        text: String(t('friends.add') || 'Add'),
+        text: String(t('Add') || 'Add'),
         variant: 'default',
         size: 'sm',
         onClick: () => handleSendFriendRequest(user.username),
@@ -474,7 +474,7 @@ async function searchUsersDisplay(username: string, resultsContainer: HTMLElemen
     resultsContainer.innerHTML = '';
     const errorDiv = document.createElement('div');
     errorDiv.className = 'text-center py-4 text-red-400 text-sm';
-      errorDiv.textContent = String(t('friends.searchError') || 'Search failed');
+      errorDiv.textContent = String(t('Search failed') || 'Search failed');
     resultsContainer.appendChild(errorDiv);
   }
 }
@@ -559,14 +559,14 @@ async function handleSendFriendRequest(username: string): Promise<void> {
   try {
     await sendFriendRequest(username);
     showToast({ 
-      message: String(t('friends.requestSent') || 'Friend request sent!'), 
+      message: String(t('Request sent') || 'Friend request sent!'), 
       variant: 'success',
       duration: 3000 
     });
   } catch (error: any) {
     console.error('Error sending friend request:', error);
     showToast({ 
-      message: error.message || String(t('friends.requestSentError') || 'Failed to send friend request'), 
+      message: error.message || String(t('Failed to send friend request') || 'Failed to send friend request'), 
       variant: 'error',
       duration: 3000 
     });
@@ -577,7 +577,7 @@ async function acceptFriendRequest(requestId: number, container: HTMLElement): P
   try {
     await updateFriendRequest(requestId, 'ACCEPTED');
     showToast({ 
-      message: String(t('friends.requestAccepted') || 'Friend request accepted!'), 
+      	message: String(t('Request accepted') || 'Friend request accepted!'), 
       variant: 'success',
       duration: 3000 
     });
@@ -585,7 +585,7 @@ async function acceptFriendRequest(requestId: number, container: HTMLElement): P
   } catch (error: any) {
     console.error('Error accepting friend request:', error);
     showToast({ 
-      message: error.message || String(t('friends.requestAcceptedError') || 'Failed to accept friend request'), 
+      message: error.message || String(t('Failed to accept friend request') || 'Failed to accept friend request'), 
       variant: 'error',
       duration: 3000 
     });
@@ -596,7 +596,7 @@ async function rejectFriendRequest(requestId: number, container: HTMLElement): P
   try {
     await updateFriendRequest(requestId, 'REJECTED');
     showToast({ 
-      message: String(t('friends.requestRejected') || 'Friend request rejected'), 
+      message: String(t('Request rejected') || 'Friend request rejected'), 
       variant: 'info',
       duration: 3000 
     });
@@ -604,7 +604,7 @@ async function rejectFriendRequest(requestId: number, container: HTMLElement): P
   } catch (error: any) {
     console.error('Error rejecting friend request:', error);
     showToast({ 
-      message: error.message || String(t('friends.requestRejectedError') || 'Failed to reject friend request'), 
+      message: error.message || String(t('Failed to reject friend request') || 'Failed to reject friend request'), 
       variant: 'error',
       duration: 3000 
     });
@@ -616,7 +616,7 @@ async function cancelFriendRequest(requestId: number, container: HTMLElement): P
     // Cancel is the same as reject from sender's perspective
     await updateFriendRequest(requestId, 'REJECTED');
     showToast({ 
-      message: String(t('friends.requestCancelled') || 'Friend request cancelled'), 
+      message: String(t('Request cancelled') || 'Friend request cancelled'), 
       variant: 'info',
       duration: 3000 
     });
@@ -624,7 +624,7 @@ async function cancelFriendRequest(requestId: number, container: HTMLElement): P
   } catch (error: any) {
     console.error('Error cancelling friend request:', error);
     showToast({ 
-      message: error.message || String(t('friends.requestCancelledError') || 'Failed to cancel friend request'), 
+      message: error.message || String(t('Failed to cancel friend request') || 'Failed to cancel friend request'), 
       variant: 'error',
       duration: 3000 
     });
@@ -632,7 +632,7 @@ async function cancelFriendRequest(requestId: number, container: HTMLElement): P
 }
 
 async function removeFriendLocal(username: string, container: HTMLElement): Promise<void> {
-  const confirmMessage = String(t('friends.confirmRemove') || 'Are you sure you want to remove this friend?');
+  const confirmMessage = String(t('Are you sure you want to remove this friend?') || 'Are you sure you want to remove this friend?');
   if (!confirm(confirmMessage)) {
     return;
   }
@@ -640,7 +640,7 @@ async function removeFriendLocal(username: string, container: HTMLElement): Prom
   try {
     await apiRemoveFriend(username);
     showToast({ 
-      message: String(t('friends.friendRemoved') || 'Friend removed'), 
+      message: String(t('Friend removed') || 'Friend removed'), 
       variant: 'success',
       duration: 3000 
     });

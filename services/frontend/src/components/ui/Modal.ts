@@ -17,9 +17,10 @@ export function Modal({
 }: ModalOptions): HTMLElement {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
+  // Don't set display:none for modals - they should be visible by default
   
   // Add Alpine.js directive for reactive state (framework usage)
-  modal.setAttribute('x-data', '{ open: true }');
+  modal.setAttribute('x-data', "{ open: true }");
   modal.setAttribute('x-show', 'open');
   modal.setAttribute('x-transition', '');
   

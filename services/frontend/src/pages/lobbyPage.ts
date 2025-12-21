@@ -14,6 +14,7 @@ import { Dropdown } from '../components/ui/Dropdown';
 import { showToast } from '../components/ui/Toast';
 import { createChatSidebar } from '../components/chat/ChatPanel';
 import { Avatar } from '../components/ui/Avatar';
+import { showUserProfileModal } from '../components/user/UserProfileModal';
 
 export function LobbyPage(): HTMLElement {
 	const container = document.createElement('div');
@@ -79,36 +80,38 @@ export function LobbyPage(): HTMLElement {
 
 	// Setup all components after DOM is ready
 	setTimeout(() => {
-		setupGameModeButtons(
-			container,
-			() => navigate('local-game'),
-			() => navigate('multiplayer-game')
-		);
+		try {
+			setupGameModeButtons(
+				container,
+				() => navigate('local-game'),
+				() => navigate('multiplayer-game')
+			);
 
-		setupStatsSection(container, loadStats);
+			setupStatsSection(container, loadStats);
 
-		const addFriendContainer = container.querySelector('#add-friend-container');
-		if (addFriendContainer) {
-			try {
-				const addFriendComponent = AddFriend();
-				addFriendContainer.appendChild(addFriendComponent);
-			} catch (error) {
-				console.error('Error initializing AddFriend component:', error);
+			const addFriendContainer = container.querySelector('#add-friend-container');
+			if (addFriendContainer) {
+				try {
+					const addFriendComponent = AddFriend();
+					addFriendContainer.appendChild(addFriendComponent);
+				} catch (error) {
+					console.error('Error initializing AddFriend component:', error);
+				}
+			} else {
+				console.warn('Add friend container not found');
 			}
-		} else {
-			console.warn('Add friend container not found');
-		}
 		
 		// Add quick actions dropdown
 		const quickActionsContainer = container.querySelector('#quick-actions-container');
 		if (quickActionsContainer) {
+			console.log('Quick Actions container found, adding card...');
 			const actionsCard = Card({
 				className: 'bg-gray-800/50',
 				children: '',
 			});
 			
 			const header = CardHeader({
-				children: CardTitle({ text: String(t('lobby.quickActions') || 'Quick Actions') }),
+				children: CardTitle({ text: String(t('QuickActions') || 'Quick Actions') }),
 			});
 			actionsCard.appendChild(header);
 			
@@ -120,13 +123,13 @@ export function LobbyPage(): HTMLElement {
 			searchContainer.className = 'relative flex-1 min-w-[200px]';
 			
 			// Add Alpine.js directive for reactive state (framework usage)
-			searchContainer.setAttribute('x-data', '{ searchQuery: "", showResults: false }');
+			searchContainer.setAttribute('x-data', "{ searchQuery: '', showResults: false }");
 			
 			const searchInputWrapper = document.createElement('div');
 			searchInputWrapper.className = 'flex gap-2';
 			const searchInputElement = Input({
 				id: 'quick-search',
-				placeholder: String(t('lobby.searchPlayers') || 'Search players...'),
+				placeholder: String(t('Search Players') || 'Search players...'),
 				className: 'flex-1',
 			});
 			
@@ -138,7 +141,7 @@ export function LobbyPage(): HTMLElement {
 			// Search results container - positioned relative to searchContainer
 			const searchResultsContainer = document.createElement('div');
 			searchResultsContainer.id = 'lobby-search-results';
-			searchResultsContainer.className = 'absolute top-full left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto';
+			searchResultsContainer.className = 'hidden absolute top-full left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto';
 			
 			// Add Alpine.js directive for conditional rendering (framework usage)
 			searchResultsContainer.setAttribute('x-show', 'showResults');
@@ -156,12 +159,10 @@ export function LobbyPage(): HTMLElement {
 				
 				const query = searchInputElement.value.trim();
 				if (query.length < 2) {
-					// Update Alpine state if available
 					if (window.Alpine && searchContainer.__x) {
 						searchContainer.__x.$data.showResults = false;
-					} else {
-						searchResultsContainer.classList.add('hidden');
 					}
+					searchResultsContainer.classList.add('hidden');
 					showToast({ 
 						message: String(t('friends.enterUsername') || 'Please enter at least 2 characters'), 
 						variant: 'warning',
@@ -175,27 +176,47 @@ export function LobbyPage(): HTMLElement {
 					const users = await searchUsers(query);
 					console.log('Search results:', users);
 					
-					searchResultsContainer.innerHTML = '';
+					// Clear search input after search
+					searchInputElement.value = '';
+					if (window.Alpine && searchContainer.__x) {
+						searchContainer.__x.$data.searchQuery = '';
+					}
 					
 					if (!users || users.length === 0) {
-						const noResults = document.createElement('div');
-						noResults.className = 'p-4 text-gray-400 text-center text-sm';
-						noResults.textContent = String(t('friends.noUsersFound') || 'No users found');
-						searchResultsContainer.appendChild(noResults);
+						// No results - show toast and hide dropdown
+						if (window.Alpine && searchContainer.__x) {
+							searchContainer.__x.$data.showResults = false;
+						}
+						searchResultsContainer.classList.add('hidden');
+						showToast({ 
+							message: String(t('No users found') || 'No users found'), 
+							variant: 'info',
+							duration: 3000 
+						});
+					} else if (users.length === 1) {
+						// Single result - show modal directly
+						if (window.Alpine && searchContainer.__x) {
+							searchContainer.__x.$data.showResults = false;
+						}
+						searchResultsContainer.classList.add('hidden');
+						await showUserProfileModal(users[0].username);
 					} else {
+						// Multiple results - show dropdown
+						searchResultsContainer.innerHTML = '';
+						
 						users.forEach((user: any) => {
 							const userItem = document.createElement('div');
 							userItem.className = 'flex items-center gap-3 p-3 hover:bg-gray-700 cursor-pointer transition-colors';
-							userItem.addEventListener('click', () => {
-								navigate('profile', `username=${encodeURIComponent(user.username)}`);
-								searchInputElement.value = '';
-								// Update Alpine state if available
+							userItem.addEventListener('click', async () => {
+								// Show user profile modal instead of navigating directly
+								await showUserProfileModal(user.username);
+								
+								// Clear search
 								if (window.Alpine && searchContainer.__x) {
 									searchContainer.__x.$data.searchQuery = '';
 									searchContainer.__x.$data.showResults = false;
-								} else {
-									searchResultsContainer.classList.add('hidden');
 								}
+								searchResultsContainer.classList.add('hidden');
 							});
 							
 							const avatar = Avatar({
@@ -213,23 +234,19 @@ export function LobbyPage(): HTMLElement {
 							
 							searchResultsContainer.appendChild(userItem);
 						});
-					}
-					
-					// Update Alpine state if available
-					if (window.Alpine && searchContainer.__x) {
-						searchContainer.__x.$data.showResults = true;
-					} else {
+						
+						if (window.Alpine && searchContainer.__x) {
+							searchContainer.__x.$data.showResults = true;
+						}
 						searchResultsContainer.classList.remove('hidden');
 					}
 				} catch (error: any) {
 					console.error('Error searching users:', error);
-					// Update Alpine state if available
 					if (window.Alpine && searchContainer.__x) {
 						searchContainer.__x.$data.showResults = false;
-					} else {
-						searchResultsContainer.classList.add('hidden');
 					}
-					const errorMessage = error?.message || String(t('friends.searchError') || 'Search failed');
+					searchResultsContainer.classList.add('hidden');
+					const errorMessage = error?.message || String(t('Search failed') || 'Search failed');
 					showToast({ 
 						message: errorMessage, 
 						variant: 'error',
@@ -240,7 +257,7 @@ export function LobbyPage(): HTMLElement {
 			
 			// Search button
 			const searchButton = Button({
-				text: String(t('common.search') || 'Search'),
+				text: String(t('Search') || 'Search'),
 				variant: 'default',
 				size: 'default',
 				onClick: performSearch,
@@ -252,10 +269,10 @@ export function LobbyPage(): HTMLElement {
 			
 			// Quick actions dropdown (demonstrates Dropdown component)
 			const dropdown = Dropdown({
-				trigger: String(t('lobby.actions') || 'Actions'),
+				trigger: String(t('Actions') || 'Actions'),
 				items: [
 					{ value: 'profile', label: String(t('navbar.profile') || 'View Profile'), icon: '👤' },
-					{ value: 'friends', label: String(t('friends.title') || 'Friends'), icon: '👥' },
+					{ value: 'friends', label: String(t('Friends') || 'Friends'), icon: '👥' },
 					{ value: 'help', label: String(t('common.help') || 'Help'), icon: '❓' },
 				],
 				direction: 'up', // Expand upward so all options are visible
@@ -272,11 +289,11 @@ export function LobbyPage(): HTMLElement {
 								<div class="space-y-4">
 									<p class="text-gray-300">${String(t('lobby.helpText') || 'Welcome to the lobby! Here you can:')}</p>
 									<ul class="list-disc list-inside text-gray-300 space-y-2">
-										<li>Start a local game</li>
-										<li>Join multiplayer games</li>
-										<li>View your stats</li>
-										<li>Search for players</li>
-										<li>Chat with others</li>
+										<li>${String(t('lobby.helpItem1') || 'Start a local game')}</li>
+										<li>${String(t('lobby.helpItem2') || 'Join multiplayer games')}</li>
+										<li>${String(t('lobby.helpItem3') || 'View your stats')}</li>
+										<li>${String(t('lobby.helpItem4') || 'Search for players')}</li>
+										<li>${String(t('lobby.helpItem5') || 'Chat with others')}</li>
 									</ul>
 								</div>
 							`,
@@ -307,31 +324,35 @@ export function LobbyPage(): HTMLElement {
 				variant: 'outline',
 				size: 'default',
 				onClick: () => {
-					showModal({
-						title: 'Lobby Information',
-						content: `
-							<div class="space-y-3">
-								<p class="text-gray-300">You are in the main lobby.</p>
-								<p class="text-gray-300">Active players online: <strong class="text-white">Loading...</strong></p>
-								<p class="text-sm text-gray-400">Tip: Use quick search to find other players!</p>
-							</div>
-						`,
-					});
+				showModal({
+					title: String(t('lobby.infoTitle') || 'Lobby Information'),
+					content: `
+						<div class="space-y-3">
+							<p class="text-gray-300">${String(t('lobby.infoText') || 'You are in the main lobby.')}</p>
+							<p class="text-gray-300">${String(t('lobby.infoActivePlayers') || 'Active players online:')} <strong class="text-white">${String(t('common.loading') || 'Loading...')}</strong></p>
+							<p class="text-sm text-gray-400">${String(t('lobby.infoTip') || 'Tip: Use quick search to find other players!')}</p>
+						</div>
+					`,
+					showCloseButton: true,
+				});
 				},
 			});
 			content.appendChild(infoBtn);
 			
 			actionsCard.appendChild(content);
 			quickActionsContainer.appendChild(actionsCard);
+			console.log('Quick Actions card added to container');
+		} else {
+			console.error('Quick Actions container not found!', container);
 		}
 		
 		// Add chat sidebar to lobby (demonstrates ChatPanel component)
 		const chatSidebar = createChatSidebar({
-			title: String(t('chat.lobbyChat') || 'Lobby Chat'),
+			title: String(t('Lobby Chat') || 'Lobby Chat'),
 			onSendMessage: (message) => {
 				console.log('Send message:', message);
 				showToast({ 
-					message: String(t('chat.messageSent') || 'Message sent!'), 
+					message: String(t('Message Sent') || 'Message sent!'), 
 					variant: 'success',
 					duration: 2000 
 				});
@@ -339,6 +360,10 @@ export function LobbyPage(): HTMLElement {
 			collapsed: true, // Start collapsed
 		});
 		container.appendChild(chatSidebar);
+		} catch (error) {
+			console.error('Error setting up lobby components:', error);
+			console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+		}
 	}, 0);
 
 	return container;

@@ -37,7 +37,20 @@
     "sending": "SENDING...",
     "accept": "Accept",
     "reject": "Reject",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "searchPlayers": "Search Players",
+    "actions": "Actions",
+    "helpTitle": "Lobby Help",
+    "helpText": "Welcome to the lobby! Here you can:",
+    "helpItem1": "Start a local game",
+    "helpItem2": "Join multiplayer games",
+    "helpItem3": "View your stats",
+    "helpItem4": "Search for players",
+    "helpItem5": "Chat with others",
+    "infoTitle": "Lobby Information",
+    "infoText": "You are in the main lobby.",
+    "infoActivePlayers": "Active players online:",
+    "infoTip": "Tip: Use quick search to find other players!"
   },
   "profile": {
     "profileSettings": "Profile Settings",
@@ -68,7 +81,16 @@
     "profileUpdated": "Profile updated successfully!",
     "updateFailed": "Failed to update profile. Please try again.",
     "twoFAEnabled": "2FA Has Been Enabled",
-    "setup2FA": "Setup 2FA"
+    "setup2FA": "Setup 2FA",
+    "language": "Language",
+    "noFriends": "No friends yet",
+    "noMatchHistory": "No match history yet",
+    "win": "WIN",
+    "loss": "LOSS",
+    "online": "Online",
+    "offline": "Offline",
+    "userNotFound": "User not found",
+    "noChanges": "No changes to save"
   },
   "twoFA": {
     "setupTitle": "SETUP TWO-FACTOR AUTHENTICATION",
@@ -99,7 +121,16 @@
     "enter2FACode": "ENTER 2FA CODE",
     "verifying2FA": "VERIFYING...",
     "invalid2FACode": "Invalid 2FA code",
-    "verify": "VERIFY"
+    "verify": "VERIFY",
+    "passwordRequired": "Password Required",
+    "passwordRequiredMessage": "Please set a password to secure your account and continue.",
+    "setPassword": "Set Password",
+    "confirmPassword": "Confirm Password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordSetSuccess": "Password set successfully!",
+    "enterPassword": "Enter your password",
+    "confirmPasswordPlaceholder": "Confirm your password"
   },
   "friends": {
     "sendRequest": "Send Friend Request",
@@ -111,7 +142,9 @@
     "failedToReject": "Failed to reject request",
     "online": "Online",
     "offline": "Offline",
-    "inGame": "In Game"
+    "inGame": "In Game",
+    "friendRemoved": "Friend removed",
+    "friendRemovedError": "Failed to remove friend"
   },
   "common": {
     "save": "Save",
@@ -121,7 +154,30 @@
     "close": "Close",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "search": "Search",
+    "help": "Help",
+    "saving": "Saving..."
+  },
+  "chat": {
+    "noMessages": "No messages yet. Start the conversation!",
+    "typeMessage": "Type a message...",
+    "send": "Send"
+  },
+  "user": {
+    "profile": "User Profile",
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "inGame": "In Game"
+    },
+    "email": "Email:",
+    "twoFA": {
+      "label": "2FA:",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "viewFullProfile": "View Full Profile"
   },
   "gameConfig": {
     "title": "Game Configuration",

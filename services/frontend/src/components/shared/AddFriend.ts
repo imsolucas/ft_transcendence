@@ -8,7 +8,7 @@ export function AddFriend() {
   const render = () => {
     container.innerHTML = `
       <div class="space-y-4">
-        <h2 class="text-xl mb-4 font-poppins text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">${t('lobby.addFriends')}</h2>
+        <h2 class="text-xl mb-4 font-poppins text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">${t('Add Friends') || 'Add Friends'}</h2>
 
         <!-- Add Friend Form -->
         <div class="bg-black/40 backdrop-blur-md border-2 border-white/40 p-4 rounded-2xl shadow-xl">
@@ -16,14 +16,14 @@ export function AddFriend() {
             <input
               type="text"
               id="friend-username-input"
-              placeholder="${t('lobby.enterUsername')}"
+              placeholder="${t('Enter username') || 'Enter username'}"
               class="flex-1 py-2 px-4 bg-black/30 border-2 border-white/40 rounded-lg text-white placeholder-gray-400 focus:border-white/60 focus:outline-none focus:shadow-[0_0_10px_rgba(255,255,255,0.3)] transition-all backdrop-blur-sm"
             />
             <button
               id="send-friend-request-btn"
               class="neon-button border-2 border-white/50 hover:border-white/80 text-white py-2 px-6 rounded-lg font-poppins text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-lg bg-gradient-to-r from-[#872481] to-[#DC25A3]"
             >
-              ${t('lobby.add')}
+              ${t('Add') || 'Add'}
             </button>
           </div>
         </div>
@@ -50,21 +50,21 @@ export function AddFriend() {
     sendBtn?.addEventListener('click', async () => {
       const username = usernameInput?.value.trim();
       if (!username) {
-        showNotification(t('lobby.enterUsername'), 'error');
+        showNotification(t('Please enter a username') || 'Please enter a username', 'error');
         return;
       }
 
       const originalText = sendBtn.textContent;
-      sendBtn.textContent = t('lobby.sending');
+      sendBtn.textContent = t('Sending') || 'Sending';
       (sendBtn as HTMLButtonElement).disabled = true;
 
       try {
         await sendFriendRequest(username);
-        showNotification(t('friends.requestSent', { username }), 'success');
+        showNotification(t('Request sent') || 'Request sent', 'success');
         usernameInput.value = '';
         loadFriendRequests();
       } catch (error: any) {
-        showNotification(error.message || t('friends.failedToSend'), 'error');
+        showNotification(error.message || t('Failed to send request') || 'Failed to send request', 'error');
       } finally {
         sendBtn.textContent = originalText || t('lobby.add');
         (sendBtn as HTMLButtonElement).disabled = false;
@@ -109,7 +109,7 @@ export function AddFriend() {
     if (!requestsList) return;
 
     if (requests.length === 0) {
-      requestsList.innerHTML = `<p class="text-gray-400 text-sm text-center py-2">${t('lobby.noPendingRequests')}</p>`;
+      requestsList.innerHTML = `<p class="text-gray-400 text-sm text-center py-2">${t('No pending requests') || 'No pending requests'}</p>`;
       return;
     }
 
@@ -149,10 +149,10 @@ export function AddFriend() {
         const requestId = parseInt((e.target as HTMLElement).getAttribute('data-request-id') || '0');
         try {
           await updateFriendRequest(requestId, 'ACCEPTED');
-          showNotification(t('friends.requestAccepted'), 'success');
+          showNotification(t('Request accepted') || 'Request accepted', 'success');
           loadFriendRequests();
         } catch (error: any) {
-          showNotification(error.message || t('friends.failedToAccept'), 'error');
+          showNotification(error.message || t('Failed to accept request') || 'Failed to accept request', 'error');
         }
       });
     });
@@ -162,10 +162,10 @@ export function AddFriend() {
         const requestId = parseInt((e.target as HTMLElement).getAttribute('data-request-id') || '0');
         try {
           await updateFriendRequest(requestId, 'REJECTED');
-          showNotification(t('friends.requestRejected'), 'info');
+          showNotification(t('Request rejected') || 'Request rejected', 'info');
           loadFriendRequests();
         } catch (error: any) {
-          showNotification(error.message || t('friends.failedToReject'), 'error');
+          showNotification(error.message || t('Failed to reject request') || 'Failed to reject request', 'error');
         }
       });
     });
