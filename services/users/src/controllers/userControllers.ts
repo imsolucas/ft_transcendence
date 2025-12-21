@@ -347,17 +347,17 @@ export async function removeFriend(req: FastifyRequest, reply: FastifyReply) {
 export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
   try {
     // Verify authentication
-    const userId = req.user?.id;
+  const userId = req.user?.id;
     if (!userId) {
       req.log?.warn('Search users: Unauthorized - no user ID in request');
       return reply.code(401).send({ error: "Unauthorized" });
     }
 
     // Validate query parameter
-    const { q } = req.query as { q?: string };
+  const { q } = req.query as { q?: string };
     if (!q || typeof q !== 'string') {
       return reply.code(400).send({ error: "Search query parameter 'q' is required." });
-    }
+  }
 
     const searchQuery = q.trim();
     if (searchQuery.length < 2) {
@@ -374,16 +374,16 @@ export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
     // SQLite doesn't support case-insensitive search natively in Prisma
     // We fetch all and filter client-side for case-insensitive matching
     const allUsers = await prisma.user.findMany({
-      where: {
-        id: {
-          not: userId // Exclude the current user from search results
-        }
-      },
-      select: {
-        id: true,
-        username: true,
-        avatar: true,
-        status: true
+    where: {
+      id: {
+        not: userId // Exclude the current user from search results
+      }
+    },
+    select: {
+      id: true,
+      username: true,
+      avatar: true,
+      status: true
       }
     });
 

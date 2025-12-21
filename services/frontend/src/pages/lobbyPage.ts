@@ -111,7 +111,7 @@ export function LobbyPage(): HTMLElement {
 			});
 			
 			const header = CardHeader({
-				children: CardTitle({ text: String(t('QuickActions') || 'Quick Actions') }),
+				children: CardTitle({ text: String(t('lobby.quickActions') || 'Quick Actions') }),
 			});
 			actionsCard.appendChild(header);
 			
@@ -164,7 +164,7 @@ export function LobbyPage(): HTMLElement {
 					}
 					searchResultsContainer.classList.add('hidden');
 					showToast({ 
-						message: String(t('friends.enterUsername') || 'Please enter at least 2 characters'), 
+						message: String(t('common.pleaseEnterUsername') || 'Please enter at least 2 characters'), 
 						variant: 'warning',
 						duration: 3000 
 					});
@@ -257,7 +257,7 @@ export function LobbyPage(): HTMLElement {
 			
 			// Search button
 			const searchButton = Button({
-				text: String(t('Search') || 'Search'),
+				text: String(t('common.search') || 'Search'),
 				variant: 'default',
 				size: 'default',
 				onClick: performSearch,
@@ -269,10 +269,10 @@ export function LobbyPage(): HTMLElement {
 			
 			// Quick actions dropdown (demonstrates Dropdown component)
 			const dropdown = Dropdown({
-				trigger: String(t('Actions') || 'Actions'),
+				trigger: String(t('lobby.actions') || 'Actions'),
 				items: [
 					{ value: 'profile', label: String(t('navbar.profile') || 'View Profile'), icon: '👤' },
-					{ value: 'friends', label: String(t('Friends') || 'Friends'), icon: '👥' },
+					{ value: 'friends', label: String(t('navbar.friends') || 'Friends'), icon: '👥' },
 					{ value: 'help', label: String(t('common.help') || 'Help'), icon: '❓' },
 				],
 				direction: 'up', // Expand upward so all options are visible
@@ -320,7 +320,7 @@ export function LobbyPage(): HTMLElement {
 			
 			// Info button (demonstrates Modal usage)
 			const infoBtn = Button({
-				text: 'ℹ️ Info',
+				text: `ℹ️ ${String(t('common.info') || 'Info')}`,
 				variant: 'outline',
 				size: 'default',
 				onClick: () => {
@@ -348,7 +348,7 @@ export function LobbyPage(): HTMLElement {
 		
 		// Add chat sidebar to lobby (demonstrates ChatPanel component)
 		const chatSidebar = createChatSidebar({
-			title: String(t('Lobby Chat') || 'Lobby Chat'),
+			title: String(t('lobby.lobbyChat') || 'Lobby Chat'),
 			onSendMessage: (message) => {
 				console.log('Send message:', message);
 				showToast({ 

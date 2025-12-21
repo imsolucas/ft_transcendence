@@ -82,8 +82,8 @@ export function Modal({
         }, 200);
       } else {
         // Fallback: remove immediately
-        if (onClose) onClose();
-        modal.remove();
+      if (onClose) onClose();
+      modal.remove();
       }
     });
     header.appendChild(closeBtn);

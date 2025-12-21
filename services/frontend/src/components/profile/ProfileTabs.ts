@@ -1,4 +1,5 @@
 import { typography } from '../../styles/theme';
+import { t } from '../../i18n';
 
 export function createProfileTabs(): string {
   return `
@@ -9,24 +10,24 @@ export function createProfileTabs(): string {
           data-tab="profile-settings"
         >
           <i class="bx bx-cog mr-1 sm:mr-2"></i>
-          <span class="hidden sm:inline">Settings</span>
-          <span class="sm:hidden">Set</span>
+          <span class="hidden sm:inline">${String(t('profile.settings') || 'Settings')}</span>
+          <span class="sm:hidden">${String(t('profile.settingsShort') || 'Set')}</span>
         </button>
         <button
           class="tab-btn flex-1 min-w-[100px] py-3 sm:py-4 px-3 sm:px-6 ${typography.body} text-sm sm:text-base font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all uppercase tracking-wider border-b-4 border-transparent"
           data-tab="friends"
         >
           <i class="bx bx-user mr-1 sm:mr-2"></i>
-          <span class="hidden sm:inline">Friends</span>
-          <span class="sm:hidden">Fri</span>
+          <span class="hidden sm:inline">${String(t('profile.friends') || 'Friends')}</span>
+          <span class="sm:hidden">${String(t('profile.friendsShort') || 'Fri')}</span>
         </button>
         <button
           class="tab-btn flex-1 min-w-[100px] py-3 sm:py-4 px-3 sm:px-6 ${typography.body} text-sm sm:text-base font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all uppercase tracking-wider border-b-4 border-transparent"
           data-tab="match-history"
         >
           <i class="bx bx-history mr-1 sm:mr-2"></i>
-          <span class="hidden sm:inline">History</span>
-          <span class="sm:hidden">His</span>
+          <span class="hidden sm:inline">${String(t('profile.history') || 'History')}</span>
+          <span class="sm:hidden">${String(t('profile.historyShort') || 'His')}</span>
         </button>
       </div>
     </div>
