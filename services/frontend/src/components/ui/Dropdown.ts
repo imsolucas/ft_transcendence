@@ -96,18 +96,8 @@ export function Dropdown({
     menu.appendChild(menuItem);
   });
   
-  // Keep existing event listeners as fallback (backward compatibility)
-  let isOpen = false;
-  triggerBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    isOpen = !isOpen;
-    // Alpine will handle the toggle, but we keep this for compatibility
-  });
-  
-  // Prevent clicks inside menu from closing
-  menu.addEventListener('click', (e) => {
-    e.stopPropagation();
-  });
+  // Note: Alpine.js handles all state management via x-data and @click directives
+  // No manual event listeners needed for state - Alpine.js manages 'open' state internally
   
   container.appendChild(triggerBtn);
   container.appendChild(menu);

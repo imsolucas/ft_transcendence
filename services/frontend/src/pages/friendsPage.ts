@@ -432,7 +432,7 @@ async function searchUsersDisplay(username: string, resultsContainer: HTMLElemen
     if (users.length === 0) {
       const emptyDiv = document.createElement('div');
       emptyDiv.className = 'text-center py-4 text-gray-400 text-sm';
-      emptyDiv.textContent = String(t('No users found') || 'No users found');
+      emptyDiv.textContent = String(t('common.noUsersFound') || 'No users found');
       resultsContainer.appendChild(emptyDiv);
       return;
     }
@@ -474,7 +474,7 @@ async function searchUsersDisplay(username: string, resultsContainer: HTMLElemen
     resultsContainer.innerHTML = '';
     const errorDiv = document.createElement('div');
     errorDiv.className = 'text-center py-4 text-red-400 text-sm';
-      errorDiv.textContent = String(t('Search failed') || 'Search failed');
+      errorDiv.textContent = String(t('common.searchFailed') || 'Search failed');
     resultsContainer.appendChild(errorDiv);
   }
 }

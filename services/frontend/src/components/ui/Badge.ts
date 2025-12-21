@@ -1,5 +1,7 @@
 // components/ui/Badge.ts
 
+import { t } from '../../i18n';
+
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
 type BadgeSize = 'sm' | 'md' | 'lg';
 
@@ -59,9 +61,9 @@ export function StatusBadge({
   className?: string;
 }): HTMLElement {
   const statusMap = {
-    online: { text: 'Online', variant: 'success' as BadgeVariant, icon: '●' },
-    offline: { text: 'Offline', variant: 'default' as BadgeVariant, icon: '●' },
-    ingame: { text: 'In Game', variant: 'warning' as BadgeVariant, icon: '●' },
+    online: { text: String(t('user.status.online') || 'Online'), variant: 'success' as BadgeVariant, icon: '●' },
+    offline: { text: String(t('user.status.offline') || 'Offline'), variant: 'default' as BadgeVariant, icon: '●' },
+    ingame: { text: String(t('user.status.inGame') || 'In Game'), variant: 'warning' as BadgeVariant, icon: '●' },
   };
   
   const { text, variant, icon } = statusMap[status];

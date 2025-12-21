@@ -1,5 +1,7 @@
 // components/ui/Spinner.ts
 
+import { t } from '../../i18n';
+
 type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl';
 type SpinnerVariant = 'default' | 'primary' | 'white';
 
@@ -48,7 +50,7 @@ export function Spinner({
 }
 
 export function LoadingOverlay({
-  message = 'Loading...',
+  message = String(t('common.loading') || 'Loading...'),
   show = true,
 }: {
   message?: string;

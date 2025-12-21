@@ -94,6 +94,12 @@ export function renderPage(screen: Screen): void {
       container.innerHTML = "";
       const element = page.render();
       container.appendChild(element);
+      
+      // Initialize Alpine.js on newly added elements with directives
+      if (window.Alpine && window.Alpine.initTree) {
+        window.Alpine.initTree(element);
+      }
+      
       state.currentScreen = screen;
     } catch (error) {
       console.error(`Error rendering ${screen}:`, error);

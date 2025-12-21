@@ -28,13 +28,19 @@ export function Modal({
   const backdrop = document.createElement('div');
   backdrop.className = 'absolute inset-0 bg-black/50 backdrop-blur-sm';
   
-  // Add Alpine.js click handler (framework usage)
-  backdrop.setAttribute('@click', 'open = false; $nextTick(() => { if (typeof onClose === "function") onClose(); modal.remove(); })');
-  
-  // Keep existing event listener for backward compatibility
+  // Use event listener for backdrop click (Alpine.js can't access closure variables)
   backdrop.addEventListener('click', () => {
-    if (onClose) {
-      onClose();
+    // Update Alpine.js state if available
+    if (window.Alpine && modal.__x) {
+      modal.__x.$data.open = false;
+      // Wait for transition, then remove
+      setTimeout(() => {
+        if (onClose) onClose();
+        modal.remove();
+      }, 200);
+    } else {
+      // Fallback: remove immediately
+      if (onClose) onClose();
       modal.remove();
     }
   });
@@ -64,13 +70,21 @@ export function Modal({
     closeBtn.innerHTML = '&times;';
     closeBtn.className = 'text-gray-400 hover:text-white text-3xl leading-none transition-colors';
     
-    // Add Alpine.js click handler (framework usage)
-    closeBtn.setAttribute('@click', 'open = false; $nextTick(() => { if (typeof onClose === "function") onClose(); modal.remove(); })');
-    
-    // Keep existing event listener for backward compatibility
+    // Use event listener for close button (Alpine.js can't access closure variables)
     closeBtn.addEventListener('click', () => {
-      if (onClose) onClose();
-      modal.remove();
+      // Update Alpine.js state if available
+      if (window.Alpine && modal.__x) {
+        modal.__x.$data.open = false;
+        // Wait for transition, then remove
+        setTimeout(() => {
+          if (onClose) onClose();
+          modal.remove();
+        }, 200);
+      } else {
+        // Fallback: remove immediately
+        if (onClose) onClose();
+        modal.remove();
+      }
     });
     header.appendChild(closeBtn);
   }
@@ -95,6 +109,11 @@ export function Modal({
 export function showModal(options: ModalOptions): void {
   const modal = Modal(options);
   document.body.appendChild(modal);
+  
+  // Initialize Alpine.js on the newly added modal element
+  if (window.Alpine && window.Alpine.initTree) {
+    window.Alpine.initTree(modal);
+  }
 }
 
 export function closeModal(modal: HTMLElement): void {

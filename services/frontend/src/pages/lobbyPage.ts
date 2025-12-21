@@ -129,7 +129,7 @@ export function LobbyPage(): HTMLElement {
 			searchInputWrapper.className = 'flex gap-2';
 			const searchInputElement = Input({
 				id: 'quick-search',
-				placeholder: String(t('Search Players') || 'Search players...'),
+				placeholder: String(t('lobby.searchPlayers') || 'Search players...'),
 				className: 'flex-1',
 			});
 			
@@ -188,11 +188,11 @@ export function LobbyPage(): HTMLElement {
 							searchContainer.__x.$data.showResults = false;
 						}
 						searchResultsContainer.classList.add('hidden');
-						showToast({ 
-							message: String(t('No users found') || 'No users found'), 
-							variant: 'info',
-							duration: 3000 
-						});
+					showToast({ 
+						message: String(t('common.noUsersFound') || 'No users found'), 
+						variant: 'info',
+						duration: 3000 
+					});
 					} else if (users.length === 1) {
 						// Single result - show modal directly
 						if (window.Alpine && searchContainer.__x) {
@@ -246,7 +246,7 @@ export function LobbyPage(): HTMLElement {
 						searchContainer.__x.$data.showResults = false;
 					}
 					searchResultsContainer.classList.add('hidden');
-					const errorMessage = error?.message || String(t('Search failed') || 'Search failed');
+					const errorMessage = error?.message || String(t('common.searchFailed') || 'Search failed');
 					showToast({ 
 						message: errorMessage, 
 						variant: 'error',
@@ -352,7 +352,7 @@ export function LobbyPage(): HTMLElement {
 			onSendMessage: (message) => {
 				console.log('Send message:', message);
 				showToast({ 
-					message: String(t('Message Sent') || 'Message sent!'), 
+					message: String(t('common.messageSent') || 'Message sent!'), 
 					variant: 'success',
 					duration: 2000 
 				});
@@ -360,6 +360,12 @@ export function LobbyPage(): HTMLElement {
 			collapsed: true, // Start collapsed
 		});
 		container.appendChild(chatSidebar);
+		
+		// Initialize Alpine.js on all dynamically added elements with directives
+		if (window.Alpine && window.Alpine.initTree) {
+			// Initialize Alpine on the entire container to catch all new elements
+			window.Alpine.initTree(container);
+		}
 		} catch (error) {
 			console.error('Error setting up lobby components:', error);
 			console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');

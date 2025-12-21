@@ -1,5 +1,7 @@
 // components/shared/StatusIndicator.ts
 
+import { t } from '../../i18n';
+
 export type UserStatus = 'online' | 'offline' | 'ingame';
 
 interface StatusIndicatorOptions {
@@ -33,9 +35,9 @@ export function StatusIndicator({
   };
 
   const statusLabels = {
-    online: 'Online',
-    offline: 'Offline',
-    ingame: 'In Game',
+    online: String(t('user.status.online') || 'Online'),
+    offline: String(t('user.status.offline') || 'Offline'),
+    ingame: String(t('user.status.inGame') || 'In Game'),
   };
 
   dot.className = `${sizes[size]} ${statusColors[status]} rounded-full`;

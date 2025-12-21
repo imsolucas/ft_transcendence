@@ -157,7 +157,10 @@
     "success": "Éxito",
     "search": "Buscar",
     "help": "Ayuda",
-    "saving": "Guardando..."
+    "saving": "Guardando...",
+    "noUsersFound": "No se encontraron usuarios",
+    "searchFailed": "Búsqueda fallida",
+    "messageSent": "¡Mensaje enviado!"
   },
   "chat": {
     "noMessages": "Aún no hay mensajes. ¡Inicia la conversación!",
