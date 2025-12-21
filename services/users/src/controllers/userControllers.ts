@@ -240,6 +240,14 @@ export async function updateFriendRequest(req: FastifyRequest, reply: FastifyRep
     return reply.code(404).send({ error: "Friend request not found." });
   }
 
+  if (status === "REJECTED") {
+    await prisma.friendship.delete({
+      where: { id: Number(requestId) }
+    });
+    return reply.send({ message: "Friend request rejected and removed." });
+  }
+
+  // If accepted, update status
   await prisma.friendship.update({
     where: { id: Number(requestId) },
     data: { status: status as FriendshipStatus }

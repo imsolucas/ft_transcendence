@@ -20,7 +20,7 @@ const tournamentService = new TournamentService(roomManager, broadcaster);
 const messageHandler = new NewMessageHandler(roomManager);
 const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
 
-server.register(ws);
+await server.register(ws);
 
 server.addHook('onRequest', async (request: any, reply: any) => {
   reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -49,8 +49,7 @@ server.get('/rooms', async (request: any, reply: any) => {
   return output || 'No rooms available\n';
 })
 
-server.register(async function (fastify: any) {
-  fastify.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
+server.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
     console.log('WebSocket connection established');
 
     let currentPlayer: Player | null = null;
@@ -87,7 +86,6 @@ server.register(async function (fastify: any) {
         console.log('Unknown player disconnected');
       }
     });
-  });
 });
 
 tickSystem.startTickSystem();
