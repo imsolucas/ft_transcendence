@@ -21,6 +21,11 @@ export default class TournamentService {
             playerIds.forEach(id => room.tournamentScores!.set(id, 0));
         }
 
+        // Initialize tournament matches array
+        if (!room.tournamentMatches) {
+            room.tournamentMatches = [];
+        }
+
         // First player becomes king and second becomes challenger
         if (playerIds.length >= 2 && playerIds[0] && playerIds[1]) {
             room.kingId = playerIds[0];

@@ -2,6 +2,7 @@ import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, t
 import type { RoomManager } from "../game/roomManager.js";
 import type { MessageBroadcaster } from "./Broadcaster.js";
 import type TournamentService from "./TournamentService.js";
+import { reportMatchResult, reportTournamentResult } from "../utils/reportResults.js";
 
 export default class TickSystem {
     private lastTime = performance.now();
@@ -45,6 +46,29 @@ export default class TickSystem {
                     ? (roundWinner == 0 ? room.kingId! : room.challengerId!)
                     : (roundWinner == 0 ? room.playerIds[0] : room.playerIds[1]);
                 if (room.mode === 'tournament' && winnerId) {
+                    // Track this match before ending the round
+                    const gameState = room.gameServer.getGameState();
+                    const scores = gameState.scores || [0, 0];
+                    const king = this.roomManager.getPlayer(room.kingId!);
+                    const challenger = this.roomManager.getPlayer(room.challengerId!);
+                    
+                    if (king && challenger) {
+                        const matchRecord = {
+                            player1Id: king.id,
+                            player2Id: challenger.id,
+                            player1DisplayName: king.name,
+                            player2DisplayName: challenger.name,
+                            player1Score: scores[0],
+                            player2Score: scores[1],
+                            winnerId: winnerId,
+                            played_at: new Date(Date.now() - 60000).toISOString(), // Approximate match start
+                            end_at: new Date().toISOString()
+                        };
+                        
+                        if (!room.tournamentMatches) room.tournamentMatches = [];
+                        room.tournamentMatches.push(matchRecord);
+                    }
+
                     const tournamentResult = this.tournamentService.endRound(room, winnerId);
 
                     if (tournamentResult.tournamentOver) {
@@ -59,6 +83,28 @@ export default class TickSystem {
 
                         this.broadcaster.broadcastToRoom(room.id, tournamentEndMsg);
                         //frontend has to read the tourney state to come up with winnner screen
+
+                        // Report tournament result to users service
+                        const tournamentData = {
+                            tournamentId: parseInt(room.id.replace(/\D/g, '')) || Math.floor(Date.now() / 1000), // Extract numeric ID or use timestamp
+                            name: `Tournament ${room.id}`,
+                            winnerId: tournamentResult.tournamentWinnerId ? parseInt(tournamentResult.tournamentWinnerId) : undefined,
+                            start_at: new Date(room.createdAt).toISOString(),
+                            end_at: new Date().toISOString(),
+                            players: room.playerIds.map(id => ({ userId: parseInt(id) })),
+                            matches: (room.tournamentMatches || []).map(m => ({
+                                player1Id: parseInt(m.player1Id),
+                                player2Id: parseInt(m.player2Id),
+                                player1DisplayName: m.player1DisplayName,
+                                player2DisplayName: m.player2DisplayName,
+                                player1Score: m.player1Score,
+                                player2Score: m.player2Score,
+                                winnerId: parseInt(m.winnerId),
+                                played_at: m.played_at,
+                                end_at: m.end_at
+                            }))
+                        };
+                        reportTournamentResult(tournamentData);
                     } else {
                         console.log(`Round ended. Preparing for next round...`);
 
@@ -99,6 +145,27 @@ export default class TickSystem {
                     }
 
                     this.broadcaster.broadcastToRoom(room.id, gameEndMsg);
+
+                    // Report match result to users service
+                    const gameState = room.gameServer.getGameState();
+                    const scores = gameState.scores || [0, 0];
+                    const player1 = this.roomManager.getPlayer(room.playerIds[0]);
+                    const player2 = this.roomManager.getPlayer(room.playerIds[1]);
+
+                    if (player1 && player2) {
+                        const matchResult = {
+                            player1Id: parseInt(player1.id),
+                            player2Id: parseInt(player2.id),
+                            player1DisplayName: player1.name,
+                            player2DisplayName: player2.name,
+                            player1Score: scores[0],
+                            player2Score: scores[1],
+                            winnerId: winnerId ? parseInt(winnerId) : null,
+                            played_at: new Date(room.createdAt).toISOString(),
+                            end_at: new Date().toISOString()
+                        };
+                        reportMatchResult(matchResult);
+                    }
                 }
             }
         }

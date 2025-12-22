@@ -1,6 +1,18 @@
 import type { GameConfig } from "shared/index.js";
 import { GameServer } from "../game/GameServer.js";
 
+export interface TournamentMatch {
+	player1Id: string;
+	player2Id: string;
+	player1DisplayName: string;
+	player2DisplayName: string;
+	player1Score: number;
+	player2Score: number;
+	winnerId: string;
+	played_at: string;
+	end_at: string;
+}
+
 export interface Room {
 	id: string;
 	mode: 'standard' | 'tournament'
@@ -9,6 +21,7 @@ export interface Room {
 	challengerId?: string;
 	queueIds?: string[]; // Queue of players waiting to challenge
 	tournamentScores?: Map<string, number>;
+	tournamentMatches?: TournamentMatch[]; // Track all matches in a tournament
 	status: 'waiting' | 'full' | 'playing' | 'finished';
 	createdAt: number;
 	config: GameConfig;

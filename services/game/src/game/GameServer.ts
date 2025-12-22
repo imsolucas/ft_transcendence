@@ -66,4 +66,8 @@ export class GameServer {
     const winnerIndex = (scores[0] ?? 0) > (scores[1] ?? 0) ? 0 : 1;
     return winnerIndex;
   }
+
+  getGameState(): GameState {
+    return this.gameEngine.getGameState();
+  }
 }
