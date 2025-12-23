@@ -3,6 +3,8 @@ services:
     container_name: frontend
     image: frontend
     build:
+      args:
+        PORT: ${FRONTEND_PORT:-3000}
       context: ../services/frontend/
       dockerfile: Dockerfile
     command: ["${FRONTEND_CMD:-dev}"]
@@ -13,7 +15,7 @@ services:
     networks:
       - devnet
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS ${FRONTEND_HEALTH_HOST} || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS ${FRONTEND_PORT:-3000} || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -24,6 +26,8 @@ services:
     container_name: users
     image: users
     build:
+      args:
+        PORT: ${USERS_PORT:-4000}
       context: ../services/users/
       dockerfile: Dockerfile
     env_file:
@@ -35,7 +39,7 @@ services:
     networks:
       - devnet
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS ${USERS_HEALTH_HOST} || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS ${USERS_PORT:-4000} || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -62,14 +66,18 @@ services:
     container_name: api-gateway
     image: api-gateway
     build:
+      args:
+        PORT: ${API_GATEWAY_PORT:-443}
+        USERS_PORT: ${USERS_PORT:-4000}
+        FRONTEND_PORT: ${FRONTEND_PORT:-3000}
+        GAME_PORT: ${GAME_PORT:-3001}
       context: ../services/api-gateway
       dockerfile: Dockerfile
     env_file:
       - .env
     ports:
-      - "${API_GATEWAY_PORT}:443"
+      - "${API_GATEWAY_PORT:-443}:443"
     volumes:
-      - ../services/api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
       - ../services/api-gateway/server.crt:/etc/nginx/ssl/server.crt:ro
       - ../services/api-gateway/server.key:/etc/nginx/ssl/server.key:ro
     networks:
@@ -78,7 +86,7 @@ services:
       - frontend
       - users
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -fsS ${API_GATEWAY_HEALTH_HOST} || exit 1"]
+      test: ["CMD-SHELL", "curl -k -fsS ${API_GATEWAY_PORT:-443} || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
