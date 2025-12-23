@@ -209,26 +209,21 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
 function showPasswordSetupModal(data: { userId: number; username: string; email: string; avatar: string; message: string }): void {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm';
-  modal.setAttribute('x-data', '{ open: true }');
-  modal.setAttribute('x-show', 'open');
-  modal.setAttribute('x-transition', '');
+  
+  // Add Stimulus controller for modal functionality
+  modal.setAttribute('data-controller', 'modal');
+  modal.setAttribute('data-modal-open-value', 'true');
 
   const backdrop = document.createElement('div');
   backdrop.className = 'absolute inset-0 bg-black/50';
-  backdrop.setAttribute('@click', 'open = false');
-  backdrop.addEventListener('click', () => {
-    if (window.Alpine && modal.__x) {
-      modal.__x.$data.open = false;
-      setTimeout(() => modal.remove(), 200);
-    } else {
-      modal.remove();
-    }
-  });
+  backdrop.setAttribute('data-modal-target', 'backdrop');
+  backdrop.setAttribute('data-action', 'click->modal#closeOnBackdrop');
   modal.appendChild(backdrop);
 
   const container = document.createElement('div');
   container.className = 'relative max-w-md w-full mx-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700';
-  container.setAttribute('@click.stop', '');
+  container.setAttribute('data-modal-target', 'container');
+  container.setAttribute('data-action', 'click->modal#stopPropagation');
 
   const header = document.createElement('div');
   header.className = 'flex items-center justify-between p-6 border-b border-gray-700';
@@ -241,15 +236,7 @@ function showPasswordSetupModal(data: { userId: number; username: string; email:
   const closeBtn = document.createElement('button');
   closeBtn.innerHTML = '&times;';
   closeBtn.className = 'text-gray-400 hover:text-white text-3xl leading-none transition-colors';
-  closeBtn.setAttribute('@click', 'open = false');
-  closeBtn.addEventListener('click', () => {
-    if (window.Alpine && modal.__x) {
-      modal.__x.$data.open = false;
-      setTimeout(() => modal.remove(), 200);
-    } else {
-      modal.remove();
-    }
-  });
+  closeBtn.setAttribute('data-action', 'click->modal#close');
   header.appendChild(closeBtn);
   container.appendChild(header);
 
@@ -377,10 +364,15 @@ async function handleSetPassword(userId: number, password: string, modal: HTMLEl
         showNotification('Another user was logged in. You have been logged in as ' + data.user.username, 'info');
       }
       
-      // Close modal
-      if (window.Alpine && modal.__x) {
-        modal.__x.$data.open = false;
-        setTimeout(() => modal.remove(), 200);
+      // Close modal using Stimulus controller
+      const application = (window as any).Stimulus?.application;
+      if (application) {
+        const controller = application.getControllerForElementAndIdentifier(modal, 'modal');
+        if (controller) {
+          controller.close();
+        } else {
+          modal.remove();
+        }
       } else {
         modal.remove();
       }
