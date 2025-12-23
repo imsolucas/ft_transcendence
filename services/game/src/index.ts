@@ -90,7 +90,7 @@ server.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
 
 tickSystem.startTickSystem();
 
-server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {
+server.listen({ port: Number(process.env.PORT), host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {
     console.error(err)
     process.exit(1)
