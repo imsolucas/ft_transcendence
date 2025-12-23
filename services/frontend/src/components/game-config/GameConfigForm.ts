@@ -297,13 +297,12 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 			// Save current state before validation
 			saveCurrentState();
 
-			// Validate player names (only for local games)
+			// For local games, use default names if empty
 			if (!isMultiplayer) {
-				const hasEmptyNames = playerNames.some(name => !name.trim());
-				if (hasEmptyNames) {
-					alert('Please enter all player names');
-					return;
-				}
+				playerNames = playerNames.map((name, index) => {
+					const trimmed = name.trim();
+					return trimmed || `Player ${index + 1}`;
+				});
 			}
 
 			// Create config
@@ -315,7 +314,7 @@ export function GameConfig({ mode, isMultiplayer = false, onSubmit, onCancel }: 
 					color: ballColor,
 					speed: ballSpeed * 2
 				},
-				playerNames: !isMultiplayer ? playerNames.map(name => name.trim()) : [],
+				playerNames: !isMultiplayer ? playerNames : [],
 				backgroundColor: backgroundColor,
 				pointsToWin: pointsToWin,
 				isPrivate: isPrivate,

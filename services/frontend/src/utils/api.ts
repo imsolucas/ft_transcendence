@@ -3,8 +3,9 @@ import { getAccessToken, clearAccessToken } from './tokenManager';
 import process from 'process';
 
 // API Configuration
-export const API_DOMAIN = `${import.meta.env.DOMAIN || 'localhost'}:${import.meta.env.API_DOMAIN || '443'}`
-export const API_BASE_URL = `https://${API_DOMAIN}`
+// Use the current browser location to avoid hardcoding ports
+export const API_DOMAIN = window.location.host
+export const API_BASE_URL = `${window.location.protocol}//${API_DOMAIN}`
 
 // Helper function to get auth token (from localStorage)
 const getToken = () => {
@@ -51,7 +52,7 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
         // Ignore errors
       }
     }
-    
+
     // Clear token and redirect to login
     clearAccessToken();
     console.error('Unauthorized: Token invalid or expired');
@@ -237,7 +238,7 @@ export const fetchMatchHistory = async () => {
         // Determine if current user is player1 or player2
         const isPlayer1 = match.player1Id === currentUserId;
         const isPlayer2 = match.player2Id === currentUserId;
-        
+
         // Get opponent information - the player who is NOT the current user
         let opponent: string;
         if (isPlayer1) {
@@ -248,7 +249,7 @@ export const fetchMatchHistory = async () => {
           // Fallback: shouldn't happen, but handle edge case
           opponent = 'Unknown';
         }
-        
+
         const myScore = isPlayer1 ? match.player1Score : match.player2Score;
         const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
         const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
@@ -556,12 +557,12 @@ export const verify2FACode = async (userId: number, code: string) => {
 
     if (!result.ok) {
       const errorData = await result.json().catch(() => ({ error: result.statusText }));
-      
+
       // Handle 403 - User already logged in on another device
       if (result.status === 403 && errorData?.error?.includes('already logged in')) {
         throw new Error(errorData.message || 'You are already logged in on another device or browser. Please log out from the other device before logging in here.');
       }
-      
+
       throw new Error(errorData.error || 'Invalid 2FA code');
     }
 
