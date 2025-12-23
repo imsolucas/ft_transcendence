@@ -79,10 +79,10 @@ export const typography = {
   },
 
   // Composite styles for specific elements
-  title: "font-['Press_Start_2P'] text-4xl md:text-6xl",
-  subtitle: "font-['Orbitron'] text-lg md:text-xl",
-  button: "font-['Press_Start_2P'] text-lg md:text-xl",
-  body: "font-['Orbitron']",
+  title: "font-poppins text-4xl md:text-6xl",
+  subtitle: "font-poppins text-lg md:text-xl",
+  button: "font-poppins text-lg md:text-xl",
+  body: "font-poppins",
 
   sizes: {
     // Hero title

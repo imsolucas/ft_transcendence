@@ -310,7 +310,6 @@ export function AuthPage(): HTMLElement {
 
     <!-- Enhanced Retro Arcade Styles -->
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
       /* Retro grid pattern */
       .grid-pattern {
