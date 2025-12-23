@@ -21,7 +21,10 @@ COPY . .
 
 RUN ./init.sh dev
 
-EXPOSE 4000
+ARG PORT=4000
+ENV PORT=$PORT
+
+EXPOSE $PORT
 
 ENTRYPOINT [ "npm", "run" ]
 CMD [ "dev" ]
