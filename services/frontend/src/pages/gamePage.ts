@@ -34,27 +34,54 @@ function matchMaking(container: HTMLElement) {
 	}
 
 	const loadingComponent = MatchmakingScreen(events);
-	container.appendChild(loadingComponent);    socket = new WebSocket(`wss://${API_DOMAIN}/ws/game`);
-    socket.onopen = () => {
-        const connectionMsg: ConnectionMessage = {
-            type: 'connection',
-            data: {
-                picture: user!.picture,
-                playerName: user!.username,
-                playerId: user!.id,
-            },
-            timestamp: Date.now()
-        }
+	container.appendChild(loadingComponent);
+	
+	// Create WebSocket connection
+	const wsUrl = `wss://${API_DOMAIN}/ws/game`;
+	console.log('Connecting to WebSocket:', wsUrl);
+	
+	try {
+		socket = new WebSocket(wsUrl);
+	} catch (error) {
+		console.error('Failed to create WebSocket:', error);
+		navigate('lobby');
+		alert('Failed to create WebSocket connection. Please try again.');
+		return;
+	}
+	
+	socket.onopen = () => {
+		console.log('WebSocket connection opened');
+		const connectionMsg: ConnectionMessage = {
+			type: 'connection',
+			data: {
+				picture: user!.picture,
+				playerName: user!.username,
+				playerId: user!.id,
+			},
+			timestamp: Date.now()
+		}
 
-        socket!.send(JSON.stringify(connectionMsg));
+		socket!.send(JSON.stringify(connectionMsg));
+	}
 
-    }
+	socket.onerror = (ev: Event) => {
+		console.error('WebSocket error:', ev);
+		console.error('WebSocket readyState:', socket?.readyState);
+		// Don't navigate immediately - let onclose handle it
+	}
 
-    socket.onerror = (ev: Event) => {
-        console.log('Error connecting to server', ev);
-        navigate('lobby');
-        alert('Error connecting to server, try again later');
-    }
+	socket.onclose = (event: CloseEvent) => {
+		console.log('WebSocket closed:', event.code, event.reason);
+		// Only navigate if it wasn't a normal closure and we're not already navigating
+		if (event.code !== 1000 && event.code !== 1001) {
+			console.error('WebSocket closed unexpectedly:', event.code, event.reason);
+			// Only show alert if we haven't already navigated away
+			if (window.location.pathname.includes('/game')) {
+				navigate('lobby');
+				alert('Connection to game server lost. Please try again.');
+			}
+		}
+	}
 
     const onSuccessfulConnect = () => {
         switch (gameOptions?.type) {
