@@ -3,7 +3,6 @@ import { t } from '../i18n';
 import { gradients, spacing } from '../styles/theme';
 import { createAnimatedBackground } from '../components/landing/AnimatedBackground';
 import { createTitleSection } from '../components/landing/TitleSection';
-import { createVideoSection, setupVideoControls } from '../components/landing/VideoSection';
 import { createCTAButtons, setupCTAButtons } from '../components/landing/CTAButtons';
 import { showPrivacyTermsModal } from '../components/legal/PrivacyTermsModal';
 import { addFooterToPage } from '../components/layout/Footer';
@@ -23,7 +22,6 @@ export function LandingPage(): HTMLElement {
     </section>
   `;
 
-  setupVideoControls(container);
   setupCTAButtons(container, () => navigate('lobby'));
 
   // Add footer
