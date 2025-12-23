@@ -15,7 +15,7 @@ services:
     networks:
       - devnet
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS ${FRONTEND_PORT:-3000} || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${FRONTEND_PORT:-3000} || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -39,7 +39,7 @@ services:
     networks:
       - devnet
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS ${USERS_PORT:-4000} || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${USERS_PORT:-4000}/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -64,7 +64,7 @@ services:
     networks:
       - devnet
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS ${GAME_HEALTH_HOST} || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${GAME_PORT:-3001}/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -95,7 +95,7 @@ services:
       - frontend
       - users
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -fsS ${API_GATEWAY_PORT:-443} || exit 1"]
+      test: ["CMD-SHELL", "curl -k -fsS https://localhost:443/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
