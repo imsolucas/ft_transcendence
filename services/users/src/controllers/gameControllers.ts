@@ -56,6 +56,72 @@ export async function getMatchHistory(req: FastifyRequest, reply: FastifyReply) 
   return reply.send(result);
 }
 
+// GET /user/match-history/:userId
+export async function getMatchHistoryByUserId(req: FastifyRequest, reply: FastifyReply) {
+  const currentUserId = (req.user as any)?.id;
+  if (!currentUserId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { userId } = req.params as { userId?: string };
+  if (!userId || isNaN(Number(userId))) {
+    return reply.code(400).send({ error: "Invalid user ID." });
+  }
+
+  const targetUserId = parseInt(userId, 10);
+
+  // Verify target user exists
+  const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!targetUser) {
+    return reply.code(404).send({ error: "User not found." });
+  }
+
+  // Find matches where target user is player1 or player2, include tournament info if present
+  const matches = await prisma.match.findMany({
+    where: {
+      OR: [
+        { player1Id: targetUserId },
+        { player2Id: targetUserId }
+      ]
+    },
+    orderBy: { played_at: "desc" },
+    include: {
+      tournament: {
+        select: {
+          id: true,
+          name: true,
+          winnerId: true,
+          start_at: true,
+          end_at: true
+        }
+      }
+    }
+  });
+
+  const result = matches.map(m => ({
+    matchId: m.id,
+    tournamentId: m.tournamentId ?? null,
+    player1Id: m.player1Id,
+    player2Id: m.player2Id,
+    player1DisplayName: m.player1DisplayName,
+    player2DisplayName: m.player2DisplayName,
+    player1Score: m.player1Score,
+    player2Score: m.player2Score,
+    winnerId: m.winnerId ?? null,
+    played_at: m.played_at,
+    end_at: m.end_at,
+    tournament: m.tournament
+      ? {
+          id: m.tournament.id,
+          name: m.tournament.name,
+          winnerId: m.tournament.winnerId,
+          start_at: m.tournament.start_at,
+          end_at: m.tournament.end_at
+        }
+      : null
+  }));
+
+  return reply.send(result);
+}
+
 // POST /game/match-history
 export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyReply) {
   const {

@@ -1,7 +1,7 @@
 import { navigate } from "../router";
 import { AddFriend } from '../components/shared/AddFriend';
 import { t } from '../i18n';
-import { calculateUserStats, searchUsers } from '../utils/api';
+import { calculateUserStats, searchUsers, fetchOnlineUsers } from '../utils/api';
 import { gradients, spacing } from '../styles/theme';
 import { createLobbyHeader } from '../components/lobby/LobbyHeader';
 import { createGameModeButtons, setupGameModeButtons } from '../components/lobby/GameModeButtons';
@@ -346,18 +346,44 @@ export function LobbyPage(): HTMLElement {
 				text: `ℹ️ ${String(t('common.info') || 'Info')}`,
 				variant: 'outline',
 				size: 'default',
-				onClick: () => {
-				showModal({
-					title: String(t('lobby.infoTitle') || 'Lobby Information'),
-					content: `
-						<div class="space-y-3">
-							<p class="text-gray-300">${String(t('lobby.infoText') || 'You are in the main lobby.')}</p>
-							<p class="text-gray-300">${String(t('lobby.infoActivePlayers') || 'Active players online:')} <strong class="text-white">${String(t('common.loading') || 'Loading...')}</strong></p>
-							<p class="text-sm text-gray-400">${String(t('lobby.infoTip') || 'Tip: Use quick search to find other players!')}</p>
-						</div>
-					`,
-					showCloseButton: true,
-				});
+				onClick: async () => {
+					// Fetch online users
+					let onlineUsersList = '';
+					try {
+						const onlineUsers = await fetchOnlineUsers();
+						if (onlineUsers.length === 0) {
+							onlineUsersList = `<p class="text-gray-400 text-sm">${String(t('lobby.noOnlineUsers') || 'No other users online at the moment.')}</p>`;
+						} else {
+							onlineUsersList = `
+								<ul class="list-disc list-inside space-y-1 text-sm">
+									${onlineUsers.map((user: any) => `
+										<li class="text-gray-300">
+											<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+											${user.username}
+										</li>
+									`).join('')}
+								</ul>
+							`;
+						}
+					} catch (error) {
+						console.error('Error fetching online users:', error);
+						onlineUsersList = `<p class="text-red-400 text-sm">${String(t('common.errorLoading') || 'Error loading online users.')}</p>`;
+					}
+
+					showModal({
+						title: String(t('lobby.infoTitle') || 'Lobby Information'),
+						content: `
+							<div class="space-y-3">
+								<p class="text-gray-300">${String(t('lobby.infoText') || 'You are in the main lobby.')}</p>
+								<div>
+									<p class="text-gray-300 mb-2">${String(t('lobby.infoActivePlayers') || 'Active players online:')}</p>
+									${onlineUsersList}
+								</div>
+								<p class="text-sm text-gray-400">${String(t('lobby.infoTip') || 'Tip: Use quick search to find other players!')}</p>
+							</div>
+						`,
+						showCloseButton: true,
+					});
 				},
 			});
 			content.appendChild(infoBtn);

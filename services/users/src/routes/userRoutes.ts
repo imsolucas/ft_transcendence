@@ -391,4 +391,64 @@ export default async function registerUserRoutes(app: FastifyInstance) {
       }
     }
   }, controllers.revokeApiKey);
+
+  // Get online users
+  app.get("/user/online", {
+    schema: {
+      summary: "Get online users",
+      description: "Retrieves a list of all users currently online.",
+      tags: ["user"],
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          description: "Online users retrieved successfully.",
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "integer" },
+              username: { type: "string" },
+              avatar: { type: "string", format: "uri" },
+              status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] }
+            }
+          }
+        },
+        401: { $ref: "UnauthorizedError#" },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.getOnlineUsers);
+
+  // Get friends by user ID
+  app.get("/user/friends/:userId", {
+    schema: {
+      summary: "Get friend list by user ID",
+      description: "Retrieves the friend list of a specific user by their user ID.",
+      tags: ["friends"],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          userId: { type: "integer" }
+        }
+      },
+      response: {
+        200: {
+          description: "Friend list retrieved successfully.",
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              username: { type: "string" },
+              avatar: { type: "string", format: "uri" },
+              status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] }
+            }
+          }
+        },
+        401: { $ref: "UnauthorizedError#" },
+        404: { description: "User not found." },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.getFriendsByUserId);
 }

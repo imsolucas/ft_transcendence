@@ -218,7 +218,7 @@ export const updateUserProfile = async (data: any) => {
   }
 };
 
-export const fetchMatchHistory = async () => {
+export const fetchMatchHistory = async (userId?: number) => {
   try {
     // Get current user ID from token to avoid circular dependency with getCurrentUser()
     const token = getToken();
@@ -226,20 +226,24 @@ export const fetchMatchHistory = async () => {
       throw new Error('Not authenticated');
     }
 
-    // Fetch matches from API
-    const matches = await apiFetch(`${API_BASE_URL}/user/match-history`);
+    // Fetch matches from API - use user-specific endpoint if userId is provided
+    const endpoint = userId 
+      ? `${API_BASE_URL}/user/match-history/${userId}`
+      : `${API_BASE_URL}/user/match-history`;
+    const matches = await apiFetch(endpoint);
 
     // Decode token to get user ID (simple base64 decode, no verification needed for ID extraction)
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentUserId = payload.id;
+      const targetUserId = userId || currentUserId;
 
       return matches.map((match: any) => {
-        // Determine if current user is player1 or player2
-        const isPlayer1 = match.player1Id === currentUserId;
-        const isPlayer2 = match.player2Id === currentUserId;
-
-        // Get opponent information - the player who is NOT the current user
+        // Determine if target user is player1 or player2
+        const isPlayer1 = match.player1Id === targetUserId;
+        const isPlayer2 = match.player2Id === targetUserId;
+        
+        // Get opponent information - the player who is NOT the target user
         let opponent: string;
         if (isPlayer1) {
           opponent = match.player2DisplayName || 'Unknown';
@@ -286,9 +290,9 @@ export const fetchMatchHistory = async () => {
 };
 
 // Calculate user statistics from match history
-export const calculateUserStats = async () => {
+export const calculateUserStats = async (userId?: number) => {
   try {
-    const matches = await fetchMatchHistory();
+    const matches = await fetchMatchHistory(userId);
     let wins = 0;
     let losses = 0;
 
@@ -322,9 +326,12 @@ export const calculateUserStats = async () => {
   }
 };
 
-export const fetchFriends = async () => {
+export const fetchFriends = async (userId?: number) => {
   try {
-    const friends = await apiFetch(`${API_BASE_URL}/user/friends`);
+    const endpoint = userId 
+      ? `${API_BASE_URL}/user/friends/${userId}`
+      : `${API_BASE_URL}/user/friends`;
+    const friends = await apiFetch(endpoint);
     return friends.map((friend: any) => ({
       username: friend.username || 'Unknown',
       picture: friend.avatar || '/images/pong.png',
@@ -332,6 +339,21 @@ export const fetchFriends = async () => {
     }));
   } catch (error) {
     console.error('Error fetching friends:', error);
+    return [];
+  }
+};
+
+export const fetchOnlineUsers = async () => {
+  try {
+    const users = await apiFetch(`${API_BASE_URL}/user/online`);
+    return users.map((user: any) => ({
+      id: user.id,
+      username: user.username || 'Unknown',
+      avatar: user.avatar || '/images/pong.png',
+      status: user.status
+    }));
+  } catch (error) {
+    console.error('Error fetching online users:', error);
     return [];
   }
 };

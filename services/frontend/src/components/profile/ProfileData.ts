@@ -417,9 +417,10 @@ export function ProfileData(viewUsername?: string) {
         return;
       }
       
-      // Fetch real stats from match history
+      // Fetch real stats from match history - use profile user ID if viewing another user
       try {
-        const stats = await calculateUserStats();
+        const targetUserId = viewUsername ? profileData.id : undefined;
+        const stats = await calculateUserStats(targetUserId);
         // Merge stats with profile data
         const profileWithStats = {
           ...profileData,
@@ -451,7 +452,9 @@ export function ProfileData(viewUsername?: string) {
 
   const loadMatchHistory = async () => {
     try {
-      const rawMatches = await fetchMatchHistory();
+      // Use viewed user's ID if viewing another user's profile
+      const targetUserId = isViewingOtherUser && user?.id ? user.id : undefined;
+      const rawMatches = await fetchMatchHistory(targetUserId);
       // Transform API data to Match format
       const matches: Match[] = rawMatches.map((match: any) => ({
         opponent: match.opponent?.username || 'Unknown',
@@ -461,23 +464,25 @@ export function ProfileData(viewUsername?: string) {
       }));
       renderMatchHistory(container, matches);
       
-      // Update stats based on match history
-      let wins = 0;
-      let losses = 0;
-      matches.forEach((match) => {
-        if (match.result === 'win') wins++;
-        else if (match.result === 'loss') losses++;
-      });
-      const totalGames = wins + losses;
-      const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-      
-      // Update stats display
-      const winsElement = container.querySelector('#profile-wins');
-      const lossesElement = container.querySelector('#profile-losses');
-      const winRateElement = container.querySelector('#profile-winrate');
-      if (winsElement) winsElement.textContent = wins.toString();
-      if (lossesElement) lossesElement.textContent = losses.toString();
-      if (winRateElement) winRateElement.textContent = `${winRate}%`;
+      // Update stats based on match history (only if viewing own profile or if stats weren't loaded)
+      if (!isViewingOtherUser) {
+        let wins = 0;
+        let losses = 0;
+        matches.forEach((match) => {
+          if (match.result === 'win') wins++;
+          else if (match.result === 'loss') losses++;
+        });
+        const totalGames = wins + losses;
+        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+        
+        // Update stats display
+        const winsElement = container.querySelector('#profile-wins');
+        const lossesElement = container.querySelector('#profile-losses');
+        const winRateElement = container.querySelector('#profile-winrate');
+        if (winsElement) winsElement.textContent = wins.toString();
+        if (lossesElement) lossesElement.textContent = losses.toString();
+        if (winRateElement) winRateElement.textContent = `${winRate}%`;
+      }
     } catch (error) {
       console.error('Failed to load match history:', error);
       const matchHistoryContainer = container.querySelector('#match-history > div');
@@ -489,7 +494,9 @@ export function ProfileData(viewUsername?: string) {
 
   const loadFriendsList = async () => {
     try {
-      const rawFriends = await fetchFriends();
+      // Use viewed user's ID if viewing another user's profile
+      const targetUserId = isViewingOtherUser && user?.id ? user.id : undefined;
+      const rawFriends = await fetchFriends(targetUserId);
       // Transform API data to Friend format
       const friends: Friend[] = rawFriends.map((friend: any) => ({
         username: friend.username || 'Unknown',

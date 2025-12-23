@@ -82,6 +82,51 @@ export default async function registerGameRoutes(app: FastifyInstance) {
     }
   }, controllers.uploadMatchHistory);
 
+  // GET /user/match-history/:userId
+  app.get("/user/match-history/:userId", {
+    schema: {
+      summary: "Retrieve match history by user ID",
+      description: "Retrieves the match history for a specific user by their user ID. Returns a list of matches the user has participated in.",
+      tags: ["game"],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: "object",
+        properties: {
+          userId: { type: "integer" }
+        }
+      },
+      response: {
+        200: {
+          description: "Match history retrieved successfully.",
+          type: "array",
+          items: {
+            allOf: [
+              { $ref: "MatchHistory#" },
+              {
+                type: "object",
+                properties: {
+                  tournament: {
+                    type: ["object", "null"],
+                    properties: {
+                      id: { type: "integer" },
+                      name: { type: "string" },
+                      winnerId: { type: "integer" },
+                      start_at: { type: "string", format: "date-time" },
+                      end_at: { type: "string", format: "date-time" }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        401: { $ref: "UnauthorizedError#" },
+        404: { description: "User not found." },
+        500: { $ref: "InternalServerError#" }
+      }
+    }
+  }, controllers.getMatchHistoryByUserId);
+
   // POST /game/tournament-result
   app.post("/game/tournament-result", {
     schema: {

@@ -530,3 +530,84 @@ export async function revokeApiKey(req: FastifyRequest, reply: FastifyReply) {
     });
   }
 }
+
+// Get online users
+export async function getOnlineUsers(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.id;
+  if (!userId) return reply.code(401).send({ error: "Unauthorized" });
+
+  try {
+    const onlineUsers = await prisma.user.findMany({
+      where: {
+        status: "ONLINE"
+      },
+      select: {
+        id: true,
+        username: true,
+        avatar: true,
+        status: true
+      }
+    });
+
+    return reply.send(onlineUsers);
+  } catch (error: any) {
+    req.log?.error('Error fetching online users:', error);
+    return reply.code(500).send({
+      error: "Failed to fetch online users.",
+      message: error?.message || "Unknown error"
+    });
+  }
+}
+
+// Get friends by user ID
+export async function getFriendsByUserId(req: FastifyRequest, reply: FastifyReply) {
+  const currentUserId = req.user?.id;
+  if (!currentUserId) return reply.code(401).send({ error: "Unauthorized" });
+
+  const { userId } = req.params as { userId?: string };
+  if (!userId || isNaN(Number(userId))) {
+    return reply.code(400).send({ error: "Invalid user ID." });
+  }
+
+  const targetUserId = parseInt(userId, 10);
+
+  // Verify target user exists
+  const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!targetUser) {
+    return reply.code(404).send({ error: "User not found." });
+  }
+
+  try {
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        status: FriendshipStatus.ACCEPTED,
+        OR: [
+          { requesterId: targetUserId },
+          { addresseeId: targetUserId }
+        ]
+      },
+      include: {
+        requester: true,
+        addressee: true
+      }
+    });
+
+    const friends = friendships.map(f => {
+      const friend =
+        f.requesterId === targetUserId ? f.addressee : f.requester;
+      return {
+        username: friend.username,
+        avatar: friend.avatar,
+        status: friend.status
+      };
+    });
+
+    return reply.send(friends);
+  } catch (error: any) {
+    req.log?.error('Error fetching friends by user ID:', error);
+    return reply.code(500).send({
+      error: "Failed to fetch friends.",
+      message: error?.message || "Unknown error"
+    });
+  }
+}
