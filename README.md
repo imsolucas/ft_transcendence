@@ -179,8 +179,8 @@ The team organized work using the following structure:
 
 #### **JWT** (Authentication)
 - **Why:** Stateless authentication, widely adopted standard
-- **Usage:** Access tokens (15 min) and refresh tokens (7 days)
-- **Benefits:** Scalable, no server-side session storage
+- **Usage:** Single JWT token (7 days expiry)
+- **Benefits:** Scalable, no server-side session storage, simple token management
 
 #### **OAuth 2.0** (Social Login)
 - **Why:** Industry standard, trusted providers, improved UX
@@ -253,7 +253,7 @@ erDiagram
 | **Matches** | Game match records | id, tournamentId, player1Id, player2Id, scores, winnerId |
 | **Tournaments** | Tournament data | id, name, winnerId, start_at, end_at |
 | **TournamentPlayers** | Tournament participation | id, tournamentId, userId |
-| **RefreshTokens** | JWT refresh tokens | id, userId, tokenHash, expiresAt |
+| **RefreshTokens** | JWT refresh tokens (deprecated, unused) | id, userId, tokenHash, expiresAt |
 | **TokenBlacklist** | Revoked tokens | id, tokenHash, expiresAt |
 
 ### Relationships
@@ -271,13 +271,13 @@ erDiagram
 **Assigned to:** imsolucas, [teammate2]
 
 - User registration with email/password
-- JWT-based authentication (access + refresh tokens)
+- JWT-based authentication (single token)
 - OAuth 2.0 integration (Google, GitHub, 42)
 - **OAuth password requirement** - OAuth users must set a password before accessing the app
 - Two-factor authentication (TOTP with QR codes)
 - Profile management (username, email, avatar upload)
 - Password hashing with bcrypt
-- Token refresh and revocation
+- Token revocation (logout blacklists tokens)
 
 ### Social Features
 **Assigned to:** [teammate3], [teammate2]
@@ -601,9 +601,8 @@ Before running the project, ensure you have the following installed:
 
    Edit `infra/.env` and set the required values:
    ```env
-   # JWT Secrets (generate secure random strings)
+   # JWT Secret (generate secure random string)
    JWT_SECRET=your-secure-jwt-secret-here
-   JWT_REFRESH_SECRET=your-secure-refresh-secret-here
    
    # OAuth Configuration (obtain from provider dashboards)
    GOOGLE_CLIENT_ID=your-google-client-id
@@ -617,7 +616,7 @@ Before running the project, ensure you have the following installed:
    ```
 
    **Important Notes:**
-   - Generate strong random secrets for JWT_SECRET and JWT_REFRESH_SECRET
+   - Generate strong random secret for JWT_SECRET
    - For OAuth, register your application with Google/GitHub and obtain credentials
    - The default API_GATEWAY_PORT is 8443 (HTTPS)
 

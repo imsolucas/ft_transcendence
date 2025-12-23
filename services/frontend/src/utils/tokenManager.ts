@@ -2,13 +2,86 @@
 const TOKEN_KEY = 'ft_transcendence_access_token';
 
 /**
- * Store access token in localStorage (persists across page reloads)
+ * Decode JWT token to get user information
  */
-export const setAccessToken = (token: string): void => {
+export const decodeToken = (token: string): { id?: number; username?: string; email?: string } | null => {
   try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
+
+/**
+ * Get current user ID from stored token
+ */
+export const getCurrentUserId = (): number | null => {
+  const token = getAccessToken();
+  if (!token) return null;
+  const decoded = decodeToken(token);
+  return decoded?.id || null;
+};
+
+/**
+ * Store access token in localStorage (persists across page reloads)
+ * Checks if a different user is already logged in and handles it
+ */
+export const setAccessToken = (token: string, newUserId?: number): boolean => {
+  try {
+    // Decode new user info from token or use provided userId
+    const newUser = newUserId !== undefined ? { id: newUserId } : decodeToken(token);
+    
+    // Check if there's already a token for a different user
+    const existingToken = getAccessToken();
+    let existingUser = null;
+    
+    if (existingToken) {
+      existingUser = decodeToken(existingToken);
+      
+      // If different user is logged in, clear the old token and notify
+      if (existingUser?.id && newUser?.id && existingUser.id !== newUser.id) {
+        console.warn(`Different user detected. Previous user ID: ${existingUser.id}, New user ID: ${newUser.id}`);
+        // Clear old token
+        localStorage.removeItem(TOKEN_KEY);
+        // Dispatch event to notify other tabs/windows
+        window.dispatchEvent(new CustomEvent('userSwitched', { 
+          detail: { 
+            previousUserId: existingUser.id, 
+            newUserId: newUser.id 
+          } 
+        }));
+      }
+    }
+    
     localStorage.setItem(TOKEN_KEY, token);
+    
+    // Dispatch storage event for other tabs/windows (only fires in other tabs)
+    // For current tab, we dispatch a custom event
+    if (existingToken !== token) {
+      // Notify current tab about token change
+      window.dispatchEvent(new CustomEvent('tokenChanged', {
+        detail: {
+          newToken: token,
+          oldToken: existingToken,
+          newUserId: newUser?.id,
+          previousUserId: existingUser?.id
+        }
+      }));
+    }
+    
+    return true;
   } catch (error) {
     console.error('Failed to store token in localStorage:', error);
+    return false;
   }
 };
 
@@ -42,60 +115,4 @@ export const hasStoredToken = (): boolean => {
   return getAccessToken() !== null;
 };
 
-/**
- * Attempt to refresh token on app initialization
- * If refresh fails but we have a stored token, keep it (let API calls handle validation)
- */
-export const attemptSilentRefresh = async (): Promise<boolean> => {
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
-  
-  // If we already have a stored token, try to use it first
-  const storedToken = getAccessToken();
-  if (storedToken) {
-    // Verify token is still valid by making a simple API call
-    try {
-      const verifyResponse = await fetch(`${API_URL}/user/profile`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${storedToken}`,
-        },
-        credentials: 'include',
-      });
-
-      if (verifyResponse.ok) {
-        // Token is still valid, no need to refresh
-        return true;
-      }
-    } catch (error) {
-      // Network error or token invalid, try refresh
-      console.log('Stored token invalid, attempting refresh...');
-    }
-  }
-
-  // Try to refresh token using refresh token cookie
-  try {
-    const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include', // Include cookies (refresh token)
-    });
-
-    if (!response.ok) {
-      // No valid refresh token, clear stored token
-      clearAccessToken();
-      return false;
-    }
-
-    const data = await response.json();
-    if (data.token) {
-      setAccessToken(data.token);
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    // Don't clear token on network errors - might be temporary
-    return false;
-  }
-};
 

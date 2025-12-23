@@ -2,7 +2,7 @@ import { navigate } from '../router';
 import type { Screen } from '../router';
 import { updateNavbar } from '../components/layout/Navbar';
 import type { UserData } from '../types/user';
-import { getAccessToken, clearAccessToken, setAccessToken } from './tokenManager';
+import { getAccessToken, clearAccessToken, setAccessToken, getCurrentUserId } from './tokenManager';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -139,6 +139,16 @@ async function handleLogin(): Promise<void> {
     return;
   }
 
+  // Check if another user is already logged in
+  const currentUserId = getCurrentUserId();
+  if (currentUserId !== null) {
+    // Another user is logged in - warn but allow login (will switch users)
+    const confirmSwitch = confirm('Another user is already logged in. Logging in will switch to the new user. Continue?');
+    if (!confirmSwitch) {
+      return;
+    }
+  }
+
   // Show loading state
   loginBtn.textContent = 'Logging in...';
   loginBtn.disabled = true;
@@ -149,7 +159,13 @@ async function handleLogin(): Promise<void> {
     if (response.success) {
       // Store auth token in localStorage (persists across page reloads)
       if (response.token && response.user) {
-        setAccessToken(response.token);
+        const previousUserId = getCurrentUserId();
+        setAccessToken(response.token, response.user.id);
+        
+        // If different user was logged in, show notification
+        if (previousUserId && previousUserId !== response.user.id) {
+          showNotification('Another user was logged in. You have been logged in as ' + response.user.username, 'info');
+        }
       }
 
       showNotification('Login successful!', 'success');
@@ -251,7 +267,6 @@ async function apiLogin(credentials: LoginRequest): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -440,13 +455,24 @@ import { setUserStatus } from './api';
 
 export async function logout(): Promise<void> {
   try {
-    // Call backend logout endpoint to invalidate tokens
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
     const token = getAccessToken();
     
+    // Set status to OFFLINE BEFORE calling logout endpoint
+    // This ensures we have a valid token to update the status
+    if (token) {
+      try {
+        await setUserStatus('OFFLINE', { keepalive: false });
+      } catch (error) {
+        console.warn('Failed to set status to OFFLINE before logout:', error);
+        // Continue with logout even if status update fails
+      }
+    }
+    
+    // Call backend logout endpoint to invalidate tokens
+    // Backend will also set status to OFFLINE as a backup
     await fetch(`${API_URL}/auth/logout`, {
       method: 'POST',
-      credentials: 'include', // Include cookies for refresh token cleanup
       headers: {
         ...(token && { 'Authorization': `Bearer ${token}` }),
       },
@@ -456,19 +482,14 @@ export async function logout(): Promise<void> {
   } catch (error) {
     console.error('Logout API error:', error);
   } finally {
-    // Clear local state regardless of API call success
+    // Clear local state FIRST to prevent updateNavbar from setting status back to ONLINE
     clearAccessToken();
     
-    // Try to mark user offline (non-blocking)
-    setUserStatus('OFFLINE', { keepalive: true }).catch(() => {
-      // Ignore errors
-    });
+    // Update navbar to show logged-out state (skipStatusUpdate prevents setting status to ONLINE)
+    updateNavbar(true);
     
-    updateNavbar();
-    // Force navigation to landing page
-    setTimeout(() => {
-      navigate('landing' as Screen);
-    }, 100);
+    // Navigate to landing page
+    navigate('landing' as Screen);
   }
 }
 

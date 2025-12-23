@@ -1,5 +1,5 @@
 import { getCurrentUser } from './auth-script';
-import { getAccessToken, setAccessToken, clearAccessToken } from './tokenManager';
+import { getAccessToken, clearAccessToken } from './tokenManager';
 
 // API Configuration
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
@@ -9,33 +9,6 @@ const getToken = () => {
   return getAccessToken();
 };
 
-// Helper function to refresh access token
-const refreshAccessToken = async (): Promise<boolean> => {
-  try {
-    const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include', // Include cookies (refresh token)
-      // Don't send Content-Type header - refresh endpoint uses cookies, no body needed
-    });
-
-    if (!response.ok) {
-      clearAccessToken();
-      return false;
-    }
-
-    const data = await response.json();
-    if (data.token) {
-      setAccessToken(data.token);
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    clearAccessToken();
-    return false;
-  }
-};
 
 // Helper function for making authenticated API requests
 const apiFetch = async (url: string, options: RequestInit = {}) => {
@@ -53,52 +26,31 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
 
   const response = await fetch(url, { ...options, headers });
 
-  // Handle 401 Unauthorized - token might be invalid or expired
+  // Handle 401 Unauthorized - token is invalid or expired
   if (response.status === 401) {
-    // Attempt to refresh token (only if not already a refresh request)
-    if (!url.includes('/auth/refresh')) {
-      const refreshed = await refreshAccessToken();
-
-      if (refreshed) {
-        // Retry original request with new token
-        const newHeaders = {
-          ...headers,
-          'Authorization': `Bearer ${getAccessToken()}`,
-        };
-        const retryResponse = await fetch(url, { ...options, headers: newHeaders });
-
-        if (retryResponse.status === 401) {
-          // Still unauthorized after refresh, clear everything
-          clearAccessToken();
-
-          // Only redirect if we're not already on auth/landing page
-          const currentPath = window.location.pathname;
-          if (!currentPath.includes('/auth') && !currentPath.includes('/landing') && currentPath !== '/') {
-            window.dispatchEvent(new CustomEvent('authExpired'));
-            setTimeout(() => {
-              window.location.href = '/';
-            }, 100);
-          }
-
-          const errorData = await retryResponse.json().catch(() => ({ error: 'Unauthorized' }));
-          throw new Error(errorData.error || 'Unauthorized: Please login again');
-        }
-
-        // Handle retry response
-        if (!retryResponse.ok) {
-          const errorData = await retryResponse.json().catch(() => ({ error: retryResponse.statusText }));
-          throw new Error(errorData.error || `API request failed: ${retryResponse.statusText}`);
-        }
-
-        if (retryResponse.status === 204) {
-          return null;
-        }
-
-        return retryResponse.json();
+    // Try to call logout endpoint to set status to OFFLINE before clearing token
+    // This works even with expired tokens because logout uses jwt.decode() which doesn't verify expiration
+    const token = getToken();
+    if (token) {
+      try {
+        // Call logout endpoint to set status to OFFLINE (non-blocking, fire and forget)
+        // Use keepalive to ensure it completes even if page is closing
+        fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          keepalive: true, // Ensure request completes even if page is closing
+        }).catch(() => {
+          // Ignore errors - token might be too expired or invalid, but we tried
+        });
+      } catch (error) {
+        // Ignore errors
       }
     }
-
-    // Refresh failed or was refresh endpoint - clear everything
+    
+    // Clear token and redirect to login
     clearAccessToken();
     console.error('Unauthorized: Token invalid or expired');
 
@@ -293,8 +245,9 @@ export const fetchMatchHistory = async () => {
     }
 
     // Decode token to get user ID (simple base64 decode, no verification needed for ID extraction)
+    // Token is guaranteed to be non-null here due to check above
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token!.split('.')[1]));
       const currentUserId = payload.id;
 
       return matches.map((match: any) => {
@@ -600,7 +553,6 @@ export const verify2FACode = async (userId: number, code: string) => {
   try {
     const result = await fetch(`${API_URL}/auth/verify-2fa`, {
       method: 'POST',
-      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -609,6 +561,12 @@ export const verify2FACode = async (userId: number, code: string) => {
 
     if (!result.ok) {
       const errorData = await result.json().catch(() => ({ error: result.statusText }));
+      
+      // Handle 403 - User already logged in on another device
+      if (result.status === 403 && errorData?.error?.includes('already logged in')) {
+        throw new Error(errorData.message || 'You are already logged in on another device or browser. Please log out from the other device before logging in here.');
+      }
+      
       throw new Error(errorData.error || 'Invalid 2FA code');
     }
 

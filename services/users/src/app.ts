@@ -13,6 +13,23 @@ const prisma = new PrismaClient();
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
+  
+  // Configure content type parser to allow empty JSON bodies
+  // This is needed for endpoints like /auth/logout that don't require a body
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+    try {
+      if (body === '' || body === null || body === undefined) {
+        // Empty body is allowed - return empty object
+        done(null, {});
+      } else {
+        // Parse JSON body normally
+        const json = JSON.parse(body as string);
+        done(null, json);
+      }
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
 
   // Register CORS plugin
   await app.register(import("@fastify/cors"), {

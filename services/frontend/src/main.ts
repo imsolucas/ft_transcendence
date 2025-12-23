@@ -2,7 +2,7 @@ import './styles/style.css'
 import './i18n';
 import { initializeApp } from "./router";
 import { initializeNavbar, updateNavbar } from "./components/layout/Navbar";
-import { attemptSilentRefresh } from "./utils/tokenManager";
+import { hasStoredToken } from "./utils/tokenManager";
 import Alpine from 'alpinejs';
 
 // Initialize Alpine.js framework
@@ -37,29 +37,87 @@ const root = document.getElementById("app");
 if (root) {
   root.appendChild(App());
 
-  // Attempt to restore session from localStorage or refresh token
-  // This must complete before initializing navbar and app routing to prevent auth guard redirect
-  attemptSilentRefresh().then(async (success) => {
-    if (success) {
-      console.log('Session restored');
-    } else {
-      console.log('No valid session found');
+  // Listen for storage changes (when user logs in/out in another tab/window)
+  // Note: StorageEvent only fires in OTHER tabs, not the current tab
+  window.addEventListener('storage', (e: StorageEvent) => {
+    if (e.key === 'ft_transcendence_access_token') {
+      console.log('Token changed in another tab/window');
+      // Update navbar to reflect new auth state
+      updateNavbar();
+      
+      // If token was removed, redirect to landing page
+      if (!e.newValue && e.oldValue) {
+        console.log('User logged out in another tab/window');
+        window.dispatchEvent(new CustomEvent('authExpired'));
+        setTimeout(() => {
+          if (window.location.pathname !== '/' && !window.location.pathname.includes('/auth') && !window.location.pathname.includes('/landing')) {
+            window.location.href = '/';
+          }
+        }, 100);
+      } else if (e.newValue && e.oldValue && e.newValue !== e.oldValue) {
+        // Token changed (different user logged in)
+        console.log('Different user logged in in another tab/window');
+        updateNavbar();
+        window.dispatchEvent(new CustomEvent('authExpired'));
+        setTimeout(() => {
+          if (window.location.pathname !== '/' && !window.location.pathname.includes('/auth') && !window.location.pathname.includes('/landing')) {
+            window.location.href = '/';
+          }
+        }, 100);
+      }
     }
+  });
+  
+  // Listen for token changes in CURRENT tab (when setAccessToken is called)
+  window.addEventListener('tokenChanged', ((e: CustomEvent) => {
+    const { newUserId, previousUserId } = e.detail;
+    console.log('Token changed in current tab', { previousUserId, newUserId });
     
-    // Initialize navbar after silent refresh completes so it shows correct auth state
+    // If different user logged in, update navbar and redirect
+    if (previousUserId && newUserId && previousUserId !== newUserId) {
+      console.log('Different user logged in in current tab');
+      updateNavbar();
+      window.dispatchEvent(new CustomEvent('authExpired'));
+      setTimeout(() => {
+        if (window.location.pathname !== '/' && !window.location.pathname.includes('/auth') && !window.location.pathname.includes('/landing')) {
+          window.location.href = '/';
+        }
+      }, 100);
+    } else {
+      // Same user or new login - just update navbar
+      updateNavbar();
+    }
+  }) as EventListener);
+  
+  // Listen for user switch events (when different user logs in)
+  window.addEventListener('userSwitched', ((e: CustomEvent) => {
+    console.log('User switched event', e.detail);
+    // Update navbar and potentially redirect
+    updateNavbar();
+    window.dispatchEvent(new CustomEvent('authExpired'));
+    setTimeout(() => {
+      if (window.location.pathname !== '/' && !window.location.pathname.includes('/auth') && !window.location.pathname.includes('/landing')) {
+        window.location.href = '/';
+      }
+    }, 100);
+  }) as EventListener);
+  
+  // Check if user has a stored token
+  const hasToken = hasStoredToken();
+  if (hasToken) {
+    console.log('Token found in localStorage');
+  } else {
+    console.log('No token found');
+  }
+  
+  // Initialize navbar
     await initializeNavbar();
     
-    // If refresh was successful, ensure navbar reflects authenticated state
-    if (success) {
+  // If token exists, update navbar to reflect authenticated state
+  if (hasToken) {
       await updateNavbar();
     }
     
     // Initialize app with proper routing based on auth state
     initializeApp();
-  }).catch(async (error) => {
-    console.error('Failed to restore session:', error);
-    // Continue initialization even if refresh fails
-    await initializeNavbar();
-    initializeApp();
-  });
 }

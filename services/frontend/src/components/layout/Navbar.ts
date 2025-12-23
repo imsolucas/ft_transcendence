@@ -232,7 +232,7 @@ export async function createNavbar(): Promise<HTMLElement> {
 		logoutBtn?.addEventListener('click', () => {
 			logout();
 			closeDropdown();
-			updateNavbar();
+			// No need to call updateNavbar here - logout() already handles it
 		});
 
 		// Add click handlers for other dropdown items
@@ -244,7 +244,9 @@ export async function createNavbar(): Promise<HTMLElement> {
 				const screen = link.dataset.link;
 				const tab = link.dataset.tab;
 				if (screen) {
-					navigate(screen as Screen, tab);
+					// Pass tab as query string parameter
+					const queryString = tab ? `tab=${encodeURIComponent(tab)}` : undefined;
+					navigate(screen as Screen, queryString);
 				}
 				closeDropdown();
 			});
@@ -512,7 +514,7 @@ function closeMobileMenu(): void {
 }
 
 // Function to update navbar when auth state changes
-export async function updateNavbar(): Promise<void> {
+export async function updateNavbar(skipStatusUpdate = false): Promise<void> {
 	const existingNavbar = document.querySelector('nav') as HTMLElement | null;
 	const wasHidden = existingNavbar && existingNavbar.style.transform === 'translateY(-100%)';
 	if (existingNavbar) {
@@ -527,11 +529,20 @@ export async function updateNavbar(): Promise<void> {
 			removeFloatingToggleButton();
 		}
 		// If user is now authenticated, ensure status is marked online
-		try {
-			if (isAuthenticated()) {
-				await setUserStatus('ONLINE');
-			}
-		} catch {}
+		// Skip this if we're in the middle of logout OR on auth/landing page
+		if (!skipStatusUpdate) {
+			try {
+				const currentPath = window.location.pathname;
+				// Check if we're on landing (/) or auth page
+				const isAuthPage = currentPath === '/' || currentPath === '/landing' || currentPath.includes('/auth') || 
+				                   document.querySelector('.auth-container') !== null ||
+				                   document.querySelector('.container') !== null; // Auth page container
+				
+				if (isAuthenticated() && !isAuthPage) {
+					await setUserStatus('ONLINE');
+				}
+			} catch {}
+		}
 	}
 }
 
@@ -632,41 +643,26 @@ export async function initializeNavbar(): Promise<void> {
 	// Listen for auth expiration events
 	window.addEventListener('authExpired', async () => {
 		await updateNavbar();
-		// Ensure status is set to offline on auth expiration
-		setUserStatus('OFFLINE', { keepalive: true }).catch(() => {});
+		// Note: Status remains ONLINE even on auth expiration to prevent multiple logins
+		// Only explicit logout sets status to OFFLINE
 	});
 
 	// On app bootstrap, if authenticated, mark user online
+	// BUT only if we're not on landing/auth page (user might have just logged out)
 	try {
-		if (isAuthenticated()) {
+		const currentPath = window.location.pathname;
+		const isAuthPage = currentPath === '/' || currentPath === '/landing' || currentPath.includes('/auth') || 
+		                   document.querySelector('.auth-container') !== null ||
+		                   document.querySelector('.container') !== null;
+		
+		if (isAuthenticated() && !isAuthPage) {
 			await setUserStatus('ONLINE');
 		}
 	} catch (error) {
 		console.error('Error setting initial online status:', error);
 	}
 
-	// Debounce status updates to prevent spam
-	let statusUpdateTimeout: number | null = null;
-
-	// Handle tab visibility changes
-	document.addEventListener('visibilitychange', () => {
-		if (!isAuthenticated()) return;
-
-		if (statusUpdateTimeout !== null) {
-			clearTimeout(statusUpdateTimeout);
-		}
-
-		statusUpdateTimeout = window.setTimeout(() => {
-			setUserStatus(document.hidden ? 'OFFLINE' : 'ONLINE', { keepalive: true })
-				.catch(error => console.error('Error updating visibility status:', error));
-			statusUpdateTimeout = null;
-		}, 100);
-	});
-
-	// Handle tab/window close or navigation away
-	window.addEventListener('beforeunload', () => {
-		if (!isAuthenticated()) return;
-		setUserStatus('OFFLINE', { keepalive: true })
-			.catch(error => console.error('Error setting offline status:', error));
-	});
+	// Note: Removed automatic OFFLINE status updates on tab visibility/beforeunload
+	// This prevents status from changing to OFFLINE when switching tabs or closing tabs
+	// Status only changes to OFFLINE on explicit logout to prevent multiple logins
 }

@@ -4,7 +4,7 @@ import { updateNavbar } from "../components/layout/Navbar";
 import type { Screen } from "../router";
 import { verify2FACode } from "../utils/api";
 import { t } from "../i18n";
-import { setAccessToken } from "../utils/tokenManager";
+import { setAccessToken, getCurrentUserId } from "../utils/tokenManager";
 
 // Import API functions from auth-script
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
@@ -38,7 +38,6 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -58,6 +57,15 @@ async function apiLogin(name: string, password: string): Promise<AuthResponse> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      
+      // Handle 403 - User already logged in on another device
+      if (response.status === 403 && errorData?.error?.includes('already logged in')) {
+        return {
+          success: false,
+          message: errorData.message || 'You are already logged in on another device or browser. Please log out from the other device before logging in here.',
+        };
+      }
+      
       return {
         success: false,
         message: errorData.error || String(t('auth.invalidCredentials') || 'Invalid username or password'),
@@ -829,7 +837,13 @@ function show2FAModal(container: HTMLElement, userId: number): void {
 
       // Store access token in localStorage (persists across page reloads)
       if (result.token && result.user) {
-        setAccessToken(result.token);
+        const previousUserId = getCurrentUserId();
+        setAccessToken(result.token, result.user.id);
+        
+        // If different user was logged in, show notification
+        if (previousUserId && previousUserId !== result.user.id) {
+          showNotification('Another user was logged in. You have been logged in as ' + result.user.username, 'info');
+        }
       }
 
       showNotification(String(t('auth.loginSuccessful') || 'Login successful!'), 'success');
@@ -911,7 +925,13 @@ async function handleLoginSubmit(container: HTMLElement): Promise<void> {
     if (response.success) {
       // Store access token in localStorage (persists across page reloads)
       if (response.token && response.user) {
-        setAccessToken(response.token);
+        const previousUserId = getCurrentUserId();
+        setAccessToken(response.token, response.user.id);
+        
+        // If different user was logged in, show notification
+        if (previousUserId && previousUserId !== response.user.id) {
+          showNotification('Another user was logged in. You have been logged in as ' + response.user.username, 'info');
+        }
       }
 
       showNotification(String(t('auth.loginSuccessful') || 'Login successful!'), 'success');

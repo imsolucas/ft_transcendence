@@ -19,8 +19,15 @@ export function navigate(screen: Screen, queryString?: string): void {
       }
     });
     state.queryParams = params;
+    // Extract tab parameter and set it in activeTab
+    if (params.tab) {
+      state.activeTab = params.tab;
+    } else {
+      state.activeTab = undefined;
+    }
   } else {
     state.queryParams = undefined;
+    state.activeTab = undefined;
   }
 
   const path = screen === "landing" ? "/" : `/${screen}`;
@@ -136,8 +143,15 @@ function handleLocationChange(): void {
       params[key] = value;
     });
     state.queryParams = params;
+    // Extract tab parameter and set it in activeTab
+    if (params.tab) {
+      state.activeTab = params.tab;
+    } else {
+      state.activeTab = undefined;
+    }
   } else {
     state.queryParams = undefined;
+    state.activeTab = undefined;
   }
 
   // Validate the path is a valid screen

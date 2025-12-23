@@ -1,6 +1,6 @@
 import { updateNavbar } from '../components/layout/Navbar';
 import { navigate } from '../router';
-import { setAccessToken } from '../utils/tokenManager';
+import { setAccessToken, getCurrentUserId } from '../utils/tokenManager';
 import { t } from '../i18n';
 
 type CredentialResponse = google.accounts.id.CredentialResponse;
@@ -72,6 +72,16 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
     console.log("  Profile image URL: " + responsePayload.picture);
     console.log("  Email            : " + responsePayload.email);
 
+    // Check if another user is already logged in
+    const currentUserId = getCurrentUserId();
+    if (currentUserId !== null) {
+      // Another user is logged in - warn but allow login (will switch users)
+      const confirmSwitch = confirm('Another user is already logged in. Logging in will switch to the new user. Continue?');
+      if (!confirmSwitch) {
+        return;
+      }
+    }
+
     // Process the Google authentication
     const success = await processGoogleAuth(responsePayload, response.credential);
 
@@ -99,7 +109,6 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     // Send the Google credential to backend for verification
     const response = await fetch(`${API_URL}/auth/google`, {
       method: 'POST',
-      credentials: 'include', // Include cookies for refresh token
       headers: {
         'Content-Type': 'application/json',
       },
@@ -116,7 +125,14 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
 
     if (!response.ok) {
       console.error('Google auth error:', data || response.statusText);
-      showNotification((data && data.error) || `Google authentication failed (${response.status})`, 'error');
+      const errorMessage = data?.error || `Google authentication failed (${response.status})`;
+      
+      // Show user-friendly error message
+      if (response.status === 403 && data?.error?.includes('already logged in')) {
+        showNotification(data?.message || 'You are already logged in on another device or browser. Please log out from the other device before logging in here.', 'error');
+      } else {
+        showNotification(errorMessage, 'error');
+      }
       return false;
     }
 
@@ -129,7 +145,13 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
 
     if (data.token && data.user) {
       // Store access token in localStorage (persists across page reloads)
-      setAccessToken(data.token);
+      const previousUserId = getCurrentUserId();
+      setAccessToken(data.token, data.user.id);
+      
+      // If different user was logged in, show notification
+      if (previousUserId && previousUserId !== data.user.id) {
+        showNotification('Another user was logged in. You have been logged in as ' + data.user.username, 'info');
+      }
       return true;
     } else {
       console.error('Invalid response from backend:', data);
@@ -327,7 +349,6 @@ async function handleSetPassword(userId: number, password: string, modal: HTMLEl
     
     const response = await fetch(`${API_URL}/auth/set-password`, {
       method: 'POST',
-      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -337,13 +358,24 @@ async function handleSetPassword(userId: number, password: string, modal: HTMLEl
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle 403 - User already logged in on another device
+      if (response.status === 403 && data?.error?.includes('already logged in')) {
+        showNotification(data?.message || 'You are already logged in on another device or browser. Please log out from the other device before setting a password here.', 'error');
+      } else {
       showNotification(data.error || 'Failed to set password', 'error');
+      }
       return;
     }
 
     if (data.token && data.user) {
       // Store access token
-      setAccessToken(data.token);
+      const previousUserId = getCurrentUserId();
+      setAccessToken(data.token, data.user.id);
+      
+      // If different user was logged in, show notification
+      if (previousUserId && previousUserId !== data.user.id) {
+        showNotification('Another user was logged in. You have been logged in as ' + data.user.username, 'info');
+      }
       
       // Close modal
       if (window.Alpine && modal.__x) {

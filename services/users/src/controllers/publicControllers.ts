@@ -25,7 +25,7 @@ export async function getPublicUserProfile(req: FastifyRequest, reply: FastifyRe
         username: true,
         avatar: true,
         status: true,
-        createdAt: true,
+        created_at: true,
       },
     });
 
@@ -33,7 +33,14 @@ export async function getPublicUserProfile(req: FastifyRequest, reply: FastifyRe
       return reply.code(404).send({ error: "User not found." });
     }
 
-    return reply.send(user);
+    // Map created_at to createdAt for API response (camelCase to match Swagger schema)
+    return reply.send({
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      status: user.status,
+      createdAt: user.created_at,
+    });
   } catch (error: any) {
     req.log?.error("Error fetching public user profile:", error);
     return reply.code(500).send({
