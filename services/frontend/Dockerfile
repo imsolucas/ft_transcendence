@@ -11,7 +11,10 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+ARG PORT=3000
+ENV PORT=$PORT
+
+EXPOSE $PORT
 
 ENTRYPOINT [ "npm", "run" ]
 CMD [ "dev" ]
