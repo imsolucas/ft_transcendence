@@ -22,12 +22,12 @@ const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
 
 await server.register(ws);
 
-server.addHook('onRequest', async (request: any, reply: any) => {
-  reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  reply.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  console.log('Incoming request:', request.method, request.url);
-});
+server.register(import('@fastify/cors'), {
+  origin: true,
+  credentials: true,
+  methods: ["GET"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+})
 
 server.get('/ping', async (request: any, reply: any) => {
   return 'pong\n';
@@ -90,7 +90,7 @@ server.get('/ws/game', { websocket: true }, (connection: any, req: any) => {
 
 tickSystem.startTickSystem();
 
-server.listen({ port: 3001, host: '0.0.0.0'}, (err: any, address: any) => {
+server.listen({ port: Number(process.env.PORT), host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {
     console.error(err)
     process.exit(1)

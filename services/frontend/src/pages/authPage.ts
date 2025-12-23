@@ -5,10 +5,9 @@ import type { Screen } from "../router";
 import { verify2FACode } from "../utils/api";
 import { t } from "../i18n";
 import { setAccessToken, getCurrentUserId } from "../utils/tokenManager";
+import { API_BASE_URL } from "../utils/api";
 
 // Import API functions from auth-script
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
-
 interface BackendLoginResponse {
   token: string;
   user: {

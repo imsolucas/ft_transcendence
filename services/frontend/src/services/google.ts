@@ -2,6 +2,7 @@ import { updateNavbar } from '../components/layout/Navbar';
 import { navigate } from '../router';
 import { setAccessToken, getCurrentUserId } from '../utils/tokenManager';
 import { t } from '../i18n';
+import { API_BASE_URL } from '../utils/api';
 
 type CredentialResponse = google.accounts.id.CredentialResponse;
 
@@ -180,12 +181,10 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
 
 async function processGoogleAuth(_payload: GoogleIdTokenPayload, credential: string): Promise<boolean> {
   try {
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
-
     // Send the Google credential to backend for verification
     let response: Response;
     try {
-      response = await fetch(`${API_URL}/auth/google`, {
+      response = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -482,9 +481,7 @@ function showPasswordSetupModal(data: { userId: number; username: string; email:
 // Handle setting password for OAuth users
 async function handleSetPassword(userId: number, password: string, modal: HTMLElement): Promise<void> {
   try {
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
-    
-    const response = await fetch(`${API_URL}/auth/set-password`, {
+    const response = await fetch(`${API_BASE_URL}/auth/set-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
