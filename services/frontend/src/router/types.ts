@@ -7,7 +7,9 @@ export type Screen =
   | "friends"
   | "email-verification"
   | "local-game"
-  | "multiplayer-game";
+  | "multiplayer-game"
+  | "privacy-policy"
+  | "terms-of-service";
 
 export interface PageComponent {
   render: () => HTMLElement;

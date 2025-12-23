@@ -1,7 +1,7 @@
 import { isAuthenticated } from '../utils/auth-script';
 import type { Screen } from './types';
 
-const PUBLIC_SCREENS: Screen[] = ["landing", "auth", "email-verification"];
+const PUBLIC_SCREENS: Screen[] = ["landing", "auth", "email-verification", "privacy-policy", "terms-of-service"];
 
 export function checkAuthGuard(requestedScreen: Screen): Screen {
   const isLoggedIn = isAuthenticated();

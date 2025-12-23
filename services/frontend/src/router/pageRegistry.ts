@@ -6,6 +6,8 @@ import { FriendsPage } from '../pages/friendsPage';
 import { LocalGamePage } from '../pages/LocalGameSetupPage';
 import { MultiplayerGamePage } from '../pages/MultiplayerSetupPage';
 import { GamePage, cleanupGamePage } from '../pages/gamePage';
+import { PrivacyPolicyPage } from '../pages/privacyPolicyPage';
+import { TermsOfServicePage } from '../pages/termsOfServicePage';
 import { cleanupAuthPage } from '../utils/auth-script';
 import { gameStorage } from '../types/game';
 import type { Screen, PageComponent } from './types';
@@ -64,6 +66,16 @@ export const pageRegistry: Record<Screen, PageComponent> = {
 
   "email-verification": {
     render: () => LandingPage(), // Placeholder
+    requiresAuth: false,
+  },
+
+  "privacy-policy": {
+    render: () => PrivacyPolicyPage(),
+    requiresAuth: false,
+  },
+
+  "terms-of-service": {
+    render: () => TermsOfServicePage(),
     requiresAuth: false,
   },
 };

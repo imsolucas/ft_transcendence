@@ -1,5 +1,5 @@
 import { colors, effects, spacing, typography } from '../../styles/theme';
-import { escapeHtml, sanitizeUrl } from '../../utils/sanitize';
+import { escapeHtml } from '../../utils/sanitize';
 
 interface VideoConfig {
   videoSrc: string;
@@ -9,17 +9,13 @@ interface VideoConfig {
 }
 
 export function createVideoSection(config: VideoConfig): string {
-  const videoSrc = sanitizeUrl(config.videoSrc);
-  const posterSrc = sanitizeUrl(config.posterSrc);
+
   const demoText = escapeHtml(config.demoText);
   const comingSoonText = escapeHtml(config.comingSoonText);
 
   return `
     <div class="${spacing.section} relative">
       <div class="relative ${spacing.containerNarrow} ${effects.rounded['2xl']} overflow-hidden ${effects.shadow['2xl']} ${colors.background.blur} ${effects.blur.sm} border border-white/10">
-        <video class="w-full h-auto max-h-[500px] object-cover" controls loop="false" preload="auto" playsinline poster="${posterSrc}">
-          <source src="${videoSrc}" type="video/mp4" />
-        </video>
 
         <div class="hidden absolute inset-0 items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900 video-fallback">
           <div class="text-center">
