@@ -15,10 +15,6 @@ export default defineConfig({
   },
 
   server: {
-	watch: {
-      usePolling: true,
-      interval: 1000, // check for changes every second
-    },
     port: Number(process.env.PORT),
     strictPort: true,
     // Disable HMR when running behind nginx proxy to avoid WebSocket connection errors
