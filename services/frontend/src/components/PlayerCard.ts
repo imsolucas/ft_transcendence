@@ -86,12 +86,12 @@ export function createPlayerCard (
 
     // Title
     const title = document.createElement('h3');
-    title.className = `font-['Press_Start_2P'] text-lg ${isActive ? 'text-[#F34C94]' : 'text-gray-500'} mb-2`;
+    title.className = `font-poppins text-lg ${isActive ? 'text-[#F34C94]' : 'text-gray-500'} mb-2`;
     title.textContent = isOpponent ? String(t('lobby.opponent') || 'OPPONENT') : String(t('lobby.you') || 'YOU');
 
     // Username
     const username = document.createElement('p');
-    username.className = `font-['Orbitron'] ${isActive ? 'text-white' : 'text-gray-400'} text-xl mb-2`;
+    username.className = `font-poppins ${isActive ? 'text-white' : 'text-gray-400'} text-xl mb-2`;
     username.textContent = player?.username || (isOpponent ? String(t('lobby.searching') || 'Searching...') : String(t('lobby.player') || 'Player'));
 
     // Stats grid

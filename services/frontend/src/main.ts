@@ -102,22 +102,25 @@ if (root) {
     }, 100);
   }) as EventListener);
   
-  // Check if user has a stored token
-  const hasToken = hasStoredToken();
-  if (hasToken) {
-    console.log('Token found in localStorage');
-  } else {
-    console.log('No token found');
-  }
-  
-  // Initialize navbar
+  // Initialize app asynchronously
+  (async () => {
+    // Check if user has a stored token
+    const hasToken = hasStoredToken();
+    if (hasToken) {
+      console.log('Token found in localStorage');
+    } else {
+      console.log('No token found');
+    }
+    
+    // Initialize navbar
     await initializeNavbar();
     
-  // If token exists, update navbar to reflect authenticated state
-  if (hasToken) {
+    // If token exists, update navbar to reflect authenticated state
+    if (hasToken) {
       await updateNavbar();
     }
     
     // Initialize app with proper routing based on auth state
     initializeApp();
+  })();
 }

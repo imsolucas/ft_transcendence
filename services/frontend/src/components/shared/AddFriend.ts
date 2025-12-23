@@ -127,13 +127,13 @@ export function AddFriend() {
           </div>
           <div class="flex gap-2 flex-shrink-0">
             <button
-              class="accept-request-btn text-xs px-3 py-1 bg-green-500 hover:bg-green-600 rounded transition-colors font-['Press_Start_2P']"
+              class="accept-request-btn text-xs px-3 py-1 bg-green-500 hover:bg-green-600 rounded transition-colors font-poppins"
               data-request-id="${requestId}"
             >
               ✓
             </button>
             <button
-              class="reject-request-btn text-xs px-3 py-1 bg-red-500 hover:bg-red-600 rounded transition-colors font-['Press_Start_2P']"
+              class="reject-request-btn text-xs px-3 py-1 bg-red-500 hover:bg-red-600 rounded transition-colors font-poppins"
               data-request-id="${requestId}"
             >
               ✗

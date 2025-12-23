@@ -105,6 +105,8 @@ export function LobbyPage(): HTMLElement {
 		const quickActionsContainer = container.querySelector('#quick-actions-container');
 		if (quickActionsContainer) {
 			console.log('Quick Actions container found, adding card...');
+			console.log('Container element:', quickActionsContainer);
+			console.log('Container parent:', quickActionsContainer.parentElement);
 			const actionsCard = Card({
 				className: 'bg-gray-800/50',
 				children: '',
@@ -342,11 +344,16 @@ export function LobbyPage(): HTMLElement {
 			actionsCard.appendChild(content);
 			quickActionsContainer.appendChild(actionsCard);
 			console.log('Quick Actions card added to container');
+			console.log('Quick Actions card element:', actionsCard);
+			console.log('Quick Actions card visible:', actionsCard.offsetParent !== null);
+			console.log('Quick Actions card computed style:', window.getComputedStyle(actionsCard).display);
 		} else {
 			console.error('Quick Actions container not found!', container);
+			console.error('Container HTML:', container.innerHTML.substring(0, 500));
 		}
 		
 		// Add chat sidebar to lobby (demonstrates ChatPanel component)
+		console.log('Creating chat sidebar...');
 		const chatSidebar = createChatSidebar({
 			title: String(t('lobby.lobbyChat') || 'Lobby Chat'),
 			onSendMessage: (message) => {
@@ -359,13 +366,106 @@ export function LobbyPage(): HTMLElement {
 			},
 			collapsed: true, // Start collapsed
 		});
+		console.log('Chat sidebar created:', chatSidebar);
 		container.appendChild(chatSidebar);
+		console.log('Chat sidebar added to container');
+		console.log('Chat sidebar visible:', chatSidebar.offsetParent !== null);
+		console.log('Chat sidebar computed style:', window.getComputedStyle(chatSidebar).display);
 		
 		// Initialize Alpine.js on all dynamically added elements with directives
-		if (window.Alpine && window.Alpine.initTree) {
-			// Initialize Alpine on the entire container to catch all new elements
-			window.Alpine.initTree(container);
-		}
+		// Use multiple methods for better Firefox compatibility
+		const initializeAlpine = () => {
+			if (!window.Alpine) {
+				console.warn('Alpine.js not available - components will work without reactive features');
+				// Remove x-cloak attributes so elements are visible even without Alpine.js
+				const cloakedElements = container.querySelectorAll('[x-cloak]');
+				cloakedElements.forEach((el) => {
+					el.removeAttribute('x-cloak');
+				});
+				return;
+			}
+			
+			// Method 1: Use initTree if available (works in most browsers)
+			if (window.Alpine.initTree) {
+				try {
+					window.Alpine.initTree(container);
+					console.log('Alpine.js initialized on container');
+				} catch (e) {
+					console.warn('Alpine.initTree failed, trying alternative method:', e);
+				}
+			}
+			
+			// Method 2: Firefox fallback - manually trigger Alpine on specific elements
+			// Find all elements with Alpine directives and ensure they're initialized
+			const alpineElements = container.querySelectorAll('[x-data], [x-model], [x-show], [x-cloak]');
+			alpineElements.forEach((el) => {
+				// Force Alpine to process this element
+				if (!el.__x && window.Alpine && window.Alpine.initTree) {
+					try {
+						window.Alpine.initTree(el);
+					} catch (e) {
+						// Silently fail - element might already be initialized
+					}
+				}
+			});
+			
+			// Method 3: Use requestAnimationFrame for Firefox timing issues
+			requestAnimationFrame(() => {
+				if (window.Alpine && window.Alpine.initTree) {
+					try {
+						// Re-initialize on the container to catch any missed elements
+						window.Alpine.initTree(container);
+					} catch (e) {
+						console.warn('Alpine re-initialization failed:', e);
+					}
+				}
+			});
+			
+			// Method 4: Firefox-specific - use setTimeout as additional fallback
+			setTimeout(() => {
+				if (window.Alpine && window.Alpine.initTree) {
+					try {
+						window.Alpine.initTree(container);
+					} catch (e) {
+						// Final attempt failed - remove x-cloak to ensure visibility
+						const cloakedElements = container.querySelectorAll('[x-cloak]');
+						cloakedElements.forEach((el) => {
+							el.removeAttribute('x-cloak');
+						});
+					}
+				}
+			}, 100);
+		};
+		
+		initializeAlpine();
+		
+		// Final verification - check if components are visible
+		setTimeout(() => {
+			const quickActionsCard = container.querySelector('#quick-actions-container > *');
+			const chatSidebarEl = container.querySelector('.chat-panel');
+			
+			if (quickActionsCard) {
+				const isVisible = quickActionsCard.offsetParent !== null;
+				const display = window.getComputedStyle(quickActionsCard).display;
+				console.log('Quick Actions final check - visible:', isVisible, 'display:', display);
+				if (!isVisible && display !== 'none') {
+					console.warn('Quick Actions card exists but may not be visible - checking parent');
+				}
+			} else {
+				console.error('Quick Actions card not found in DOM after initialization');
+			}
+			
+			if (chatSidebarEl) {
+				const isVisible = chatSidebarEl.offsetParent !== null;
+				const display = window.getComputedStyle(chatSidebarEl).display;
+				console.log('Chat sidebar final check - visible:', isVisible, 'display:', display);
+				if (!isVisible && display !== 'none') {
+					console.warn('Chat sidebar exists but may not be visible - checking parent');
+				}
+			} else {
+				console.error('Chat sidebar not found in DOM after initialization');
+			}
+		}, 200);
 		} catch (error) {
 			console.error('Error setting up lobby components:', error);
 			console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
