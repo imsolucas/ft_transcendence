@@ -33,30 +33,31 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // Register CORS plugin
   await app.register(import("@fastify/cors"), {
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+    // origin: (origin, callback) => {
+    //   // Allow requests with no origin (like mobile apps or curl requests)
+    //   if (!origin) return callback(null, true);
 
-      const allowedOrigins = [
-      "https://localhost:8443",
-        "http://localhost:4000",  // Local dev server
-        "http://localhost:3000",  // Frontend dev server
-        "http://127.0.0.1:3000",  // Alternative localhost
-        "http://localhost:5173",  // Vite default port
-        "http://127.0.0.1:5173",  // Alternative localhost Vite
-      ];
+    //   const allowedOrigins = [
+    //   "https://localhost:8443",
+    //     "http://localhost:4000",  // Local dev server
+    //     "http://localhost:3000",  // Frontend dev server
+    //     "http://127.0.0.1:3000",  // Alternative localhost
+    //     "http://localhost:5173",  // Vite default port
+    //     "http://127.0.0.1:5173",  // Alternative localhost Vite
+    //   ];
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // In development, allow any localhost origin
-        if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"), false);
-        }
-      }
-    },
+    //   if (allowedOrigins.includes(origin)) {
+    //     callback(null, true);
+    //   } else {
+    //     // In development, allow any localhost origin
+    //     if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+    //       callback(null, true);
+    //     } else {
+    //       callback(new Error("Not allowed by CORS"), false);
+    //     }
+    //   }
+    // },
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
