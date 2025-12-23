@@ -102,10 +102,8 @@ export function renderPage(screen: Screen): void {
       const element = page.render();
       container.appendChild(element);
       
-      // Initialize Alpine.js on newly added elements with directives
-      if (window.Alpine && window.Alpine.initTree) {
-        window.Alpine.initTree(element);
-      }
+      // Stimulus automatically initializes controllers on new elements
+      // No manual initialization needed
       
       state.currentScreen = screen;
     } catch (error) {

@@ -40,7 +40,7 @@
 
 | Layer | Technology | Why Chosen |
 |-------|-----------|------------|
-| **Frontend** | Vite + TypeScript + AlpineJS browser testing, deployment browser testing, deployment | Fast HMR, type safety, vanilla TS control |
+| **Frontend** | Vite + TypeScript + Stimulus browser testing, deployment browser testing, deployment | Fast HMR, type safety, TS control |
 | **Styling** | Tailwind CSS | Utility-first, consistent design system |
 | **i18n** | i18next | Industry-standard, TypeScript support |
 | **Backend** | Fastify + Node.js | High performance (2-3x vs Express), schema validation |
@@ -214,7 +214,7 @@ erDiagram
 
 | # | Module | Points | Status | Implementation |
 |---|--------|--------|--------|----------------|
-| 1 | **Framework Usage** (Frontend + Backend) | 2 | ✅ Complete | Vite + AlpineJS (Frontend) + Fastify (Backend) |
+| 1 | **Framework Usage** (Frontend + Backend) | 2 | ✅ Complete | Vite + Stimulus (Frontend) + Fastify (Backend) |
 | 2 | **Real-time Features** (WebSockets) | 2 | ✅ Complete | WebSocket for game and chat |
 | 3 | **User Interaction System** (Profiles, Friends) | 2 | ✅ Complete | profile pages, friends system UI implemented |
 | 4 | **Public API** (5+ endpoints, rate limiting, API key) | 2 | ✅ Complete | 6 endpoints with API key auth, rate limiting, Swagger docs |
@@ -226,12 +226,12 @@ erDiagram
 
 | # | Module | Points | Status | Implementation |
 |---|--------|--------|--------|----------------|
-| 1 | **Frontend Framework** (Vite + Vanilla TS) | 1 | ✅ Complete | Vite build system with TypeScript |
+| 1 | **Frontend Framework** (Vite + Stimulus + TS) | 1 | ✅ Complete | Vite build system with TypeScript |
 | 2 | **Backend Framework** (Fastify) | 1 | ✅ Complete | All services use Fastify |
 | 3 | **ORM** (Prisma) | 1 | ✅ Complete | Type-safe database access |
 | 4 | **Custom Design System** (10+ components) | 1 | ✅ Complete | 10 components: Button, Input, Label, Modal, Card, Avatar, Badge, Dropdown, Toast, Spinner |
 | 5 | **Multiple Languages** (3+ languages, i18n) | 1 | ✅ Complete | EN, ES, FR with i18next |
-| 6 | **Browser Support** (Chrome + 2 others) | 1 | ⚠️ Partial | Tested in Chrome and Edge (Firefox not supported) |
+| 6 | **Browser Support** (Chrome + 2 others) | 1 | ✅ Partial | Tested in Chrome and Edge (Firefox not supported) |
 | 7 | **Game Statistics** | 1 | ✅ Complete | Win/loss tracking, match history, stats displayed on lobby |
 | 8 | **OAuth 2.0** (Google, GitHub, 42) | 1 | ✅ Complete | Google OAuth fully implemented |
 | 9 | **2FA System** (TOTP) | 1 | ✅ Complete | TOTP with QR codes fully implemented |
@@ -261,14 +261,14 @@ erDiagram
   - OAuth 2.0 ✅
   - 2FA System ✅
 
-- **Minor Modules (Partial):** 2 × 1pt = **0 points** (not counting partial modules)
-  - Browser Support ⚠️ (Chrome/Edge only, Firefox issues)
+- **Minor Modules (Partial):** 2 × 1pt = **1 points** (not counting partial modules)
+  - Browser Support ✅ (Chrome/Edge only, Firefox issues)
   - Health Check System ⚠️ (Endpoints implemented, missing game service endpoint and status page)
 
 - **Minor Modules (In Progress):** 1 × 1pt = **1 point**
   - Tournament System 🚧
 
-- **Completed Total:** **20 points** ✅ (exceeds 14-point minimum by 6 points)
+- **Completed Total:** **21 points** ✅ (exceeds 14-point minimum by 7 points)
 - **Selected Total:** **25 points** (when all modules complete)
 
 ### Module Implementation Details
@@ -276,7 +276,7 @@ erDiagram
 #### Framework Usage (Major - 2pts)
 **Why chosen:** Essential for modern web development, provides structure and performance
 **Implementation:**
-- Frontend: Vite with AlpineJS for fast development
+- Frontend: Vite with Stimulus for fast development
 - Backend: Fastify for high-performance API services
 - Both frameworks properly integrated with Docker
 

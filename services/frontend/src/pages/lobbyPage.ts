@@ -105,8 +105,6 @@ export function LobbyPage(): HTMLElement {
 		const quickActionsContainer = container.querySelector('#quick-actions-container');
 		if (quickActionsContainer) {
 			console.log('Quick Actions container found, adding card...');
-			console.log('Container element:', quickActionsContainer);
-			console.log('Container parent:', quickActionsContainer.parentElement);
 			const actionsCard = Card({
 				className: 'bg-gray-800/50',
 				children: '',
@@ -124,8 +122,11 @@ export function LobbyPage(): HTMLElement {
 			const searchContainer = document.createElement('div');
 			searchContainer.className = 'relative flex-1 min-w-[200px]';
 			
-			// Add Alpine.js directive for reactive state (framework usage)
-			searchContainer.setAttribute('x-data', "{ searchQuery: '', showResults: false }");
+			// Add Stimulus controller for search functionality
+			searchContainer.setAttribute('data-controller', 'search');
+			searchContainer.setAttribute('data-search-search-query-value', '');
+			searchContainer.setAttribute('data-search-show-results-value', 'false');
+			searchContainer.setAttribute('data-search-target', 'container');
 			
 			const searchInputWrapper = document.createElement('div');
 			searchInputWrapper.className = 'flex gap-2';
@@ -135,8 +136,8 @@ export function LobbyPage(): HTMLElement {
 				className: 'flex-1',
 			});
 			
-			// Add Alpine.js x-model for two-way data binding (framework usage)
-			searchInputElement.setAttribute('x-model', 'searchQuery');
+			// Add Stimulus target for input
+			searchInputElement.setAttribute('data-search-target', 'input');
 			
 			searchInputWrapper.appendChild(searchInputElement);
 			
@@ -145,14 +146,22 @@ export function LobbyPage(): HTMLElement {
 			searchResultsContainer.id = 'lobby-search-results';
 			searchResultsContainer.className = 'hidden absolute top-full left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto';
 			
-			// Add Alpine.js directive for conditional rendering (framework usage)
-			searchResultsContainer.setAttribute('x-show', 'showResults');
-			searchResultsContainer.setAttribute('@click.away', 'showResults = false');
+			// Add Stimulus target for results
+			searchResultsContainer.setAttribute('data-search-target', 'results');
 			
 			searchContainer.appendChild(searchResultsContainer);
 			
 			// Search functionality - only triggered by button click
-			// Alpine.js reactive state is available via x-data, but we keep existing logic for compatibility
+			// Helper function to get Stimulus controller
+			const getSearchController = () => {
+				// Stimulus stores controllers on the element
+				const application = (window as any).Stimulus?.application;
+				if (application) {
+					return application.getControllerForElementAndIdentifier(searchContainer, 'search');
+				}
+				return null;
+			};
+			
 			const performSearch = async () => {
 				if (!searchInputElement) {
 					console.error('Search input element not found');
@@ -161,10 +170,12 @@ export function LobbyPage(): HTMLElement {
 				
 				const query = searchInputElement.value.trim();
 				if (query.length < 2) {
-					if (window.Alpine && searchContainer.__x) {
-						searchContainer.__x.$data.showResults = false;
+					const controller = getSearchController();
+					if (controller) {
+						controller.closeResults();
+					} else {
+						searchResultsContainer.classList.add('hidden');
 					}
-					searchResultsContainer.classList.add('hidden');
 					showToast({ 
 						message: String(t('common.pleaseEnterUsername') || 'Please enter at least 2 characters'), 
 						variant: 'warning',
@@ -180,27 +191,30 @@ export function LobbyPage(): HTMLElement {
 					
 					// Clear search input after search
 					searchInputElement.value = '';
-					if (window.Alpine && searchContainer.__x) {
-						searchContainer.__x.$data.searchQuery = '';
+					const controller = getSearchController();
+					if (controller) {
+						controller.searchQueryValue = '';
 					}
 					
 					if (!users || users.length === 0) {
 						// No results - show toast and hide dropdown
-						if (window.Alpine && searchContainer.__x) {
-							searchContainer.__x.$data.showResults = false;
+						if (controller) {
+							controller.closeResults();
+						} else {
+							searchResultsContainer.classList.add('hidden');
 						}
-						searchResultsContainer.classList.add('hidden');
-					showToast({ 
-						message: String(t('common.noUsersFound') || 'No users found'), 
-						variant: 'info',
-						duration: 3000 
-					});
+						showToast({ 
+							message: String(t('common.noUsersFound') || 'No users found'), 
+							variant: 'info',
+							duration: 3000 
+						});
 					} else if (users.length === 1) {
 						// Single result - show modal directly
-						if (window.Alpine && searchContainer.__x) {
-							searchContainer.__x.$data.showResults = false;
+						if (controller) {
+							controller.closeResults();
+						} else {
+							searchResultsContainer.classList.add('hidden');
 						}
-						searchResultsContainer.classList.add('hidden');
 						await showUserProfileModal(users[0].username);
 					} else {
 						// Multiple results - show dropdown
@@ -214,11 +228,13 @@ export function LobbyPage(): HTMLElement {
 								await showUserProfileModal(user.username);
 								
 								// Clear search
-								if (window.Alpine && searchContainer.__x) {
-									searchContainer.__x.$data.searchQuery = '';
-									searchContainer.__x.$data.showResults = false;
+								const controller = getSearchController();
+								if (controller) {
+									controller.searchQueryValue = '';
+									controller.closeResults();
+								} else {
+									searchResultsContainer.classList.add('hidden');
 								}
-								searchResultsContainer.classList.add('hidden');
 							});
 							
 							const avatar = Avatar({
@@ -237,17 +253,21 @@ export function LobbyPage(): HTMLElement {
 							searchResultsContainer.appendChild(userItem);
 						});
 						
-						if (window.Alpine && searchContainer.__x) {
-							searchContainer.__x.$data.showResults = true;
+						// Show results
+						if (controller) {
+							controller.showResultsValue = true;
+						} else {
+							searchResultsContainer.classList.remove('hidden');
 						}
-						searchResultsContainer.classList.remove('hidden');
 					}
 				} catch (error: any) {
 					console.error('Error searching users:', error);
-					if (window.Alpine && searchContainer.__x) {
-						searchContainer.__x.$data.showResults = false;
+					const controller = getSearchController();
+					if (controller) {
+						controller.closeResults();
+					} else {
+						searchResultsContainer.classList.add('hidden');
 					}
-					searchResultsContainer.classList.add('hidden');
 					const errorMessage = error?.message || String(t('common.searchFailed') || 'Search failed');
 					showToast({ 
 						message: errorMessage, 
@@ -264,6 +284,7 @@ export function LobbyPage(): HTMLElement {
 				size: 'default',
 				onClick: performSearch,
 			});
+			searchButton.setAttribute('data-action', 'click->search#performSearch');
 			searchInputWrapper.appendChild(searchButton);
 			
 			searchContainer.appendChild(searchInputWrapper);
@@ -309,16 +330,16 @@ export function LobbyPage(): HTMLElement {
 			// Add event listener for Escape key to close results
 			searchInputElement.addEventListener('keydown', (e) => {
 				if (e.key === 'Escape') {
-					searchResultsContainer.classList.add('hidden');
+					const controller = getSearchController();
+					if (controller) {
+						controller.closeResults();
+					} else {
+						searchResultsContainer.classList.add('hidden');
+					}
 				}
 			});
 			
-			// Close search results when clicking outside
-			document.addEventListener('click', (e) => {
-				if (!searchContainer.contains(e.target as Node)) {
-					searchResultsContainer.classList.add('hidden');
-				}
-			});
+			// Close search results when clicking outside - handled by SearchController
 			
 			// Info button (demonstrates Modal usage)
 			const infoBtn = Button({
@@ -344,16 +365,11 @@ export function LobbyPage(): HTMLElement {
 			actionsCard.appendChild(content);
 			quickActionsContainer.appendChild(actionsCard);
 			console.log('Quick Actions card added to container');
-			console.log('Quick Actions card element:', actionsCard);
-			console.log('Quick Actions card visible:', actionsCard.offsetParent !== null);
-			console.log('Quick Actions card computed style:', window.getComputedStyle(actionsCard).display);
 		} else {
 			console.error('Quick Actions container not found!', container);
-			console.error('Container HTML:', container.innerHTML.substring(0, 500));
 		}
 		
 		// Add chat sidebar to lobby (demonstrates ChatPanel component)
-		console.log('Creating chat sidebar...');
 		const chatSidebar = createChatSidebar({
 			title: String(t('lobby.lobbyChat') || 'Lobby Chat'),
 			onSendMessage: (message) => {
@@ -366,106 +382,10 @@ export function LobbyPage(): HTMLElement {
 			},
 			collapsed: true, // Start collapsed
 		});
-		console.log('Chat sidebar created:', chatSidebar);
 		container.appendChild(chatSidebar);
-		console.log('Chat sidebar added to container');
-		console.log('Chat sidebar visible:', chatSidebar.offsetParent !== null);
-		console.log('Chat sidebar computed style:', window.getComputedStyle(chatSidebar).display);
 		
-		// Initialize Alpine.js on all dynamically added elements with directives
-		// Use multiple methods for better Firefox compatibility
-		const initializeAlpine = () => {
-			if (!window.Alpine) {
-				console.warn('Alpine.js not available - components will work without reactive features');
-				// Remove x-cloak attributes so elements are visible even without Alpine.js
-				const cloakedElements = container.querySelectorAll('[x-cloak]');
-				cloakedElements.forEach((el) => {
-					el.removeAttribute('x-cloak');
-				});
-				return;
-			}
-			
-			// Method 1: Use initTree if available (works in most browsers)
-			if (window.Alpine.initTree) {
-				try {
-					window.Alpine.initTree(container);
-					console.log('Alpine.js initialized on container');
-				} catch (e) {
-					console.warn('Alpine.initTree failed, trying alternative method:', e);
-				}
-			}
-			
-			// Method 2: Firefox fallback - manually trigger Alpine on specific elements
-			// Find all elements with Alpine directives and ensure they're initialized
-			const alpineElements = container.querySelectorAll('[x-data], [x-model], [x-show], [x-cloak]');
-			alpineElements.forEach((el) => {
-				// Force Alpine to process this element
-				if (!el.__x && window.Alpine && window.Alpine.initTree) {
-					try {
-						window.Alpine.initTree(el);
-					} catch (e) {
-						// Silently fail - element might already be initialized
-					}
-				}
-			});
-			
-			// Method 3: Use requestAnimationFrame for Firefox timing issues
-			requestAnimationFrame(() => {
-				if (window.Alpine && window.Alpine.initTree) {
-					try {
-						// Re-initialize on the container to catch any missed elements
-						window.Alpine.initTree(container);
-					} catch (e) {
-						console.warn('Alpine re-initialization failed:', e);
-					}
-				}
-			});
-			
-			// Method 4: Firefox-specific - use setTimeout as additional fallback
-			setTimeout(() => {
-				if (window.Alpine && window.Alpine.initTree) {
-					try {
-						window.Alpine.initTree(container);
-					} catch (e) {
-						// Final attempt failed - remove x-cloak to ensure visibility
-						const cloakedElements = container.querySelectorAll('[x-cloak]');
-						cloakedElements.forEach((el) => {
-							el.removeAttribute('x-cloak');
-						});
-					}
-				}
-			}, 100);
-		};
-		
-		initializeAlpine();
-		
-		// Final verification - check if components are visible
-		setTimeout(() => {
-			const quickActionsCard = container.querySelector('#quick-actions-container > *');
-			const chatSidebarEl = container.querySelector('.chat-panel');
-			
-			if (quickActionsCard) {
-				const isVisible = quickActionsCard.offsetParent !== null;
-				const display = window.getComputedStyle(quickActionsCard).display;
-				console.log('Quick Actions final check - visible:', isVisible, 'display:', display);
-				if (!isVisible && display !== 'none') {
-					console.warn('Quick Actions card exists but may not be visible - checking parent');
-				}
-			} else {
-				console.error('Quick Actions card not found in DOM after initialization');
-			}
-			
-			if (chatSidebarEl) {
-				const isVisible = chatSidebarEl.offsetParent !== null;
-				const display = window.getComputedStyle(chatSidebarEl).display;
-				console.log('Chat sidebar final check - visible:', isVisible, 'display:', display);
-				if (!isVisible && display !== 'none') {
-					console.warn('Chat sidebar exists but may not be visible - checking parent');
-				}
-			} else {
-				console.error('Chat sidebar not found in DOM after initialization');
-			}
-		}, 200);
+		// Stimulus automatically initializes controllers on new elements
+		// No manual initialization needed
 		} catch (error) {
 			console.error('Error setting up lobby components:', error);
 			console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
