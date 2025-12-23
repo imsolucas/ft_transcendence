@@ -47,19 +47,28 @@ services:
     restart: unless-stopped
 
   game:
+    container_name: game
+    image: game
     build:
       context: ../services/game/
-      args:
-        PORT: ${GAME_PORT:-3001}
-    image: game
-    container_name: game
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - PORT=${GAME_PORT:-3001}
     command: ["${GAME_CMD:-dev}"]
-    networks:
-      - devnet
     volumes:
       - ../services/game:/usr/src/app:rw
       - ../services/shared/:/usr/src/shared/:rw
       - game_node_modules:/usr/src/app/node_modules/
+    networks:
+      - devnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS ${GAME_HEALTH_HOST} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   api-gateway:

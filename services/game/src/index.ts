@@ -33,6 +33,15 @@ server.get('/ping', async (request: any, reply: any) => {
   return 'pong\n';
 });
 
+server.get('/health', async (request: any, reply: any) => {
+  reply.header('Content-Type', 'application/json');
+  return {
+    status: 'healthy',
+    service: 'game',
+    timestamp: new Date().toISOString()
+  };
+});
+
 server.get('/rooms', async (request: any, reply: any) => {
   reply.header('Content-Type', 'text/plain');
   const rooms = roomManager.getAllRooms();
