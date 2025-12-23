@@ -219,50 +219,43 @@ export const updateUserProfile = async (data: any) => {
 
 export const fetchMatchHistory = async () => {
   try {
-    const matches = await apiFetch(`${API_BASE_URL}/user/match-history`);
-    return matches.map((match: any) => {
-      // Determine if current user is player1 or player2
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const isPlayer1 = match.player1Id === currentUser.id;
-      const opponent = isPlayer1 ? match.player2DisplayName : match.player1DisplayName;
-      const myScore = isPlayer1 ? match.player1Score : match.player2Score;
-      const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
-      const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
-
-      return {
-        opponent: {
-          username: opponent || 'Unknown',
-          picture: '/images/pong.png'
-        },
-        result: result,
-        score: `${myScore} - ${opponentScore}`,
-        type: 'Match',
-        timestamp: new Date(match.played_at).toLocaleDateString()
-      };
-    });
-    // Get current user ID from token or simple API call to avoid circular dependency
+    // Get current user ID from token to avoid circular dependency with getCurrentUser()
     const token = getToken();
     if (!token) {
       throw new Error('Not authenticated');
     }
 
+    // Fetch matches from API
+    const matches = await apiFetch(`${API_BASE_URL}/user/match-history`);
+
     // Decode token to get user ID (simple base64 decode, no verification needed for ID extraction)
-    // Token is guaranteed to be non-null here due to check above
     try {
-      const payload = JSON.parse(atob(token!.split('.')[1]));
+      const payload = JSON.parse(atob(token.split('.')[1]));
       const currentUserId = payload.id;
 
       return matches.map((match: any) => {
         // Determine if current user is player1 or player2
         const isPlayer1 = match.player1Id === currentUserId;
-        const opponent = isPlayer1 ? match.player2DisplayName : match.player1DisplayName;
+        const isPlayer2 = match.player2Id === currentUserId;
+        
+        // Get opponent information - the player who is NOT the current user
+        let opponent: string;
+        if (isPlayer1) {
+          opponent = match.player2DisplayName || 'Unknown';
+        } else if (isPlayer2) {
+          opponent = match.player1DisplayName || 'Unknown';
+        } else {
+          // Fallback: shouldn't happen, but handle edge case
+          opponent = 'Unknown';
+        }
+        
         const myScore = isPlayer1 ? match.player1Score : match.player2Score;
         const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
         const result = myScore > opponentScore ? 'WIN' : myScore < opponentScore ? 'LOSS' : 'DRAW';
 
         return {
           opponent: {
-            username: opponent || 'Unknown',
+            username: opponent,
             picture: '/images/pong.png'
           },
           result: result,
@@ -287,7 +280,7 @@ export const fetchMatchHistory = async () => {
     }
   } catch (error) {
     console.error('Error fetching match history:', error);
-    return [];
+    throw error;
   }
 };
 

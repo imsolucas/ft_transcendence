@@ -152,15 +152,20 @@ function renderUserProfileModal(
     size: 'default',
     className: 'w-full',
     onClick: () => {
-      // Close modal using Alpine.js if available
-      if (window.Alpine && modalElement.__x) {
-        modalElement.__x.$data.open = false;
-        // Wait for transition animation before removing
-        setTimeout(() => {
+      // Close modal using Stimulus controller if available
+      const application = (window as any).Stimulus?.application;
+      if (application) {
+        const controller = application.getControllerForElementAndIdentifier(modalElement, 'modal');
+        if (controller) {
+          controller.close();
+          // Wait for transition animation before navigating
+          setTimeout(() => {
+            navigate('profile', `username=${encodeURIComponent(userData.username)}`);
+          }, 200);
+        } else {
           modalElement.remove();
-          // Navigate after modal is removed
           navigate('profile', `username=${encodeURIComponent(userData.username)}`);
-        }, 200);
+        }
       } else {
         // Fallback: remove directly
         modalElement.remove();

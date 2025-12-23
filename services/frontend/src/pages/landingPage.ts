@@ -5,22 +5,19 @@ import { createAnimatedBackground } from '../components/landing/AnimatedBackgrou
 import { createTitleSection } from '../components/landing/TitleSection';
 import { createVideoSection, setupVideoControls } from '../components/landing/VideoSection';
 import { createCTAButtons, setupCTAButtons } from '../components/landing/CTAButtons';
+import { showPrivacyTermsModal } from '../components/legal/PrivacyTermsModal';
+import { addFooterToPage } from '../components/layout/Footer';
 
 export function LandingPage(): HTMLElement {
   const container = document.createElement('div');
-  container.className = `min-h-screen ${gradients.pageBackground} pt-16`;
+  container.className = `min-h-screen ${gradients.pageBackground} pt-16 flex flex-col`;
 
   container.innerHTML = `
-    <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section class="relative min-h-screen flex items-center justify-center overflow-hidden flex-1">
       ${createAnimatedBackground()}
       <div class="relative z-10 ${spacing.container} text-center">
         ${createTitleSection(t('landing.subtitle'))}
-        ${createVideoSection({
-          videoSrc: '/video/F1.mp4',
-          posterSrc: '/images/f1intro.jpg',
-          demoText: t('landing.demoVideo'),
-          comingSoonText: t('landing.videoComingSoon'),
-        })}
+		<div class="flex items-center justify-center"/>
         ${createCTAButtons(t('landing.playNow'))}
       </div>
     </section>
@@ -28,6 +25,14 @@ export function LandingPage(): HTMLElement {
 
   setupVideoControls(container);
   setupCTAButtons(container, () => navigate('lobby'));
+
+  // Add footer
+  addFooterToPage(container);
+
+  // Show privacy/terms modal if not accepted
+  setTimeout(() => {
+    showPrivacyTermsModal();
+  }, 100);
 
   return container;
 }

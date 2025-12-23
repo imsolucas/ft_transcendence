@@ -19,31 +19,20 @@ export function Modal({
   modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
   // Don't set display:none for modals - they should be visible by default
   
-  // Add Alpine.js directive for reactive state (framework usage)
-  modal.setAttribute('x-data', "{ open: true }");
-  modal.setAttribute('x-show', 'open');
-  modal.setAttribute('x-transition', '');
+  // Add Stimulus controller for modal functionality
+  modal.setAttribute('data-controller', 'modal');
+  modal.setAttribute('data-modal-open-value', 'true');
+  // Store onClose callback in data attribute for controller access
+  if (onClose) {
+    modal.setAttribute('data-modal-onclose', 'true');
+    (modal as any)._onClose = onClose;
+  }
   
   // Backdrop
   const backdrop = document.createElement('div');
   backdrop.className = 'absolute inset-0 bg-black/50 backdrop-blur-sm';
-  
-  // Use event listener for backdrop click (Alpine.js can't access closure variables)
-  backdrop.addEventListener('click', () => {
-    // Update Alpine.js state if available
-    if (window.Alpine && modal.__x) {
-      modal.__x.$data.open = false;
-      // Wait for transition, then remove
-      setTimeout(() => {
-        if (onClose) onClose();
-        modal.remove();
-      }, 200);
-    } else {
-      // Fallback: remove immediately
-      if (onClose) onClose();
-      modal.remove();
-    }
-  });
+  backdrop.setAttribute('data-modal-target', 'backdrop');
+  backdrop.setAttribute('data-action', 'click->modal#closeOnBackdrop');
   
   // Modal content container
   const container = document.createElement('div');
@@ -54,7 +43,8 @@ export function Modal({
     xl: 'max-w-xl',
   };
   container.className = `relative ${sizeClasses[size]} w-full mx-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700`;
-  container.setAttribute('@click.stop', '');
+  container.setAttribute('data-modal-target', 'container');
+  container.setAttribute('data-action', 'click->modal#stopPropagation');
   
   // Header
   const header = document.createElement('div');
@@ -69,23 +59,7 @@ export function Modal({
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&times;';
     closeBtn.className = 'text-gray-400 hover:text-white text-3xl leading-none transition-colors';
-    
-    // Use event listener for close button (Alpine.js can't access closure variables)
-    closeBtn.addEventListener('click', () => {
-      // Update Alpine.js state if available
-      if (window.Alpine && modal.__x) {
-        modal.__x.$data.open = false;
-        // Wait for transition, then remove
-        setTimeout(() => {
-          if (onClose) onClose();
-          modal.remove();
-        }, 200);
-      } else {
-        // Fallback: remove immediately
-      if (onClose) onClose();
-      modal.remove();
-      }
-    });
+    closeBtn.setAttribute('data-action', 'click->modal#close');
     header.appendChild(closeBtn);
   }
   
@@ -110,13 +84,17 @@ export function showModal(options: ModalOptions): void {
   const modal = Modal(options);
   document.body.appendChild(modal);
   
-  // Initialize Alpine.js on the newly added modal element
-  if (window.Alpine && window.Alpine.initTree) {
-    window.Alpine.initTree(modal);
-  }
+  // Stimulus automatically initializes controllers on new elements
+  // No manual initialization needed
 }
 
 export function closeModal(modal: HTMLElement): void {
-  modal.remove();
+  // Use Stimulus controller if available, otherwise remove directly
+  const controller = (modal as any).stimulus?.getControllerForElementAndIdentifier?.(modal, 'modal');
+  if (controller) {
+    controller.close();
+  } else {
+    modal.remove();
+  }
 }
 

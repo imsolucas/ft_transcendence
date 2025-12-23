@@ -42,28 +42,99 @@ export function loadGoogleSignInService(): Promise<void> {
 
 export function decodeJWT(token: string): GoogleIdTokenPayload {
   try {
-    let base64Url = token.split(".")[1];
+    // Validate token format - should have 3 parts separated by dots
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT token format: expected 3 parts separated by dots');
+    }
+
+    // Extract and validate the payload part
+    let base64Url = parts[1];
+    if (!base64Url || base64Url.length === 0) {
+      throw new Error('Invalid JWT token: empty payload');
+    }
+
+    // Convert base64url to base64
     let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    let jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
+
+    // Add padding if necessary (base64 strings should be multiples of 4)
+    const padding = base64.length % 4;
+    if (padding !== 0) {
+      base64 += "=".repeat(4 - padding);
+    }
+
+    // Validate base64 string contains only valid characters
+    const base64Regex = /^[A-Za-z0-9+/=]+$/;
+    if (!base64Regex.test(base64)) {
+      throw new Error('Invalid JWT token: contains invalid base64 characters');
+    }
+
+    // Decode base64 to binary string
+    let binaryString: string;
+    try {
+      binaryString = atob(base64);
+    } catch (error) {
+      if (error instanceof DOMException) {
+        throw new Error(`Invalid JWT token: base64 decoding failed - ${error.message}`);
+      }
+      throw error;
+    }
+
+    // Convert binary string to URI-encoded string
+    let jsonPayload: string;
+    try {
+      jsonPayload = decodeURIComponent(
+        binaryString
+          .split("")
+          .map(function (c) {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+          })
+          .join("")
+      );
+    } catch (error) {
+      throw new Error(`Invalid JWT token: URI decoding failed - ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    // Parse JSON payload
+    try {
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      throw new Error(`Invalid JWT token: JSON parsing failed - ${error instanceof Error ? error.message : String(error)}`);
+    }
   } catch (error) {
     console.error('Error decoding JWT token:', error);
-    throw new Error('Invalid JWT token');
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Invalid JWT token: unknown error occurred');
   }
 }
 
 export async function handleCredentialResponse(response: CredentialResponse): Promise<void> {
   try {
+    // Validate credential exists
+    if (!response.credential || typeof response.credential !== 'string') {
+      console.error('Invalid Google credential response:', response);
+      showNotification('Google Sign-In failed: Invalid credential received. Please try again.', 'error');
+      return;
+    }
+
     console.log("Encoded JWT ID token: " + response.credential);
 
-    const responsePayload = decodeJWT(response.credential);
+    // Decode JWT token with proper error handling
+    let responsePayload: GoogleIdTokenPayload;
+    try {
+      responsePayload = decodeJWT(response.credential);
+    } catch (error) {
+      // Specific error handling for JWT decoding failures
+      console.error('Error decoding Google JWT token:', error);
+      if (error instanceof Error) {
+        showNotification(`Google Sign-In failed: ${error.message}`, 'error');
+      } else {
+        showNotification('Google Sign-In failed: Invalid token format. Please try again.', 'error');
+      }
+      return;
+    }
 
     console.log("Decoded JWT ID token fields:");
     console.log("  Full Name        : " + responsePayload.name);
@@ -98,28 +169,46 @@ export async function handleCredentialResponse(response: CredentialResponse): Pr
       }, 1500);
     }
   } catch (error) {
+    // Catch any unexpected errors
     console.error('Error handling Google credential:', error);
-    showNotification('Google Sign-In failed. Please try again.', 'error');
+    if (error instanceof Error) {
+      showNotification(`Google Sign-In failed: ${error.message}`, 'error');
+    } else {
+      showNotification('Google Sign-In failed. Please try again.', 'error');
+    }
   }
 }
 
-async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: string): Promise<boolean> {
+async function processGoogleAuth(_payload: GoogleIdTokenPayload, credential: string): Promise<boolean> {
   try {
     // Send the Google credential to backend for verification
-    const response = await fetch(`${API_BASE_URL}/auth/google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ idToken: credential }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken: credential }),
+      });
+    } catch (error) {
+      // Network error (connection failed, CORS, etc.)
+      console.error('Network error during Google authentication:', error);
+      showNotification('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
+      return false;
+    }
 
     let data: any = null;
     try {
-      data = await response.json();
-    } catch (_) {
-      // Non-JSON error or empty body
-      data = null;
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      }
+    } catch (parseError) {
+      // JSON parsing error
+      console.error('Error parsing response from Google auth endpoint:', parseError);
+      showNotification('Server error: Invalid response format. Please try again.', 'error');
+      return false;
     }
 
     if (!response.ok) {
@@ -136,13 +225,26 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
     }
 
     // Check if password is required (OAuth user without password)
-    if (response.status === 202 && data.passwordRequired) {
+    if (response.status === 202 && data?.passwordRequired) {
+      // Validate response data structure before showing modal
+      if (!data.userId || !data.username || !data.email) {
+        console.error('Invalid password required response:', data);
+        showNotification('Server error: Invalid response data. Please try again.', 'error');
+        return false;
+      }
       // Show password setup modal
       showPasswordSetupModal(data);
       return false; // Don't navigate yet, wait for password to be set
     }
 
-    if (data.token && data.user) {
+    if (data?.token && data?.user) {
+      // Validate user object structure
+      if (!data.user.id || !data.user.username || !data.user.email) {
+        console.error('Invalid user data in response:', data.user);
+        showNotification('Server error: Invalid user data. Please try again.', 'error');
+        return false;
+      }
+
       // Store access token in localStorage (persists across page reloads)
       const previousUserId = getCurrentUserId();
       setAccessToken(data.token, data.user.id);
@@ -154,12 +256,21 @@ async function processGoogleAuth(payload: GoogleIdTokenPayload, credential: stri
       return true;
     } else {
       console.error('Invalid response from backend:', data);
-      showNotification('Invalid response from server', 'error');
+      showNotification('Invalid response from server. Please try again.', 'error');
       return false;
     }
   } catch (error) {
+    // Catch any unexpected errors
     console.error('Error processing Google authentication:', error);
-    showNotification('Network error. Please try again.', 'error');
+    
+    // Provide specific error messages based on error type
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      showNotification('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
+    } else if (error instanceof Error) {
+      showNotification(`Authentication error: ${error.message}`, 'error');
+    } else {
+      showNotification('An unexpected error occurred. Please try again.', 'error');
+    }
     return false;
   }
 }
@@ -204,30 +315,58 @@ function showNotification(message: string, type: 'success' | 'error' | 'info'): 
   }, 3000);
 }
 
+// Helper function to sanitize string for safe DOM usage
+function sanitizeString(str: string | null | undefined, defaultValue: string = ''): string {
+  if (str === null || str === undefined) {
+    return defaultValue;
+  }
+  // Convert to string and trim
+  const sanitized = String(str).trim();
+  // Return default if empty after trimming
+  return sanitized || defaultValue;
+}
+
 // Show password setup modal for OAuth users
 function showPasswordSetupModal(data: { userId: number; username: string; email: string; avatar: string; message: string }): void {
+  // Validate required data fields
+  if (!data || typeof data !== 'object') {
+    console.error('Invalid data passed to showPasswordSetupModal:', data);
+    showNotification('Error: Invalid data received. Please try again.', 'error');
+    return;
+  }
+
+  if (typeof data.userId !== 'number' || data.userId <= 0) {
+    console.error('Invalid userId in showPasswordSetupModal:', data.userId);
+    showNotification('Error: Invalid user ID. Please try again.', 'error');
+    return;
+  }
+
+  // Sanitize string values
+  const email = sanitizeString(data.email, '');
+  const message = sanitizeString(data.message, 'Please set a password to secure your account and continue.');
+
+  // Validate email format if provided
+  if (email && !email.includes('@')) {
+    console.warn('Invalid email format in showPasswordSetupModal:', email);
+  }
+
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm';
-  modal.setAttribute('x-data', '{ open: true }');
-  modal.setAttribute('x-show', 'open');
-  modal.setAttribute('x-transition', '');
+  
+  // Add Stimulus controller for modal functionality
+  modal.setAttribute('data-controller', 'modal');
+  modal.setAttribute('data-modal-open-value', 'true');
 
   const backdrop = document.createElement('div');
   backdrop.className = 'absolute inset-0 bg-black/50';
-  backdrop.setAttribute('@click', 'open = false');
-  backdrop.addEventListener('click', () => {
-    if (window.Alpine && modal.__x) {
-      modal.__x.$data.open = false;
-      setTimeout(() => modal.remove(), 200);
-    } else {
-      modal.remove();
-    }
-  });
+  backdrop.setAttribute('data-modal-target', 'backdrop');
+  backdrop.setAttribute('data-action', 'click->modal#closeOnBackdrop');
   modal.appendChild(backdrop);
 
   const container = document.createElement('div');
   container.className = 'relative max-w-md w-full mx-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700';
-  container.setAttribute('@click.stop', '');
+  container.setAttribute('data-modal-target', 'container');
+  container.setAttribute('data-action', 'click->modal#stopPropagation');
 
   const header = document.createElement('div');
   header.className = 'flex items-center justify-between p-6 border-b border-gray-700';
@@ -240,31 +379,29 @@ function showPasswordSetupModal(data: { userId: number; username: string; email:
   const closeBtn = document.createElement('button');
   closeBtn.innerHTML = '&times;';
   closeBtn.className = 'text-gray-400 hover:text-white text-3xl leading-none transition-colors';
-  closeBtn.setAttribute('@click', 'open = false');
-  closeBtn.addEventListener('click', () => {
-    if (window.Alpine && modal.__x) {
-      modal.__x.$data.open = false;
-      setTimeout(() => modal.remove(), 200);
-    } else {
-      modal.remove();
-    }
-  });
+  closeBtn.setAttribute('data-action', 'click->modal#close');
   header.appendChild(closeBtn);
   container.appendChild(header);
 
   const body = document.createElement('div');
   body.className = 'p-6 space-y-4';
 
-  const message = document.createElement('p');
-  message.className = 'text-gray-300';
-  message.textContent = String(t('auth.passwordRequiredMessage') || 'Please set a password to secure your account and continue.');
-  body.appendChild(message);
+  const messageElement = document.createElement('p');
+  messageElement.className = 'text-gray-300';
+  // Use the sanitized message from data, or fallback to translation/default
+  messageElement.textContent = message || String(t('auth.passwordRequiredMessage') || 'Please set a password to secure your account and continue.');
+  body.appendChild(messageElement);
 
   const form = document.createElement('form');
   form.className = 'space-y-4';
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    await handleSetPassword(data.userId, passwordInput.value, modal);
+    // Validate userId is still valid before submitting
+    if (typeof data.userId === 'number' && data.userId > 0) {
+      await handleSetPassword(data.userId, passwordInput.value, modal);
+    } else {
+      showNotification('Error: Invalid user ID. Please refresh and try again.', 'error');
+    }
   });
 
   const passwordLabel = document.createElement('label');
@@ -374,10 +511,15 @@ async function handleSetPassword(userId: number, password: string, modal: HTMLEl
         showNotification('Another user was logged in. You have been logged in as ' + data.user.username, 'info');
       }
       
-      // Close modal
-      if (window.Alpine && modal.__x) {
-        modal.__x.$data.open = false;
-        setTimeout(() => modal.remove(), 200);
+      // Close modal using Stimulus controller
+      const application = (window as any).Stimulus?.application;
+      if (application) {
+        const controller = application.getControllerForElementAndIdentifier(modal, 'modal');
+        if (controller) {
+          controller.close();
+        } else {
+          modal.remove();
+        }
       } else {
         modal.remove();
       }
