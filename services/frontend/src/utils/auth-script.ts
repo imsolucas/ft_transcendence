@@ -3,6 +3,7 @@ import type { Screen } from '../router';
 import { updateNavbar } from '../components/layout/Navbar';
 import type { UserData } from '../types/user';
 import { getAccessToken, clearAccessToken, setAccessToken, getCurrentUserId } from './tokenManager';
+import { API_BASE_URL } from './api';
 
 // Types for API requests/responses
 interface LoginRequest {
@@ -41,8 +42,6 @@ interface BackendLoginResponse {
 }
 
 // API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
-
 export function initializeAuthPage(): void {
   const container = document.querySelector('.container') as HTMLElement;
   const registerBtn = document.querySelector('.register-btn') as HTMLButtonElement;
@@ -455,7 +454,6 @@ import { setUserStatus } from './api';
 
 export async function logout(): Promise<void> {
   try {
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
     const token = getAccessToken();
     
     // Set status to OFFLINE BEFORE calling logout endpoint
@@ -471,7 +469,7 @@ export async function logout(): Promise<void> {
     
     // Call backend logout endpoint to invalidate tokens
     // Backend will also set status to OFFLINE as a backup
-    await fetch(`${API_URL}/auth/logout`, {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: {
         ...(token && { 'Authorization': `Bearer ${token}` }),

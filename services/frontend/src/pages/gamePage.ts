@@ -6,6 +6,7 @@ import type { MatchmakingEvents, MatchmakingPlayer } from "../components/matchma
 import { getCurrentUser } from "../utils/auth-script";
 import { gameStorage, type GameOptionsData } from "../types/game";
 import type { UserData } from "../types/user";
+import { API_DOMAIN } from "../utils/api";
 
 let socket: WebSocket;
 let user: UserData | null = null;
@@ -33,7 +34,7 @@ function matchMaking(container: HTMLElement) {
 	}
 
 	const loadingComponent = MatchmakingScreen(events);
-	container.appendChild(loadingComponent);    socket = new WebSocket('wss://localhost:8443/ws/game');
+	container.appendChild(loadingComponent);    socket = new WebSocket(`wss://${API_DOMAIN}/ws/game`);
     socket.onopen = () => {
         const connectionMsg: ConnectionMessage = {
             type: 'connection',

@@ -19,7 +19,7 @@ export default defineConfig({
       usePolling: true,
       interval: 1000, // check for changes every second
     },
-    port: 3000,    // 👈 set port here
-    strictPort: true // 👈 optional, forces Vite to fail if 3000 is busy
+    port: Number(process.env.PORT),
+    strictPort: true
   }
 });
