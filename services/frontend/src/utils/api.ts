@@ -1,8 +1,10 @@
 import { getCurrentUser } from './auth-script';
 import { getAccessToken, clearAccessToken } from './tokenManager';
+import process from 'process';
 
 // API Configuration
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:8443';
+export const API_DOMAIN = `${import.meta.env.DOMAIN || 'localhost'}:${import.meta.env.API_DOMAIN || '443'}`
+export const API_BASE_URL = `https://${API_DOMAIN}`
 
 // Helper function to get auth token (from localStorage)
 const getToken = () => {
@@ -35,7 +37,7 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
       try {
         // Call logout endpoint to set status to OFFLINE (non-blocking, fire and forget)
         // Use keepalive to ensure it completes even if page is closing
-        fetch(`${API_URL}/auth/logout`, {
+        fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -89,7 +91,7 @@ export async function setUserStatus(
     if (!token) return;
     const normalized = String(status).toUpperCase() as 'ONLINE' | 'OFFLINE' | 'INGAME';
     console.debug('[setUserStatus] sending:', normalized, 'keepalive=', options?.keepalive === true);
-    const res = await fetch(`${API_URL}/user/status`, {
+    const res = await fetch(`${API_BASE_URL}/user/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -113,7 +115,7 @@ export async function setUserStatus(
 export const fetchUserProfile = async () => {
   try {
     // Use authenticated endpoint to get current user profile
-    const user = await apiFetch(`${API_URL}/user/profile`);
+    const user = await apiFetch(`${API_BASE_URL}/user/profile`);
 
     // Calculate wins/losses from match history
     let wins = 0;
@@ -158,7 +160,7 @@ export const fetchUserProfile = async () => {
 
 export const getUserProfileByUsername = async (username: string) => {
   try {
-    const user = await apiFetch(`${API_URL}/user/profile/${encodeURIComponent(username)}`);
+    const user = await apiFetch(`${API_BASE_URL}/user/profile/${encodeURIComponent(username)}`);
     return {
       id: user.id,
       username: user.username,
@@ -198,7 +200,7 @@ export const updateUserProfile = async (data: any) => {
     if (data.email) updateData.email = data.email;
     if (data.avatar) updateData.avatar = data.avatar;
 
-    const updatedUser = await apiFetch(`${API_URL}/user/profile`, {
+    const updatedUser = await apiFetch(`${API_BASE_URL}/user/profile`, {
       method: 'PATCH',
       body: JSON.stringify(updateData),
     });
@@ -217,7 +219,7 @@ export const updateUserProfile = async (data: any) => {
 
 export const fetchMatchHistory = async () => {
   try {
-    const matches = await apiFetch(`${API_URL}/user/match-history`);
+    const matches = await apiFetch(`${API_BASE_URL}/user/match-history`);
     return matches.map((match: any) => {
       // Determine if current user is player1 or player2
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -328,7 +330,7 @@ export const calculateUserStats = async () => {
 
 export const fetchFriends = async () => {
   try {
-    const friends = await apiFetch(`${API_URL}/user/friends`);
+    const friends = await apiFetch(`${API_BASE_URL}/user/friends`);
     return friends.map((friend: any) => ({
       username: friend.username || 'Unknown',
       picture: friend.avatar || '/images/pong.png',
@@ -447,7 +449,7 @@ export const fetchAllUsers = async () => {
 // Friend Request Operations
 export const sendFriendRequest = async (username: string) => {
   try {
-    const result = await apiFetch(`${API_URL}/user/friend-request`, {
+    const result = await apiFetch(`${API_BASE_URL}/user/friend-request`, {
       method: 'POST',
       body: JSON.stringify({ username }),
     });
@@ -461,7 +463,7 @@ export const sendFriendRequest = async (username: string) => {
 export const getFriendRequests = async (direction?: 'sent' | 'received') => {
   try {
     const queryParam = direction ? `?direction=${direction}` : '';
-    const requests = await apiFetch(`${API_URL}/user/friend-request${queryParam}`);
+    const requests = await apiFetch(`${API_BASE_URL}/user/friend-request${queryParam}`);
     // Debug logging to see what we're getting from the backend
     console.log('Friend requests received from backend:', requests);
     return requests;
@@ -473,7 +475,7 @@ export const getFriendRequests = async (direction?: 'sent' | 'received') => {
 
 export const updateFriendRequest = async (requestId: number, status: 'ACCEPTED' | 'REJECTED') => {
   try {
-    const result = await apiFetch(`${API_URL}/user/friend-request/${requestId}`, {
+    const result = await apiFetch(`${API_BASE_URL}/user/friend-request/${requestId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
@@ -486,7 +488,7 @@ export const updateFriendRequest = async (requestId: number, status: 'ACCEPTED' 
 
 export const removeFriend = async (username: string) => {
   try {
-    const result = await apiFetch(`${API_URL}/user/friends/${username}`, {
+    const result = await apiFetch(`${API_BASE_URL}/user/friends/${username}`, {
       method: 'DELETE',
       body: '{}',
     });
@@ -499,7 +501,7 @@ export const removeFriend = async (username: string) => {
 
 export const searchUsers = async (query: string) => {
   try {
-    const result = await apiFetch(`${API_URL}/user/search?q=${encodeURIComponent(query)}`);
+    const result = await apiFetch(`${API_BASE_URL}/user/search?q=${encodeURIComponent(query)}`);
     return result;
   } catch (error) {
     console.error('Error searching users:', error);
@@ -528,7 +530,7 @@ export const setup2FA = async () => {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_URL}/user/2fa/setup`, {
+    const response = await fetch(`${API_BASE_URL}/user/2fa/setup`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -551,7 +553,7 @@ export const setup2FA = async () => {
 
 export const verify2FACode = async (userId: number, code: string) => {
   try {
-    const result = await fetch(`${API_URL}/auth/verify-2fa`, {
+    const result = await fetch(`${API_BASE_URL}/auth/verify-2fa`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
