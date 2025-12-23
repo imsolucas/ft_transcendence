@@ -129,7 +129,10 @@ function matchMaking(container: HTMLElement) {
                                     picture: existingPlayer.picture
                                 };
 
-                                (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId);
+                                // Call async addOpponent (will fetch stats from database)
+                                (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId).catch((err: any) => {
+                                    console.error('Error adding opponent:', err);
+                                });
                             }
                         });
                     }
@@ -144,7 +147,10 @@ function matchMaking(container: HTMLElement) {
                     picture: playerJoinMsg.data.picture
                 };
 
-                (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId);
+                // Call async addOpponent (will fetch stats from database)
+                (loadingComponent as any).addOpponent(player, playerJoinMsg.data.roomId).catch((err: any) => {
+                    console.error('Error adding opponent:', err);
+                });
                 break;
             case 'playerLeft':
                 const playerLeftMsg = message as PlayerLeftMessage;

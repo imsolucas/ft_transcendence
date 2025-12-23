@@ -191,7 +191,7 @@ export function MatchmakingScreen(events?: MatchmakingEvents): HTMLElement {
 		render();
 	};
 
-	const addOpponent = (opponent: MatchmakingPlayer, matchId?: string): void => {
+	const addOpponent = async (opponent: MatchmakingPlayer, matchId?: string): Promise<void> => {
 		if (!opponent) {
 			console.error('Invalid opponent');
 			return;
@@ -204,8 +204,19 @@ export function MatchmakingScreen(events?: MatchmakingEvents): HTMLElement {
 			return;
 		}
 
-		// Add opponent to the array
-		matchmakingState.opponents.push(opponent);
+		// Add opponent with initial data (will be updated with stats)
+		const opponentWithStats: MatchmakingPlayer = {
+			id: opponent.id,
+			username: opponent.username,
+			picture: opponent.picture,
+			level: 1,
+			wins: 0,
+			losses: 0,
+			winRate: '0%'
+		};
+
+		// Add opponent to the array immediately (with default stats)
+		matchmakingState.opponents.push(opponentWithStats);
 
 		// Update match ID if provided
 		if (matchId) {
@@ -219,10 +230,34 @@ export function MatchmakingScreen(events?: MatchmakingEvents): HTMLElement {
 
 		render();
 
+		// Fetch real stats from database
+		try {
+			const opponentId = parseInt(opponent.id, 10);
+			if (!isNaN(opponentId)) {
+				const stats = await calculateUserStats(opponentId);
+				
+				// Update opponent with real stats
+				const opponentIndex = matchmakingState.opponents.findIndex(op => op.id === opponent.id);
+				if (opponentIndex !== -1) {
+					matchmakingState.opponents[opponentIndex] = {
+						...opponentWithStats,
+						level: stats.level,
+						wins: stats.wins,
+						losses: stats.losses,
+						winRate: stats.winRate
+					};
+					render();
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching opponent stats:', error);
+			// Keep default stats if fetch fails
+		}
+
 		// Trigger match found event for the first opponent
 		if (matchmakingState.opponents.length === 1 && matchId) {
 			try {
-				events?.onMatchFound(opponent, matchId);
+				events?.onMatchFound(opponentWithStats, matchId);
 			} catch (error) {
 				console.error('Error in onMatchFound callback:', error);
 			}
