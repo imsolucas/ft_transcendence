@@ -407,7 +407,7 @@ function FriendsPanel({ swr, actions, onFindPlayers }: { swr: Swr<PublicUser[]>;
             </div>
             {friend.presence === "ONLINE" && (
               <Button asChild size="sm" className="max-sm:!px-2">
-                <Link href={href("/lobby#play")}>
+                <Link href={`${href("/play")}?mode=create&invite=${encodeURIComponent(friend.username)}`}>
                   <Swords className="ico" aria-hidden />
                   <span className="max-sm:sr-only">{t("lobby.invite")}</span>
                 </Link>

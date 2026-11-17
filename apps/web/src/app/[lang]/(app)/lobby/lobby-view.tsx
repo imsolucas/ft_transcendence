@@ -314,7 +314,7 @@ function FriendsSidebar() {
                         <PlayerChip user={f} />
                       </div>
                       {f.presence === "ONLINE" && (
-                        <Link href={`${href("/play")}?mode=create`} className="icon-btn icon-btn-sm" aria-label={`${t("lobby.invite")}: ${f.displayName}`} title={t("lobby.invite")}>
+                        <Link href={`${href("/play")}?mode=create&invite=${encodeURIComponent(f.username)}`} className="icon-btn icon-btn-sm" aria-label={`${t("lobby.invite")}: ${f.displayName}`} title={t("lobby.invite")}>
                           <Gamepad2 className="ico" aria-hidden />
                         </Link>
                       )}

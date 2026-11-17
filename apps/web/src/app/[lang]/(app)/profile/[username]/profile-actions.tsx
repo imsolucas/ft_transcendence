@@ -119,7 +119,7 @@ export function ProfileActions({ profile, isOwn, profileKey }: { profile: Profil
       {friendship === "friends" && (
         <>
           <Button asChild variant="primary" glow="sm" className="max-sm:w-full">
-            <Link href={href("/lobby#play")} className="no-underline">
+            <Link href={`${href("/play")}?mode=create&invite=${user}`} className="no-underline">
               <Gamepad2 className="ico" aria-hidden />
               {t("lobby.invite")}
             </Link>
