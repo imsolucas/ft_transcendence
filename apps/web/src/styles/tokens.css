@@ -1,0 +1,66 @@
+/* Design tokens: values from project/tokens.json in the Design System artifact
+   (https://claude.ai/artifact/BMeufmTDn4KNsRPaXkvAov). Never re-pick these; change them there. */
+:root {
+  color-scheme: dark;
+
+  --bg: #0b0614;
+  --surface-1: #130b22;
+  --surface-2: #1b1130;
+  --surface-3: #251a3f;
+  --border: #3a2b5c;
+  --border-strong: #7c66ad;
+  --fg: #f3eeff;
+  --fg-muted: #b9abd8;
+  --fg-subtle: #9d8ec2;
+  --on-neon: #14051f;
+
+  --neon-magenta: #ff2e97;
+  --neon-magenta-glow: rgba(255, 46, 151, 0.45);
+  --neon-magenta-soft: rgba(255, 46, 151, 0.14);
+  --neon-magenta-strong: #ff66b3;
+  --neon-cyan: #2de2e6;
+  --neon-cyan-glow: rgba(45, 226, 230, 0.45);
+  --neon-cyan-soft: rgba(45, 226, 230, 0.14);
+  --neon-amber: #ffb000;
+  --neon-amber-glow: rgba(255, 176, 0, 0.45);
+  --neon-amber-soft: rgba(255, 176, 0, 0.14);
+  --neon-green: #3dff8b;
+  --neon-green-glow: rgba(61, 255, 139, 0.45);
+  --neon-green-soft: rgba(61, 255, 139, 0.14);
+  --neon-red: #ff4d5e;
+  --neon-red-glow: rgba(255, 77, 94, 0.45);
+  --neon-red-soft: rgba(255, 77, 94, 0.14);
+
+  --focus: var(--fg);
+  --scrim: rgba(11, 6, 20, 0.9);
+  --ink-black: #000000;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-full: 999px;
+
+  --glow-sm: 0 0 10px rgba(255, 46, 151, 0.45);
+  --glow-md: 0 0 0 1px rgba(255, 46, 151, 0.6), 0 0 28px rgba(255, 46, 151, 0.45);
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.6);
+
+  --scanline-opacity: 0.16;
+  --scanline-size: 4px;
+  --vignette-opacity: 0.45;
+  --noise-opacity: 0.05;
+  --crt-corner: 18px;
+
+  /* next/font sets --font-press-start, --font-outfit, --font-jetbrains on <html> */
+  --font-display: var(--font-press-start), "Courier New", monospace;
+  --font-body: var(--font-outfit), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, Menlo, monospace;
+}

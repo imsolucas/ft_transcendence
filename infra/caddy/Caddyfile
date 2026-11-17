@@ -1,0 +1,55 @@
+# ft_transcendence gateway: one HTTPS origin, routed by path.
+#   /api/*  → users service (Better Auth at /api/auth/*, our API, public API)
+#   /ws/*   → game service (Socket.IO)
+#   *       → Next.js web app
+# /internal/* and /docs are deliberately NOT routed: only the game service calls them.
+#
+# SITE_ADDRESS: "localhost:8443" locally (Caddy issues a certificate from its own local CA);
+# a real domain such as "pong.example.com" gets a Let's Encrypt certificate automatically.
+{
+	admin off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+{$SITE_ADDRESS:localhost:8443} {
+	tls {$TLS_MODE:internal}
+
+	encode zstd gzip
+
+	header {
+		# HSTS only makes sense on a real domain (on localhost it would affect every port)
+		{$HSTS_HEADER:-Strict-Transport-Security}
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	request_body {
+		max_size 4MB
+	}
+
+	@internal path /internal /internal/* /docs /docs/*
+	handle @internal {
+		respond 404
+	}
+
+	handle /api/* {
+		reverse_proxy {$USERS_UPSTREAM:users:4000}
+	}
+
+	handle /ws/* {
+		reverse_proxy {$GAME_UPSTREAM:game:3001}
+	}
+
+	handle /ws {
+		reverse_proxy {$GAME_UPSTREAM:game:3001}
+	}
+
+	handle {
+		reverse_proxy {$WEB_UPSTREAM:web:3000}
+	}
+}
