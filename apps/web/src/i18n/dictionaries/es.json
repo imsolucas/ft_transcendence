@@ -592,6 +592,8 @@
     "social": {
       "title": "Escuadra",
       "body": "Ten 5 amigos."
-    }
+    },
+    "unlockedToast": "Logro desbloqueado: {name}",
+    "view": "Ver"
   }
 }

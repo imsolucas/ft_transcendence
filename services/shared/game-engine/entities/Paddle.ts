@@ -1,3 +1,4 @@
+import { defaults } from "../defaults.ts";
 import type { GameConfig, PlayerInputs } from "../../types/pong.types.ts";
 import type { Border } from "../components/Hitbox.ts";
 import type { Vector } from "../components/Vector.ts";
@@ -69,10 +70,12 @@ export default class Paddle extends Entity {
 
     input(input: PlayerInputs): void {
         this.velocity.y = 0
+        // paddleConfig.speed scales movement; the default speed crosses the court in 1 s
+        const speed = this.config.courtSize!.y * (this.config.paddleConfig.speed ?? defaults.PADDLE_SPEED) / defaults.PADDLE_SPEED;
 
         if (input.up)
-            this.velocity.y = -this.config.courtSize!.y;
+            this.velocity.y = -speed;
         if (input.down)
-            this.velocity.y = this.config.courtSize!.y;
+            this.velocity.y = speed;
     }
 }

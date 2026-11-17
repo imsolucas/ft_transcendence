@@ -165,7 +165,8 @@ export type RealtimeEvent =
   | { type: "chat:typing"; from: number }
   | { type: "friend:request"; from: PublicUser }
   | { type: "friend:accepted"; by: PublicUser }
-  | { type: "presence"; userId: number; presence: Presence };
+  | { type: "presence"; userId: number; presence: Presence }
+  | { type: "achievement"; id: AchievementId };
 
 // ---------------------------------------------------------------- Status (Phase 4)
 export type ServiceState = "up" | "degraded" | "down";
@@ -196,6 +197,8 @@ export type AchievementId =
 export interface Achievement {
   id: AchievementId;
   unlocked: boolean;
+  /** when it was first unlocked (stored; stays unlocked even if progress later drops) */
+  unlockedAt: string | null;
   progress: number;
   target: number;
 }

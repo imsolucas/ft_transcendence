@@ -2,6 +2,7 @@
 
 import { io, type Socket } from "socket.io-client";
 import type { GameMessage } from "shared";
+import type { RealtimeEvent } from "@/lib/types";
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 export type ServerMessage = GameMessage | { type: "queueJoined"; data: { position: number; queueLength: number }; timestamp: number } | { type: "Error"; data: { message: string; code: string }; timestamp: number };
@@ -13,6 +14,7 @@ export type ServerMessage = GameMessage | { type: "queueJoined"; data: { positio
 export class GameSocket {
   private socket: Socket;
   private listeners = new Set<(msg: ServerMessage) => void>();
+  private notifyListeners = new Set<(e: RealtimeEvent) => void>();
   private statusListeners = new Set<(s: ConnectionStatus, error?: string) => void>();
   status: ConnectionStatus = "connecting";
   lastError?: string;
@@ -55,6 +57,8 @@ export class GameSocket {
       }
     });
     this.socket.io.on("reconnect_failed", () => this.setStatus("disconnected", "RECONNECT_FAILED"));
+    // account events (achievements…) also reach the game socket: it joins the user's room
+    this.socket.on("notify", (e: RealtimeEvent) => this.notifyListeners.forEach((l) => l(e)));
     this.socket.on("message", (raw: string) => {
       let msg: ServerMessage;
       try {
@@ -73,6 +77,11 @@ export class GameSocket {
         this.pingMs = Math.round(performance.now() - started);
       });
     }, 3000);
+  }
+
+  onNotify(fn: (e: RealtimeEvent) => void) {
+    this.notifyListeners.add(fn);
+    return () => this.notifyListeners.delete(fn);
   }
 
   private setStatus(s: ConnectionStatus, error?: string) {

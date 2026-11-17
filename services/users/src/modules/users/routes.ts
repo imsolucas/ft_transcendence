@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { MatchSummary, Page, Profile, SearchResult, UserStats } from "../../../../shared/types/api.types.ts";
 import { DELETED_PREFIX, isDeletedHandle } from "../privacy/routes.ts";
-import { computeAchievements } from "../gamification/routes.ts";
+import { syncAchievements } from "../gamification/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { PUBLIC_USER_SELECT, friendshipState, friendshipStates, parsePage, toPublicUser } from "../shared/presenters.ts";
@@ -113,7 +113,7 @@ export default async function usersRoutes(app: FastifyInstance) {
     });
     if (!u || isDeletedHandle(u.username)) return reply.code(404).send({ error: "Player not found." });
     const [friendship, stats] = await Promise.all([friendshipState(req.user!.id, u.id), computeStats(u.id)]);
-    const achievements = await computeAchievements(u.id, stats.wins, stats.wins + stats.losses);
+    const achievements = await syncAchievements(u.id, false);
     return { ...toPublicUser(u), memberSince: u.created_at.toISOString(), friendship, stats, achievements };
   });
 

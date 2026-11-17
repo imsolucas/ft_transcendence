@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 import type { Achievement, Leaderboard, LeaderboardRow } from "../../../../shared/types/api.types.ts";
 import { prisma } from "../../db/client.ts";
+import { notify } from "../../realtime/notify.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { PUBLIC_USER_SELECT, parsePage, toPublicUser } from "../shared/presenters.ts";
 import { DELETED_PREFIX } from "../privacy/routes.ts";
@@ -30,6 +31,7 @@ export async function computeAchievements(userId: number, wins: number, played: 
     progress: Math.min(progress, target),
     target,
     unlocked: progress >= target,
+    unlockedAt: null,
   });
   return [
     a("first_win", wins, 1),
@@ -41,6 +43,42 @@ export async function computeAchievements(userId: number, wins: number, played: 
     a("champion", titles, 1),
     a("social", friends, 5),
   ];
+}
+
+/**
+ * Computes achievements, stores any newly unlocked ones and (optionally) announces them
+ * to the player in realtime. Stored unlocks stay unlocked. Safe to run concurrently:
+ * the (userId, achievement) unique key plus skipDuplicates makes the insert idempotent.
+ */
+export async function syncAchievements(userId: number, announce: boolean): Promise<Achievement[]> {
+  const involves = { OR: [{ player1Id: userId }, { player2Id: userId }] };
+  const [wins, played, stored] = await Promise.all([
+    prisma.match.count({ where: { winnerId: userId } }),
+    prisma.match.count({ where: involves }),
+    prisma.userAchievement.findMany({ where: { userId }, select: { achievement: true, unlockedAt: true } }),
+  ]);
+  const computed = await computeAchievements(userId, wins, played);
+  const known = new Map(stored.map((s) => [s.achievement, s.unlockedAt]));
+  const fresh = computed.filter((c) => c.unlocked && !known.has(c.id));
+  if (fresh.length) {
+    const created = await prisma.userAchievement.createMany({
+      data: fresh.map((c) => ({ userId, achievement: c.id })),
+      skipDuplicates: true,
+    });
+    const now = new Date();
+    for (const c of fresh) known.set(c.id, now);
+    // only announce when this call actually inserted them (another call may have won the race)
+    if (announce && created.count > 0) for (const c of fresh) notify([userId], { type: "achievement", id: c.id });
+  }
+  return computed.map((c) => {
+    const at = known.get(c.id);
+    return at ? { ...c, unlocked: true, progress: c.target, unlockedAt: at.toISOString() } : c;
+  });
+}
+
+/** Fire-and-forget after a result is recorded; failures are logged, never block the caller. */
+export function syncAchievementsLater(userIds: number[], log: { error: (o: object, m: string) => void }) {
+  for (const id of new Set(userIds)) syncAchievements(id, true).catch((err) => log.error({ err, userId: id }, "achievement sync failed"));
 }
 
 interface RankRow {

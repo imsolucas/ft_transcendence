@@ -29,6 +29,7 @@ model User {
   blocksMade        Block[]            @relation("Blocker")
   messagesSent      Message[]          @relation("MessagesSent")
   messagesReceived  Message[]          @relation("MessagesReceived")
+  achievements      UserAchievement[]
   blockedBy         Block[]            @relation("Blocked")
 
   name             String
@@ -234,4 +235,17 @@ model Message {
   @@index([senderId, recipientId, createdAt])
   @@index([recipientId, readAt])
   @@map("Messages")
+}
+
+// Achievements are computed from play data, then stored the first time they unlock
+// (so they persist, and the unlock can be announced once).
+model UserAchievement {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  achievement String
+  unlockedAt  DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievement])
+  @@map("UserAchievements")
 }

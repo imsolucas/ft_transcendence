@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { auth } from "../../auth/auth.ts";
 import { requireInternalService } from "../../auth/guards.ts";
+import { syncAchievementsLater } from "../gamification/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
 
@@ -114,6 +115,7 @@ export default async function internalRoutes(app: FastifyInstance) {
           },
           select: { id: true },
         });
+        syncAchievementsLater([b.player1Id, b.player2Id], req.log);
         return reply.code(201).send({ id: created.id });
       } catch (err: any) {
         if (err?.code === "P2002") {
@@ -200,6 +202,7 @@ export default async function internalRoutes(app: FastifyInstance) {
           },
           select: { id: true },
         });
+        syncAchievementsLater([b.winnerId, ...b.players.map((p) => p.userId), ...b.matches.flatMap((m) => [m.player1Id, m.player2Id])], req.log);
         return reply.code(201).send({ id: t.id });
       } catch (err: any) {
         if (err?.code === "P2002") {

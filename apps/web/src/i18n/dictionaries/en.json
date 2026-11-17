@@ -592,6 +592,8 @@
     "social": {
       "title": "Squad",
       "body": "Have 5 friends."
-    }
+    },
+    "unlockedToast": "Achievement unlocked: {name}",
+    "view": "View"
   }
 }

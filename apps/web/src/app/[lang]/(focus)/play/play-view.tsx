@@ -10,6 +10,7 @@ import { useMe } from "@/lib/session";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { usePrefs } from "@/lib/prefs";
+import { announceAchievement } from "@/lib/realtime";
 import { GameSocket, type ConnectionStatus, type ServerMessage } from "@/lib/game/socket";
 import { baseGameConfig } from "@/lib/game/config";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   useEffect(() => {
     const socket = new GameSocket();
     socketRef.current = socket;
+    const offNotify = socket.onNotify((e) => e.type === "achievement" && announceAchievement(e.id, t));
 
     const offStatus = socket.onStatus((s, error) => {
       setStatus(s);
@@ -253,6 +255,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
     const pingTimer = setInterval(() => setPing(socket.pingMs), 2000);
     return () => {
       clearInterval(pingTimer);
+      offNotify();
       offStatus();
       offMsg();
       socket.close();

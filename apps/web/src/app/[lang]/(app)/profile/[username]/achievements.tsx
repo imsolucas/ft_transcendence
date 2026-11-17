@@ -19,7 +19,8 @@ const ICONS: Record<AchievementId, LucideIcon> = {
 
 /** Achievement grid: unlocked ones are lit (icon + "Unlocked"), locked ones show progress. */
 export function Achievements({ items }: { items: Achievement[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const date = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(iso));
   const unlocked = items.filter((a) => a.unlocked).length;
   return (
     <Panel>
@@ -41,6 +42,11 @@ export function Achievements({ items }: { items: Achievement[] }) {
               </div>
               <h3 className="t-strong">{t(`achievements.${a.id}.title`)}</h3>
               <p className="t-caption muted">{t(`achievements.${a.id}.body`)}</p>
+              {a.unlockedAt && (
+                <p className="t-caption subtle">
+                  <time dateTime={a.unlockedAt}>{date(a.unlockedAt)}</time>
+                </p>
+              )}
               {!a.unlocked && (
                 <div className="meter" aria-hidden>
                   <i style={{ width: `${(100 * a.progress) / a.target}%` }} />

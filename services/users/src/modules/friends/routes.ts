@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import type { FriendRequest, PublicUser } from "../../../../shared/types/api.types.ts";
 import { isDeletedHandle } from "../privacy/routes.ts";
+import { syncAchievementsLater } from "../gamification/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { ID_PARAMS } from "../shared/presenters.ts";
@@ -148,6 +149,7 @@ export default async function friendsRoutes(app: FastifyInstance) {
       select: { requester: { select: PUBLIC_USER_SELECT }, addressee: { select: PUBLIC_USER_SELECT } },
     });
     notify([row!.requester.id], { type: "friend:accepted", by: toPublicUser(row!.addressee) });
+    syncAchievementsLater([row!.requester.id, me], req.log);
     return toPublicUser(row!.requester);
   });
 

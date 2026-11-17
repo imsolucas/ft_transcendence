@@ -592,6 +592,8 @@
     "social": {
       "title": "Escouade",
       "body": "Ayez 5 amis."
-    }
+    },
+    "unlockedToast": "Succès débloqué : {name}",
+    "view": "Voir"
   }
 }

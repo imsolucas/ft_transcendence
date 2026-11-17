@@ -5,7 +5,7 @@ import { io, type Socket } from "socket.io-client";
 import { mutate } from "swr";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
-import type { RealtimeEvent } from "./types";
+import type { AchievementId, RealtimeEvent } from "./types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "./session";
 
@@ -28,11 +28,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const routerRef = useRef(router);
   const myIdRef = useRef<number | null>(null);
+  const myNameRef = useRef<string | null>(null);
   useEffect(() => {
     pathRef.current = pathname;
     myIdRef.current = me?.id ?? null;
+    myNameRef.current = me?.username ?? null;
     routerRef.current = router;
-  }, [pathname, me?.id, router]);
+  }, [pathname, me?.id, me?.username, router]);
 
   useEffect(() => {
     const socket = io({ path: "/ws", transports: ["websocket"], withCredentials: true, autoConnect: false, reconnectionDelayMax: 10000 });
@@ -64,6 +66,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           toast.info(t("friends.requestToast", { name: e.from.displayName }), {
             action: { label: t("nav.friends"), onClick: () => routerRef.current.push(href("/friends")) },
           });
+          break;
+        case "achievement":
+          announceAchievement(e.id, t, myNameRef.current ? () => routerRef.current.push(href(`/profile/${myNameRef.current}`)) : undefined);
           break;
         case "friend:accepted":
           void mutate("/api/friends");
@@ -98,4 +103,12 @@ export function useRealtime() {
   const ctx = useContext(RealtimeContext);
   if (!ctx) throw new Error("useRealtime must be used inside RealtimeProvider");
   return ctx;
+}
+
+/** "Achievement unlocked" toast (shared by the app shell and the game screen). */
+export function announceAchievement(id: AchievementId, t: (key: string, vars?: Record<string, string | number>) => string, onView?: () => void) {
+  toast.success(t("achievements.unlockedToast", { name: t(`achievements.${id}.title`) }), {
+    description: t(`achievements.${id}.body`),
+    ...(onView ? { action: { label: t("achievements.view"), onClick: onView } } : {}),
+  });
 }

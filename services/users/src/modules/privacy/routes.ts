@@ -22,7 +22,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
   app.get("/me/export", { preHandler: requireUser }, async (req, reply) => {
     const id = req.user!.id;
     const involves = { OR: [{ player1Id: id }, { player2Id: id }] };
-    const [user, accounts, sessions, friendships, blocks, matches, tournaments, messages, apiKeys] = await Promise.all([
+    const [user, accounts, sessions, friendships, blocks, matches, tournaments, messages, apiKeys, achievements] = await Promise.all([
       prisma.user.findUnique({
         where: { id },
         select: { id: true, username: true, displayUsername: true, email: true, emailVerified: true, avatar: true, twoFactorEnabled: true, created_at: true, last_updated: true },
@@ -50,6 +50,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
         take: EXPORT_LIMIT,
       }),
       prisma.apiKey.findMany({ where: { userId: id }, select: { name: true, prefix: true, isActive: true, createdAt: true, lastUsedAt: true }, orderBy: { id: "asc" } }),
+      prisma.userAchievement.findMany({ where: { userId: id }, select: { achievement: true, unlockedAt: true }, orderBy: { id: "asc" } }),
     ]);
     if (!user) return reply.code(404).send({ error: "User not found" });
 
@@ -81,6 +82,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
       tournaments: tournaments.map((t) => ({ ...t.tournament, winnerId: undefined, won: t.tournament.winnerId === id })),
       messages: messages.map((m) => ({ from: m.sender.username, to: m.recipient.username, kind: m.kind, body: m.body, inviteCode: m.inviteCode, sentAt: m.createdAt, readAt: m.readAt })),
       apiKeys,
+      achievements,
     };
     reply.header("Content-Type", "application/json; charset=utf-8");
     reply.header("Content-Disposition", `attachment; filename="ft_transcendence-${user.username}-${new Date().toISOString().slice(0, 10)}.json"`);
@@ -118,6 +120,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
         prisma.friendship.deleteMany({ where: { OR: [{ requesterId: id }, { addresseeId: id }] } }),
         prisma.block.deleteMany({ where: { OR: [{ blockerId: id }, { blockedId: id }] } }),
         prisma.apiKey.deleteMany({ where: { userId: id } }),
+        prisma.userAchievement.deleteMany({ where: { userId: id } }),
         prisma.twoFactor.deleteMany({ where: { userId: id } }),
         prisma.account.deleteMany({ where: { userId: id } }),
         prisma.session.deleteMany({ where: { userId: id } }),

@@ -48,7 +48,8 @@ export function PlayerChip({
   showPresence?: boolean;
 }) {
   const { t, href } = useI18n();
-  const name = link ? (
+  // deleted accounts keep their place in history but have no profile to open
+  const name = link && !user.username.startsWith("deleted-") ? (
     <Link href={href(`/profile/${user.username}`)} className="pchip-name truncate text-fg no-underline hover:underline">
       {user.displayName}
     </Link>
