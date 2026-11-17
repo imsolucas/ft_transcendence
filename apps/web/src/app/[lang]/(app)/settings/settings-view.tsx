@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { KeyRound, LogOut, Shield, SlidersHorizontal, User } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -39,15 +38,14 @@ function useSection(): SectionId {
 
 export function SettingsView() {
   const { t, href } = useI18n();
-  const router = useRouter();
   const section = useSection();
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function logout() {
     setLoggingOut(true);
     await authClient.signOut();
-    router.push(href("/"));
-    router.refresh();
+    // full load: leaves no signed-in data in client caches
+    window.location.assign(href("/"));
   }
 
   return (

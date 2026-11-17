@@ -41,8 +41,8 @@ export function AppShell({ children, playPrimary = false }: { children: ReactNod
 
   async function logout() {
     await authClient.signOut();
-    router.push(href("/"));
-    router.refresh();
+    // full load: leaves no signed-in data in client caches
+    window.location.assign(href("/"));
   }
 
   return (

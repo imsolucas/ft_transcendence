@@ -58,7 +58,6 @@ export function SignupForm() {
       return;
     }
     router.replace(href("/lobby"));
-    router.refresh();
   }
 
   async function google() {

@@ -66,7 +66,6 @@ export function LoginForm() {
       return;
     }
     router.replace(destination);
-    router.refresh();
   }
 
   async function submitCode(e: FormEvent) {
@@ -85,7 +84,6 @@ export function LoginForm() {
       return;
     }
     router.replace(destination);
-    router.refresh();
   }
 
   async function google() {

@@ -1,8 +1,17 @@
 FILE=infra/docker-compose.yml
 
-.PHONY: all up down build re logs ps clean-volumes inspect-health install
+.PHONY: all up down build re logs ps clean-volumes inspect-health install env
 
-all: up
+all: env up
+
+# first run: create infra/.env with generated secrets (never overwrites an existing one)
+env:
+	@test -f infra/.env && echo "infra/.env already exists" || { \
+		cp infra/.env.example infra/.env; \
+		sed -i "s#^POSTGRES_PASSWORD=.*#POSTGRES_PASSWORD=$$(openssl rand -hex 24)#" infra/.env; \
+		sed -i "s#^BETTER_AUTH_SECRET=.*#BETTER_AUTH_SECRET=$$(openssl rand -base64 48)#" infra/.env; \
+		sed -i "s#^INTERNAL_SERVICE_TOKEN=.*#INTERNAL_SERVICE_TOKEN=$$(openssl rand -base64 48)#" infra/.env; \
+		echo "created infra/.env"; }
 
 # basic lifecycle
 up:
@@ -33,10 +42,7 @@ ps:
 
 # cleanup / inspect
 install:
-	@for dir in services/*; do \
-		if [ $$dir = "services/shared" ]; then \
-			continue; \
-		fi; \
+	@for dir in services/users services/game apps/web; do \
 		echo "Cleaning and intalling modules in $$dir"; \
 		rm -rf $$dir/node_modules $$dir/package-lock.json 1>/dev/null; \
 		(cd $$dir && npm install 1>/dev/null); \

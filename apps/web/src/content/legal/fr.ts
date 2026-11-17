@@ -5,78 +5,78 @@ export const privacy: LegalDoc = {
   sections: [
     {
       id: "summary",
-      title: "Summary",
+      title: "Résumé",
       body: [
-        "ft_transcendence is a hobby project: an online Pong game with accounts, friends, chat and tournaments. We collect only what the game needs to work, we never sell it, and you can delete your account at any time.",
+        "ft_transcendence est un projet amateur : un jeu de Pong en ligne avec comptes, amis, chat et tournois. Nous ne collectons que ce dont le jeu a besoin pour fonctionner, nous ne le vendons jamais, et vous pouvez supprimer votre compte à tout moment.",
       ],
     },
     {
       id: "what-we-collect",
-      title: "What we collect",
-      body: ["When you use the app we store:"],
+      title: "Ce que nous collectons",
+      body: ["Lorsque vous utilisez l'application, nous enregistrons :"],
       list: [
-        "Account details: your username, email address and a salted hash of your password (never the password itself).",
-        "If you sign in with Google: your Google account ID, name, email and profile picture, as shared by Google.",
-        "Your avatar, if you upload one (PNG, JPEG or WebP, up to 2 MB).",
-        "Game data: matches you play (opponent, scores, date, duration), tournaments, wins and losses.",
-        "Social data: friend requests, friends and the players you block.",
-        "Session data: for each signed-in device, the IP address and browser name, so you can see and revoke your sessions.",
-        "Two-factor data, if you turn it on: an encrypted authenticator secret and hashed backup codes.",
-        "API keys you create: only a hash of each key and its first characters.",
+        "Les informations du compte : votre nom d'utilisateur, votre adresse e-mail et un hash salé de votre mot de passe (jamais le mot de passe lui-même).",
+        "Si vous vous connectez avec Google : l'identifiant de votre compte Google, votre nom, votre e-mail et votre photo de profil, tels que partagés par Google.",
+        "Votre avatar, si vous en téléversez un (PNG, JPEG ou WebP, jusqu'à 2 MB).",
+        "Les données de jeu : les matchs que vous jouez (adversaire, scores, date, durée), les tournois, les victoires et les défaites.",
+        "Les données sociales : demandes d'ami, amis et joueurs que vous bloquez.",
+        "Les données de session : pour chaque appareil connecté, l'adresse IP et le nom du navigateur, afin que vous puissiez voir et révoquer vos sessions.",
+        "Les données d'authentification à deux facteurs, si vous l'activez : un secret d'authentification chiffré et des codes de secours hachés.",
+        "Les clés d'API que vous créez : uniquement un hash de chaque clé et ses premiers caractères.",
       ],
     },
     {
       id: "why",
-      title: "Why we use it",
+      title: "Pourquoi nous les utilisons",
       list: [
-        "To let you sign in and keep your account secure.",
-        "To match you with opponents, run games and tournaments, and show your stats and history.",
-        "To show your profile, presence (online, in game, offline) and friends to other players.",
-        "To prevent abuse, such as brute-force sign-in attempts.",
+        "Pour vous permettre de vous connecter et de sécuriser votre compte.",
+        "Pour vous associer à des adversaires, organiser les matchs et les tournois, et afficher vos statistiques et votre historique.",
+        "Pour afficher votre profil, votre présence (en ligne, en jeu, hors ligne) et vos amis aux autres joueurs.",
+        "Pour prévenir les abus, comme les tentatives de connexion par force brute.",
       ],
     },
     {
       id: "visible",
-      title: "What other players can see",
+      title: "Ce que les autres joueurs peuvent voir",
       body: [
-        "Other signed-in players can see your username, avatar, presence, stats and match history. Your email address, sessions, API keys and blocked players are never shown to anyone else.",
+        "Les autres joueurs connectés peuvent voir votre nom d'utilisateur, votre avatar, votre présence, vos statistiques et votre historique de matchs. Votre adresse e-mail, vos sessions, vos clés d'API et les joueurs que vous bloquez ne sont jamais montrés à quiconque.",
       ],
     },
     {
       id: "cookies",
-      title: "Cookies and local storage",
+      title: "Cookies et stockage local",
       list: [
-        "A session cookie (ft.session_token), required to keep you signed in. It is httpOnly, so scripts on the page can't read it.",
-        "A language cookie (ft_lang) that remembers English, Spanish or French.",
-        "Local storage in your browser for display preferences: CRT effects, reduced motion and sound.",
+        "Un cookie de session (ft.session_token), nécessaire pour vous garder connecté. Il est httpOnly : les scripts de la page ne peuvent pas le lire.",
+        "Un cookie de langue (ft_lang) qui mémorise l'anglais, l'espagnol ou le français.",
+        "Le stockage local de votre navigateur pour les préférences d'affichage : effets CRT, animations réduites et son.",
       ],
-      body: ["We don't use advertising or third-party analytics cookies."],
+      body: ["Nous n'utilisons pas de cookies publicitaires ni de cookies d'analyse tiers."],
     },
     {
       id: "retention",
-      title: "How long we keep it",
+      title: "Combien de temps nous les conservons",
       body: [
-        "Your data stays while your account exists. Sessions expire after 7 days without use. Deleting your account removes your profile, friends, sessions, keys and avatar; finished matches remain in your opponents' history under your former username.",
+        "Vos données sont conservées tant que votre compte existe. Les sessions expirent après 7 jours sans utilisation. La suppression de votre compte efface votre profil, vos amis, vos sessions, vos clés et votre avatar ; les matchs terminés restent dans l'historique de vos adversaires sous votre ancien nom d'utilisateur.",
       ],
     },
     {
       id: "rights",
-      title: "Your rights",
+      title: "Vos droits",
       body: [
-        "You can view and change your profile in Settings, revoke sessions and API keys, and ask for a copy or deletion of your data. Requests are answered within 30 days.",
+        "Vous pouvez consulter et modifier votre profil dans les Paramètres, révoquer vos sessions et vos clés d'API, et demander une copie ou la suppression de vos données. Les demandes reçoivent une réponse sous 30 jours.",
       ],
     },
     {
       id: "security",
-      title: "Security",
+      title: "Sécurité",
       body: [
-        "All traffic uses HTTPS. Passwords are hashed, sessions can be revoked at any time, and two-factor authentication is available. No system is perfectly secure, so please use a unique password.",
+        "Tout le trafic utilise HTTPS. Les mots de passe sont hachés, les sessions peuvent être révoquées à tout moment et l'authentification à deux facteurs est disponible. Aucun système n'est parfaitement sûr : utilisez donc un mot de passe unique.",
       ],
     },
     {
       id: "contact",
       title: "Contact",
-      body: ["For any privacy question or request, contact the project maintainer through the project's GitHub repository."],
+      body: ["Pour toute question ou demande relative à la confidentialité, contactez le responsable du projet via le dépôt GitHub du projet."],
     },
   ],
 };
@@ -86,61 +86,61 @@ export const terms: LegalDoc = {
   sections: [
     {
       id: "agreement",
-      title: "Agreement",
+      title: "Accord",
       body: [
-        "By creating an account or playing, you agree to these terms. If you don't agree, don't use the service. ft_transcendence is a free, non-commercial project provided as is.",
+        "En créant un compte ou en jouant, vous acceptez ces conditions. Si vous n'êtes pas d'accord, n'utilisez pas le service. ft_transcendence est un projet gratuit et non commercial, fourni tel quel.",
       ],
     },
     {
       id: "account",
-      title: "Your account",
+      title: "Votre compte",
       list: [
-        "You must be at least 13 years old.",
-        "Keep your password and API keys secret; you're responsible for activity on your account.",
-        "One person, one account. Usernames that impersonate others or are offensive may be changed or removed.",
+        "Vous devez avoir au moins 13 ans.",
+        "Gardez votre mot de passe et vos clés d'API secrets ; vous êtes responsable de l'activité de votre compte.",
+        "Une personne, un compte. Les noms d'utilisateur qui usurpent l'identité d'autrui ou qui sont offensants peuvent être modifiés ou supprimés.",
       ],
     },
     {
       id: "fair-play",
-      title: "Fair play",
+      title: "Fair-play",
       list: [
-        "Don't cheat, automate gameplay, or exploit bugs to win.",
-        "Don't harass, threaten or spam other players. Use Block if someone bothers you.",
-        "Don't try to break, overload or gain unauthorised access to the service.",
+        "Ne trichez pas, n'automatisez pas le jeu et n'exploitez pas de bugs pour gagner.",
+        "Ne harcelez pas, ne menacez pas et ne spammez pas les autres joueurs. Utilisez Bloquer si quelqu'un vous dérange.",
+        "N'essayez pas de casser ou de surcharger le service, ni d'y accéder sans autorisation.",
       ],
     },
     {
       id: "content",
-      title: "Content you upload",
+      title: "Contenu que vous téléversez",
       body: [
-        "You keep the rights to your avatar and messages. You give us permission to store and display them to run the service. Don't upload anything illegal or that you don't have the right to share.",
+        "Vous conservez vos droits sur votre avatar et vos messages. Vous nous autorisez à les stocker et à les afficher pour faire fonctionner le service. Ne téléversez rien d'illégal ni rien que vous n'avez pas le droit de partager.",
       ],
     },
     {
       id: "api",
-      title: "Public API",
+      title: "API publique",
       body: [
-        "API keys give read access to public game data. Respect the rate limits; keys used abusively may be revoked.",
+        "Les clés d'API donnent un accès en lecture aux données publiques du jeu. Respectez les limites de débit ; les clés utilisées de manière abusive peuvent être révoquées.",
       ],
     },
     {
       id: "termination",
-      title: "Suspension and deletion",
+      title: "Suspension et suppression",
       body: [
-        "We may suspend accounts that break these terms. You can stop using the service and ask for your account to be deleted at any time.",
+        "Nous pouvons suspendre les comptes qui enfreignent ces conditions. Vous pouvez cesser d'utiliser le service et demander la suppression de votre compte à tout moment.",
       ],
     },
     {
       id: "liability",
-      title: "No warranty",
+      title: "Aucune garantie",
       body: [
-        "The service may change, be unavailable or lose data without notice. To the extent the law allows, we aren't liable for any loss arising from its use.",
+        "Le service peut changer, être indisponible ou perdre des données sans préavis. Dans la mesure permise par la loi, nous ne sommes pas responsables des pertes découlant de son utilisation.",
       ],
     },
     {
       id: "changes",
-      title: "Changes",
-      body: ["We may update these terms. The date above shows the latest version; continuing to use the service means you accept it."],
+      title: "Modifications",
+      body: ["Nous pouvons mettre à jour ces conditions. La date ci-dessus indique la dernière version ; continuer à utiliser le service signifie que vous l'acceptez."],
     },
   ],
 };

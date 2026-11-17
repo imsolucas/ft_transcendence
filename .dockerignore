@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/*.log
+.git
+ft_transcendence.pdf
+services/frontend
+services/api-gateway

@@ -1,113 +1,96 @@
+# ft_transcendence — one command: `make up` (docker compose -f infra/docker-compose.yml up -d --build)
+# Browser origin: https://localhost:8443 (Caddy, automatic HTTPS). Only Caddy publishes a port.
+name: ft_transcendence
+
 services:
-  frontend:
-    container_name: frontend
-    image: frontend
-    build:
-      args:
-        PORT: ${FRONTEND_PORT:-3000}
-      context: ../services/frontend/
-      dockerfile: Dockerfile
-    command: ["${FRONTEND_CMD:-dev}"]
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-ft}
     volumes:
-      - ../services/frontend/:/usr/src/app/:rw
-      - ../services/shared/:/usr/src/shared/
-      - frontend_node_modules:/usr/src/app/node_modules/
-    networks:
-      - devnet
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:${FRONTEND_PORT:-3000} || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]
     restart: unless-stopped
 
   users:
-    container_name: users
-    image: users
     build:
-      args:
-        PORT: ${USERS_PORT:-4000}
-      context: ../services/users/
-      dockerfile: Dockerfile
-    env_file:
-      - .env
+      context: ..
+      dockerfile: services/users/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ft}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ft}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:8443}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in infra/.env}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set INTERNAL_SERVICE_TOKEN in infra/.env}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SEED_DEV_DATA: ${SEED_DEV_DATA:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
-      - ../services/users/:/usr/src/app/:rw
-      - users_db:/usr/src/app/db/
-      - users_node_modules:/usr/src/app/node_modules/
-    networks:
-      - devnet
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:${USERS_PORT:-4000}/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+      - uploads:/usr/src/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
     restart: unless-stopped
 
   game:
-    container_name: game
-    image: game
     build:
-      context: ../services/game/
-      dockerfile: Dockerfile
-    env_file:
-      - .env
+      context: ..
+      dockerfile: services/game/Dockerfile
     environment:
-      - PORT=${GAME_PORT:-3001}
-    command: ["${GAME_CMD:-dev}"]
-    volumes:
-      - ../services/game:/usr/src/app:rw
-      - ../services/shared/:/usr/src/shared/:rw
-      - game_node_modules:/usr/src/app/node_modules/
-    networks:
-      - devnet
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:${GAME_PORT:-3001}/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:8443}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+      USERS_API_URL: http://users:4000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      users:
+        condition: service_healthy
+    networks: [internal]
     restart: unless-stopped
 
-  api-gateway:
-    container_name: api-gateway
-    image: api-gateway
+  web:
     build:
-      args:
-        PORT: ${API_GATEWAY_PORT:-443}
-        USERS_PORT: ${USERS_PORT:-4000}
-        FRONTEND_PORT: ${FRONTEND_PORT:-3000}
-        GAME_PORT: ${GAME_PORT:-3001}
-      context: ../services/api-gateway
-      dockerfile: Dockerfile
-    env_file:
-      - .env
-    ports:
-      - "${API_GATEWAY_PORT:-443}:443"
-    volumes:
-      - ../services/api-gateway/server.crt:/etc/nginx/ssl/server.crt:ro
-      - ../services/api-gateway/server.key:/etc/nginx/ssl/server.key:ro
-    networks:
-      - devnet
+      context: ..
+      dockerfile: apps/web/Dockerfile
     depends_on:
-      - frontend
-      - users
-    healthcheck:
-      test: ["CMD-SHELL", "curl -k -fsS https://localhost:443/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+      users:
+        condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.11-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost:8443}
+      TLS_MODE: ${TLS_MODE:-internal}
+    ports:
+      - "${HTTPS_PORT:-8443}:8443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_started
+      users:
+        condition: service_healthy
+      game:
+        condition: service_started
+    networks: [internal]
     restart: unless-stopped
 
 volumes:
-  frontend_node_modules:
-  users_db:
-  users_node_modules:
-  game_node_modules:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:
 
 networks:
-  devnet:
-    driver: bridge
+  internal:

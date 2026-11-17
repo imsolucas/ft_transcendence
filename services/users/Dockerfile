@@ -1,30 +1,17 @@
-FROM node:lts-trixie
-
-RUN apt-get update && apt-get install -y curl \
+# Users service: Fastify + Better Auth + Prisma on Node 24 (runs TypeScript natively).
+# Build context: repository root.
+FROM node:24-slim
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /usr/src/app/
-
-# Configure npm for better network reliability
-RUN npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set fetch-timeout 300000
-
-COPY package.json package-lock.json ./
-
-# Use npm ci for faster, more reliable installs in Docker
-# Retry on network failures
-RUN npm ci || (sleep 5 && npm ci) || (sleep 10 && npm ci)
-
-COPY . .
-
-RUN ./init.sh dev
-
-ARG PORT=4000
-ENV PORT=$PORT
-
-EXPOSE $PORT
-
-ENTRYPOINT [ "npm", "run" ]
-CMD [ "dev" ]
+WORKDIR /app/services/users
+COPY services/users/package.json services/users/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY services/users/ ./
+COPY services/shared/types/api.types.ts /app/services/shared/types/api.types.ts
+RUN npx prisma generate && mkdir -p /usr/src/app/uploads && chown -R node:node /usr/src/app/uploads
+USER node
+ENV NODE_ENV=production PORT=4000 UPLOAD_DIR=/usr/src/app/uploads
+EXPOSE 4000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+  CMD node -e "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+ENTRYPOINT ["./docker-entrypoint.sh"]

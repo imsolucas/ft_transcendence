@@ -10,21 +10,21 @@ baseline still holds as a quality bar: HTTPS/wss everywhere, one-command Docker 
 Privacy Policy + Terms pages, EN/ES/FR i18n, validation on both client and server, and
 **no errors or warnings in the browser console**.
 
-## Services (`services/`)
+## Layout
 
 | Path | What | Stack | Port (internal) |
 |---|---|---|---|
-| `services/users` | Accounts, auth (password, Google OAuth, TOTP 2FA), friends, profiles, match history, public API (API keys) | Fastify 5, Prisma 6 (SQLite today → Postgres planned), `jsonwebtoken`, `bcrypt` | 4000 |
-| `services/game` | Authoritative Pong server: rooms, matchmaking queue, tournaments, tick loop; reports results to `users` | Fastify 5 + `@fastify/websocket` | 3001 |
-| `services/shared` | Code both sides import: game engine (`game-engine/`), WS protocol types (`types/protocol.types.ts`), player/pong types | plain TS, mounted at `/usr/src/shared` in containers | — |
-| `services/frontend` | **Legacy** SPA: Vite + Stimulus + Tailwind 3, pages built as HTML strings (`innerHTML`). Being replaced by Next.js in Phase 1 — fix only what blocks Phase 0 | Vite 7, TS | 3000 |
-| `services/api-gateway` | nginx: TLS termination, path routing, WS upgrade | nginx | 443 → host |
-| `infra/` | `docker-compose.yml`, `.env.example` | Docker Compose | — |
+| `apps/web` | The frontend: landing, auth, lobby, play (online/local/tournament), profile, friends, chat (placeholder), settings, legal, 404 | Next.js 16 (App Router, cacheComponents, `/[lang]` en/es/fr), React 19, Tailwind 4, radix-ui + cva, motion, swr, Better Auth client, socket.io-client | 3000 |
+| `services/users` | Accounts and data: Better Auth (`/api/auth/*`), our API (`/api/*`), public API (`/api/public/*`, API keys), internal routes for the game (`/internal/*`) | Fastify 5, Better Auth 1.7, Prisma 6 on Postgres 17, Node 24 runs TS natively | 4000 |
+| `services/game` | Authoritative Pong server: rooms, matchmaking, tournaments, tick loop; results → users | Fastify 5 + Socket.IO 4 (`/ws`), tsx | 3001 |
+| `services/shared` | Imported by web and game: game engine (`game-engine/`), WS protocol + pong types, the HTTP API contract (`types/api.types.ts`) | plain TS with explicit `.ts` imports | — |
+| `infra/` | `docker-compose.yml` (postgres, users, game, web, caddy), `caddy/Caddyfile`, `.env.example` | Docker Compose, Caddy 2.11 | 8443 → host |
 
-Routing (nginx `services/api-gateway/nginx.conf`): `/auth/*`, `/user/*`, `/api/public/*` → users ·
-`/ws/game` → game · `/users/health`, `/game/health` → health · everything else → frontend.
-Internal calls (game → users `POST /game/match-result`, `/game/tournament-result`) go over the
-Docker network and are **not** exposed by nginx — keep it that way.
+Routing (Caddy): `/api/*` → users · `/ws*` → game · everything else → web. `/internal/*` and
+`/docs` are answered 404 at the gateway; only the game service calls `/internal/*` (service
+token). One origin, so no CORS; Origin checks on every write and on the socket handshake.
+
+API contract: `services/shared/types/api.types.ts` (source of truth for web ↔ users).
 
 ## Revamp roadmap (the agreed plan)
 
@@ -73,16 +73,15 @@ Docker network and are **not** exposed by nginx — keep it that way.
 ## Commands
 
 ```bash
-make up            # docker compose -f infra/docker-compose.yml up -d --build
+make               # creates infra/.env with generated secrets (first run), then builds + starts
 make logs SERVICE=users
 make down / make re / make clean-volumes
-# per service (after `npm ci` in that dir)
-cd services/<svc> && npx tsc --noEmit      # type gate until a `typecheck` script exists
-cd services/users && npx prisma validate && npx prisma generate
+cd apps/web && npm run lint && npx tsc --noEmit
+cd services/users && npm run typecheck      # DATABASE_URL needed for prisma commands
+cd services/game && npm run typecheck
 ```
 
-No lint or test scripts exist yet. Never claim a gate passed without running it, and
-when a gate does not exist say so instead of inventing one.
+Never claim a gate passed without running it.
 
 ## Rules architecture
 
@@ -90,7 +89,7 @@ Only this file and `git-workflow.md` are always on. The rest attach by path:
 - `backend-rule.md` → `services/users/**`, `services/game/**`, `services/shared/**`
 - `security-hardening.md` → any auth, token, cookie, API key, WS, secret, nginx or compose change
 - `realtime-rule.md` → game server, WS protocol types, game/WS client code
-- `frontend-rule.md` → `services/frontend/**` and the future `apps/web/**`
+- `frontend-rule.md` → `apps/web/**`
 - `design-system.md` → any UI work (tokens, components, the CRT/synthwave look)
 
 ## Workflow

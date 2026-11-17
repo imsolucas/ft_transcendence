@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-API_KEY="ft_66f88b661cbf4b0b310bb3508d9fae11bcde3a4714c7facbb1f51bd33e5c2ad1"
+API_KEY="${API_KEY:?create a key in Settings > API keys, then run: API_KEY=ft_... ./test.sh}"
 BASE_URL="https://localhost:8443"
 TEST_USERNAME="Alice"  # Use a username that exists in your database
 
