@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import fs from "node:fs/promises";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../../auth/auth.ts";
@@ -132,7 +133,8 @@ export default async function privacyRoutes(app: FastifyInstance) {
             username: anon,
             displayUsername: "Deleted player",
             name: "Deleted player",
-            email: `${anon}@deleted.invalid`,
+            // random part: an attacker can't pre-register this address and make deletion fail
+            email: `${anon}-${crypto.randomBytes(8).toString("hex")}@deleted.invalid`,
             emailVerified: false,
             avatar: null,
             twoFactorEnabled: false,

@@ -94,7 +94,7 @@ export async function sendFriendRequest(me: number, username: string): Promise<O
     return { status: 409, body: { error: "Please try again." } };
 }
 
-/** Removes a friend, or cancels a pending request either way (shared by the app and the public API). */
+/** Public API: removes a friend, or cancels a pending request either way. */
 export async function removeFriend(me: number, username: string): Promise<Outcome> {
   const target = await findUser(username);
   if (!target) return { status: 404, body: { error: "Player not found." } };

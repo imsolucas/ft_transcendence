@@ -74,6 +74,8 @@ export const auth = betterAuth({
         // Google sign-ups (and any sign-up without a username) get a unique handle
         before: async (user) => {
           const data = user as typeof user & { username?: string; displayUsername?: string };
+          // reserved for erased accounts (.invalid can never be a real mailbox)
+          if (data.email.toLowerCase().endsWith(".invalid")) return false;
           if (data.username) return;
           const handle = await uniqueHandle(data.name || data.email.split("@")[0]);
           return { data: { ...user, username: handle, displayUsername: handle, name: handle } };

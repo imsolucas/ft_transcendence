@@ -3,5 +3,7 @@
 set -u
 while true; do
   /backup/backup.sh || echo "backup FAILED at $(date -u)"
-  sleep "$(( ${BACKUP_INTERVAL_HOURS:-24} * 3600 ))"
+  hours=${BACKUP_INTERVAL_HOURS:-24}
+  [ "$hours" -ge 1 ] 2>/dev/null || hours=1   # never a tight loop (0, empty or not a number)
+  sleep "$(( hours * 3600 ))"
 done

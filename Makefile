@@ -74,5 +74,5 @@ backups:
 restore:
 	@test -n "$(DB)" || { echo "usage: make restore DB=db-<stamp>.dump [UPLOADS=uploads-<stamp>.tar.gz]"; exit 1; }
 	docker compose -f $(FILE) stop users game
-	docker compose -f $(FILE) exec backup /backup/restore.sh $(DB) $(UPLOADS)
-	docker compose -f $(FILE) start users game
+	docker compose -f $(FILE) exec backup /backup/restore.sh $(DB) $(UPLOADS); rc=$$?; \
+	  docker compose -f $(FILE) start users game; exit $$rc

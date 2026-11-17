@@ -1,16 +1,31 @@
 #!/bin/sh
 # Restore a backup made by backup.sh. Usage (inside the backup container):
 #   /backup/restore.sh db-20261118T030000Z.dump [uploads-20261118T030000Z.tar.gz]
-# Replaces the database contents and (optionally) the uploaded avatars.
+#
+# The database is replaced atomically: the schema is dropped and the dump replayed in ONE
+# transaction, so a failure leaves the current data untouched. Dropping the whole schema
+# (not just the dumped objects) also removes tables added by newer migrations; the users
+# service re-applies any newer migrations when it starts again.
 set -eu
-db="/backups/$1"
+db="/backups/${1:?usage: restore.sh <db-dump> [uploads-archive]}"
 [ -f "$db" ] || { echo "no such backup: $db"; exit 1; }
-PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-  --clean --if-exists --no-owner --single-transaction "$db"
-if [ "${2:-}" != "" ]; then
+case "$db" in *.tmp) echo "refusing an unfinished backup: $db"; exit 1;; esac
+
+export PGPASSWORD="$POSTGRES_PASSWORD"
+{
+  echo 'DROP SCHEMA public CASCADE;'
+  echo 'CREATE SCHEMA public;'
+  pg_restore --no-owner --no-privileges --file - "$db"
+} | psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" --quiet --single-transaction -v ON_ERROR_STOP=1 >/dev/null
+
+if [ -n "${2:-}" ]; then
   up="/backups/$2"
   [ -f "$up" ] || { echo "no such uploads archive: $up"; exit 1; }
-  find /uploads -mindepth 1 -delete
-  tar -xzf "$up" -C /uploads
+  # extract next to the old files first, then swap, so a bad archive keeps the old avatars
+  tmp=$(mktemp -d /uploads/.restore.XXXXXX)
+  tar -xzf "$up" -C "$tmp"
+  find /uploads -mindepth 1 -maxdepth 1 ! -path "$tmp" -exec rm -rf {} +
+  find "$tmp" -mindepth 1 -maxdepth 1 -exec mv {} /uploads/ \;
+  rmdir "$tmp"
 fi
 echo "restore ok from $1${2:+ and $2}"

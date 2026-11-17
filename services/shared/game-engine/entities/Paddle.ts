@@ -71,7 +71,10 @@ export default class Paddle extends Entity {
     input(input: PlayerInputs): void {
         this.velocity.y = 0
         // paddleConfig.speed scales movement; the default speed crosses the court in 1 s
-        const speed = this.config.courtSize!.y * (this.config.paddleConfig.speed ?? defaults.PADDLE_SPEED) / defaults.PADDLE_SPEED;
+        // never trust the number: non-finite or out-of-range speeds fall back to the default
+        const configured = Number(this.config.paddleConfig.speed);
+        const factor = Number.isFinite(configured) && configured > 0 && configured <= defaults.PADDLE_SPEED * 2 ? configured / defaults.PADDLE_SPEED : 1;
+        const speed = this.config.courtSize!.y * factor;
 
         if (input.up)
             this.velocity.y = -speed;

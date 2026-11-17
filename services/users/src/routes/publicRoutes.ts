@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/publicControllers.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
-import { apiKeyRateLimiter } from "../middleware/rateLimiter.ts";
+import { apiKeyRateLimiter, publicIpRateLimiter } from "../middleware/rateLimiter.ts";
 import { prisma } from "../db/client.ts";
 import { removeFriend, sendFriendRequest } from "../modules/friends/routes.ts";
 
@@ -9,8 +9,12 @@ export default async function registerPublicRoutes(app: FastifyInstance) {
   // Register public routes as a scoped plugin to ensure hooks only apply to these routes
   await app.register(async function publicApiPlugin(pluginApp: FastifyInstance) {
     // Apply API key authentication and rate limiting only to routes in this plugin
-    pluginApp.addHook("preHandler", async (req, reply) => {
-      // First authenticate API key
+    // onRequest: runs before body parsing and schema validation, so unauthenticated callers
+    // get 401 (not validation details), and every request, failed auth included, is limited.
+    pluginApp.addHook("onRequest", async (req, reply) => {
+      await publicIpRateLimiter(req, reply);
+      if (reply.sent) return;
+      // Then authenticate the API key
       await apiKeyAuth(req, reply);
       
       // If authentication failed, don't proceed with rate limiting

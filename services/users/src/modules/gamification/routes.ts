@@ -9,20 +9,28 @@ import { DELETED_PREFIX } from "../privacy/routes.ts";
 
 /** Streaks are computed over the most recent matches only (bounded work per profile view). */
 const STREAK_WINDOW = 2000;
+const SHUTOUT_MIN_POINTS = 3;
 
 export async function computeAchievements(userId: number, wins: number, played: number): Promise<Achievement[]> {
   const involves = { OR: [{ player1Id: userId }, { player2Id: userId }] };
   const [recent, shutouts, titles, friends] = await Promise.all([
-    prisma.match.findMany({ where: involves, orderBy: [{ played_at: "asc" }, { id: "asc" }], take: STREAK_WINDOW, select: { winnerId: true } }),
+    // newest first, reversed below so the streak scan runs oldest → newest
+    prisma.match.findMany({ where: involves, orderBy: [{ played_at: "desc" }, { id: "desc" }], take: STREAK_WINDOW, select: { winnerId: true } }),
+    // a shutout needs real points scored (a 1-0 forfeit isn't one)
     prisma.match.count({
-      where: { OR: [{ player1Id: userId, winnerId: userId, player2Score: 0 }, { player2Id: userId, winnerId: userId, player1Score: 0 }] },
+      where: {
+        OR: [
+          { player1Id: userId, winnerId: userId, player2Score: 0, player1Score: { gte: SHUTOUT_MIN_POINTS } },
+          { player2Id: userId, winnerId: userId, player1Score: 0, player2Score: { gte: SHUTOUT_MIN_POINTS } },
+        ],
+      },
     }),
     prisma.tournament.count({ where: { winnerId: userId } }),
     prisma.friendship.count({ where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] } }),
   ]);
   let best = 0;
   let run = 0;
-  for (const m of recent) {
+  for (const m of recent.reverse()) {
     run = m.winnerId === userId ? run + 1 : 0;
     best = Math.max(best, run);
   }
@@ -46,11 +54,12 @@ export async function computeAchievements(userId: number, wins: number, played: 
 }
 
 /**
- * Computes achievements, stores any newly unlocked ones and (optionally) announces them
- * to the player in realtime. Stored unlocks stay unlocked. Safe to run concurrently:
- * the (userId, achievement) unique key plus skipDuplicates makes the insert idempotent.
+ * Computes achievements and merges what is stored. With `store`, newly unlocked ones are
+ * saved and announced to the player in realtime; each row is inserted on its own so exactly
+ * the rows this call created are announced (a concurrent call can't steal or duplicate a
+ * toast). Profile views pass store = false: they read, they never unlock.
  */
-export async function syncAchievements(userId: number, announce: boolean): Promise<Achievement[]> {
+export async function syncAchievements(userId: number, store: boolean): Promise<Achievement[]> {
   const involves = { OR: [{ player1Id: userId }, { player2Id: userId }] };
   const [wins, played, stored] = await Promise.all([
     prisma.match.count({ where: { winnerId: userId } }),
@@ -59,16 +68,16 @@ export async function syncAchievements(userId: number, announce: boolean): Promi
   ]);
   const computed = await computeAchievements(userId, wins, played);
   const known = new Map(stored.map((s) => [s.achievement, s.unlockedAt]));
-  const fresh = computed.filter((c) => c.unlocked && !known.has(c.id));
-  if (fresh.length) {
-    const created = await prisma.userAchievement.createMany({
-      data: fresh.map((c) => ({ userId, achievement: c.id })),
-      skipDuplicates: true,
-    });
-    const now = new Date();
-    for (const c of fresh) known.set(c.id, now);
-    // only announce when this call actually inserted them (another call may have won the race)
-    if (announce && created.count > 0) for (const c of fresh) notify([userId], { type: "achievement", id: c.id });
+  if (store) {
+    for (const c of computed.filter((c) => c.unlocked && !known.has(c.id))) {
+      try {
+        const row = await prisma.userAchievement.create({ data: { userId, achievement: c.id }, select: { unlockedAt: true } });
+        known.set(c.id, row.unlockedAt);
+        notify([userId], { type: "achievement", id: c.id });
+      } catch (err: any) {
+        if (err?.code !== "P2002") throw err; // already stored by a concurrent call: it announces
+      }
+    }
   }
   return computed.map((c) => {
     const at = known.get(c.id);

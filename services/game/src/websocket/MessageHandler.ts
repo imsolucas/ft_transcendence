@@ -1,5 +1,19 @@
 import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage, TournamentState } from "shared/index.ts";
-import { toSerializablePlayer } from "shared/index.ts";
+import { toSerializablePlayer, default_config } from "shared/index.ts";
+import type { GameConfig } from "shared/index.ts";
+
+/**
+ * The server builds every room's config itself: physics (speeds, sizes) always come from the
+ * defaults, and only these choices are taken from the client, each from an allowed set.
+ */
+export function roomConfigFrom(input: unknown): GameConfig {
+    const c = (input && typeof input === "object" ? input : {}) as Partial<GameConfig>;
+    const base = structuredClone(default_config.standardGame);
+    const mode = c.mode === "tournament" ? "tournament" : "standard";
+    const pointsToWin = [3, 5, 7, 11].includes(c.pointsToWin as number) ? (c.pointsToWin as number) : mode === "tournament" ? 3 : 5;
+    const numPlayers = mode === "tournament" && [4, 6, 8].includes(c.numPlayers as number) ? (c.numPlayers as number) : undefined;
+    return { ...base, isPrivate: c.isPrivate === true, mode, pointsToWin, ...(numPlayers ? { numPlayers } : {}) };
+}
 import type { RoomManager } from "../game/roomManager.ts";
 import { MessageBroadcaster } from "./Broadcaster.ts";
 import GameService from "./GameService.ts";
@@ -128,7 +142,7 @@ export default class NewMessageHandler {
     }
 
     handleCreateRoom(message: CreateRoomMessage, player: Player) {
-        const config = message.data.config;
+        const config = roomConfigFrom(message.data?.config);
         const room = this.roomService.createRoom(player, config);
         if (!room) {
             this.sendError("Already in room", "ALREADY_IN_ROOM", player.socket);

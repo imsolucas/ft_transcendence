@@ -5,7 +5,7 @@ import { config } from "../../config.ts";
 
 const CACHE_MS = 5_000;
 const SLOW_MS = 1_000;
-let cached: { at: number; report: StatusReport } | null = null;
+let cached: { at: number; report: Promise<StatusReport> } | null = null;
 
 async function timed(name: ServiceStatus["name"], probe: () => Promise<unknown>): Promise<ServiceStatus> {
   const started = performance.now();
@@ -37,9 +37,10 @@ async function buildReport(): Promise<StatusReport> {
 /** Public status (cached so it can't be used to hammer the database). */
 export default async function statusRoutes(app: FastifyInstance) {
   app.get("/status", async (_req, reply) => {
-    if (!cached || Date.now() - cached.at > CACHE_MS) cached = { at: Date.now(), report: await buildReport() };
+    // cache the in-flight check too, so concurrent requests share one database ping
+    if (!cached || Date.now() - cached.at > CACHE_MS) cached = { at: Date.now(), report: buildReport() };
     reply.header("Cache-Control", "no-store");
-    return cached.report;
+    return await cached.report;
   });
 }
 

@@ -2,6 +2,20 @@ import type { FastifyInstance } from "fastify";
 import { auth } from "../../auth/auth.ts";
 import { requireInternalService } from "../../auth/guards.ts";
 import { syncAchievementsLater } from "../gamification/routes.ts";
+import { DELETED_PREFIX } from "../privacy/routes.ts";
+
+/**
+ * The game caches display names at connect time; a player who deleted their account during
+ * a match must still be stored as "Deleted player" (GDPR erasure must not be undone).
+ */
+async function deletedIds(ids: number[]): Promise<Set<number>> {
+  const rows = await prisma.user.findMany({
+    where: { id: { in: [...new Set(ids)] }, username: { startsWith: DELETED_PREFIX } },
+    select: { id: true },
+  });
+  return new Set(rows.map((r) => r.id));
+}
+const DELETED_NAME = "Deleted player";
 import { prisma } from "../../db/client.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
 
@@ -98,6 +112,9 @@ export default async function internalRoutes(app: FastifyInstance) {
       // Idempotent: a retried report with the same matchId returns the stored row
       const existing = await prisma.match.findUnique({ where: { externalId: b.matchId }, select: { id: true } });
       if (existing) return reply.code(200).send({ id: existing.id });
+      const gone = await deletedIds([b.player1Id, b.player2Id]);
+      if (gone.has(b.player1Id)) b.player1DisplayName = DELETED_NAME;
+      if (gone.has(b.player2Id)) b.player2DisplayName = DELETED_NAME;
       try {
         const created = await prisma.match.create({
           data: {
@@ -177,6 +194,11 @@ export default async function internalRoutes(app: FastifyInstance) {
       };
       const existing = await prisma.tournament.findUnique({ where: { externalId: b.tournamentKey }, select: { id: true } });
       if (existing) return reply.code(200).send({ id: existing.id });
+      const gone = await deletedIds(b.matches.flatMap((m) => [m.player1Id, m.player2Id]));
+      for (const m of b.matches) {
+        if (gone.has(m.player1Id)) m.player1DisplayName = DELETED_NAME;
+        if (gone.has(m.player2Id)) m.player2DisplayName = DELETED_NAME;
+      }
       try {
         const t = await prisma.tournament.create({
           data: {

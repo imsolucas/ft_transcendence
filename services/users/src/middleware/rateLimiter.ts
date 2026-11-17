@@ -106,3 +106,13 @@ export const apiKeyRateLimiter = createRateLimiter({
   },
 });
 
+
+/**
+ * Per-IP limit in front of the public API (checked before the API key, so bad keys are
+ * limited too). Above the per-key limit, so one client with a valid key hits that first.
+ */
+export const publicIpRateLimiter = createRateLimiter({
+  max: 300,
+  windowMs: 60 * 1000,
+  keyGenerator: (req: FastifyRequest) => `rate-limit:public-ip:${req.ip || "unknown"}`,
+});
