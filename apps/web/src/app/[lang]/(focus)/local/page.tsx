@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getDictionary } from "@/i18n/dictionaries";
 import { LocalGame } from "./local-game";
@@ -8,5 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <LocalGame />;
+  // ?mode=ai switches player 2 to the computer
+  return (
+    <Suspense>
+      <LocalGame />
+    </Suspense>
+  );
 }

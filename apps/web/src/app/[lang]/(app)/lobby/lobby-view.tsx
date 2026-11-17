@@ -10,7 +10,7 @@ import { useMe } from "@/lib/session";
 import type { FriendRequest, MatchSummary, Page, Profile, PublicUser } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
-import { Badge, CountBadge, EmptyState, Panel, Segmented, Skeleton } from "@/components/ui/primitives";
+import { CountBadge, EmptyState, Panel, Segmented, Skeleton } from "@/components/ui/primitives";
 import { MatchCard, MatchCardSkeleton, PlayerChip } from "@/components/game/cards";
 
 const ROOM_CODE = /^[0-9a-f]{8}$/i;
@@ -160,14 +160,13 @@ function PlayPanel() {
             <p className="muted t-caption">{t("lobby.localBody")}</p>
           </div>
         </Link>
-        <div className="panel panel-2 row row-3 flex-wrap opacity-70" aria-disabled>
-          <Bot className="ico" aria-hidden />
-          <div className="grow">
+        <Link href={`${href("/local")}?mode=ai`} className="panel panel-2 row row-3 no-underline text-fg hover:border-border-strong">
+          <Bot className="ico c-cyan" aria-hidden />
+          <div>
             <h3 className="t-heading">{t("lobby.vsAi")}</h3>
             <p className="muted t-caption">{t("lobby.vsAiBody")}</p>
           </div>
-          <Badge>{t("lobby.comingSoon")}</Badge>
-        </div>
+        </Link>
       </div>
     </Panel>
   );

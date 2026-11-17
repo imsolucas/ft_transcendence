@@ -6,6 +6,8 @@ import { ArrowLeft, RotateCcw } from "lucide-react";
 import type { GameConfig, GameState, PlayerInputs } from "shared";
 import { GameEngine } from "shared/game-engine/GameEngine";
 import { baseGameConfig } from "@/lib/game/config";
+import { PongAi, type AiLevel } from "@/lib/game/ai";
+import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
 import { usePrefs } from "@/lib/prefs";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,8 @@ const DEFAULTS = { ball: "normal" as Speed, paddle: "normal" as Speed, points: 1
 interface Setup {
   p1: string;
   p2: string;
+  /** vs AI: player 2 is the computer at this level */
+  ai?: AiLevel;
   ball: Speed;
   paddle: Speed;
   points: number;
@@ -40,15 +44,21 @@ function buildConfig(s: Setup): GameConfig {
 }
 
 export function LocalGame() {
+  const vsAi = useSearchParams().get("mode") === "ai";
   const [setup, setSetup] = useState<Setup | null>(null);
   const [round, setRound] = useState(0);
-  if (!setup) return <SetupForm onStart={setSetup} />;
+  if (!setup) return <SetupForm key={vsAi ? "ai" : "local"} vsAi={vsAi} onStart={setSetup} />;
   return <LocalMatch key={round} setup={setup} onPlayAgain={() => setRound((r) => r + 1)} onChangeSetup={() => setSetup(null)} />;
 }
 
-function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
+function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boolean }) {
   const { t, href } = useI18n();
-  const [s, setS] = useState<Setup>({ ...DEFAULTS, p1: t("local.defaultP1"), p2: t("local.defaultP2") });
+  const [s, setS] = useState<Setup>({
+    ...DEFAULTS,
+    p1: t("local.defaultP1"),
+    p2: vsAi ? t("local.computer") : t("local.defaultP2"),
+    ...(vsAi ? { ai: "normal" as AiLevel } : {}),
+  });
   const errors = {
     p1: !s.p1.trim() || s.p1.trim().length > 16 ? t("local.nameRequired") : undefined,
     p2: !s.p2.trim() || s.p2.trim().length > 16 ? t("local.nameRequired") : s.p1.trim().toLowerCase() === s.p2.trim().toLowerCase() ? t("local.namesDiffer") : undefined,
@@ -66,13 +76,13 @@ function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
       <Link href={href("/")} className="row t-label mb-4 no-underline text-fg-muted">
         <ArrowLeft className="ico" aria-hidden /> {t("common.back")}
       </Link>
-      <h1 className="pix pix-md mb-1">{t("local.title")}</h1>
-      <p className="muted mb-6">{t("local.subtitle")}</p>
+      <h1 className="pix pix-md mb-1">{vsAi ? t("local.aiTitle") : t("local.title")}</h1>
+      <p className="muted mb-6">{vsAi ? t("local.aiSubtitle") : t("local.subtitle")}</p>
       <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_340px]" noValidate>
         <div className="stack stack-5">
           <Panel>
             <div className="grid gap-5 sm:grid-cols-2">
-              {(["p1", "p2"] as const).map((k, i) => (
+              {(vsAi ? (["p1"] as const) : (["p1", "p2"] as const)).map((k, i) => (
                 <div key={k} className="stack">
                   <FormField label={t(i === 0 ? "local.player1" : "local.player2")} error={errors[k]}>
                     {({ id, describedBy, invalid }) => (
@@ -80,7 +90,15 @@ function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
                     )}
                   </FormField>
                   <div className="row">
-                    {i === 0 ? (
+                    {i === 0 && vsAi ? (
+                      <>
+                        <Kbd>W</Kbd>
+                        <Kbd>S</Kbd>
+                        <span className="subtle">/</span>
+                        <Kbd>↑</Kbd>
+                        <Kbd>↓</Kbd>
+                      </>
+                    ) : i === 0 ? (
                       <>
                         <Kbd>W</Kbd>
                         <Kbd>S</Kbd>
@@ -98,6 +116,16 @@ function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
           </Panel>
           <Panel>
             <div className="stack stack-5">
+              {vsAi && (
+                <Row label={t("local.difficulty")} hint={t("local.default", { value: t("local.normal") })}>
+                  <Segmented
+                    label={t("local.difficulty")}
+                    value={s.ai ?? "normal"}
+                    onChange={(v) => setS({ ...s, ai: v })}
+                    options={(["easy", "normal", "hard"] as const).map((v) => ({ value: v, label: t(`local.${v}`) }))}
+                  />
+                </Row>
+              )}
               <Row label={t("local.ballSpeed")} hint={t("local.default", { value: t("local.normal") })}>
                 <Segmented label={t("local.ballSpeed")} value={s.ball} onChange={(v) => setS({ ...s, ball: v })} options={speedOptions} />
               </Row>
@@ -113,7 +141,7 @@ function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
         <Panel className="h-fit lg:sticky lg:top-6" title={t("local.summary")}>
           <dl className="stack stack-3 mb-5">
             <SummaryRow k={t("local.player1")} v={s.p1 || "—"} />
-            <SummaryRow k={t("local.player2")} v={s.p2 || "—"} />
+            {s.ai ? <SummaryRow k={t("local.difficulty")} v={t(`local.${s.ai}`)} /> : <SummaryRow k={t("local.player2")} v={s.p2 || "—"} />}
             <SummaryRow k={t("local.ballSpeed")} v={t(`local.${s.ball}`)} />
             <SummaryRow k={t("local.paddleSpeed")} v={t(`local.${s.paddle}`)} />
             <SummaryRow k={t("local.pointsToWin")} v={String(s.points)} />
@@ -123,7 +151,7 @@ function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
               {t("local.start")}
             </Button>
             {!valid && <p className="field-hint">{errors.p1 ?? errors.p2}</p>}
-            <Button type="button" variant="ghost" block onClick={() => setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points })}>
+            <Button type="button" variant="ghost" block onClick={() => setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points, ...(vsAi ? { ai: "normal" as AiLevel } : {}) })}>
               <RotateCcw className="ico" aria-hidden />
               {t("local.reset")}
             </Button>
@@ -160,6 +188,8 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
   const { prefs, setPref } = usePrefs();
   const [config] = useState(() => buildConfig(setup));
   const [engine] = useState(() => new GameEngine(structuredClone(config)));
+  const [ai] = useState(() => (setup.ai ? new PongAi(setup.ai) : null));
+  const p1Inputs = useRef<PlayerInputs | null>(null);
   const state = useRef<GameState | null>(null);
   const [phase, setPhase] = useState<"countdown" | "playing" | "over">("countdown");
   const [scores, setScores] = useState<[number, number]>([0, 0]);
@@ -175,6 +205,7 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (ai) engine.input(p1Inputs.current ?? undefined, ai.decide(engine.getGameState(), now));
       engine.tick(dt);
       const s = engine.getGameState();
       state.current = s;
@@ -187,7 +218,7 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [phase, menu, engine]);
+  }, [phase, menu, engine, ai]);
 
   useEffect(() => {
     if (phase !== "playing" || menu) return;
@@ -205,7 +236,13 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
   }, [phase]);
 
   const getState = useCallback(() => state.current ?? engine.getGameState(), [engine]);
-  const onInputs = useCallback((p1: PlayerInputs, p2: PlayerInputs) => engine.input(p1, p2), [engine]);
+  const onInputs = useCallback(
+    (p1: PlayerInputs, p2: PlayerInputs) => {
+      if (ai) p1Inputs.current = p1; // the AI owns paddle 2; read every frame
+      else engine.input(p1, p2);
+    },
+    [engine, ai]
+  );
   const onFirstMove = useCallback(() => {
     setShowControls(false);
     setPref("seenControls", true);
@@ -244,16 +281,16 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
     <div className="flex h-dvh flex-col">
       <ScoreBoard
         left={{ name: setup.p1, meta: "W / S" }}
-        right={{ name: setup.p2, meta: "↑ / ↓" }}
+        right={{ name: setup.p2, meta: setup.ai ? t(`local.${setup.ai}`) : "↑ / ↓" }}
         scores={scores}
         seconds={seconds}
-        mode={t("game.first", { n: setup.points })}
+        mode={setup.ai ? `${t("lobby.vsAi")} · ${t("game.first", { n: setup.points })}` : t("game.first", { n: setup.points })}
         onMenu={() => setMenu(true)}
       />
       <div className="relative flex-1 p-4">
-        <Court config={config} getState={getState} youSide={null} controls="local" onInputs={onInputs} paused={phase !== "playing" || menu} onFirstMove={onFirstMove} />
+        <Court config={config} getState={getState} youSide={null} controls={setup.ai ? "online" : "local"} onInputs={onInputs} paused={phase !== "playing" || menu} onFirstMove={onFirstMove} />
         {phase === "countdown" && <CountdownOverlay onDone={startPlaying} />}
-        {phase === "playing" && showControls && <ControlsCard local onClose={onFirstMove} />}
+        {phase === "playing" && showControls && <ControlsCard local={!setup.ai} onClose={onFirstMove} />}
       </div>
       <GameMenu
         open={menu}

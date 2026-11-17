@@ -261,7 +261,13 @@
     "namesDiffer": "Utilisez deux noms différents.",
     "nameRequired": "Saisissez un nom (de 1 à 16 caractères).",
     "defaultP1": "Joueur 1",
-    "defaultP2": "Joueur 2"
+    "defaultP2": "Joueur 2",
+    "computer": "Ordinateur",
+    "aiTitle": "VS IA",
+    "aiSubtitle": "Jouez contre l'ordinateur. Il réagit comme une personne : pas instantanément, et pas toujours juste.",
+    "difficulty": "Difficulté",
+    "easy": "Facile",
+    "hard": "Difficile"
   },
   "tournament": {
     "title": "TOURNOI",

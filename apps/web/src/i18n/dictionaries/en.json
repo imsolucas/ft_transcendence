@@ -261,7 +261,13 @@
     "namesDiffer": "Use two different names.",
     "nameRequired": "Enter a name (1 to 16 characters).",
     "defaultP1": "Player 1",
-    "defaultP2": "Player 2"
+    "defaultP2": "Player 2",
+    "computer": "Computer",
+    "aiTitle": "VS AI",
+    "aiSubtitle": "Play against the computer. It reacts like a person: not instantly, and not always right.",
+    "difficulty": "Difficulty",
+    "easy": "Easy",
+    "hard": "Hard"
   },
   "tournament": {
     "title": "TOURNAMENT",
