@@ -37,6 +37,28 @@ Docker network and are **not** exposed by nginx — keep it that way.
   the internal service token, WS hardening and idempotency stay. Then Next.js (App
   Router) + Tailwind + shadcn/ui + Framer Motion with the design system (retro CRT /
   synthwave, see `design-system.md`). Read the installed Better Auth version's docs first.
+  Decisions (2026-11-18):
+  - **Cutover:** Phases 1 and 2 ship together. nginx keeps `/` on the legacy app until
+    `apps/web` has caught up with it (auth, lobby, profile, friends, game), then switches
+    in one commit. Keep `main` playable the whole time.
+  - **Local origin:** `https://localhost:8443` (`BETTER_AUTH_URL`, `ALLOWED_ORIGINS`).
+  - **Google:** server-side OAuth with `GOOGLE_CLIENT_SECRET`; redirect URI
+    `https://localhost:8443/api/auth/callback/google`.
+  - **Database:** Postgres container (Prisma migrate), dev data reseeded.
+  - **Better Auth setup:** `generateId: "serial"` keeps integer user ids; `username` and
+    `twoFactor` plugins; mounted at `/api/auth/*`.
+  - **Game WS auth:** at upgrade the game forwards the cookie once to an internal users
+    route that calls `auth.api.getSession`.
+  - **Connections (user, 2026-11-18): "use the new modern way".**
+    - **Caddy** replaces nginx: automatic HTTPS with `tls internal` locally and
+      Let's Encrypt on a real domain, so there are no cert files.
+    - **One origin:** `/` → Next.js, `/api/*` → users, `/ws` → game, so no CORS.
+    - **Better Auth** owns cookies, sessions and CSRF.
+    - **Socket.IO** replaces raw WebSockets on the game service (built-in
+      reconnection, heartbeat and rooms).
+  - **Design source:** the Design System artifact
+    https://claude.ai/artifact/BMeufmTDn4KNsRPaXkvAov (`project/tokens.json`,
+    `project/components/bundle.css`, 13 screens); read its `project/README.md` first.
 - **Phase 2** — port pages · **Phase 3** — realtime (real chat, reconnection, heartbeat) ·
   **Phase 4** — infra, health/status page, README.
 - **Phase 5 — every subject module** (after the revamp is finished): the user wants all

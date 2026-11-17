@@ -26,7 +26,18 @@ surfaces stay calm and legible. The old UI failed because everything glowed at o
 
 ## Tokens (CSS variables; Tailwind reads them)
 
-Exact values are finalised in Phase 1 from the chosen Claude Design mock. Names are fixed:
+**Source of truth:** the Design System artifact
+https://claude.ai/artifact/BMeufmTDn4KNsRPaXkvAov. It contains `project/tokens.json` (values),
+`project/components/bundle.css` (reference CSS per component), a README per component
+and screen, and all 13 screens at 1440 and 375. Port the values from `tokens.json` into
+the Tailwind v4 `@theme`; never re-pick them. In addition to the names below, it has a
+`-soft` tint (14%) and `neon-magenta-strong` (hover), plus `on-neon`, `focus`, `scrim` and
+`ink-black`. Fonts: **Press Start 2P** (display, ≥ 14px), **Outfit** (body), **JetBrains
+Mono** (mono), loaded via `next/font/google`. Icons: **Lucide**, 1.75px stroke, 18px next
+to text. Each component and screen README in the artifact lists its states and copy
+rules; read the one for the screen you are building.
+
+Token names:
 
 - Surfaces: `--bg` (page), `--surface-1`, `--surface-2`, `--surface-3`, `--border`, `--border-strong`
 - Text: `--fg`, `--fg-muted`, `--fg-subtle`
