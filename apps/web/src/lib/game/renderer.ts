@@ -14,12 +14,12 @@ export function readCourtColors(el: Element): CourtColors {
   const css = getComputedStyle(el);
   const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
   return {
-    bg: v("--bg", "#0b0614"),
-    line: v("--border-strong", "#7c66ad"),
-    you: v("--neon-magenta", "#ff2e97"),
-    opp: v("--neon-cyan", "#2de2e6"),
-    ball: v("--fg", "#f3eeff"),
-    border: v("--border", "#3a2b5c"),
+    bg: v("--court-bg", "#0b0614"),
+    line: v("--court-line", "#7c66ad"),
+    you: v("--court-you", "#ff2e97"),
+    opp: v("--court-opp", "#2de2e6"),
+    ball: v("--court-ball", "#f3eeff"),
+    border: v("--court-border", "#3a2b5c"),
   };
 }
 

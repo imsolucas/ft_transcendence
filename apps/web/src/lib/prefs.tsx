@@ -3,14 +3,18 @@
 import { createContext, useCallback, useContext, useEffect, useSyncExternalStore, type ReactNode } from "react";
 
 /** Per-browser preferences (Settings → Preferences). Applied at once, saved automatically. */
+export const COURT_THEMES = ["neon", "phosphor", "amber", "classic"] as const;
+export type CourtTheme = (typeof COURT_THEMES)[number];
+
 export interface Prefs {
+  courtTheme: CourtTheme;
   crt: boolean;
   reducedMotion: boolean;
   sound: boolean;
   seenControls: boolean;
 }
 
-const DEFAULTS: Prefs = { crt: true, reducedMotion: false, sound: true, seenControls: false };
+const DEFAULTS: Prefs = { courtTheme: "neon", crt: true, reducedMotion: false, sound: true, seenControls: false };
 const KEY = "ft_prefs";
 
 // A tiny external store over localStorage, so server render and hydration use the defaults
@@ -23,6 +27,7 @@ function readStored(): Prefs {
   try {
     const raw = localStorage.getItem(KEY);
     cache = raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS;
+    if (!COURT_THEMES.includes(cache!.courtTheme)) cache = { ...cache!, courtTheme: DEFAULTS.courtTheme };
   } catch {
     cache = DEFAULTS;
   }

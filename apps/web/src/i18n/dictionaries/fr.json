@@ -242,6 +242,14 @@
       "good": "bonne",
       "fair": "moyenne",
       "poor": "faible"
+    },
+    "courtTheme": "Thème du terrain",
+    "courtThemeBody": "Couleurs du terrain de Pong dans toutes les parties. Enregistré sur cet appareil.",
+    "theme": {
+      "neon": "Néon",
+      "phosphor": "Phosphore",
+      "amber": "Ambre",
+      "classic": "Classique"
     }
   },
   "local": {

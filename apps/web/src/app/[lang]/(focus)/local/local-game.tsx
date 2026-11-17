@@ -7,6 +7,7 @@ import type { GameConfig, GameState, PlayerInputs } from "shared";
 import { GameEngine } from "shared/game-engine/GameEngine";
 import { baseGameConfig } from "@/lib/game/config";
 import { PongAi, type AiLevel } from "@/lib/game/ai";
+import { CourtThemePicker } from "@/components/game/court-theme-picker";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
 import { usePrefs } from "@/lib/prefs";
@@ -53,6 +54,7 @@ export function LocalGame() {
 
 function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boolean }) {
   const { t, href } = useI18n();
+  const { setPref } = usePrefs();
   const [s, setS] = useState<Setup>({
     ...DEFAULTS,
     p1: t("local.defaultP1"),
@@ -126,6 +128,9 @@ function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boole
                   />
                 </Row>
               )}
+              <Row label={t("game.courtTheme")} hint={t("local.default", { value: t("game.theme.neon") })}>
+                <CourtThemePicker />
+              </Row>
               <Row label={t("local.ballSpeed")} hint={t("local.default", { value: t("local.normal") })}>
                 <Segmented label={t("local.ballSpeed")} value={s.ball} onChange={(v) => setS({ ...s, ball: v })} options={speedOptions} />
               </Row>
@@ -151,7 +156,10 @@ function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boole
               {t("local.start")}
             </Button>
             {!valid && <p className="field-hint">{errors.p1 ?? errors.p2}</p>}
-            <Button type="button" variant="ghost" block onClick={() => setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points, ...(vsAi ? { ai: "normal" as AiLevel } : {}) })}>
+            <Button type="button" variant="ghost" block onClick={() => {
+                setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points, ...(vsAi ? { ai: "normal" as AiLevel } : {}) });
+                setPref("courtTheme", "neon");
+              }}>
               <RotateCcw className="ico" aria-hidden />
               {t("local.reset")}
             </Button>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { GameConfig, GameState, PlayerInputs } from "shared";
 import { drawFrame, readCourtColors } from "@/lib/game/renderer";
-import { useReducedMotion } from "@/lib/prefs";
+import { usePrefs, useReducedMotion } from "@/lib/prefs";
 import { useI18n } from "@/i18n/I18nProvider";
 
 const idle = (): PlayerInputs => ({ up: false, down: false, left: false, right: false, action_1: false, action_2: false });
@@ -39,6 +39,7 @@ export function Court({
   const inputs = useRef<[PlayerInputs, PlayerInputs]>([idle(), idle()]);
   const moved = useRef(false);
   const reduced = useReducedMotion();
+  const { courtTheme } = usePrefs().prefs;
   const [vertical, setVertical] = useState(false);
 
   // Size the canvas to the container (device-pixel aware) and pick orientation
@@ -86,7 +87,8 @@ export function Court({
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [config, getState, youSide, vertical, reduced]);
+    // courtTheme: the canvas' data-court-theme changes --court-*, so re-read the colours
+  }, [config, getState, youSide, vertical, reduced, courtTheme]);
 
   // Keyboard
   useEffect(() => {
@@ -160,7 +162,8 @@ export function Court({
           ref={canvasRef}
           role="img"
           aria-label={t("game.courtLabel")}
-          className="rounded-lg border border-border"
+          data-court-theme={courtTheme}
+          className="rounded-lg border border-[color:var(--court-border)]"
           style={{ touchAction: "none" }}
         />
       </div>

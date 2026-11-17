@@ -242,6 +242,14 @@
       "good": "good",
       "fair": "fair",
       "poor": "poor"
+    },
+    "courtTheme": "Court theme",
+    "courtThemeBody": "Colours of the Pong court in every game. Saved on this device.",
+    "theme": {
+      "neon": "Neon",
+      "phosphor": "Phosphor",
+      "amber": "Amber",
+      "classic": "Classic"
     }
   },
   "local": {

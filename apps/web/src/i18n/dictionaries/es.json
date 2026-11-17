@@ -242,6 +242,14 @@
       "good": "buena",
       "fair": "regular",
       "poor": "mala"
+    },
+    "courtTheme": "Tema de la pista",
+    "courtThemeBody": "Colores de la pista de Pong en todas las partidas. Se guarda en este dispositivo.",
+    "theme": {
+      "neon": "Neón",
+      "phosphor": "Fósforo",
+      "amber": "Ámbar",
+      "classic": "Clásico"
     }
   },
   "local": {

@@ -64,3 +64,38 @@
   --font-body: var(--font-outfit), "Segoe UI", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, Menlo, monospace;
 }
+
+/* Court themes (Settings → Preferences, local setup). The court canvas reads --court-*;
+   "neon" is the design system palette, the others are monochrome CRT phosphors. */
+:root {
+  --court-bg: var(--bg);
+  --court-line: var(--border-strong);
+  --court-border: var(--border);
+  --court-you: var(--neon-magenta);
+  --court-opp: var(--neon-cyan);
+  --court-ball: var(--fg);
+}
+[data-court-theme="phosphor"] {
+  --court-bg: #03130a;
+  --court-line: #1f6b3a;
+  --court-border: #134226;
+  --court-you: #39ff88;
+  --court-opp: #a8ffc9;
+  --court-ball: #e6ffef;
+}
+[data-court-theme="amber"] {
+  --court-bg: #140b02;
+  --court-line: #7a4a0c;
+  --court-border: #4a2d07;
+  --court-you: #ffb000;
+  --court-opp: #ffd27a;
+  --court-ball: #fff1d6;
+}
+[data-court-theme="classic"] {
+  --court-bg: #000000;
+  --court-line: #5c5c5c;
+  --court-border: #333333;
+  --court-you: #ffffff;
+  --court-opp: #ffffff;
+  --court-ball: #ffffff;
+}

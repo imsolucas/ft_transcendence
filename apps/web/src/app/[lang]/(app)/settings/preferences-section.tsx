@@ -5,6 +5,7 @@ import { usePrefs, type Prefs } from "@/lib/prefs";
 import { Panel, Switch } from "@/components/ui/primitives";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { SettingRow } from "./settings-ui";
+import { CourtThemePicker } from "@/components/game/court-theme-picker";
 
 const TOGGLES: { key: keyof Pick<Prefs, "crt" | "reducedMotion" | "sound">; label: string; body: string }[] = [
   { key: "crt", label: "settings.crt", body: "settings.crtBody" },
@@ -27,6 +28,9 @@ export function PreferencesSection() {
     >
       <SettingRow label={t("settings.language")} body={t("settings.languageBody")}>
         <LanguageSwitcher />
+      </SettingRow>
+      <SettingRow label={t("game.courtTheme")} body={t("game.courtThemeBody")}>
+        <CourtThemePicker />
       </SettingRow>
       {TOGGLES.map(({ key, label, body }) => (
         <div key={key} className="border-t border-border pt-2">
