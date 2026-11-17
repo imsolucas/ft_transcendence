@@ -27,6 +27,8 @@ model User {
   tournamentsWon    Tournament[]       @relation("Tournament_winner")
   apiKeys           ApiKey[]           @relation("UserApiKeys")
   blocksMade        Block[]            @relation("Blocker")
+  messagesSent      Message[]          @relation("MessagesSent")
+  messagesReceived  Message[]          @relation("MessagesReceived")
   blockedBy         Block[]            @relation("Blocked")
 
   name             String
@@ -214,4 +216,22 @@ model Block {
   @@unique([blockerId, blockedId])
   @@index([blockedId])
   @@map("Blocks")
+}
+
+// Direct messages between two players. kind "invite" carries a private-room code.
+model Message {
+  id          Int       @id @default(autoincrement())
+  senderId    Int
+  recipientId Int
+  kind        String    @default("text")
+  body        String
+  inviteCode  String?
+  createdAt   DateTime  @default(now())
+  readAt      DateTime?
+  sender      User      @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User      @relation("MessagesReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, readAt])
+  @@map("Messages")
 }

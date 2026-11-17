@@ -339,11 +339,35 @@
     "acceptFrom": "Accepter la demande de {name}",
     "declineFrom": "Refuser la demande de {name}",
     "cancelTo": "Annuler la demande envoyée à {name}",
-    "unblockUser": "Débloquer {name}"
+    "unblockUser": "Débloquer {name}",
+    "requestToast": "{name} vous a envoyé une demande d'ami."
   },
   "chat": {
     "title": "CHAT",
-    "comingSoon": "Les messages arrivent dans la prochaine mise à jour. Vous pouvez déjà inviter vos amis à un match depuis le lobby."
+    "comingSoon": "Les messages arrivent dans la prochaine mise à jour. Vous pouvez déjà inviter vos amis à un match depuis le lobby.",
+    "conversations": "Conversations",
+    "emptyTitle": "Aucune conversation pour l'instant",
+    "emptyBody": "Commencez-en une depuis le profil d'un ami ou la liste d'amis.",
+    "pickTitle": "Choisissez une conversation",
+    "pickBody": "Choisissez quelqu'un à gauche pour lire et envoyer des messages.",
+    "thread": "Messages",
+    "firstMessage": "Dites bonjour. C'est le début de votre conversation.",
+    "read": "Lu",
+    "sent": "Envoyé",
+    "sending": "Envoi…",
+    "failed": "Non envoyé. Touchez pour réessayer.",
+    "typing": "{name} écrit…",
+    "blockedNotice": "Vous avez bloqué ce joueur. Débloquez-le pour envoyer des messages.",
+    "unavailable": "Vous ne pouvez pas écrire à ce joueur.",
+    "composer": "Écrire un message",
+    "send": "Envoyer",
+    "invite": "Inviter à jouer",
+    "inviteSent": "Vous l'avez invité à une partie",
+    "inviteReceived": "{name} vous invite à une partie",
+    "accept": "Rejoindre la partie",
+    "inviteToast": "Vous invite à une partie",
+    "open": "Ouvrir",
+    "unread": "{n} non lus"
   },
   "settings": {
     "title": "PARAMÈTRES",

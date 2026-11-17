@@ -7,6 +7,7 @@ import usersRoutes from "../modules/users/routes.ts";
 import friendsRoutes from "../modules/friends/routes.ts";
 import apiKeyRoutes from "../modules/apiKeys/routes.ts";
 import sessionRoutes from "../modules/sessions/routes.ts";
+import chatRoutes from "../modules/chat/routes.ts";
 import internalRoutes from "../modules/internal/routes.ts";
 import { apiRateLimiter } from "../middleware/rateLimiter.ts";
 
@@ -23,6 +24,7 @@ export default async function routes(app: FastifyInstance) {
       await api.register(friendsRoutes);
       await api.register(apiKeyRoutes);
       await api.register(sessionRoutes);
+      await api.register(chatRoutes);
     },
     { prefix: "/api" }
   );

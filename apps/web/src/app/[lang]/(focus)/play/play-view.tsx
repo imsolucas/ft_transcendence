@@ -7,6 +7,8 @@ import { AlertTriangle, Copy, Crown, Users } from "lucide-react";
 import type { GameState, PlayerInputs, serializablePlayer, TournamentState } from "shared";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 import { usePrefs } from "@/lib/prefs";
 import { GameSocket, type ConnectionStatus, type ServerMessage } from "@/lib/game/socket";
 import { baseGameConfig } from "@/lib/game/config";
@@ -34,11 +36,13 @@ export function PlayView() {
   const mode = (params.get("mode") as PlayMode) ?? "quick";
   const code = params.get("code") ?? "";
   const size = Math.min(8, Math.max(3, Number(params.get("size")) || 4));
+  // Opened from chat ("Invite to game"): send the new room's code to this player
+  const invite = params.get("invite");
   const [attempt, setAttempt] = useState(0);
-  return <OnlineMatch key={`${mode}-${code}-${attempt}`} mode={mode} code={code} size={size} onRestart={() => setAttempt((a) => a + 1)} />;
+  return <OnlineMatch key={`${mode}-${code}-${attempt}`} mode={mode} code={code} size={size} invite={attempt === 0 ? invite : null} onRestart={() => setAttempt((a) => a + 1)} />;
 }
 
-function OnlineMatch({ mode, code, size, onRestart }: { mode: PlayMode; code: string; size: number; onRestart: () => void }) {
+function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; code: string; size: number; invite: string | null; onRestart: () => void }) {
   const { t, href } = useI18n();
   const router = useRouter();
   const { me } = useMe();
@@ -61,6 +65,7 @@ function OnlineMatch({ mode, code, size, onRestart }: { mode: PlayMode; code: st
   phaseRef.current = phase;
 
   const myId = me ? String(me.id) : null;
+  const invitedRef = useRef(false);
   const myIdRef = useRef(myId);
   myIdRef.current = myId;
 
@@ -111,6 +116,13 @@ function OnlineMatch({ mode, code, size, onRestart }: { mode: PlayMode; code: st
         case "playerJoined": {
           const data = msg.data as { roomId: string; playersInRoom: serializablePlayer[] };
           setPlayers(data.playersInRoom);
+          if (invite && mode === "create" && !invitedRef.current) {
+            invitedRef.current = true;
+            api
+              .post(`/api/chat/${encodeURIComponent(invite)}/messages`, { invite: data.roomId })
+              .then(() => toast.success(t("chat.inviteSent")))
+              .catch(() => toast.error(t("chat.unavailable")));
+          }
           const isTournament = mode.startsWith("tournament");
           const enough = isTournament ? data.playersInRoom.length >= 3 : data.playersInRoom.length >= 2;
           setPhase((p) => {
@@ -171,7 +183,7 @@ function OnlineMatch({ mode, code, size, onRestart }: { mode: PlayMode; code: st
       socket.close();
       socketRef.current = null;
     };
-  }, [mode, code, size, t]);
+  }, [mode, code, size, invite, t]);
 
   // ---- search clock + timeout
   useEffect(() => {

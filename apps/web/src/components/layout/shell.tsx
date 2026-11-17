@@ -11,6 +11,9 @@ import { cn } from "@/lib/cn";
 import { Avatar, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, Skeleton } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "./language-switcher";
+import useSWR from "swr";
+import { RealtimeProvider } from "@/lib/realtime";
+import { CountBadge } from "@/components/ui/primitives";
 
 export function Wordmark({ href, className }: { href: string; className?: string }) {
   return (
@@ -31,11 +34,22 @@ const NAV = [
  * logo + Play on top and a five-item tab bar at the bottom.
  * `playPrimary`: the top-bar Play button is primary only when the page has no primary of its own.
  */
-export function AppShell({ children, playPrimary = false }: { children: ReactNode; playPrimary?: boolean }) {
+export function AppShell(props: { children: ReactNode; playPrimary?: boolean }) {
+  return (
+    <RealtimeProvider>
+      <Shell {...props} />
+    </RealtimeProvider>
+  );
+}
+
+function Shell({ children, playPrimary = false }: { children: ReactNode; playPrimary?: boolean }) {
   const { t, href } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const { me, isLoading } = useMe();
+
+  const { data: unread } = useSWR<{ count: number }>(me ? "/api/chat/unread" : null, { refreshInterval: 30000 });
+  const badge = (path: string) => (path === "/chat" && unread?.count ? <CountBadge count={unread.count} label={t("chat.unread", { n: unread.count })} /> : null);
 
   const isActive = (path: string) => pathname === href(path) || pathname.startsWith(`${href(path)}/`);
 
@@ -63,6 +77,7 @@ export function AppShell({ children, playPrimary = false }: { children: ReactNod
               >
                 <Icon className="ico" aria-hidden />
                 {t(key)}
+                {badge(path)}
               </Link>
             ))}
           </nav>

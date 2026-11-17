@@ -4,6 +4,7 @@ import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { ID_PARAMS } from "../shared/presenters.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
+import { notify } from "../../realtime/notify.ts";
 
 const usernameBody = {
   type: "object",
@@ -118,6 +119,10 @@ export default async function friendsRoutes(app: FastifyInstance) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const outcome = await run();
+        if (outcome.status === 201) {
+          const from = await prisma.user.findUnique({ where: { id: me }, select: PUBLIC_USER_SELECT });
+          if (from) notify([target.id], { type: "friend:request", from: toPublicUser(from) });
+        }
         return reply.code(outcome.status).send(outcome.body);
       } catch (err: any) {
         if (err?.code === "P2002") return reply.code(409).send({ error: "Request already sent." });
@@ -136,7 +141,11 @@ export default async function friendsRoutes(app: FastifyInstance) {
       data: { status: "ACCEPTED" },
     });
     if (updated.count !== 1) return notFound(reply, "Request not found.");
-    const row = await prisma.friendship.findUnique({ where: { id }, select: { requester: { select: PUBLIC_USER_SELECT } } });
+    const row = await prisma.friendship.findUnique({
+      where: { id },
+      select: { requester: { select: PUBLIC_USER_SELECT }, addressee: { select: PUBLIC_USER_SELECT } },
+    });
+    notify([row!.requester.id], { type: "friend:accepted", by: toPublicUser(row!.addressee) });
     return toPublicUser(row!.requester);
   });
 

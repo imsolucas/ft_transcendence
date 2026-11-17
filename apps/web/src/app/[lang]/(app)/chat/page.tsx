@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getDictionary } from "@/i18n/dictionaries";
 import { ChatView } from "./chat-view";
@@ -8,5 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <ChatView />;
+  // ?with=<username> selects the conversation
+  return (
+    <Suspense>
+      <ChatView />
+    </Suspense>
+  );
 }

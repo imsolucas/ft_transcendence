@@ -339,11 +339,35 @@
     "acceptFrom": "Accept request from {name}",
     "declineFrom": "Decline request from {name}",
     "cancelTo": "Cancel request to {name}",
-    "unblockUser": "Unblock {name}"
+    "unblockUser": "Unblock {name}",
+    "requestToast": "{name} sent you a friend request."
   },
   "chat": {
     "title": "CHAT",
-    "comingSoon": "Messages arrive in the next update. You can already invite friends to a match from the lobby."
+    "comingSoon": "Messages arrive in the next update. You can already invite friends to a match from the lobby.",
+    "conversations": "Conversations",
+    "emptyTitle": "No conversations yet",
+    "emptyBody": "Start one from a friend's profile or the friends list.",
+    "pickTitle": "Pick a conversation",
+    "pickBody": "Choose someone on the left to read and send messages.",
+    "thread": "Messages",
+    "firstMessage": "Say hello. This is the start of your conversation.",
+    "read": "Read",
+    "sent": "Sent",
+    "sending": "Sending…",
+    "failed": "Not sent. Tap to retry.",
+    "typing": "{name} is typing…",
+    "blockedNotice": "You blocked this player. Unblock them to send messages.",
+    "unavailable": "You can't message this player.",
+    "composer": "Write a message",
+    "send": "Send",
+    "invite": "Invite to game",
+    "inviteSent": "You invited them to a game",
+    "inviteReceived": "{name} invited you to a game",
+    "accept": "Join game",
+    "inviteToast": "Invited you to a game",
+    "open": "Open",
+    "unread": "{n} unread"
   },
   "settings": {
     "title": "SETTINGS",

@@ -43,6 +43,8 @@ export const config = Object.freeze({
   databaseUrl: requireValue("DATABASE_URL"),
   google:
     googleClientId && googleClientSecret ? { clientId: googleClientId, clientSecret: googleClientSecret } : null,
+  // Game service (Socket.IO hub) for pushing realtime events
+  gameInternalUrl: process.env.GAME_INTERNAL_URL || "http://game:3001",
   // Avatar uploads live here (a Docker volume in compose)
   uploadDir: process.env.UPLOAD_DIR || "/usr/src/app/uploads",
 });

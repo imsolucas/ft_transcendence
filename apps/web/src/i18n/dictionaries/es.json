@@ -339,11 +339,35 @@
     "acceptFrom": "Aceptar la solicitud de {name}",
     "declineFrom": "Rechazar la solicitud de {name}",
     "cancelTo": "Cancelar la solicitud a {name}",
-    "unblockUser": "Desbloquear a {name}"
+    "unblockUser": "Desbloquear a {name}",
+    "requestToast": "{name} te envió una solicitud de amistad."
   },
   "chat": {
     "title": "CHAT",
-    "comingSoon": "Los mensajes llegarán en la próxima actualización. Ya puedes invitar a tus amigos a una partida desde el vestíbulo."
+    "comingSoon": "Los mensajes llegarán en la próxima actualización. Ya puedes invitar a tus amigos a una partida desde el vestíbulo.",
+    "conversations": "Conversaciones",
+    "emptyTitle": "Aún no hay conversaciones",
+    "emptyBody": "Empieza una desde el perfil de un amigo o la lista de amigos.",
+    "pickTitle": "Elige una conversación",
+    "pickBody": "Elige a alguien a la izquierda para leer y enviar mensajes.",
+    "thread": "Mensajes",
+    "firstMessage": "Saluda. Este es el inicio de vuestra conversación.",
+    "read": "Leído",
+    "sent": "Enviado",
+    "sending": "Enviando…",
+    "failed": "No enviado. Toca para reintentar.",
+    "typing": "{name} está escribiendo…",
+    "blockedNotice": "Bloqueaste a este jugador. Desbloquéalo para enviar mensajes.",
+    "unavailable": "No puedes enviar mensajes a este jugador.",
+    "composer": "Escribe un mensaje",
+    "send": "Enviar",
+    "invite": "Invitar a jugar",
+    "inviteSent": "Le invitaste a una partida",
+    "inviteReceived": "{name} te invitó a una partida",
+    "accept": "Unirse a la partida",
+    "inviteToast": "Te invitó a una partida",
+    "open": "Abrir",
+    "unread": "{n} sin leer"
   },
   "settings": {
     "title": "AJUSTES",

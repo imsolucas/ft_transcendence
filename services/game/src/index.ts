@@ -12,6 +12,13 @@ import NewMessageHandler from './websocket/MessageHandler.ts';
 import TickSytem from './websocket/TickSystem.ts';
 import TournamentService from './websocket/TournamentService.ts';
 import { setReportLogger } from './utils/reportResults.ts';
+import crypto from 'node:crypto';
+
+function safeEqual(a: string, b: string) {
+  const ha = crypto.createHash('sha256').update(a).digest();
+  const hb = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
 
 /**
  * Wraps a Socket.IO socket in the small WebSocket-like surface the game code uses
@@ -42,6 +49,20 @@ const messageHandler = new NewMessageHandler(roomManager);
 const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
 
 server.get('/health', async () => ({ status: 'healthy', service: 'game', timestamp: new Date().toISOString() }));
+
+// Users service → browsers: push a realtime event to every socket of the given users.
+// Service token only; Caddy never routes /internal/*.
+server.post('/internal/notify', async (req, reply) => {
+  const header = req.headers.authorization;
+  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token || !safeEqual(token, config.internalServiceToken)) return reply.code(401).send({ error: 'Unauthorized' });
+  const body = req.body as { userIds?: unknown; event?: unknown };
+  if (!Array.isArray(body?.userIds) || body.userIds.length > 100 || !body.userIds.every((id) => Number.isInteger(id)) || typeof body.event !== 'object' || body.event === null) {
+    return reply.code(400).send({ error: 'Invalid notify body' });
+  }
+  io.to((body.userIds as number[]).map((id) => `user:${id}`)).emit('notify', body.event);
+  return reply.code(204).send();
+});
 
 const io = new Server(server.server, {
   path: config.ws.path,
@@ -99,6 +120,19 @@ io.on('connection', (socket) => {
   let currentPlayer: Player | null = null;
 
   socketOpened(user.id);
+  // Every socket of a user shares a room so the users service can push events to them
+  void socket.join(`user:${user.id}`);
+
+  // Typing indicator relay (at most one per second per socket)
+  let lastTyping = 0;
+  socket.on('chat:typing', (payload: unknown) => {
+    const to = (payload as { to?: unknown })?.to;
+    if (!Number.isInteger(to) || to === user.id) return;
+    const now = Date.now();
+    if (now - lastTyping < 1000) return;
+    lastTyping = now;
+    io.to(`user:${to}`).emit('notify', { type: 'chat:typing', from: user.id });
+  });
 
   // Re-check the session regularly: a revoked or expired session loses its socket
   const cookie = socket.handshake.headers.cookie;

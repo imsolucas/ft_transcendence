@@ -124,3 +124,44 @@ export interface SessionInfo {
 // Better Auth (not ours) serves /api/auth/*: sign-up/email, sign-in/username,
 // sign-in/email, sign-in/social (google), sign-out, get-session, list-sessions,
 // revoke-session, change-password, two-factor/*.
+
+// ---------------------------------------------------------------- Chat (Phase 3)
+export interface ChatMessage {
+  id: number;
+  from: number;
+  to: number;
+  kind: "text" | "invite";
+  body: string;
+  /** Private-room code for kind "invite" */
+  inviteCode: string | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface Conversation {
+  user: PublicUser;
+  lastMessage: ChatMessage;
+  unread: number;
+}
+
+/**
+ * GET  /api/chat/conversations                         → Conversation[] (newest first)
+ * GET  /api/chat/:username/messages?before=<id>&limit= → ChatMessage[] (oldest first, ≤ 50)
+ * POST /api/chat/:username/messages { body } | { invite: roomCode } → 201 ChatMessage
+ *      (404 when either side blocked the other; 400 empty / too long)
+ * POST /api/chat/:username/read                        → 204 (marks their messages to you as read)
+ * GET  /api/chat/unread                                → { count }
+ */
+
+// ---------------------------------------------------------------- Realtime events
+/**
+ * The app-wide Socket.IO connection (path /ws) receives "notify" events with one of these.
+ * Clients may emit "chat:typing" { to: userId } (relayed as a "chat:typing" notify).
+ */
+export type RealtimeEvent =
+  | { type: "chat:message"; message: ChatMessage; from: PublicUser }
+  | { type: "chat:read"; by: number; upTo: number }
+  | { type: "chat:typing"; from: number }
+  | { type: "friend:request"; from: PublicUser }
+  | { type: "friend:accepted"; by: PublicUser }
+  | { type: "presence"; userId: number; presence: Presence };
