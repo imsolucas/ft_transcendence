@@ -6,27 +6,9 @@ import GameService from "./GameService.js";
 import RoomService from "./RoomService.js";
 import TournamentService from "./TournamentService.js";
 import type { ConnectionErrorMessage } from "shared/index.js";
-import type { AuthenticatedUser } from "../auth/accessToken.js";
+import type { AuthenticatedUser } from "../auth/usersClient.js";
 
 const WS_OPEN = 1;
-const MAX_PICTURE_URL_LENGTH = 512;
-
-/**
- * The avatar URL is still client-supplied (it is only a display hint) and is broadcast to
- * other players, so accept only plain https URLs or same-origin paths.
- */
-function sanitizePictureUrl(value: unknown): string {
-    if (typeof value !== 'string' || value.length === 0 || value.length > MAX_PICTURE_URL_LENGTH) return '';
-    if (value.startsWith('/') && !value.startsWith('//')) {
-        return /^[\w\-./]+$/.test(value) ? value : '';
-    }
-    try {
-        const url = new URL(value);
-        return url.protocol === 'https:' && !/["'<>\s]/.test(value) ? url.toString() : '';
-    } catch {
-        return '';
-    }
-}
 
 export default class NewMessageHandler {
     private tournamentService: TournamentService
@@ -42,10 +24,10 @@ export default class NewMessageHandler {
     }
 
     /**
-     * Registers the authenticated user as a player. Identity comes from the verified
-     * access token (`user`); client-sent playerId/playerName are ignored.
+     * Registers the authenticated user as a player. Identity, name and avatar come from the
+     * session resolved at handshake (`user`); anything the client sends about itself is ignored.
      */
-    handleConnection(message: ConnectionMessage, connection: any, user: AuthenticatedUser): Player | null {
+    handleConnection(_message: ConnectionMessage, connection: any, user: AuthenticatedUser): Player | null {
         const id = String(user.id); // TickSystem parses this back with parseInt
 
         const existing = this.roomManager.getPlayer(id);
@@ -62,13 +44,13 @@ export default class NewMessageHandler {
 
         const newPlayer: Player = {
             id,
-            name: user.username,
+            name: user.displayName,
             socket: connection,
             roomId: '',
             position: 0,
             connectedAt: Date.now(),
             isReady: false,
-            picture: sanitizePictureUrl(message.data?.picture)
+            picture: user.avatar ?? ''
         };
 
         const response = {

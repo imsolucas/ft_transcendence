@@ -52,10 +52,10 @@ async function postWithRetry(path: string, body: unknown, label: string): Promis
 
 export function reportMatchResult(result: Record<string, unknown>): void {
   const body = { matchId: crypto.randomUUID(), ...result };
-  void postWithRetry('/game/match-result', body, 'match result');
+  void postWithRetry('/internal/game/match-result', body, 'match result');
 }
 
 export function reportTournamentResult(result: Record<string, unknown>): void {
   // The tournament id is the idempotency key on the users side.
-  void postWithRetry('/game/tournament-result', result, 'tournament result');
+  void postWithRetry('/internal/game/tournament-result', result, 'tournament result');
 }
