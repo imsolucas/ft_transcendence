@@ -1,7 +1,7 @@
-import { RoomManager } from "../game/roomManager.js"
-import type { Room } from "../types/room.types.js";
-import { MessageBroadcaster } from "./Broadcaster.js";
-import type { TournamentState, TournamentStateMessage } from "shared/index.js";
+import { RoomManager } from "../game/roomManager.ts"
+import type { Room } from "../types/room.types.ts";
+import { MessageBroadcaster } from "./Broadcaster.ts";
+import type { TournamentState, TournamentStateMessage } from "shared/index.ts";
 
 export default class TournamentService {
     constructor (

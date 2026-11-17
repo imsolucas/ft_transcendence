@@ -1,5 +1,5 @@
-import type { Player, serializablePlayer } from "./player.types.js";
-import type { GameConfig, GameState, PlayerInputs, TournamentState } from "./pong.types.js";
+import type { Player, serializablePlayer } from "./player.types.ts";
+import type { GameConfig, GameState, PlayerInputs, TournamentState } from "./pong.types.ts";
 
 export type GameMessage =
 | ConnectionMessage

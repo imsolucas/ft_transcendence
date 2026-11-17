@@ -1,7 +1,7 @@
-import Ball from "../entities/Ball.js";
-import Paddle from "../entities/Paddle.js";
-import Entity from "../entities/Entity.js";
-import type { PlayerInputs } from "../../types/pong.types.js";
+import Ball from "../entities/Ball.ts";
+import Paddle from "../entities/Paddle.ts";
+import Entity from "../entities/Entity.ts";
+import type { PlayerInputs } from "../../types/pong.types.ts";
 
 type EntityConstructor<T extends Entity> = new (...args: any[]) => T;
 
@@ -15,9 +15,9 @@ export default class EntityManager {
     // Takes in paddle inputs in an array
     playerInputs(p1?: PlayerInputs, p2?: PlayerInputs):void {
         if (p1)
-            this.#paddles[0].input(p1)
+            this.#paddles[0]?.input(p1)
         if (p2)
-            this.#paddles[1].input(p2)
+            this.#paddles[1]?.input(p2)
     }
 
     checkCollisions(): void {

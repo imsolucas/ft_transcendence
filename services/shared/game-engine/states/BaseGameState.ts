@@ -1,5 +1,5 @@
-import type { GameConfig, PlayerInputs } from "../../types/pong.types.js";
-import type EntityManager from "../managers/EntityManager.js";
+import type { GameConfig, PlayerInputs } from "../../types/pong.types.ts";
+import type EntityManager from "../managers/EntityManager.ts";
 
 // Shared context passed to each state
 export interface GameContext {

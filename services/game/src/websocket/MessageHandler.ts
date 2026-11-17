@@ -1,13 +1,13 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage, TournamentState } from "shared/index.js";
-import { toSerializablePlayer } from "shared/index.js";
-import type { RoomManager } from "../game/roomManager.js";
-import { MessageBroadcaster } from "./Broadcaster.js";
-import GameService from "./GameService.js";
-import RoomService from "./RoomService.js";
-import TournamentService from "./TournamentService.js";
-import type { ConnectionErrorMessage } from "shared/index.js";
-import type { AuthenticatedUser } from "../auth/usersClient.js";
-import { gameStarted } from "../presence.js";
+import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage, TournamentState } from "shared/index.ts";
+import { toSerializablePlayer } from "shared/index.ts";
+import type { RoomManager } from "../game/roomManager.ts";
+import { MessageBroadcaster } from "./Broadcaster.ts";
+import GameService from "./GameService.ts";
+import RoomService from "./RoomService.ts";
+import TournamentService from "./TournamentService.ts";
+import type { ConnectionErrorMessage } from "shared/index.ts";
+import type { AuthenticatedUser } from "../auth/usersClient.ts";
+import { gameStarted } from "../presence.ts";
 
 const WS_OPEN = 1;
 

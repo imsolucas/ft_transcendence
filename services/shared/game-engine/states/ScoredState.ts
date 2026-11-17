@@ -1,6 +1,6 @@
-import type { PlayerInputs } from "../../types/pong.types.js";
-import Paddle from "../entities/Paddle.js";
-import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
+import type { PlayerInputs } from "../../types/pong.types.ts";
+import Paddle from "../entities/Paddle.ts";
+import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.ts";
 
 // State for when any of the players scores a point, 
 export default class ScoredState extends BaseGameState {
@@ -16,12 +16,12 @@ export default class ScoredState extends BaseGameState {
         let newVelx = this.context.config.ballConfig.speed;
 
         if (ball.getPos().x <= 0) {
-            this.context.playerScore[1]++;
+            this.context.playerScore[1] = (this.context.playerScore[1] ?? 0) + 1;
             newVelx *= 1;
         }
         else {
             newVelx *= -1;
-            this.context.playerScore[0]++;
+            this.context.playerScore[0] = (this.context.playerScore[0] ?? 0) + 1;
         }
         
         ball.reset()
@@ -33,7 +33,7 @@ export default class ScoredState extends BaseGameState {
         this.getEntityManager().tickEntities(deltaTime, Paddle);
 
         for (let i in this.getPlayerScore()){
-            if (this.getPlayerScore()[i] >= this.context.config.pointsToWin)
+            if ((this.getPlayerScore()[i] ?? 0) >= this.context.config.pointsToWin)
                 return ({nextState: "GameOverState"})
         }
 

@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { config } from '../config.js';
+import { config } from '../config.ts';
 
 const REQUEST_TIMEOUT_MS = 5_000;
 const RETRY_DELAYS_MS = [1_000, 4_000, 15_000];

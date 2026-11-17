@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-
-    "declaration": true,
-    "declarationMap": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "sourceMap": true,
 
     "module": "nodenext"  ,
@@ -15,7 +14,6 @@
     "isolatedModules": true,
 
     "rootDir": ".",
-    "outDir": "./dist",
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist"]

@@ -1,5 +1,5 @@
-import type { GameConfig } from "shared/index.js";
-import { GameServer } from "../game/GameServer.js";
+import type { GameConfig } from "shared/index.ts";
+import { GameServer } from "../game/GameServer.ts";
 
 export interface TournamentMatch {
 	player1Id: string;

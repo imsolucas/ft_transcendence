@@ -1,9 +1,9 @@
-import type { PlayerInputMessage, PlayerReadyMessage } from "shared/index.js";
+import type { PlayerInputMessage, PlayerReadyMessage } from "shared/index.ts";
 import type { Player } from "shared"
-import type { RoomManager } from "../game/roomManager.js";
-import type { Room } from "../types/room.types.js";
-import { GameServer } from "../game/GameServer.js";
-import { MessageBroadcaster } from "./Broadcaster.js";
+import type { RoomManager } from "../game/roomManager.ts";
+import type { Room } from "../types/room.types.ts";
+import { GameServer } from "../game/GameServer.ts";
+import { MessageBroadcaster } from "./Broadcaster.ts";
 
 export default class GameService {
     constructor (

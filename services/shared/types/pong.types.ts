@@ -1,5 +1,5 @@
-import type { Vector } from "../game-engine/components/Vector.js";
-import type { StateName } from "../game-engine/states/BaseGameState.js";
+import type { Vector } from "../game-engine/components/Vector.ts";
+import type { StateName } from "../game-engine/states/BaseGameState.ts";
 
 export interface GameState {
     name: StateName

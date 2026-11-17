@@ -1,5 +1,5 @@
-import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
-import type { PlayerInputs } from "../../types/pong.types.js";
+import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.ts";
+import type { PlayerInputs } from "../../types/pong.types.ts";
 
 // This is the state where the pong gameplay happens, players can control the paddles and score
 export default class PlayingState extends BaseGameState {

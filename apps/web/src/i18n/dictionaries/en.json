@@ -58,10 +58,22 @@
     "play": "PLAY",
     "localLink": "Or play a local game on this keyboard, no account needed",
     "features": {
-      "online": { "title": "Online 1v1", "body": "Quick match against a player at your level, with a server that keeps it fair." },
-      "tournaments": { "title": "Tournaments", "body": "Four to eight players, a live bracket and one champion." },
-      "friends": { "title": "Friends and chat", "body": "See who is online, send a message, invite them to a match." },
-      "local": { "title": "Local play", "body": "Two players, one keyboard. Pick the speed and the points to win." }
+      "online": {
+        "title": "Online 1v1",
+        "body": "Quick match against a player at your level, with a server that keeps it fair."
+      },
+      "tournaments": {
+        "title": "Tournaments",
+        "body": "Four to eight players, a live bracket and one champion."
+      },
+      "friends": {
+        "title": "Friends and chat",
+        "body": "See who is online, send a message, invite them to a match."
+      },
+      "local": {
+        "title": "Local play",
+        "body": "Two players, one keyboard. Pick the speed and the points to win."
+      }
     }
   },
   "auth": {
@@ -182,7 +194,9 @@
     "connecting": "Connecting to the game server…",
     "disconnected": "Lost connection to the game server.",
     "alreadyConnected": "You're already in a game in another tab. Close it, then try again.",
-    "roomNotFound": "That room doesn't exist or is full."
+    "roomNotFound": "That room doesn't exist or is full.",
+    "notReady": "Not ready",
+    "readyBadge": "Ready"
   },
   "game": {
     "controlsTitle": "Controls",
@@ -255,7 +269,11 @@
     "editProfile": "Edit profile",
     "memberSince": "Member since {date}",
     "record": "{wins}W · {losses}L",
-    "tabs": { "stats": "Stats", "history": "Match history", "friends": "Friends" },
+    "tabs": {
+      "stats": "Stats",
+      "history": "Match history",
+      "friends": "Friends"
+    },
     "addFriend": "Add friend",
     "requestSent": "Request sent",
     "cancelRequest": "Cancel request",
@@ -271,7 +289,15 @@
     "winLoss": "Wins and losses",
     "noHistory": "No matches yet.",
     "notFound": "Player not found",
-    "notFoundBody": "Check the username and try again."
+    "notFoundBody": "Check the username and try again.",
+    "lastWeeks": "Last 8 weeks",
+    "winsPerWeekAria": "Wins per week, last 8 weeks: {values}",
+    "played": "Played: {n}",
+    "noHistoryBody": "Matches show up here once they are played.",
+    "historyError": "Couldn't load match history",
+    "loadError": "Couldn't load this profile",
+    "friendsPrivate": "Friends list is private",
+    "friendsPrivateBody": "Only {name} can see who they're friends with."
   },
   "friends": {
     "title": "FRIENDS",
@@ -295,7 +321,25 @@
     "unblocked": "{name} is unblocked.",
     "blockedList": "Blocked players",
     "viewProfile": "View profile",
-    "more": "More actions"
+    "more": "More actions",
+    "resultsCount": "{n} players found.",
+    "searchError": "Search failed",
+    "requestsError": "Couldn't load your requests",
+    "loadError": "Couldn't load your friends",
+    "blocksError": "Couldn't load blocked players",
+    "noPending": "No pending requests.",
+    "noBlocked": "You haven't blocked anyone.",
+    "pendingCount": "{n} received requests",
+    "waiting": "Waiting for an answer",
+    "friendsBadge": "Friends",
+    "emptyTitle": "No friends yet",
+    "count": "{n} friends",
+    "messageUser": "Message {name}",
+    "moreFor": "More actions for {name}",
+    "acceptFrom": "Accept request from {name}",
+    "declineFrom": "Decline request from {name}",
+    "cancelTo": "Cancel request to {name}",
+    "unblockUser": "Unblock {name}"
   },
   "chat": {
     "title": "CHAT",
@@ -303,7 +347,12 @@
   },
   "settings": {
     "title": "SETTINGS",
-    "sections": { "profile": "Profile", "security": "Security", "apiKeys": "API keys", "preferences": "Preferences" },
+    "sections": {
+      "profile": "Profile",
+      "security": "Security",
+      "apiKeys": "API keys",
+      "preferences": "Preferences"
+    },
     "avatar": "Avatar",
     "uploadAvatar": "Upload image",
     "uploading": "Uploading…",
@@ -357,7 +406,37 @@
     "reducedMotionBody": "Turn off flicker, pulses and transitions.",
     "sound": "Sound",
     "soundBody": "Paddle hits and score sounds.",
-    "prefsSaved": "Saved automatically."
+    "prefsSaved": "Saved automatically.",
+    "sectionsNav": "Settings sections",
+    "account": "Account",
+    "copyFailed": "Couldn't copy. Select the text and copy it by hand.",
+    "done": "Done",
+    "copyKey": "Copy key",
+    "qrLabel": "QR code for your authenticator app",
+    "verifyEnable": "Verify and turn on",
+    "enable2faTitle": "Turn on two-factor authentication",
+    "disable2faTitle": "Turn off two-factor authentication",
+    "checking": "Checking…",
+    "noSessions": "No active sessions.",
+    "deviceOn": "{browser} on {os}",
+    "revokeSessionTitle": "Revoke this session?",
+    "revokeSessionBody": "{device} will be logged out.",
+    "revokeOthersTitle": "Log out everywhere else?",
+    "revokeOthersBody": "Every other device will be logged out. This device stays logged in.",
+    "othersRevoked": "Logged out of every other session.",
+    "revoking": "Revoking…",
+    "createKeyTitle": "Create an API key",
+    "yourKeys": "Your keys",
+    "keyNamePlaceholder": "e.g. stats-bot",
+    "creating": "Creating…",
+    "tooManyKeys": "You can have up to 10 keys. Revoke one first.",
+    "keyRevoked": "Key revoked.",
+    "revokeKeyTitle": "Revoke API key?",
+    "colKey": "Key",
+    "colCreated": "Created",
+    "colLastUsed": "Last used",
+    "noKeysBody": "Create one above to use the public API.",
+    "languageBody": "Applies to the whole app."
   },
   "legal": {
     "contents": "Contents",

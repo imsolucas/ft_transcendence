@@ -1,7 +1,7 @@
 
 import type { Player, PlayerStorage, GameConfig } from 'shared';
-import type { Room } from '../types/room.types.js';
-import type { GameServer } from './GameServer.js';
+import type { Room } from '../types/room.types.ts';
+import type { GameServer } from './GameServer.ts';
 import { randomUUID } from 'crypto';
 
 export class RoomManager {

@@ -1,5 +1,5 @@
-import type { PlayerInputs } from "../../types/pong.types.js";
-import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
+import type { PlayerInputs } from "../../types/pong.types.ts";
+import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.ts";
 
 // State for when either player wins by reaching the required point limit, player should be promted to play again or go to menu (when that is implemented)
 export default class GameOverState extends BaseGameState {
@@ -13,7 +13,7 @@ export default class GameOverState extends BaseGameState {
 
     enter(): void {
         let i = 0; 
-        while(this.getPlayerScore()[i] < this.context.config.pointsToWin) {
+        while((this.getPlayerScore()[i] ?? this.context.config.pointsToWin) < this.context.config.pointsToWin) {
             i++;
         }
         this.#winningPlayer = i + 1;

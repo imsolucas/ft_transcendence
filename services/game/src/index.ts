@@ -2,16 +2,16 @@ import fastify from 'fastify';
 import { Server, type Socket } from 'socket.io';
 import type { GameMessage } from 'shared';
 import type { Player } from 'shared';
-import { config } from './config.js';
-import { resolveSession, type AuthenticatedUser } from './auth/usersClient.js';
-import { resetAllPresence, socketClosed, socketCount, socketOpened } from './presence.js';
-import { InMemoryPlayerStorage } from './storage/playerStorage.js';
-import { MessageBroadcaster } from './websocket/Broadcaster.js';
-import { RoomManager } from './game/roomManager.js';
-import NewMessageHandler from './websocket/MessageHandler.js';
-import TickSytem from './websocket/TickSystem.js';
-import TournamentService from './websocket/TournamentService.js';
-import { setReportLogger } from './utils/reportResults.js';
+import { config } from './config.ts';
+import { resolveSession, type AuthenticatedUser } from './auth/usersClient.ts';
+import { resetAllPresence, socketClosed, socketCount, socketOpened } from './presence.ts';
+import { InMemoryPlayerStorage } from './storage/playerStorage.ts';
+import { MessageBroadcaster } from './websocket/Broadcaster.ts';
+import { RoomManager } from './game/roomManager.ts';
+import NewMessageHandler from './websocket/MessageHandler.ts';
+import TickSytem from './websocket/TickSystem.ts';
+import TournamentService from './websocket/TournamentService.ts';
+import { setReportLogger } from './utils/reportResults.ts';
 
 /**
  * Wraps a Socket.IO socket in the small WebSocket-like surface the game code uses
@@ -114,6 +114,11 @@ io.on('connection', (socket) => {
   // Per-socket rate limit (fixed one-second window)
   let windowStart = Date.now();
   let messagesInWindow = 0;
+
+  // Latency probe for the client's connection-quality indicator
+  socket.on('latency', (ack: unknown) => {
+    if (typeof ack === 'function') ack();
+  });
 
   socket.on('message', (raw: unknown) => {
     const now = Date.now();

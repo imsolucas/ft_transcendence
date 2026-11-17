@@ -1,7 +1,7 @@
-import type { GameConfig, PlayerInputs } from "../../types/pong.types.js";
-import type { Border } from "../components/Hitbox.js";
-import type { Vector } from "../components/Vector.js";
-import Entity from "./Entity.js";
+import type { GameConfig, PlayerInputs } from "../../types/pong.types.ts";
+import type { Border } from "../components/Hitbox.ts";
+import type { Vector } from "../components/Vector.ts";
+import Entity from "./Entity.ts";
 
 export default class Paddle extends Entity {
     #size: Vector;

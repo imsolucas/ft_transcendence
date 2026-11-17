@@ -1,0 +1,270 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
+import type { GameConfig, GameState, PlayerInputs } from "shared";
+import { GameEngine } from "shared/game-engine/GameEngine";
+import { baseGameConfig } from "@/lib/game/config";
+import { useI18n } from "@/i18n/I18nProvider";
+import { usePrefs } from "@/lib/prefs";
+import { Button } from "@/components/ui/button";
+import { FormField, Input } from "@/components/ui/form";
+import { Kbd, Panel, Segmented } from "@/components/ui/primitives";
+import { Court } from "@/components/game/court";
+import { ControlsCard, CountdownOverlay, GameMenu, MatchEnd, ScoreBoard } from "@/components/game/hud";
+
+type Speed = "slow" | "normal" | "fast";
+const BALL: Record<Speed, number> = { slow: 35, normal: 50, fast: 70 };
+const PADDLE: Record<Speed, number> = { slow: 35, normal: 47, fast: 65 };
+const POINTS = [5, 7, 11] as const;
+const DEFAULTS = { p1: "Player 1", p2: "Player 2", ball: "normal" as Speed, paddle: "normal" as Speed, points: 11 };
+
+interface Setup {
+  p1: string;
+  p2: string;
+  ball: Speed;
+  paddle: Speed;
+  points: number;
+}
+
+function buildConfig(s: Setup): GameConfig {
+  const base = baseGameConfig();
+  return {
+    ...base,
+    playerNames: [s.p1.trim(), s.p2.trim()],
+    pointsToWin: s.points,
+    ballConfig: { ...base.ballConfig, speed: BALL[s.ball] },
+    paddleConfig: { ...base.paddleConfig, speed: PADDLE[s.paddle] },
+  };
+}
+
+export function LocalGame() {
+  const [setup, setSetup] = useState<Setup | null>(null);
+  const [round, setRound] = useState(0);
+  if (!setup) return <SetupForm onStart={setSetup} />;
+  return <LocalMatch key={round} setup={setup} onPlayAgain={() => setRound((r) => r + 1)} onChangeSetup={() => setSetup(null)} />;
+}
+
+function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
+  const { t, href } = useI18n();
+  const [s, setS] = useState<Setup>({ ...DEFAULTS, p1: t("local.player1").replace(/ name$/i, ""), p2: t("local.player2").replace(/ name$/i, "") });
+  const errors = {
+    p1: !s.p1.trim() || s.p1.trim().length > 16 ? t("local.nameRequired") : undefined,
+    p2: !s.p2.trim() || s.p2.trim().length > 16 ? t("local.nameRequired") : s.p1.trim().toLowerCase() === s.p2.trim().toLowerCase() ? t("local.namesDiffer") : undefined,
+  };
+  const valid = !errors.p1 && !errors.p2;
+  const speedOptions = (["slow", "normal", "fast"] as const).map((v) => ({ value: v, label: t(`local.${v}`) }));
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (valid) onStart(s);
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1120px] px-4 py-8 md:px-8">
+      <Link href={href("/")} className="row t-label mb-4 no-underline text-fg-muted">
+        <ArrowLeft className="ico" aria-hidden /> {t("common.back")}
+      </Link>
+      <h1 className="pix pix-md mb-1">{t("local.title")}</h1>
+      <p className="muted mb-6">{t("local.subtitle")}</p>
+      <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_340px]" noValidate>
+        <div className="stack stack-5">
+          <Panel>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {(["p1", "p2"] as const).map((k, i) => (
+                <div key={k} className="stack">
+                  <FormField label={t(i === 0 ? "local.player1" : "local.player2")} error={errors[k]}>
+                    {({ id, describedBy, invalid }) => (
+                      <Input id={id} aria-describedby={describedBy} invalid={invalid} maxLength={16} value={s[k]} onChange={(e) => setS({ ...s, [k]: e.target.value })} />
+                    )}
+                  </FormField>
+                  <div className="row">
+                    {i === 0 ? (
+                      <>
+                        <Kbd>W</Kbd>
+                        <Kbd>S</Kbd>
+                      </>
+                    ) : (
+                      <>
+                        <Kbd>↑</Kbd>
+                        <Kbd>↓</Kbd>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+          <Panel>
+            <div className="stack stack-5">
+              <Row label={t("local.ballSpeed")} hint={t("local.default", { value: t("local.normal") })}>
+                <Segmented label={t("local.ballSpeed")} value={s.ball} onChange={(v) => setS({ ...s, ball: v })} options={speedOptions} />
+              </Row>
+              <Row label={t("local.paddleSpeed")} hint={t("local.default", { value: t("local.normal") })}>
+                <Segmented label={t("local.paddleSpeed")} value={s.paddle} onChange={(v) => setS({ ...s, paddle: v })} options={speedOptions} />
+              </Row>
+              <Row label={t("local.pointsToWin")} hint={t("local.default", { value: 11 })}>
+                <Segmented label={t("local.pointsToWin")} value={s.points} onChange={(v) => setS({ ...s, points: v })} options={POINTS.map((p) => ({ value: p, label: String(p) }))} />
+              </Row>
+            </div>
+          </Panel>
+        </div>
+        <Panel className="h-fit lg:sticky lg:top-6" title={t("local.summary")}>
+          <dl className="stack stack-3 mb-5">
+            <SummaryRow k={t("local.player1")} v={s.p1 || "—"} />
+            <SummaryRow k={t("local.player2")} v={s.p2 || "—"} />
+            <SummaryRow k={t("local.ballSpeed")} v={t(`local.${s.ball}`)} />
+            <SummaryRow k={t("local.paddleSpeed")} v={t(`local.${s.paddle}`)} />
+            <SummaryRow k={t("local.pointsToWin")} v={String(s.points)} />
+          </dl>
+          <div className="stack stack-3">
+            <Button type="submit" variant="primary" glow="sm" block disabled={!valid}>
+              {t("local.start")}
+            </Button>
+            {!valid && <p className="field-hint">{errors.p1 ?? errors.p2}</p>}
+            <Button type="button" variant="ghost" block onClick={() => setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points })}>
+              <RotateCcw className="ico" aria-hidden />
+              {t("local.reset")}
+            </Button>
+          </div>
+        </Panel>
+      </form>
+    </div>
+  );
+}
+
+function Row({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="t-strong">{label}</p>
+        <p className="t-caption subtle">{hint}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SummaryRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="row between">
+      <dt className="muted">{k}</dt>
+      <dd className="t-strong truncate">{v}</dd>
+    </div>
+  );
+}
+
+function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPlayAgain: () => void; onChangeSetup: () => void }) {
+  const { t, href } = useI18n();
+  const { prefs, setPref } = usePrefs();
+  const [config] = useState(() => buildConfig(setup));
+  const [engine] = useState(() => new GameEngine(structuredClone(config)));
+  const state = useRef<GameState | null>(null);
+  const [phase, setPhase] = useState<"countdown" | "playing" | "over">("countdown");
+  const [scores, setScores] = useState<[number, number]>([0, 0]);
+  const [seconds, setSeconds] = useState(0);
+  const [menu, setMenu] = useState(false);
+  const [showControls, setShowControls] = useState(!prefs.seenControls);
+
+  // Simulation loop (paused while the menu is open)
+  useEffect(() => {
+    if (phase !== "playing" || menu) return;
+    let raf = 0;
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      engine.tick(dt);
+      const s = engine.getGameState();
+      state.current = s;
+      setScores((prev) => (prev[0] === s.scores[0] && prev[1] === s.scores[1] ? prev : [s.scores[0], s.scores[1]]));
+      if (s.name === "GameOverState") {
+        setPhase("over");
+        return;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, menu, engine]);
+
+  useEffect(() => {
+    if (phase !== "playing" || menu) return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase, menu]);
+
+  useEffect(() => {
+    // Esc toggles the menu (the menu dialog leaves Esc to us)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && phase === "playing") setMenu((m) => !m);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase]);
+
+  const getState = useCallback(() => state.current ?? engine.getGameState(), [engine]);
+  const onInputs = useCallback((p1: PlayerInputs, p2: PlayerInputs) => engine.input(p1, p2), [engine]);
+  const onFirstMove = useCallback(() => {
+    setShowControls(false);
+    setPref("seenControls", true);
+  }, [setPref]);
+  const startPlaying = useCallback(() => setPhase("playing"), []);
+
+  if (phase === "over") {
+    const p1Won = scores[0] > scores[1];
+    return (
+      <MatchEnd
+        won={null}
+        title={t("game.winner", { name: p1Won ? setup.p1 : setup.p2 })}
+        scores={scores}
+        leftName={setup.p1}
+        rightName={setup.p2}
+        primary={
+          <Button variant="primary" glow="md" size="lg" onClick={onPlayAgain}>
+            {t("game.playAgain")}
+          </Button>
+        }
+        secondary={
+          <Button size="lg" onClick={onChangeSetup}>
+            {t("local.title").charAt(0) + t("local.title").slice(1).toLowerCase()}
+          </Button>
+        }
+        note={
+          <Link href={href("/")} className="t-label">
+            {t("common.back")}
+          </Link>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-dvh flex-col">
+      <ScoreBoard
+        left={{ name: setup.p1, meta: "W / S" }}
+        right={{ name: setup.p2, meta: "↑ / ↓" }}
+        scores={scores}
+        seconds={seconds}
+        mode={t("game.first", { n: setup.points })}
+        onMenu={() => setMenu(true)}
+      />
+      <div className="relative flex-1 p-4">
+        <Court config={config} getState={getState} youSide={null} controls="local" onInputs={onInputs} paused={phase !== "playing" || menu} onFirstMove={onFirstMove} />
+        {phase === "countdown" && <CountdownOverlay onDone={startPlaying} />}
+        {phase === "playing" && showControls && <ControlsCard local onClose={onFirstMove} />}
+      </div>
+      <GameMenu
+        open={menu}
+        onOpenChange={setMenu}
+        online={false}
+        onShowControls={() => {
+          setMenu(false);
+          setShowControls(true);
+        }}
+        onForfeit={onChangeSetup}
+      />
+    </div>
+  );
+}

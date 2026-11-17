@@ -1,9 +1,9 @@
 
 import type { GameConfig, GameStartMessage, GameState, GameStateMessage, PlayerInputMessage, PlayerInputs } from 'shared';
 import { GameEngine } from 'shared';
-import type { Room } from '../types/room.types.js';
-import { MessageBroadcaster } from "../websocket/Broadcaster.js";
-import { RoomManager } from './roomManager.js';
+import type { Room } from '../types/room.types.ts';
+import { MessageBroadcaster } from "../websocket/Broadcaster.ts";
+import { RoomManager } from './roomManager.ts';
 
 export class GameServer {
   readonly id: string;

@@ -1,4 +1,4 @@
-import type { Vector } from "./Vector.js";
+import type { Vector } from "./Vector.ts";
 
 export interface Hitbox {
     width: number,

@@ -1,7 +1,7 @@
-import type { GameConfig } from "../../types/pong.types.js";
-import type { Hitbox } from "../components/Hitbox.js";
-import type { Sprite } from "../components/Sprite.js";
-import type { Vector } from "../components/Vector.js";
+import type { GameConfig } from "../../types/pong.types.ts";
+import type { Hitbox } from "../components/Hitbox.ts";
+import type { Sprite } from "../components/Sprite.ts";
+import type { Vector } from "../components/Vector.ts";
 
 export default abstract class Entity {
 

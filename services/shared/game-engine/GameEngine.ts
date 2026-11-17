@@ -1,14 +1,14 @@
-import type { GameConfig, GameState, PlayerInputs } from "../types/pong.types.js";
-import Ball from "./entities/Ball.js";
-import Paddle from "./entities/Paddle.js";
-import EntityManager from "./managers/EntityManager.js";
-import { StateManager } from "./managers/StateManager.js";
-import type { GameContext, StateName } from "./states/BaseGameState.js";
-import GameOverState from "./states/GameOverState.js";
-import GameStartState from "./states/GameStartState.js";
-import PlayingState from "./states/PlayingState.js";
-import ScoredState from "./states/ScoredState.js";
-import { defaults } from "./defaults.js";
+import type { GameConfig, GameState, PlayerInputs } from "../types/pong.types.ts";
+import Ball from "./entities/Ball.ts";
+import Paddle from "./entities/Paddle.ts";
+import EntityManager from "./managers/EntityManager.ts";
+import { StateManager } from "./managers/StateManager.ts";
+import type { GameContext, StateName } from "./states/BaseGameState.ts";
+import GameOverState from "./states/GameOverState.ts";
+import GameStartState from "./states/GameStartState.ts";
+import PlayingState from "./states/PlayingState.ts";
+import ScoredState from "./states/ScoredState.ts";
+import { defaults } from "./defaults.ts";
 
 export class GameEngine {
     #config!: GameConfig;

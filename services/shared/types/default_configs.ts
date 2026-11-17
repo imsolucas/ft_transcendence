@@ -1,6 +1,6 @@
-import type { BallConfig, PaddleConfig } from "shared/index";
-import { defaults } from "shared";
-import type { GameConfig } from "./pong.types.js";
+import type { BallConfig, PaddleConfig } from "./pong.types.ts";
+import { defaults } from "../game-engine/defaults.ts";
+import type { GameConfig } from "./pong.types.ts";
 
 export namespace default_config {
     export const paddle: PaddleConfig = {

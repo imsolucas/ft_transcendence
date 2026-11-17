@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { gameEnded } from '../presence.js';
-import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, type TournamentRoundEndMessage } from "shared/index.js";
-import type { RoomManager } from "../game/roomManager.js";
-import type { MessageBroadcaster } from "./Broadcaster.js";
-import type TournamentService from "./TournamentService.js";
-import { reportMatchResult, reportTournamentResult } from "../utils/reportResults.js";
+import { gameEnded } from '../presence.ts';
+import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, type TournamentRoundEndMessage } from "shared/index.ts";
+import type { RoomManager } from "../game/roomManager.ts";
+import type { MessageBroadcaster } from "./Broadcaster.ts";
+import type TournamentService from "./TournamentService.ts";
+import { reportMatchResult, reportTournamentResult } from "../utils/reportResults.ts";
 
 export default class TickSystem {
     private lastTime = performance.now();
@@ -60,8 +60,8 @@ export default class TickSystem {
                             player2Id: challenger.id,
                             player1DisplayName: king.name,
                             player2DisplayName: challenger.name,
-                            player1Score: scores[0],
-                            player2Score: scores[1],
+                            player1Score: scores[0] ?? 0,
+                            player2Score: scores[1] ?? 0,
                             winnerId: winnerId,
                             played_at: new Date(Date.now() - 60000).toISOString(), // Approximate match start
                             end_at: new Date().toISOString()
@@ -153,8 +153,8 @@ export default class TickSystem {
                     // Report match result to users service
                     const gameState = room.gameServer.getGameState();
                     const scores = gameState.scores || [0, 0];
-                    const player1 = this.roomManager.getPlayer(room.playerIds[0]);
-                    const player2 = this.roomManager.getPlayer(room.playerIds[1]);
+                    const player1 = room.playerIds[0] ? this.roomManager.getPlayer(room.playerIds[0]) : undefined;
+                    const player2 = room.playerIds[1] ? this.roomManager.getPlayer(room.playerIds[1]) : undefined;
 
                     if (player1 && player2) {
                         const matchResult = {

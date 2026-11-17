@@ -1,7 +1,7 @@
-import type { BallConfig, GameConfig } from "../../types/pong.types.js";
-import type { Border } from "../components/Hitbox.js";
-import type { Vector } from "../components/Vector.js";
-import Entity from "./Entity.js";
+import type { BallConfig, GameConfig } from "../../types/pong.types.ts";
+import type { Border } from "../components/Hitbox.ts";
+import type { Vector } from "../components/Vector.ts";
+import Entity from "./Entity.ts";
 
 export default class Ball extends Entity {
     #size: Vector;

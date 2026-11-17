@@ -1,5 +1,5 @@
-import type { GameMessage } from 'shared/index.js';
-import type { RoomManager } from '../game/roomManager.js';
+import type { GameMessage } from 'shared/index.ts';
+import type { RoomManager } from '../game/roomManager.ts';
 
 export class MessageBroadcaster {
   constructor(private roomManager: RoomManager) {}

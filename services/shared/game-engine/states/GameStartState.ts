@@ -1,5 +1,5 @@
-import type { PlayerInputs } from "../../types/pong.types.js";
-import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.js";
+import type { PlayerInputs } from "../../types/pong.types.ts";
+import { BaseGameState, type GameContext, type StateResult } from "./BaseGameState.ts";
 
 // State for when the game starts, awaits input from the player to start the game (should probably be a nicer menu in the future)
 export default class GameStartState extends BaseGameState{
@@ -11,11 +11,11 @@ export default class GameStartState extends BaseGameState{
     }
 
     enter(): void {
-        this.getEntityManager().getPaddles()[0].setPos({
+        this.getEntityManager().getPaddles()[0]!.setPos({
             x: this.context.config.paddleConfig.size!.x,
             y: this.context.config.courtSize!.y / 2
         })
-        this.getEntityManager().getPaddles()[1].setPos({
+        this.getEntityManager().getPaddles()[1]!.setPos({
             x: this.context.config.courtSize!.x - this.context.config.paddleConfig.size!.x,
             y: this.context.config.courtSize!.y / 2
         })

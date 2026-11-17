@@ -139,6 +139,7 @@ export function Modal({
   children,
   actions,
   forced,
+  ownEscape,
 }: {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -148,6 +149,8 @@ export function Modal({
   actions?: ReactNode;
   /** No Esc, no backdrop close (session expired) */
   forced?: boolean;
+  /** Let the caller own the Escape key (e.g. the in-game menu toggles itself) */
+  ownEscape?: boolean;
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={forced ? undefined : onOpenChange}>
@@ -156,7 +159,7 @@ export function Modal({
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 pointer-events-none">
           <DialogPrimitive.Content
             className="modal pointer-events-auto"
-            onEscapeKeyDown={forced ? (e) => e.preventDefault() : undefined}
+            onEscapeKeyDown={forced || ownEscape ? (e) => e.preventDefault() : undefined}
             onPointerDownOutside={forced ? (e) => e.preventDefault() : undefined}
             onInteractOutside={forced ? (e) => e.preventDefault() : undefined}
             aria-describedby={description ? undefined : undefined}
@@ -198,15 +201,19 @@ export function Switch({
         </label>
         {description && <p className="t-caption subtle">{description}</p>}
       </div>
-      <SwitchPrimitive.Root
-        id={id}
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        className="switch-track relative cursor-pointer data-[state=checked]:border-neon-magenta data-[state=checked]:bg-neon-magenta"
-        style={{ padding: 0 }}
-      >
-        <SwitchPrimitive.Thumb className="block h-4 w-4 translate-x-[3px] rounded-full bg-fg-muted transition-transform data-[state=checked]:translate-x-[23px] data-[state=checked]:bg-on-neon" />
-      </SwitchPrimitive.Root>
+      <span className="row !gap-2">
+        <span className="switch-state" aria-hidden>
+          {checked ? "ON" : "OFF"}
+        </span>
+        <SwitchPrimitive.Root
+          id={id}
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-border-strong bg-bg transition-colors hover:border-fg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg data-[state=checked]:border-neon-magenta data-[state=checked]:bg-neon-magenta"
+        >
+          <SwitchPrimitive.Thumb className="block h-4 w-4 translate-x-[3px] rounded-full bg-fg-muted transition-transform data-[state=checked]:translate-x-[23px] data-[state=checked]:bg-on-neon" />
+        </SwitchPrimitive.Root>
+      </span>
     </div>
   );
 }

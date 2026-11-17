@@ -1,6 +1,6 @@
-import { default_config, type GameConfig, type Player } from "shared/index.js";
-import type { RoomManager } from "../game/roomManager.js";
-import type { Room } from "../types/room.types.js";
+import { default_config, type GameConfig, type Player } from "shared/index.ts";
+import type { RoomManager } from "../game/roomManager.ts";
+import type { Room } from "../types/room.types.ts";
 
 export default class RoomService {
     private standardQueue: Player[] = [];

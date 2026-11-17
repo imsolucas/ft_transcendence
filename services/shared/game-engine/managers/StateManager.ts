@@ -1,5 +1,5 @@
-import type { PlayerInputs } from "../../types/pong.types.js";
-import { BaseGameState, type GameContext, type StateName } from "../states/BaseGameState.js";
+import type { PlayerInputs } from "../../types/pong.types.ts";
+import { BaseGameState, type GameContext, type StateName } from "../states/BaseGameState.ts";
 
 type StateConstructor = new (context: GameContext, stateName: string) => BaseGameState;
 

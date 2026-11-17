@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
 import { Toaster } from "sonner";
@@ -57,20 +57,18 @@ function SessionExpiredModal() {
   );
 }
 
+function subscribeOnline(fn: () => void) {
+  window.addEventListener("online", fn);
+  window.addEventListener("offline", fn);
+  return () => {
+    window.removeEventListener("online", fn);
+    window.removeEventListener("offline", fn);
+  };
+}
+
 function OfflineBanner() {
   const { t } = useI18n();
-  const [online, setOnline] = useState(true);
-  useEffect(() => {
-    setOnline(navigator.onLine);
-    const up = () => setOnline(true);
-    const down = () => setOnline(false);
-    window.addEventListener("online", up);
-    window.addEventListener("offline", down);
-    return () => {
-      window.removeEventListener("online", up);
-      window.removeEventListener("offline", down);
-    };
-  }, []);
+  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   if (online) return null;
   return (
     <div className="banner sticky top-0 z-30" role="status">
@@ -90,7 +88,9 @@ export function Providers({ locale, dict, children }: { locale: Locale; dict: Di
         <SWRConfig value={{ fetcher }}>
           <OfflineBanner />
           {children}
-          <SessionExpiredModal />
+          <Suspense>
+            <SessionExpiredModal />
+          </Suspense>
           <Toaster
             position="bottom-right"
             toastOptions={{
