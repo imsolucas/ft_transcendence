@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/publicControllers.ts";
 import { apiKeyAuth } from "../middleware/apiKeyAuth.ts";
 import { apiKeyRateLimiter } from "../middleware/rateLimiter.ts";
+import { prisma } from "../db/client.ts";
+import { removeFriend, sendFriendRequest } from "../modules/friends/routes.ts";
 
 export default async function registerPublicRoutes(app: FastifyInstance) {
   // Register public routes as a scoped plugin to ensure hooks only apply to these routes
@@ -217,6 +219,7 @@ export default async function registerPublicRoutes(app: FastifyInstance) {
               items: {
                 type: "object",
                 properties: {
+                  rank: { type: "integer" },
                   userId: { type: "integer" },
                   username: { type: "string" },
                   avatar: { type: "string", format: "uri" },
@@ -272,6 +275,131 @@ export default async function registerPublicRoutes(app: FastifyInstance) {
       }
     }
     }, controllers.getPublicUserStats);
+
+    // ---- Acting as the key's owner (read and write) ----
+    const ownerSchema = {
+      type: "object",
+      properties: {
+        id: { type: "integer" },
+        username: { type: "string" },
+        displayName: { type: "string" },
+        avatar: { type: ["string", "null"] },
+        status: { type: "string", enum: ["ONLINE", "OFFLINE", "INGAME"] },
+        createdAt: { type: "string", format: "date-time" },
+      },
+    } as const;
+    const loadOwner = async (id: number) => {
+      const u = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, username: true, displayUsername: true, avatar: true, status: true, created_at: true },
+      });
+      return u && { id: u.id, username: u.username, displayName: u.displayUsername ?? u.username, avatar: u.avatar, status: u.status, createdAt: u.created_at.toISOString() };
+    };
+    const errorBody = { type: "object", properties: { error: { type: "string" } } } as const;
+
+    // GET /api/public/me
+    pluginApp.get("/api/public/me", {
+      schema: {
+        summary: "Get the key owner's profile",
+        tags: ["public"],
+        security: [{ apiKeyAuth: [] }],
+        response: { 200: ownerSchema, 401: errorBody },
+      },
+    }, async (req) => loadOwner(req.apiUser!.id));
+
+    // PUT /api/public/me
+    pluginApp.put("/api/public/me", {
+      schema: {
+        summary: "Update the key owner's display name",
+        description: "The display name is the username with its own casing; a different name must be free. 3-30 characters of letters, digits, _ and .",
+        tags: ["public"],
+        security: [{ apiKeyAuth: [] }],
+        body: {
+          type: "object",
+          additionalProperties: false,
+          required: ["displayName"],
+          properties: { displayName: { type: "string", minLength: 3, maxLength: 30, pattern: "^[A-Za-z0-9_.]+$" } },
+        },
+        response: { 200: ownerSchema, 400: errorBody, 401: errorBody, 409: errorBody },
+      },
+    }, async (req, reply) => {
+      const { displayName } = req.body as { displayName: string };
+      const handle = displayName.toLowerCase();
+      try {
+        await prisma.user.update({
+          where: { id: req.apiUser!.id },
+          data: { username: handle, displayUsername: displayName, name: displayName },
+        });
+      } catch (err: any) {
+        if (err?.code === "P2002") return reply.code(409).send({ error: "That username is taken." });
+        throw err;
+      }
+      return loadOwner(req.apiUser!.id);
+    });
+
+    // GET /api/public/friends
+    pluginApp.get("/api/public/friends", {
+      schema: {
+        summary: "List the key owner's friends",
+        tags: ["public"],
+        security: [{ apiKeyAuth: [] }],
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              friends: { type: "array", items: { type: "object", properties: { username: { type: "string" }, status: { type: "string" }, since: { type: "string", format: "date-time" } } } },
+            },
+          },
+          401: errorBody,
+        },
+      },
+    }, async (req) => {
+      const me = req.apiUser!.id;
+      const rows = await prisma.friendship.findMany({
+        where: { status: "ACCEPTED", OR: [{ requesterId: me }, { addresseeId: me }] },
+        select: { created_at: true, requesterId: true, requester: { select: { username: true, status: true } }, addressee: { select: { username: true, status: true } } },
+        orderBy: { id: "asc" },
+        take: 500,
+      });
+      return {
+        friends: rows.map((r) => {
+          const other = r.requesterId === me ? r.addressee : r.requester;
+          return { username: other.username, status: other.status, since: r.created_at.toISOString() };
+        }),
+      };
+    });
+
+    // POST /api/public/friends
+    pluginApp.post("/api/public/friends", {
+      schema: {
+        summary: "Send a friend request",
+        description: "Same rules as the app: no duplicates, no requests to or from blocked players (answered as not found).",
+        tags: ["public"],
+        security: [{ apiKeyAuth: [] }],
+        body: { type: "object", additionalProperties: false, required: ["username"], properties: { username: { type: "string", minLength: 1, maxLength: 30 } } },
+        response: {
+          201: { type: "object", properties: { id: { type: "integer" }, direction: { type: "string" }, createdAt: { type: "string" }, user: { type: "object", properties: { username: { type: "string" }, displayName: { type: "string" } } } } },
+          400: errorBody, 401: errorBody, 404: errorBody, 409: errorBody,
+        },
+      },
+    }, async (req, reply) => {
+      const outcome = await sendFriendRequest(req.apiUser!.id, (req.body as { username: string }).username);
+      return reply.code(outcome.status as 201 | 400 | 404 | 409).send(outcome.body as never);
+    });
+
+    // DELETE /api/public/friends/:username
+    pluginApp.delete("/api/public/friends/:username", {
+      schema: {
+        summary: "Remove a friend or cancel a pending request",
+        tags: ["public"],
+        security: [{ apiKeyAuth: [] }],
+        params: { type: "object", required: ["username"], properties: { username: { type: "string", minLength: 1, maxLength: 30 } } },
+        response: { 204: { type: "null", description: "Removed." }, 401: errorBody, 404: errorBody },
+      },
+    }, async (req, reply) => {
+      const outcome = await removeFriend(req.apiUser!.id, (req.params as { username: string }).username);
+      return reply.code(outcome.status as 204 | 404).send(outcome.body as never);
+    });
   }, { prefix: "" }); // Empty prefix means routes keep their /api/public/ prefix
 }
 

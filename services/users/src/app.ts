@@ -38,7 +38,11 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(fastifySwagger, {
     openapi: {
-      info: { title: "ft_transcendence users API", version: "2.0.0" },
+      info: {
+        title: "ft_transcendence public API",
+        version: "2.0.0",
+        description: "Authenticate with an API key from Settings > API keys, sent as the X-API-Key header. Limit: 120 requests per minute per key (429 when exceeded). Write endpoints act as the key's owner.",
+      },
       servers: [{ url: config.publicOrigin }],
       components: {
         securitySchemes: {
@@ -46,9 +50,18 @@ export async function buildApp(): Promise<FastifyInstance> {
         },
       },
     },
+    transform: ({ schema, url }) => ({
+      schema: url.startsWith("/api/public/") ? schema : { ...(schema ?? {}), hide: true },
+      url,
+    }),
   });
-  // Served by the service on its internal port only; Caddy does not route /docs.
-  await app.register(fastifySwaggerUi, { routePrefix: "/docs", staticCSP: true });
+  // Public API documentation (only /api/public/* is documented; everything else is hidden).
+  await app.register(fastifySwaggerUi, {
+    routePrefix: "/api/public/docs",
+    staticCSP: true,
+    // Swagger UI sets a few inline styles itself; scripts stay restricted to 'self'
+    transformStaticCSP: (header) => header.replace("style-src 'self' https:", "style-src 'self' https: 'unsafe-inline'"),
+  });
 
   await app.register(dbPlugin);
   await app.register(routes);

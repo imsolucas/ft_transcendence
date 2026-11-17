@@ -1,3 +1,5 @@
+import { topPlayers } from "../modules/gamification/routes.ts";
+import { isDeletedHandle } from "../modules/privacy/routes.ts";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../db/client.ts";
 
@@ -17,8 +19,9 @@ export async function getPublicUserProfile(req: FastifyRequest, reply: FastifyRe
       return reply.code(400).send({ error: "Username is required." });
     }
 
+    if (isDeletedHandle(username.toLowerCase())) return reply.code(404).send({ error: "User not found." });
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: {
         id: true,
         username: true,
@@ -205,62 +208,8 @@ export async function getPublicLeaderboard(req: FastifyRequest, reply: FastifyRe
     const { limit = "50" } = req.query as { limit?: string };
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
-    // Get all users with their match statistics
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        avatar: true,
-        status: true,
-        matchesWon: {
-          select: {
-            id: true,
-          },
-        },
-        matchesAsPlayer1: {
-          select: {
-            id: true,
-            winnerId: true,
-          },
-        },
-        matchesAsPlayer2: {
-          select: {
-            id: true,
-            winnerId: true,
-          },
-        },
-      },
-    });
-
-    // Calculate statistics for each user
-    const leaderboard = users
-      .map((user) => {
-        const wins = user.matchesWon.length;
-        const totalMatches =
-          user.matchesAsPlayer1.length + user.matchesAsPlayer2.length;
-        const losses = totalMatches - wins;
-        const winRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
-
-        return {
-          userId: user.id,
-          username: user.username,
-          avatar: user.avatar,
-          status: user.status,
-          wins,
-          losses,
-          totalMatches,
-          winRate: Math.round(winRate * 100) / 100, // Round to 2 decimal places
-        };
-      })
-      .filter((entry) => entry.totalMatches > 0) // Only include users with matches
-      .sort((a, b) => {
-        // Sort by wins (descending), then by win rate (descending)
-        if (b.wins !== a.wins) {
-          return b.wins - a.wins;
-        }
-        return b.winRate - a.winRate;
-      })
-      .slice(0, limitNum);
+    // ranked in one SQL query (never load every user and sort in JS)
+    const leaderboard = await topPlayers(limitNum);
 
     return reply.send({
       leaderboard,
@@ -284,8 +233,9 @@ export async function getPublicUserStats(req: FastifyRequest, reply: FastifyRepl
       return reply.code(400).send({ error: "Username is required." });
     }
 
+    if (isDeletedHandle(username.toLowerCase())) return reply.code(404).send({ error: "User not found." });
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: {
         id: true,
         username: true,

@@ -104,6 +104,23 @@ const RANKED = Prisma.sql`
          RANK() OVER (ORDER BY wins DESC, wins::float / games DESC, games ASC) AS rank
   FROM totals`;
 
+/** Top players (public API): same ranking as the app's leaderboard. */
+export async function topPlayers(limit: number) {
+  const rows = await prisma.$queryRaw<RankRow[]>`SELECT * FROM (${RANKED}) r ORDER BY rank, id LIMIT ${limit}`;
+  const users = await prisma.user.findMany({
+    where: { id: { in: rows.map((r) => r.id) } },
+    select: { id: true, username: true, avatar: true, status: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return rows.flatMap((r) => {
+    const u = byId.get(r.id);
+    if (!u) return [];
+    const wins = Number(r.wins);
+    const games = Number(r.games);
+    return [{ rank: Number(r.rank), userId: u.id, username: u.username, avatar: u.avatar, status: u.status, wins, losses: games - wins, totalMatches: games, winRate: games ? Math.round((10000 * wins) / games) / 100 : 0 }];
+  });
+}
+
 export default async function gamificationRoutes(app: FastifyInstance) {
   app.get("/leaderboard", { preHandler: requireUser }, async (req): Promise<Leaderboard> => {
     const { page, pageSize, skip } = parsePage(req.query, 20, 50);

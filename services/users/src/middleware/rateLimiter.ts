@@ -89,10 +89,10 @@ export const ipRateLimiter = createRateLimiter({
 });
 
 /**
- * Per-API-key rate limiter (1000 requests per minute)
+ * Per-API-key rate limiter (120 requests per minute, documented in /api/public/docs)
  */
 export const apiKeyRateLimiter = createRateLimiter({
-  max: 1000,
+  max: 120,
   windowMs: 60 * 1000, // 1 minute
   keyGenerator: (req: FastifyRequest) => {
     // Use API key ID if available (set by apiKeyAuth middleware)

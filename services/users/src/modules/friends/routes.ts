@@ -24,54 +24,13 @@ function notFound(reply: FastifyReply, what = "Player not found.") {
   return reply.code(404).send({ error: what });
 }
 
-export default async function friendsRoutes(app: FastifyInstance) {
-  app.addHook("preHandler", requireUser);
+type Outcome = { status: number; body: unknown };
 
-  app.get("/friends", async (req): Promise<PublicUser[]> => {
-    const me = req.user!.id;
-    const rows = await prisma.friendship.findMany({
-      where: { status: "ACCEPTED", OR: [{ requesterId: me }, { addresseeId: me }] },
-      select: {
-        requesterId: true,
-        requester: { select: PUBLIC_USER_SELECT },
-        addressee: { select: PUBLIC_USER_SELECT },
-      },
-      take: 500,
-    });
-    const friends = rows.map((f) => toPublicUser(f.requesterId === me ? f.addressee : f.requester));
-    // online first, then in game, then offline; alphabetical within
-    const rank = { ONLINE: 0, INGAME: 1, OFFLINE: 2 } as const;
-    return friends.sort((a, b) => rank[a.presence] - rank[b.presence] || a.username.localeCompare(b.username));
-  });
-
-  app.get("/friends/requests", async (req): Promise<FriendRequest[]> => {
-    const me = req.user!.id;
-    const rows = await prisma.friendship.findMany({
-      where: { status: "PENDING", OR: [{ requesterId: me }, { addresseeId: me }] },
-      orderBy: [{ created_at: "desc" }, { id: "desc" }],
-      take: 200,
-      select: {
-        id: true,
-        requesterId: true,
-        created_at: true,
-        requester: { select: PUBLIC_USER_SELECT },
-        addressee: { select: PUBLIC_USER_SELECT },
-      },
-    });
-    return rows.map((r) => ({
-      id: r.id,
-      direction: r.requesterId === me ? "sent" : "received",
-      user: toPublicUser(r.requesterId === me ? r.addressee : r.requester),
-      createdAt: r.created_at.toISOString(),
-    }));
-  });
-
-  app.post("/friends/requests", { schema: { body: usernameBody } }, async (req, reply) => {
-    const me = req.user!.id;
-    const target = await findUser((req.body as { username: string }).username);
-    if (!target) return notFound(reply);
-    if (target.id === me) return reply.code(400).send({ error: "You can't add yourself." });
-    type Outcome = { status: number; body: unknown };
+/** Sends a friend request from `me` (shared by the app and the public API). */
+export async function sendFriendRequest(me: number, username: string): Promise<Outcome> {
+    const target = await findUser(username);
+    if (!target) return { status: 404, body: { error: "Player not found." } };
+    if (target.id === me) return { status: 400, body: { error: "You can't add yourself." } };
     // Check + create in one serializable transaction so A→B and B→A (or a request racing a
     // block) can't both succeed. A serialization failure (P2034) means "try again".
     const run = () =>
@@ -126,13 +85,76 @@ export default async function friendsRoutes(app: FastifyInstance) {
           const from = await prisma.user.findUnique({ where: { id: me }, select: PUBLIC_USER_SELECT });
           if (from) notify([target.id], { type: "friend:request", from: toPublicUser(from) });
         }
-        return reply.code(outcome.status).send(outcome.body);
+        return outcome;
       } catch (err: any) {
-        if (err?.code === "P2002") return reply.code(409).send({ error: "Request already sent." });
+        if (err?.code === "P2002") return { status: 409, body: { error: "Request already sent." } };
         if (err?.code !== "P2034") throw err;
       }
     }
-    return reply.code(409).send({ error: "Please try again." });
+    return { status: 409, body: { error: "Please try again." } };
+}
+
+/** Removes a friend, or cancels a pending request either way (shared by the app and the public API). */
+export async function removeFriend(me: number, username: string): Promise<Outcome> {
+  const target = await findUser(username);
+  if (!target) return { status: 404, body: { error: "Player not found." } };
+  const deleted = await prisma.friendship.deleteMany({
+    where: {
+      status: { in: ["ACCEPTED", "PENDING"] },
+      OR: [
+        { requesterId: me, addresseeId: target.id },
+        { requesterId: target.id, addresseeId: me },
+      ],
+    },
+  });
+  return deleted.count ? { status: 204, body: undefined } : { status: 404, body: { error: "You're not friends." } };
+}
+
+export default async function friendsRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", requireUser);
+
+  app.get("/friends", async (req): Promise<PublicUser[]> => {
+    const me = req.user!.id;
+    const rows = await prisma.friendship.findMany({
+      where: { status: "ACCEPTED", OR: [{ requesterId: me }, { addresseeId: me }] },
+      select: {
+        requesterId: true,
+        requester: { select: PUBLIC_USER_SELECT },
+        addressee: { select: PUBLIC_USER_SELECT },
+      },
+      take: 500,
+    });
+    const friends = rows.map((f) => toPublicUser(f.requesterId === me ? f.addressee : f.requester));
+    // online first, then in game, then offline; alphabetical within
+    const rank = { ONLINE: 0, INGAME: 1, OFFLINE: 2 } as const;
+    return friends.sort((a, b) => rank[a.presence] - rank[b.presence] || a.username.localeCompare(b.username));
+  });
+
+  app.get("/friends/requests", async (req): Promise<FriendRequest[]> => {
+    const me = req.user!.id;
+    const rows = await prisma.friendship.findMany({
+      where: { status: "PENDING", OR: [{ requesterId: me }, { addresseeId: me }] },
+      orderBy: [{ created_at: "desc" }, { id: "desc" }],
+      take: 200,
+      select: {
+        id: true,
+        requesterId: true,
+        created_at: true,
+        requester: { select: PUBLIC_USER_SELECT },
+        addressee: { select: PUBLIC_USER_SELECT },
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      direction: r.requesterId === me ? "sent" : "received",
+      user: toPublicUser(r.requesterId === me ? r.addressee : r.requester),
+      createdAt: r.created_at.toISOString(),
+    }));
+  });
+
+  app.post("/friends/requests", { schema: { body: usernameBody } }, async (req, reply) => {
+    const outcome = await sendFriendRequest(req.user!.id, (req.body as { username: string }).username);
+    return reply.code(outcome.status).send(outcome.body);
   });
 
   app.post("/friends/requests/:id/accept", { schema: { params: ID_PARAMS } }, async (req, reply) => {

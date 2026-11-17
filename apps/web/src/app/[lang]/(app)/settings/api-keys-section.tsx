@@ -66,7 +66,12 @@ export function ApiKeysSection() {
     <div className="stack stack-5">
       <Panel title={t("settings.createKeyTitle")}>
         <div className="stack stack-4">
-          <p className="muted">{t("settings.apiKeysBody")}</p>
+          <p className="muted">
+            {t("settings.apiKeysBody")}{" "}
+            <a href="/api/public/docs/" target="_blank" rel="noopener">
+              {t("settings.apiDocs")}
+            </a>
+          </p>
           <form className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-2" onSubmit={create} noValidate>
             <FormField className="grow" label={t("settings.keyName")} error={nameError}>
               {({ id, describedBy, invalid }) => (

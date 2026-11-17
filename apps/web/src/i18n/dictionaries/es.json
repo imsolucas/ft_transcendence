@@ -489,7 +489,8 @@
     "colCreated": "Creada",
     "colLastUsed": "Último uso",
     "noKeysBody": "Crea una arriba para usar la API pública.",
-    "languageBody": "Se aplica a toda la aplicación."
+    "languageBody": "Se aplica a toda la aplicación.",
+    "apiDocs": "Consulta la documentación de la API."
   },
   "legal": {
     "contents": "Contenido",
