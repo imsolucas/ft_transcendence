@@ -1,6 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma as db } from "../../client.ts";
 
-const db = new PrismaClient();
 
 export async function seedMatchHistory() {
   // Example users (replace with actual user IDs from your Users table)

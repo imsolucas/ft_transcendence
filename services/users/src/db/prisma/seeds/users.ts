@@ -1,29 +1,26 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { auth } from "../../../auth/auth.ts";
+import { prisma } from "../../client.ts";
 
-const db = new PrismaClient();
+// Dev accounts. Passwords meet the 8-character minimum; sign in with username or email.
+export const DEV_USERS = [
+  { username: "Alice", email: "alice@example.com", password: "alice-dev-1", avatar: "https://i.pravatar.cc/150?u=alice" },
+  { username: "Bob", email: "bob@example.com", password: "bob-dev-22", avatar: "https://i.pravatar.cc/150?u=bob" },
+  { username: "Charlie", email: "charlie@example.com", password: "charlie-dev-3", avatar: "https://i.pravatar.cc/150?u=charlie" },
+  { username: "Donald", email: "donald@example.com", password: "donald-dev-4", avatar: "https://i.pravatar.cc/150?u=donald" },
+];
 
 export async function seedUsers() {
-  const rawUsers = [
-    { username: "Alice", email: "alice@example.com", password: "1111", avatar: "https://i.pravatar.cc/150?u=alice" },
-    { username: "Bob", email: "bob@example.com", password: "2222", avatar: "https://i.pravatar.cc/150?u=bob" },
-    { username: "Charlie", email: "charlie@example.com", password: "3333", avatar: "https://i.pravatar.cc/150?u=charlie" },
-    { username: "Donald", email: "donald@example.com", password: "4444", avatar: "https://i.pravatar.cc/150?u=donald" },
-  ];
-
-  const users = await Promise.all(
-    rawUsers.map(async (u) => ({ ...u, password: await bcrypt.hash(u.password, 10) }))
-  )
-
-  for (const user of users) {
-    await db.user.upsert({
-      where: { email: user.email },
-      update: user,
-      create: user,
+  // Created through Better Auth so passwords are hashed and stored exactly as sign-in expects.
+  for (const u of DEV_USERS) {
+    const existing = await prisma.user.findUnique({ where: { email: u.email }, select: { id: true } });
+    if (existing) {
+      console.log("User exists:", u.email);
+      continue;
+    }
+    await auth.api.signUpEmail({
+      body: { email: u.email, password: u.password, name: u.username, username: u.username, displayUsername: u.username, image: u.avatar },
     });
-    console.log("Upserted user:", user.email);
+    console.log("Created user:", u.email);
   }
-
-  const all = await db.user.findMany();
-  console.log("Users in DB:", all.length);
+  console.log("Users in DB:", await prisma.user.count());
 }

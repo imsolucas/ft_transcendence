@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../db/client.ts";
-import { safeEqual, sha256 } from "../auth/tokens.ts";
+import { safeEqual, sha256 } from "../auth/crypto.ts";
 
 // Keys look like ft_<12 hex prefix>_<43 base64url secret>
 const API_KEY_PATTERN = /^ft_([0-9a-f]{12})_([A-Za-z0-9_-]{43})$/;

@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,25 +12,30 @@ model User {
   id           Int        @id @default(autoincrement())
   username     String     @unique
   email        String     @unique
-  password     String
-  avatar       String
+  avatar       String? // null = default avatar (initials)
   status       UserStatus @default(OFFLINE)
   created_at   DateTime   @default(now())
   last_updated DateTime   @updatedAt
 
-  is2FAEnabled Boolean    @default(false)
-  twoFASecret  String?
-
   sentFriendships     Friendship[] @relation("SentFriendships")
   receivedFriendships Friendship[] @relation("ReceivedFriendships")
 
-  matchesAsPlayer1 Match[] @relation("Player1Matches")
-  matchesAsPlayer2 Match[] @relation("Player2Matches")
-  matchesWon Match[] @relation("Match_winner")
+  matchesAsPlayer1  Match[]            @relation("Player1Matches")
+  matchesAsPlayer2  Match[]            @relation("Player2Matches")
+  matchesWon        Match[]            @relation("Match_winner")
   tournamentPlayers TournamentPlayer[] @relation("TournamentPlayers")
-  tournamentsWon Tournament[] @relation("Tournament_winner")
-  refreshTokens RefreshToken[] @relation("RefreshTokens")
-  apiKeys ApiKey[] @relation("UserApiKeys")
+  tournamentsWon    Tournament[]       @relation("Tournament_winner")
+  apiKeys           ApiKey[]           @relation("UserApiKeys")
+  blocksMade        Block[]            @relation("Blocker")
+  blockedBy         Block[]            @relation("Blocked")
+
+  name             String
+  emailVerified    Boolean     @default(false)
+  displayUsername  String?
+  twoFactorEnabled Boolean?    @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  twofactors       TwoFactor[]
 
   @@map("Users")
 }
@@ -48,54 +53,57 @@ model Friendship {
   created_at DateTime         @default(now())
 
   @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
   @@map("Friendships")
 }
 
 model Match {
-  id           Int        @id @default(autoincrement())
+  id                 Int      @id @default(autoincrement())
   // Idempotency key sent by the game service; a retried report with the same key is a no-op
-  externalId   String?    @unique
-  tournamentId Int?
-  player1Id    Int
-  player2Id    Int
-  player1      User       @relation("Player1Matches", fields: [player1Id], references: [id])
-  player2      User       @relation("Player2Matches", fields: [player2Id], references: [id])
-  player1Score Int
-  player2Score Int
+  externalId         String?  @unique
+  tournamentId       Int?
+  player1Id          Int
+  player2Id          Int
+  player1            User     @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2            User     @relation("Player2Matches", fields: [player2Id], references: [id])
+  player1Score       Int
+  player2Score       Int
   player1DisplayName String
   player2DisplayName String
-  winnerId     Int?
-  winner       User? @relation("Match_winner", fields: [winnerId], references: [id])
-  played_at    DateTime   @default(now())
-  end_at       DateTime
+  winnerId           Int?
+  winner             User?    @relation("Match_winner", fields: [winnerId], references: [id])
+  played_at          DateTime @default(now())
+  end_at             DateTime
 
-  tournament   Tournament? @relation("TournamentMatches", fields: [tournamentId], references: [id])
+  tournament Tournament? @relation("TournamentMatches", fields: [tournamentId], references: [id])
 
+  @@index([player1Id, played_at])
+  @@index([player2Id, played_at])
   @@map("Matches")
 }
 
 model Tournament {
-  id        Int      @id @default(autoincrement())
+  id         Int                @id @default(autoincrement())
   // Idempotency key sent by the game service (a UUID per tournament run)
-  externalId String? @unique
-  name      String
-  players   TournamentPlayer[] @relation("TournamentPlayers")
-  matches   Match[]  @relation("TournamentMatches")
-  winnerId  Int?
-  winner    User?    @relation("Tournament_winner", fields: [winnerId], references: [id])
-  start_at  DateTime @default(now())
-  end_at    DateTime?
+  externalId String?            @unique
+  name       String
+  players    TournamentPlayer[] @relation("TournamentPlayers")
+  matches    Match[]            @relation("TournamentMatches")
+  winnerId   Int?
+  winner     User?              @relation("Tournament_winner", fields: [winnerId], references: [id])
+  start_at   DateTime           @default(now())
+  end_at     DateTime?
 
   @@map("Tournaments")
 }
 
 model TournamentPlayer {
-  id           Int      @id @default(autoincrement())
+  id           Int @id @default(autoincrement())
   tournamentId Int
   userId       Int
 
-  tournament   Tournament @relation("TournamentPlayers", fields: [tournamentId], references: [id])
-  user         User       @relation("TournamentPlayers", fields: [userId], references: [id])
+  tournament Tournament @relation("TournamentPlayers", fields: [tournamentId], references: [id])
+  user       User       @relation("TournamentPlayers", fields: [userId], references: [id])
 
   @@unique([tournamentId, userId])
   @@map("TournamentPlayers")
@@ -113,50 +121,96 @@ enum FriendshipStatus {
   REJECTED
 }
 
-// Opaque refresh tokens, stored as SHA-256. Rotated on every use; all rows of one login
-// share a familyId so reuse of a rotated token can revoke the whole family.
-model RefreshToken {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  tokenHash String    @unique
-  familyId  String
-  expiresAt DateTime
-  createdAt DateTime  @default(now())
-  used      Boolean   @default(false)
-  // When this token was exchanged; a second use within a few seconds is a benign
-  // multi-tab / reload race, a later one is treated as theft.
-  rotatedAt DateTime?
-  revokedAt DateTime?
-  user      User      @relation("RefreshTokens", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([familyId])
-  @@map("RefreshTokens")
-}
-
-// Revoked access tokens, keyed by JWT `jti`, kept until the token would have expired anyway.
-model TokenBlacklist {
-  id        Int      @id @default(autoincrement())
-  jti       String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([expiresAt])
-  @@map("TokenBlacklist")
-}
-
 // Public API keys look like `ft_<prefix>_<secret>`. Lookup by prefix, then constant-time
 // compare of SHA-256(full key) with keyHash.
+
 model ApiKey {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   userId     Int
-  prefix     String   @unique
-  keyHash    String   @unique
+  prefix     String    @unique
+  keyHash    String    @unique
   name       String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
-  user       User     @relation("UserApiKeys", fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation("UserApiKeys", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ApiKeys")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    Int       @id @default(autoincrement())
+  accountId             String
+  providerId            String
+  userId                Int
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         Int      @id @default(autoincrement())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id                      Int       @id @default(autoincrement())
+  secret                  String
+  backupCodes             String
+  userId                  Int
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+// blocker no longer receives friend requests, chat or invites from blocked
+model Block {
+  id        Int      @id @default(autoincrement())
+  blockerId Int
+  blockedId Int
+  createdAt DateTime @default(now())
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("Blocks")
 }

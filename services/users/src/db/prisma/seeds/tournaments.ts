@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "../../client.ts";
 
 export async function seedTournaments() {
   // These users are already seeded by users.ts
@@ -14,11 +13,12 @@ export async function seedTournaments() {
   // Fetch user IDs by email (guaranteed to exist)
   const allUsers = await prisma.user.findMany({
     where: { email: { in: emails } },
-    select: { id: true, username: true, email: true },
+    select: { id: true, username: true, displayUsername: true, email: true },
   });
 
   // Map usernames to IDs for easy reference
-  const userMap = Object.fromEntries(allUsers.map(u => [u.username, u.id]));
+  // usernames are stored lowercased (Better Auth); key the map by display name
+  const userMap = Object.fromEntries(allUsers.map(u => [u.displayUsername ?? u.username, u.id]));
 
   // Create tournament
   const tournament = await prisma.tournament.create({

@@ -58,16 +58,13 @@ export function createRateLimiter(options: RateLimitOptions) {
 }
 
 /**
- * Auth endpoints (login, signup, 2FA, set-password, refresh, Google): 10 requests per
- * minute per IP per route. req.ip is the real client because app.ts sets trustProxy: 1.
+ * Per-IP limit for our own /api routes (Better Auth limits /api/auth/* itself).
+ * req.ip is the real client because app.ts sets trustProxy to the one proxy (Caddy).
  */
-export const authRateLimiter = createRateLimiter({
-  max: 10,
+export const apiRateLimiter = createRateLimiter({
+  max: 300,
   windowMs: 60 * 1000,
-  keyGenerator: (req: FastifyRequest) => {
-    const ip = req.ip || req.socket.remoteAddress || "unknown";
-    return `rate-limit:auth:${req.routeOptions?.url ?? req.url}:${ip}`;
-  },
+  keyGenerator: (req: FastifyRequest) => `rate-limit:api:${req.ip || "unknown"}`,
 });
 
 /**
@@ -90,7 +87,7 @@ export const apiKeyRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   keyGenerator: (req: FastifyRequest) => {
     // Use API key ID if available (set by apiKeyAuth middleware)
-    const apiKeyId = (req as any).apiKeyId;
+    const apiKeyId = req.apiKeyId;
     if (apiKeyId) {
       return `rate-limit:apikey:${apiKeyId}`;
     }
