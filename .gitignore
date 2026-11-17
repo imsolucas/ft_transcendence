@@ -33,3 +33,6 @@ server.key
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Database / avatar backups (infra/backup)
+backups/

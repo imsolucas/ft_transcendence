@@ -168,6 +168,9 @@ export function Footer({ className }: { className?: string }) {
           <Link href={href("/terms")} className="t-label">
             {t("footer.terms")}
           </Link>
+          <Link href={href("/status")} className="t-label">
+            {t("footer.status")}
+          </Link>
           <LanguageSwitcher />
         </div>
       </div>

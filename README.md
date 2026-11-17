@@ -62,7 +62,7 @@ browser ── https://localhost:8443 ──► Caddy (automatic HTTPS, security
 | `services/users` | Accounts and data. Better Auth at `/api/auth/*`, our API at `/api/*`, the public API at `/api/public/*` (API keys), internal routes for the game | Fastify 5, Better Auth 1.7, Prisma 6, Postgres 17, Node 24 (runs TypeScript natively) |
 | `services/game` | Authoritative Pong server: matchmaking, rooms, tournaments, 60 Hz simulation, result reporting | Fastify 5, Socket.IO 4 |
 | `services/shared` | Game engine, WebSocket protocol types and the HTTP API contract, imported by web and game | TypeScript |
-| `infra` | `docker-compose.yml`, `caddy/Caddyfile`, `.env.example` | Docker Compose, Caddy 2.11 |
+| `infra` | `docker-compose.yml`, `caddy/Caddyfile`, `backup/` scripts, `.env.example` | Docker Compose, Caddy 2.11 |
 
 **One origin.** The browser only ever talks to `https://localhost:8443`, so there is no CORS
 configuration. Every state-changing request and the game's socket handshake must carry that
@@ -100,6 +100,37 @@ The contract between web and users is `services/shared/types/api.types.ts`:
 
 ---
 
+## Operations
+
+**Status page.** `https://localhost:8443/en/status` shows the API, database and game server
+state and latency (from `GET /api/status`, cached for 5 seconds). The users container's health
+check also fails when the database is unreachable, so `make ps` reflects real health.
+
+**Backups.** The `backup` service dumps Postgres (`pg_dump`, custom format) and archives the
+uploaded avatars into `./backups/` when it starts and then every `BACKUP_INTERVAL_HOURS`
+(default 24), deleting files older than `BACKUP_KEEP_DAYS` (default 7).
+
+```bash
+make backup                         # take one now
+make backups                        # list them, newest first
+make restore DB=db-<stamp>.dump UPLOADS=uploads-<stamp>.tar.gz
+```
+
+**Disaster recovery.**
+1. Lost data but the stack runs: `make restore DB=…` stops users and game, replaces the
+   database contents in one transaction (and the avatars if `UPLOADS=` is given), then
+   restarts them.
+2. Lost the machine: install Docker, clone the repo, put back `infra/.env` (keep a copy of it
+   somewhere safe; the secrets in it can't be regenerated without logging everyone out),
+   copy the `backups/` folder, run `make`, then `make restore DB=… UPLOADS=…`.
+3. Copy `backups/` off the machine regularly (another disk or cloud storage); backups on the
+   same disk don't survive that disk.
+
+A restore drill was run on 2026-11-18: a match row was deleted and restored from the latest
+dump (10 → 9 → 10 rows).
+
+---
+
 ## Development
 
 ```bash
@@ -125,12 +156,12 @@ Checks: `cd apps/web && npm run lint && npx tsc --noEmit`, `cd services/users &&
 |---|---|---|
 | 0 | Security hardening of the original services | Done |
 | 1 + 2 | Better Auth, Postgres, Caddy, Socket.IO, the Next.js app and all core screens | Done |
-| 3 | Realtime extras: chat, reconnection with a held slot, rematch, ready-check deadline | Planned |
-| 4 | Ops: status page, backups, production compose profile | Planned |
+| 3 | Direct messages (typing, read receipts, game invites, blocks), reconnection with a held slot, forfeit, rematch, ready-check deadline | Done |
+| 4 | Status page, database-aware health checks, scheduled backups, restore and disaster recovery | Done |
 | 5 | Remaining modules of the 42 subject | Planned |
 
-Known limitations: chat is a placeholder; tournaments are king-of-the-hill rather than a bracket;
-the court stays landscape on phones; "vs AI" is not built yet.
+Known limitations: tournaments are king-of-the-hill rather than a bracket; the court stays
+landscape on phones; "vs AI" is not built yet; chat has no docked panel yet (full page only).
 
 ---
 

@@ -1,6 +1,6 @@
 FILE=infra/docker-compose.yml
 
-.PHONY: all up down build re logs ps clean-volumes inspect-health install env
+.PHONY: all up down build re logs ps clean-volumes inspect-health install env backup restore backups
 
 all: env up
 
@@ -62,3 +62,17 @@ inspect-health:
 
 prune-cache:
 	docker builder prune --all --force
+
+# ---- backups (see README: disaster recovery)
+backup:
+	docker compose -f $(FILE) exec backup /backup/backup.sh
+
+backups:
+	@ls -1t backups 2>/dev/null || echo "no backups yet"
+
+# make restore DB=db-<stamp>.dump [UPLOADS=uploads-<stamp>.tar.gz]
+restore:
+	@test -n "$(DB)" || { echo "usage: make restore DB=db-<stamp>.dump [UPLOADS=uploads-<stamp>.tar.gz]"; exit 1; }
+	docker compose -f $(FILE) stop users game
+	docker compose -f $(FILE) exec backup /backup/restore.sh $(DB) $(UPLOADS)
+	docker compose -f $(FILE) start users game

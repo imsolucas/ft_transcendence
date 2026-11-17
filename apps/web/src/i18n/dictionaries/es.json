@@ -50,7 +50,8 @@
     "privacy": "Política de privacidad",
     "terms": "Términos del servicio",
     "language": "Idioma",
-    "rights": "Un proyecto de la escuela 42, reconstruido."
+    "rights": "Un proyecto de la escuela 42, reconstruido.",
+    "status": "Estado"
   },
   "landing": {
     "insertCoin": "INSERTA UNA MONEDA",
@@ -496,5 +497,28 @@
     "errorId": "ID del error",
     "offline": "Estás sin conexión. Reconectando…",
     "retryNow": "Reintentar ahora"
+  },
+  "status": {
+    "title": "ESTADO",
+    "subtitle": "Estado en vivo de ft_transcendence.",
+    "overall": {
+      "up": "Todos los sistemas funcionan",
+      "degraded": "Algunos sistemas van lentos",
+      "down": "Hay un servicio caído"
+    },
+    "state": {
+      "up": "Operativo",
+      "degraded": "Lento",
+      "down": "Caído"
+    },
+    "service": {
+      "api": "API",
+      "database": "Base de datos",
+      "game": "Servidor de juego"
+    },
+    "checked": "Comprobado {when}",
+    "uptime": "Tiempo activo de la API: {h} h {m} min",
+    "refresh": "Se actualiza cada 10 segundos.",
+    "unreachable": "No se puede contactar con el servicio de estado. El sitio puede estar en mantenimiento."
   }
 }

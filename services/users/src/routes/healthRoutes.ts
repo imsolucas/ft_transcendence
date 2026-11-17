@@ -13,6 +13,13 @@ export default async function registerHealthRoutes(app: FastifyInstance) {
 			properties: {
 			status: { type: "string" }
 			}
+		},
+		503: {
+			description: "Database unreachable.",
+			type: "object",
+			properties: {
+			status: { type: "string" }
+			}
 		}
 		}
 	}

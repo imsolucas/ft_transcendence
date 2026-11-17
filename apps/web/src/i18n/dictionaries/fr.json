@@ -50,7 +50,8 @@
     "privacy": "Politique de confidentialité",
     "terms": "Conditions d'utilisation",
     "language": "Langue",
-    "rights": "Un projet de l'école 42, reconstruit."
+    "rights": "Un projet de l'école 42, reconstruit.",
+    "status": "État"
   },
   "landing": {
     "insertCoin": "INSÉREZ UNE PIÈCE",
@@ -496,5 +497,28 @@
     "errorId": "ID de l'erreur",
     "offline": "Vous êtes hors ligne. Reconnexion…",
     "retryNow": "Réessayer maintenant"
+  },
+  "status": {
+    "title": "ÉTAT",
+    "subtitle": "État en direct de ft_transcendence.",
+    "overall": {
+      "up": "Tous les systèmes fonctionnent",
+      "degraded": "Certains systèmes sont lents",
+      "down": "Un service est en panne"
+    },
+    "state": {
+      "up": "Opérationnel",
+      "degraded": "Lent",
+      "down": "En panne"
+    },
+    "service": {
+      "api": "API",
+      "database": "Base de données",
+      "game": "Serveur de jeu"
+    },
+    "checked": "Vérifié {when}",
+    "uptime": "Disponibilité de l'API : {h} h {m} min",
+    "refresh": "Actualisé toutes les 10 secondes.",
+    "unreachable": "Impossible de joindre le service d'état. Le site est peut-être en maintenance."
   }
 }

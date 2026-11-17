@@ -65,6 +65,27 @@ services:
     networks: [internal]
     restart: unless-stopped
 
+  # Scheduled backups (database dump + uploaded avatars) into ../backups on the host.
+  # Restore: make restore DB=db-<stamp>.dump [UPLOADS=uploads-<stamp>.tar.gz]
+  backup:
+    image: postgres:17-alpine
+    entrypoint: ["/backup/loop.sh"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ft}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
+    volumes:
+      - ./backup:/backup:ro
+      - ../backups:/backups
+      - uploads:/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+
   caddy:
     image: caddy:2.11-alpine
     environment:

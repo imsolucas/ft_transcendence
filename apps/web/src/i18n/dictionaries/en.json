@@ -50,7 +50,8 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "language": "Language",
-    "rights": "A 42 school project, rebuilt."
+    "rights": "A 42 school project, rebuilt.",
+    "status": "Status"
   },
   "landing": {
     "insertCoin": "INSERT COIN",
@@ -496,5 +497,28 @@
     "errorId": "Error ID",
     "offline": "You're offline. Reconnecting…",
     "retryNow": "Retry now"
+  },
+  "status": {
+    "title": "STATUS",
+    "subtitle": "Live health of ft_transcendence.",
+    "overall": {
+      "up": "All systems operational",
+      "degraded": "Some systems are slow",
+      "down": "Something is down"
+    },
+    "state": {
+      "up": "Operational",
+      "degraded": "Slow",
+      "down": "Down"
+    },
+    "service": {
+      "api": "API",
+      "database": "Database",
+      "game": "Game server"
+    },
+    "checked": "Checked {when}",
+    "uptime": "API uptime: {h} h {m} min",
+    "refresh": "Refreshes every 10 seconds.",
+    "unreachable": "Can't reach the status service. The site may be down for maintenance."
   }
 }

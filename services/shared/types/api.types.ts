@@ -165,3 +165,18 @@ export type RealtimeEvent =
   | { type: "friend:request"; from: PublicUser }
   | { type: "friend:accepted"; by: PublicUser }
   | { type: "presence"; userId: number; presence: Presence };
+
+// ---------------------------------------------------------------- Status (Phase 4)
+export type ServiceState = "up" | "degraded" | "down";
+export interface ServiceStatus {
+  name: "api" | "database" | "game";
+  state: ServiceState;
+  latencyMs: number | null;
+}
+/** GET /api/status (public, cached ~5s) */
+export interface StatusReport {
+  overall: ServiceState;
+  services: ServiceStatus[];
+  checkedAt: string;
+  uptimeSeconds: number;
+}
