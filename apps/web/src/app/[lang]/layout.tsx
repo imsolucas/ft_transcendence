@@ -6,9 +6,12 @@ import { Providers } from "@/components/layout/providers";
 import { CRTFrame } from "@/components/layout/crt";
 import "../globals.css";
 
-const display = Press_Start_2P({ weight: "400", subsets: ["latin", "latin-ext"], variable: "--font-press-start", display: "swap" });
-const body = Outfit({ subsets: ["latin", "latin-ext"], variable: "--font-outfit", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin", "latin-ext"], variable: "--font-jetbrains", display: "swap" });
+// Fonts are not preloaded: Firefox fetches a preloaded font a second time for @font-face and
+// then warns that the preload went unused. They still load right away from the CSS, and the
+// size-adjusted fallbacks keep layout stable meanwhile. "latin" covers every EN/ES/FR character.
+const display = Press_Start_2P({ weight: "400", subsets: ["latin"], variable: "--font-press-start", display: "swap", preload: false });
+const body = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap", preload: false });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap", preload: false });
 
 export async function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
