@@ -84,7 +84,7 @@ export default class NewMessageHandler {
         if (room) {
             const leaveMessage: PlayerLeftMessage = {
                 type: 'playerLeft',
-                data: { playerName: player.name },
+                data: { playerName: player.name, playerId: player.id },
                 timestamp: Date.now()
             };
             this.broadcaster.broadcastToRoom(room.id, leaveMessage, player.id);
@@ -203,7 +203,8 @@ export default class NewMessageHandler {
         const response: PlayerLeftMessage = {
             type: 'playerLeft',
             data: {
-                playerName: player.name
+                playerName: player.name,
+                playerId: player.id
             },
             timestamp: Date.now()
         };
@@ -221,7 +222,8 @@ export default class NewMessageHandler {
         const response = {
             type: 'queueLeft',
             data: {
-                playerName: player.name
+                playerName: player.name,
+                playerId: player.id
             },
             timestamp: Date.now()
         };

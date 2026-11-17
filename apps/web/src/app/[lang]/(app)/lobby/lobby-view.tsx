@@ -86,7 +86,7 @@ function PlayPanel() {
             </Link>
           </Button>
           <form className="stack" onSubmit={(e) => join(e, joinCode, setJoinError, "join")} noValidate>
-            <div className="row">
+            <div className="flex flex-wrap gap-2 [&>.input]:min-w-0 [&>.input]:flex-1">
               <Input
                 aria-label={t("lobby.roomCode")}
                 placeholder={t("lobby.roomCodePlaceholder")}
@@ -127,7 +127,7 @@ function PlayPanel() {
             </Button>
           </div>
           <form className="stack" onSubmit={(e) => join(e, tCode, setTError, "tournament-join")} noValidate>
-            <div className="row">
+            <div className="flex flex-wrap gap-2 [&>.input]:min-w-0 [&>.input]:flex-1">
               <Input
                 aria-label={t("lobby.roomCode")}
                 placeholder={t("lobby.roomCodePlaceholder")}
@@ -160,7 +160,7 @@ function PlayPanel() {
             <p className="muted t-caption">{t("lobby.localBody")}</p>
           </div>
         </Link>
-        <div className="panel panel-2 row row-3 opacity-70" aria-disabled>
+        <div className="panel panel-2 row row-3 flex-wrap opacity-70" aria-disabled>
           <Bot className="ico" aria-hidden />
           <div className="grow">
             <h3 className="t-heading">{t("lobby.vsAi")}</h3>

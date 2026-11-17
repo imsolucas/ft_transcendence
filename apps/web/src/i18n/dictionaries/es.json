@@ -130,7 +130,8 @@
     "twoFactorLocked": "Demasiados códigos incorrectos. Espera unos minutos e inténtalo de nuevo.",
     "sessionExpiredTitle": "Sesión caducada",
     "sessionExpiredBody": "Se cerró tu sesión. Inicia sesión de nuevo para continuar donde lo dejaste.",
-    "loginAgain": "Iniciar sesión de nuevo"
+    "loginAgain": "Iniciar sesión de nuevo",
+    "googleFailed": "El inicio de sesión con Google no terminó. Inténtalo de nuevo o usa tu nombre de usuario y contraseña."
   },
   "lobby": {
     "title": "VESTÍBULO",
@@ -230,7 +231,16 @@
     "reconnectOutcome": "Si no vuelve en {s} s, ganas la partida.",
     "rematchWaiting": "Esperando a {name}…",
     "rematchRequested": "{name} quiere la revancha",
-    "forfeitedOnDisconnect": "Estuviste desconectado demasiado tiempo y la partida se dio por perdida."
+    "forfeitedOnDisconnect": "Estuviste desconectado demasiado tiempo y la partida se dio por perdida.",
+    "courtLabel": "Pista de Pong",
+    "p2Up": "Jugador 2 arriba",
+    "p2Down": "Jugador 2 abajo",
+    "connection": "Conexión {level}, {ms} ms",
+    "connLevel": {
+      "good": "buena",
+      "fair": "regular",
+      "poor": "mala"
+    }
   },
   "local": {
     "title": "PARTIDA LOCAL",
@@ -248,7 +258,9 @@
     "start": "Empezar partida",
     "summary": "Resumen",
     "namesDiffer": "Usa dos nombres distintos.",
-    "nameRequired": "Introduce un nombre (de 1 a 16 caracteres)."
+    "nameRequired": "Introduce un nombre (de 1 a 16 caracteres).",
+    "defaultP1": "Jugador 1",
+    "defaultP2": "Jugador 2"
   },
   "tournament": {
     "title": "TORNEO",

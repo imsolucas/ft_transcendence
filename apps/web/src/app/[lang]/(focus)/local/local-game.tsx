@@ -18,7 +18,7 @@ type Speed = "slow" | "normal" | "fast";
 const BALL: Record<Speed, number> = { slow: 35, normal: 50, fast: 70 };
 const PADDLE: Record<Speed, number> = { slow: 35, normal: 47, fast: 65 };
 const POINTS = [5, 7, 11] as const;
-const DEFAULTS = { p1: "Player 1", p2: "Player 2", ball: "normal" as Speed, paddle: "normal" as Speed, points: 11 };
+const DEFAULTS = { ball: "normal" as Speed, paddle: "normal" as Speed, points: 11 };
 
 interface Setup {
   p1: string;
@@ -48,7 +48,7 @@ export function LocalGame() {
 
 function SetupForm({ onStart }: { onStart: (s: Setup) => void }) {
   const { t, href } = useI18n();
-  const [s, setS] = useState<Setup>({ ...DEFAULTS, p1: t("local.player1").replace(/ name$/i, ""), p2: t("local.player2").replace(/ name$/i, "") });
+  const [s, setS] = useState<Setup>({ ...DEFAULTS, p1: t("local.defaultP1"), p2: t("local.defaultP2") });
   const errors = {
     p1: !s.p1.trim() || s.p1.trim().length > 16 ? t("local.nameRequired") : undefined,
     p2: !s.p2.trim() || s.p2.trim().length > 16 ? t("local.nameRequired") : s.p1.trim().toLowerCase() === s.p2.trim().toLowerCase() ? t("local.namesDiffer") : undefined,

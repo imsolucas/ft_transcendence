@@ -83,18 +83,19 @@ export function ScoreBoard({
 
 /** Connection quality: bars + ms, three levels that also differ by bar count. */
 export function ConnectionQuality({ ms, offline }: { ms?: number; offline?: boolean }) {
+  const { t } = useI18n();
   if (offline) {
     return (
       <span className="conn poor">
         <WifiOff className="ico !h-4 !w-4 c-red" aria-hidden />
-        <span>offline</span>
+        <span>{t("presence.OFFLINE")}</span>
       </span>
     );
   }
   if (ms === undefined) return null;
   const level = ms < 80 ? "good" : ms < 200 ? "fair" : "poor";
   return (
-    <span className={cn("conn", level)} aria-label={`${level} connection, ${ms} ms`}>
+    <span className={cn("conn", level)} aria-label={t("game.connection", { level: t(`game.connLevel.${level}`), ms })}>
       <span className="conn-bars" aria-hidden>
         <i />
         <i />

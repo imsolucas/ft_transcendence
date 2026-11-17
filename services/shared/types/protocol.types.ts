@@ -155,6 +155,7 @@ export interface PlayerLeftMessage extends BaseMessage {
 	type: 'playerLeft';
 	data: {
 		playerName: string;
+		playerId: string;
 	}
 }
 

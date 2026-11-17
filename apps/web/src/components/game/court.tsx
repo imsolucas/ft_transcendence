@@ -117,11 +117,21 @@ export function Court({
     };
     const down = (e: KeyboardEvent) => !e.repeat && set(e, true);
     const up = (e: KeyboardEvent) => set(e, false);
+    // Alt-tab / hidden tab: release every key so no paddle keeps moving
+    const release = () => {
+      inputs.current = [idle(), idle()];
+      emit();
+    };
+    const onVisibility = () => document.visibilityState === "hidden" && release();
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", release);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", release);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [controls, onInputs, paused, onFirstMove]);
 
@@ -133,11 +143,9 @@ export function Court({
     }
   }, [paused, onInputs]);
 
-  const hold = (dir: "up" | "down", pressed: boolean) => {
+  const hold = (dir: "up" | "down", pressed: boolean, who: 0 | 1 = 0) => {
     if (paused) return;
-    // On a vertical court, "up" on screen moves your paddle towards the opponent's side,
-    // which in court coordinates is "down" for the bottom paddle; keep the labels literal.
-    inputs.current[0][dir] = pressed;
+    inputs.current[who][dir] = pressed;
     if (pressed && !moved.current) {
       moved.current = true;
       onFirstMove?.();
@@ -151,29 +159,33 @@ export function Court({
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label="Pong court"
+          aria-label={t("game.courtLabel")}
           className="rounded-lg border border-border"
           style={{ touchAction: "none" }}
         />
       </div>
-      {/* Touch: two 88px hold buttons (online, or player 1 locally) */}
-      <div className="flex gap-4 md:hidden">
-        {(["up", "down"] as const).map((dir) => (
-          <button
-            key={dir}
-            type="button"
-            aria-label={dir === "up" ? t("game.upButton") : t("game.downButton")}
-            className="btn h-[88px] w-[88px] select-none"
-            onPointerDown={(e) => {
-              e.currentTarget.setPointerCapture(e.pointerId);
-              hold(dir, true);
-            }}
-            onPointerUp={() => hold(dir, false)}
-            onPointerCancel={() => hold(dir, false)}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            {dir === "up" ? <ChevronUp className="ico !h-8 !w-8" aria-hidden /> : <ChevronDown className="ico !h-8 !w-8" aria-hidden />}
-          </button>
+      {/* Touch: 88px hold buttons; locally each player gets a pair (left: P1, right: P2) */}
+      <div className="flex w-full justify-between gap-4 md:hidden">
+        {(controls === "local" ? ([0, 1] as const) : ([0] as const)).map((who) => (
+          <div key={who} className={controls === "local" ? "flex gap-2" : "mx-auto flex gap-4"}>
+            {(["up", "down"] as const).map((dir) => (
+              <button
+                key={dir}
+                type="button"
+                aria-label={who === 1 ? t(dir === "up" ? "game.p2Up" : "game.p2Down") : t(dir === "up" ? "game.upButton" : "game.downButton")}
+                className={"btn select-none " + (controls === "local" ? "h-[72px] w-[72px]" : "h-[88px] w-[88px]")}
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  hold(dir, true, who);
+                }}
+                onPointerUp={() => hold(dir, false, who)}
+                onPointerCancel={() => hold(dir, false, who)}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                {dir === "up" ? <ChevronUp className="ico !h-8 !w-8" aria-hidden /> : <ChevronDown className="ico !h-8 !w-8" aria-hidden />}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
     </div>

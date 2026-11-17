@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -17,9 +17,13 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export function SignupForm() {
   const { t, href } = useI18n();
   const router = useRouter();
+  const params = useSearchParams();
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [show, setShow] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<"username" | "email" | "password" | "form", string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<"username" | "email" | "password" | "form", string>>>(() =>
+    // Google redirects back with ?error=… when sign-in is cancelled or fails
+    params.get("error") ? { form: t("auth.googleFailed") } : {}
+  );
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
 

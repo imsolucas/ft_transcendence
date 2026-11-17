@@ -67,7 +67,8 @@ export class RoomManager {
     const availableRooms: Room[] = [];
     for (const room of this.rooms.values()) {
       const maxPlayers = (room.mode === 'standard') ? 2 : 6;
-      if (room.playerIds.length < maxPlayers && room.status === 'waiting') {
+      // Private rooms (created to play a friend) are only joinable by code
+      if (room.playerIds.length < maxPlayers && room.status === 'waiting' && !room.config.isPrivate) {
         availableRooms.push(room);
       }
     }

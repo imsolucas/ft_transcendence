@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getDictionary } from "@/i18n/dictionaries";
 import { SignupForm } from "./signup-form";
@@ -8,5 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <SignupForm />;
+  // ?error= from a failed Google sign-in needs useSearchParams (behind a boundary)
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
 }

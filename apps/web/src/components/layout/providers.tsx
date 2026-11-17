@@ -45,9 +45,11 @@ function SessionExpiredModal() {
         <Button
           variant="primary"
           glow="sm"
-          onClick={() => {
+          onClick={async () => {
+            // Drop the dead cookie first, or proxy.ts sends /login straight back here
+            await fetch("/api/session/clear", { method: "POST", credentials: "same-origin" }).catch(() => {});
             setOpen(false);
-            router.push(`${href("/login")}?next=${encodeURIComponent(pathname)}`);
+            router.push(`${href("/login")}?next=${encodeURIComponent(pathname + window.location.search)}`);
           }}
         >
           {t("auth.loginAgain")}

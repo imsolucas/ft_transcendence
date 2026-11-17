@@ -130,7 +130,8 @@
     "twoFactorLocked": "Too many wrong codes. Wait a few minutes, then try again.",
     "sessionExpiredTitle": "Session expired",
     "sessionExpiredBody": "You were signed out. Log in again to continue where you left off.",
-    "loginAgain": "Log in again"
+    "loginAgain": "Log in again",
+    "googleFailed": "Google sign-in didn't finish. Try again, or use your username and password."
   },
   "lobby": {
     "title": "LOBBY",
@@ -230,7 +231,16 @@
     "reconnectOutcome": "If they don't return in {s}s, you win the match.",
     "rematchWaiting": "Waiting for {name}…",
     "rematchRequested": "{name} wants a rematch",
-    "forfeitedOnDisconnect": "You were disconnected for too long, so the match was forfeited."
+    "forfeitedOnDisconnect": "You were disconnected for too long, so the match was forfeited.",
+    "courtLabel": "Pong court",
+    "p2Up": "Player 2 up",
+    "p2Down": "Player 2 down",
+    "connection": "{level} connection, {ms} ms",
+    "connLevel": {
+      "good": "good",
+      "fair": "fair",
+      "poor": "poor"
+    }
   },
   "local": {
     "title": "LOCAL GAME",
@@ -248,7 +258,9 @@
     "start": "Start game",
     "summary": "Summary",
     "namesDiffer": "Use two different names.",
-    "nameRequired": "Enter a name (1 to 16 characters)."
+    "nameRequired": "Enter a name (1 to 16 characters).",
+    "defaultP1": "Player 1",
+    "defaultP2": "Player 2"
   },
   "tournament": {
     "title": "TOURNAMENT",

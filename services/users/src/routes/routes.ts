@@ -29,6 +29,15 @@ export default async function routes(app: FastifyInstance) {
     { prefix: "/api" }
   );
 
+  // Expire the session cookies unconditionally (a revoked/stale cookie would otherwise keep the
+  // browser bouncing between /login and the app). Harmless without a session, so no auth.
+  app.post("/api/session/clear", async (_req, reply) => {
+    for (const name of ["__Secure-ft.session_token", "__Secure-ft.session_data", "__Secure-ft.dont_remember"]) {
+      reply.header("set-cookie", `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
+    }
+    return reply.code(204).send();
+  });
+
   // Public API: /api/public/* (X-API-Key)
   await registerPublicRoutes(app);
 

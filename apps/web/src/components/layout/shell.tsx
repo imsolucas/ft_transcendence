@@ -17,7 +17,7 @@ import { CountBadge } from "@/components/ui/primitives";
 
 export function Wordmark({ href, className }: { href: string; className?: string }) {
   return (
-    <Link href={href} className={cn("pix pix-sm no-underline text-fg hover:text-fg", className)} aria-label="ft_transcendence">
+    <Link href={href} className={cn("pix pix-sm min-w-0 truncate no-underline text-fg hover:text-fg max-[400px]:text-[11px]", className)} aria-label="ft_transcendence">
       <span className="normal-case">ft_transcendence</span>
     </Link>
   );
@@ -62,7 +62,7 @@ function Shell({ children, playPrimary = false }: { children: ReactNode; playPri
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-20 h-16 border-b border-border bg-surface-2">
-        <div className="mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 md:px-8">
+        <div className="mx-auto flex h-full max-w-[1440px] min-w-0 items-center gap-2 px-4 md:gap-4 md:px-8">
           <Wordmark href={href("/lobby")} />
           <nav aria-label={t("nav.mainNav")} className="ml-4 hidden items-center gap-1 md:flex">
             {NAV.map(({ path, key, icon: Icon }) => (
@@ -81,7 +81,7 @@ function Shell({ children, playPrimary = false }: { children: ReactNode; playPri
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <Button asChild variant={playPrimary ? "primary" : "secondary"} glow={playPrimary ? "sm" : "none"} size="sm">
               <Link href={href("/lobby#play")} className="no-underline">
                 <Gamepad2 className="ico" aria-hidden />

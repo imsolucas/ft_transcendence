@@ -4,13 +4,14 @@
 #   *       → Next.js web app
 # /internal/* and /docs are deliberately NOT routed: only the game service calls them.
 #
-# SITE_ADDRESS: "localhost:8443" locally (Caddy issues a certificate from its own local CA);
-# a real domain such as "pong.example.com" gets a Let's Encrypt certificate automatically.
+# SITE_ADDRESS: "localhost:8443" locally, with TLS_MODE=internal (certificate from Caddy's local CA).
+# Real domain: SITE_ADDRESS=pong.example.com, TLS_MODE=<your e-mail> (Let's Encrypt via ACME),
+# CADDY_HTTPS_PORT=443, HTTPS_PORT=443, HTTP_PORT=80, and enable HSTS with
+# HSTS_HEADER='Strict-Transport-Security "max-age=31536000; includeSubDomains"'.
 {
 	admin off
-	servers {
-		trusted_proxies static private_ranges
-	}
+	# Caddy is the edge: no upstream proxy is trusted, so a client-sent X-Forwarded-For is
+	# replaced, never forwarded (the services rate-limit on it).
 }
 
 {$SITE_ADDRESS:localhost:8443} {

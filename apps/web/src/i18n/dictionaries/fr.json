@@ -130,7 +130,8 @@
     "twoFactorLocked": "Trop de codes incorrects. Attendez quelques minutes, puis réessayez.",
     "sessionExpiredTitle": "Session expirée",
     "sessionExpiredBody": "Vous avez été déconnecté. Connectez-vous de nouveau pour reprendre où vous en étiez.",
-    "loginAgain": "Se reconnecter"
+    "loginAgain": "Se reconnecter",
+    "googleFailed": "La connexion Google n'a pas abouti. Réessayez, ou utilisez votre nom d'utilisateur et votre mot de passe."
   },
   "lobby": {
     "title": "LOBBY",
@@ -230,7 +231,16 @@
     "reconnectOutcome": "S'il ne revient pas dans {s} s, vous gagnez le match.",
     "rematchWaiting": "En attente de {name}…",
     "rematchRequested": "{name} veut une revanche",
-    "forfeitedOnDisconnect": "Vous avez été déconnecté trop longtemps, le match est perdu par forfait."
+    "forfeitedOnDisconnect": "Vous avez été déconnecté trop longtemps, le match est perdu par forfait.",
+    "courtLabel": "Terrain de Pong",
+    "p2Up": "Joueur 2 haut",
+    "p2Down": "Joueur 2 bas",
+    "connection": "Connexion {level}, {ms} ms",
+    "connLevel": {
+      "good": "bonne",
+      "fair": "moyenne",
+      "poor": "faible"
+    }
   },
   "local": {
     "title": "PARTIE LOCALE",
@@ -248,7 +258,9 @@
     "start": "Lancer la partie",
     "summary": "Récapitulatif",
     "namesDiffer": "Utilisez deux noms différents.",
-    "nameRequired": "Saisissez un nom (de 1 à 16 caractères)."
+    "nameRequired": "Saisissez un nom (de 1 à 16 caractères).",
+    "defaultP1": "Joueur 1",
+    "defaultP2": "Joueur 2"
   },
   "tournament": {
     "title": "TOURNOI",

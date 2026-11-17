@@ -70,8 +70,11 @@ services:
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost:8443}
       TLS_MODE: ${TLS_MODE:-internal}
+      HSTS_HEADER: ${HSTS_HEADER:--Strict-Transport-Security}
     ports:
-      - "${HTTPS_PORT:-8443}:8443"
+      # HTTPS (8443 locally, 443 on a real domain) and HTTP for ACME challenges / redirects
+      - "${HTTPS_PORT:-8443}:${CADDY_HTTPS_PORT:-8443}"
+      - "${HTTP_PORT:-18080}:80"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

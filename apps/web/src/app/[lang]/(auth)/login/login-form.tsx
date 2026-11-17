@@ -30,7 +30,10 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [trustDevice, setTrustDevice] = useState(false);
-  const [errors, setErrors] = useState<{ identifier?: string; password?: string; form?: string; code?: string }>({});
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string; form?: string; code?: string }>(() =>
+    // Google redirects back with ?error=… when sign-in is cancelled or fails
+    params.get("error") ? { form: t("auth.googleFailed") } : {}
+  );
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
 

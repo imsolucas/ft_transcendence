@@ -69,6 +69,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   const config = useMemo(() => baseGameConfig(), []);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  const tournamentRef = useRef(tournament);
+  tournamentRef.current = tournament;
 
   const myId = me ? String(me.id) : null;
   const invitedRef = useRef(false);
@@ -102,6 +104,15 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           if (current === "playing" || current === "countdown") {
             // We came back after the reconnect grace period: the match was forfeited
             setPhase({ k: "error", message: t("game.forfeitedOnDisconnect"), retry: true });
+            break;
+          }
+          if (current === "waiting" || current === "found") {
+            // The server dropped us from the room while we were away; don't silently make a new one
+            setPhase({ k: "error", message: t("matchmaking.disconnected"), retry: true });
+            break;
+          }
+          if (current === "searching") {
+            socket.send({ type: "joinQueue", data: { roomType: "standard" } });
             break;
           }
           if (mode === "quick") {
@@ -180,7 +191,22 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           break;
         }
         case "playerLeft": {
-          setPhase((p) => (p.k === "playing" || p.k === "countdown" || p.k === "found" ? { k: "ended", winnerId: myIdRef.current, reason: "left" } : p));
+          const leaverId = (msg.data as { playerId?: string }).playerId;
+          setPlayers((ps) => ps.filter((p) => p.id !== leaverId));
+          const t8 = tournamentRef.current;
+          const activePair = t8 ? [t8.kingId, t8.challengerId] : null;
+          setPhase((p) => {
+            if (p.k === "playing" || p.k === "countdown") {
+              // A queued tournament spectator leaving doesn't end the current match
+              if (activePair && !activePair.includes(leaverId ?? "")) return p;
+              return { k: "ended", winnerId: myIdRef.current, reason: "left" };
+            }
+            if (p.k === "found") {
+              // Before the game started: wait for someone else (tournament) or report it (1v1)
+              return p.tournament ? { k: "waiting", roomId: p.roomId, tournament: true } : { k: "error", message: t("game.opponentLeft"), retry: true };
+            }
+            return p;
+          });
           break;
         }
         case "opponentReconnecting": {
