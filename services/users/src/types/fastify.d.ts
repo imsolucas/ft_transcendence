@@ -1,17 +1,21 @@
 import "fastify";
-import type Database from "better-sqlite3";
+import type { PrismaClient } from "@prisma/client";
 
 declare module "fastify" {
   interface FastifyInstance {
-    db: Database;
+    db: PrismaClient;
   }
 
   interface FastifyRequest {
+    // Set by the auth hook from a verified access token (never from the request body)
     user?: {
       id: number;
       username: string;
-      email?: string;
-      // add other fields your auth populates
+      jti: string;
+      exp: number;
     };
+    // Set by apiKeyAuth for /api/public/* routes
+    apiUser?: { id: number; username: string; avatar: string; status: string };
+    apiKeyId?: number;
   }
 }

@@ -1,7 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db/client.ts";
 
-const prisma = new PrismaClient();
 
 /**
  * Public API Controllers
@@ -42,10 +41,10 @@ export async function getPublicUserProfile(req: FastifyRequest, reply: FastifyRe
       createdAt: user.created_at,
     });
   } catch (error: any) {
-    req.log?.error("Error fetching public user profile:", error);
+    req.log?.error({ err: error }, "Error fetching public user profile:");
     return reply.code(500).send({
       error: "Internal server error",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -93,10 +92,10 @@ export async function getPublicMatches(req: FastifyRequest, reply: FastifyReply)
       },
     });
   } catch (error: any) {
-    req.log?.error("Error fetching public matches:", error);
+    req.log?.error({ err: error }, "Error fetching public matches:");
     return reply.code(500).send({
       error: "Internal server error",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -140,10 +139,10 @@ export async function getPublicMatchDetails(req: FastifyRequest, reply: FastifyR
 
     return reply.send(match);
   } catch (error: any) {
-    req.log?.error("Error fetching public match details:", error);
+    req.log?.error({ err: error }, "Error fetching public match details:");
     return reply.code(500).send({
       error: "Internal server error",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -192,10 +191,10 @@ export async function getPublicTournaments(req: FastifyRequest, reply: FastifyRe
       },
     });
   } catch (error: any) {
-    req.log?.error("Error fetching public tournaments:", error);
+    req.log?.error({ err: error }, "Error fetching public tournaments:");
     return reply.code(500).send({
       error: "Internal server error",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -268,10 +267,10 @@ export async function getPublicLeaderboard(req: FastifyRequest, reply: FastifyRe
       limit: limitNum,
     });
   } catch (error: any) {
-    req.log?.error("Error fetching public leaderboard:", error);
+    req.log?.error({ err: error }, "Error fetching public leaderboard:");
     return reply.code(500).send({
       error: "Internal server error",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -332,10 +331,10 @@ export async function getPublicUserStats(req: FastifyRequest, reply: FastifyRepl
       level,
     });
   } catch (error: any) {
-    req.log?.error("Error fetching public user stats:", error);
+    req.log?.error({ err: error }, "Error fetching public user stats:");
     return reply.code(500).send({
       error: "Internal server error",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }

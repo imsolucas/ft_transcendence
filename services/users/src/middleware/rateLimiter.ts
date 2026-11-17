@@ -58,6 +58,19 @@ export function createRateLimiter(options: RateLimitOptions) {
 }
 
 /**
+ * Auth endpoints (login, signup, 2FA, set-password, refresh, Google): 10 requests per
+ * minute per IP per route. req.ip is the real client because app.ts sets trustProxy: 1.
+ */
+export const authRateLimiter = createRateLimiter({
+  max: 10,
+  windowMs: 60 * 1000,
+  keyGenerator: (req: FastifyRequest) => {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    return `rate-limit:auth:${req.routeOptions?.url ?? req.url}:${ip}`;
+  },
+});
+
+/**
  * Per-IP rate limiter (100 requests per minute)
  */
 export const ipRateLimiter = createRateLimiter({

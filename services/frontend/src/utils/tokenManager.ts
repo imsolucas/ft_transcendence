@@ -108,6 +108,77 @@ export const clearAccessToken = (): void => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Session refresh. The backend keeps the real session in httpOnly cookies (a 15-minute
+// access token plus a rotating refresh token). This legacy app still mirrors the access
+// token in localStorage for its Bearer header until the Next.js app replaces it.
+// ---------------------------------------------------------------------------
+
+/** `expired`: the server refused the refresh (log out). `error`: transient, keep the session. */
+export type RefreshResult = 'ok' | 'expired' | 'error';
+
+let refreshInFlight: Promise<RefreshResult> | null = null;
+
+const doRefresh = async (tokenBefore: string | null): Promise<RefreshResult> => {
+  // Another tab may have refreshed while we waited for the lock; reuse its token.
+  const current = getAccessToken();
+  if (current && current !== tokenBefore) return 'ok';
+  try {
+    const res = await fetch(`${window.location.origin}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+    if (res.status === 401) return 'expired';
+    if (!res.ok) return 'error';
+    const data = await res.json();
+    if (data?.token && data?.user?.id) {
+      setAccessToken(data.token, data.user.id);
+      return 'ok';
+    }
+    return 'error';
+  } catch {
+    return 'error';
+  }
+};
+
+/**
+ * Exchanges the refresh cookie for a new access token. Refresh tokens rotate and a reused
+ * one revokes the session, so calls are serialised within the tab (shared promise) and
+ * across tabs (Web Locks, where available).
+ */
+export const refreshSession = (): Promise<RefreshResult> => {
+  if (!refreshInFlight) {
+    const tokenBefore = getAccessToken();
+    const run = () => doRefresh(tokenBefore);
+    const locks = (navigator as Navigator & { locks?: LockManager }).locks;
+    const pending: Promise<RefreshResult> = locks
+      ? (locks.request('ft-auth-refresh', run) as unknown as Promise<RefreshResult>) // request() resolves to the callback's result
+      : run();
+    refreshInFlight = pending.finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+};
+
+/**
+ * Fetch with the Bearer token; on a 401, refresh the session once and retry.
+ * `buildInit` is called per attempt so the retry carries the new token.
+ * A transient refresh failure (network, 429) throws instead of returning the 401, so
+ * callers don't treat it as a logout.
+ */
+export const fetchWithRefresh = async (
+  url: string,
+  buildInit: (token: string | null) => RequestInit
+): Promise<Response> => {
+  const first = await fetch(url, buildInit(getAccessToken()));
+  if (first.status !== 401) return first;
+  const result = await refreshSession();
+  if (result === 'expired') return first;
+  if (result === 'error') throw new Error('Could not refresh the session. Please try again.');
+  return fetch(url, buildInit(getAccessToken()));
+};
+
 /**
  * Check if user has a stored token (simple check for "remember me" functionality)
  */

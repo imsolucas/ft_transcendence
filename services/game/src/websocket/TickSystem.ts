@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, type TournamentRoundEndMessage } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import type { MessageBroadcaster } from "./Broadcaster.js";
@@ -86,7 +87,7 @@ export default class TickSystem {
 
                         // Report tournament result to users service
                         const tournamentData = {
-                            tournamentId: parseInt(room.id.replace(/\D/g, '')) || Math.floor(Date.now() / 1000), // Extract numeric ID or use timestamp
+                            tournamentKey: randomUUID(), // idempotency key; the users DB assigns the tournament id
                             name: `Tournament ${room.id}`,
                             winnerId: tournamentResult.tournamentWinnerId ? parseInt(tournamentResult.tournamentWinnerId) : undefined,
                             start_at: new Date(room.createdAt).toISOString(),

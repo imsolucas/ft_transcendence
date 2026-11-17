@@ -1,86 +1,67 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { prisma } from "../db/client.ts";
+import { safeEqual, sha256 } from "../auth/tokens.ts";
 
-const prisma = new PrismaClient();
+// Keys look like ft_<12 hex prefix>_<43 base64url secret>
+const API_KEY_PATTERN = /^ft_([0-9a-f]{12})_([A-Za-z0-9_-]{43})$/;
+
+// lastUsedAt is informational; don't write it on every request
+const LAST_USED_WRITE_INTERVAL_MS = 60 * 1000;
 
 /**
  * API Key Authentication Middleware
- * Verifies X-API-Key header and attaches user info to req.apiUser
+ * Verifies X-API-Key header and attaches user info to req.apiUser.
+ * Lookup is by the indexed prefix; the full key is compared as SHA-256 in constant time.
  */
-export async function apiKeyAuth(
-  req: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  const apiKey = req.headers["x-api-key"] as string | undefined;
+export async function apiKeyAuth(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const apiKey = req.headers["x-api-key"];
 
-  if (!apiKey) {
+  if (typeof apiKey !== "string" || apiKey.length === 0) {
     return reply.code(401).send({
       error: "API key required",
-      message: "Please provide an API key in the X-API-Key header"
+      message: "Please provide an API key in the X-API-Key header",
     });
   }
 
+  const invalid = () =>
+    reply.code(401).send({
+      error: "Invalid API key",
+      message: "The provided API key is invalid or has been revoked",
+    });
+
+  const match = API_KEY_PATTERN.exec(apiKey);
+  if (!match) return invalid();
+
   try {
-    // Find all active API keys
-    const apiKeys = await prisma.apiKey.findMany({
-      where: {
+    const keyRecord = await prisma.apiKey.findUnique({
+      where: { prefix: match[1] },
+      select: {
+        id: true,
+        keyHash: true,
         isActive: true,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            avatar: true,
-            status: true,
-          },
-        },
+        lastUsedAt: true,
+        user: { select: { id: true, username: true, avatar: true, status: true } },
       },
     });
 
-    // Check if any API key matches
-    let matchedKey = null;
-    for (const keyRecord of apiKeys) {
-      try {
-        const matches = await bcrypt.compare(apiKey, keyRecord.keyHash);
-        if (matches) {
-          matchedKey = keyRecord;
-          break;
-        }
-      } catch (compareError) {
-        // Continue to next key if comparison fails
-        continue;
-      }
+    if (!keyRecord || !keyRecord.isActive || !safeEqual(sha256(apiKey), keyRecord.keyHash)) {
+      return invalid();
     }
 
-    if (!matchedKey) {
-      return reply.code(401).send({
-        error: "Invalid API key",
-        message: "The provided API key is invalid or has been revoked"
-      });
+    const now = Date.now();
+    if (!keyRecord.lastUsedAt || now - keyRecord.lastUsedAt.getTime() > LAST_USED_WRITE_INTERVAL_MS) {
+      prisma.apiKey
+        .update({ where: { id: keyRecord.id }, data: { lastUsedAt: new Date(now) } })
+        .catch((err) => req.log.warn({ err }, "failed to update API key lastUsedAt"));
     }
 
-    // Update last used timestamp
-    await prisma.apiKey.update({
-      where: { id: matchedKey.id },
-      data: { lastUsedAt: new Date() },
-    }).catch(() => {
-      // Ignore errors updating lastUsedAt - not critical
-    });
-
-    // Attach user info to request for use in controllers
-    (req as any).apiUser = matchedKey.user;
-    (req as any).apiKeyId = matchedKey.id;
-
-    // Continue to next handler
-  } catch (error: any) {
-    req.log?.error("API key authentication error:", error);
+    req.apiUser = keyRecord.user;
+    req.apiKeyId = keyRecord.id;
+  } catch (err) {
+    req.log.error({ err }, "API key authentication error");
     return reply.code(500).send({
       error: "Authentication error",
-      message: "An error occurred while verifying the API key"
+      message: "An error occurred while verifying the API key",
     });
   }
 }
-

@@ -1,7 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db/client.ts";
 
-const prisma = new PrismaClient();
 
 // GET /user/match-history
 export async function getMatchHistory(req: FastifyRequest, reply: FastifyReply) {
@@ -134,8 +133,10 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
     tournamentId,
     winnerId,
     played_at,
-    end_at
+    end_at,
+    matchId
   } = req.body as {
+    matchId?: string;
     player1Id: number;
     player2Id: number;
     player1Score: number;
@@ -148,24 +149,55 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
     winnerId?: number;
   };
 
-  // Basic validation (add checks for tournamentId/winnerId if needed)
+  // Idempotency: the game service retries with the same matchId; a replay returns the stored row.
+  if (matchId) {
+    const existing = await prisma.match.findUnique({ where: { externalId: matchId } });
+    if (existing) return reply.code(200).send(toMatchHistory(existing));
+  }
 
-  const match = await prisma.match.create({
-    data: {
-      player1Id,
-      player2Id,
-      player1Score,
-      player2Score,
-      player1DisplayName,
-      player2DisplayName,
-      played_at: new Date(played_at),
-      end_at: new Date(end_at),
-      tournamentId: tournamentId ?? null,
-      winnerId: winnerId ?? null
+  let match;
+  try {
+    match = await prisma.match.create({
+      data: {
+        externalId: matchId ?? null,
+        player1Id,
+        player2Id,
+        player1Score,
+        player2Score,
+        player1DisplayName,
+        player2DisplayName,
+        played_at: new Date(played_at),
+        end_at: new Date(end_at),
+        tournamentId: tournamentId ?? null,
+        winnerId: winnerId ?? null
+      }
+    });
+  } catch (err: any) {
+    // Concurrent replay of the same matchId lost the race to the unique index
+    if (err?.code === "P2002" && matchId) {
+      const existing = await prisma.match.findUnique({ where: { externalId: matchId } });
+      if (existing) return reply.code(200).send(toMatchHistory(existing));
     }
-  });
+    throw err;
+  }
 
-  return reply.code(201).send({
+  return reply.code(201).send(toMatchHistory(match));
+}
+
+function toMatchHistory(match: {
+  id: number;
+  tournamentId: number | null;
+  player1Id: number;
+  player2Id: number;
+  player1DisplayName: string;
+  player2DisplayName: string;
+  player1Score: number;
+  player2Score: number;
+  winnerId: number | null;
+  played_at: Date;
+  end_at: Date;
+}) {
+  return {
     matchId: match.id,
     tournamentId: match.tournamentId ?? null,
     player1Id: match.player1Id,
@@ -177,12 +209,12 @@ export async function uploadMatchHistory(req: FastifyRequest, reply: FastifyRepl
     winnerId: match.winnerId ?? null,
     played_at: match.played_at,
     end_at: match.end_at
-  });
+  };
 }
 
 export async function postTournamentResult(req: FastifyRequest, reply: FastifyReply) {
   const body = req.body as {
-    tournamentId?: number;
+    tournamentKey?: string;
     name?: string;
     winnerId?: number;
     start_at?: string;
@@ -201,9 +233,9 @@ export async function postTournamentResult(req: FastifyRequest, reply: FastifyRe
     }>;
   };
 
-  const { tournamentId, name, winnerId, start_at, end_at, players, matches } = body;
+  const { tournamentKey, name, winnerId, start_at, end_at, players, matches } = body;
 
-  if (!tournamentId || !winnerId || !start_at || !end_at || !players || !matches) {
+  if (!tournamentKey || !winnerId || !start_at || !end_at || !players || !matches) {
     return reply.code(400).send({ error: "Missing required tournament data" });
   }
 
@@ -213,12 +245,28 @@ export async function postTournamentResult(req: FastifyRequest, reply: FastifyRe
     return reply.code(400).send({ error: "Invalid start_at or end_at datetime" });
   }
 
+  // Idempotency: a retried report returns the stored tournament.
+  const replay = await prisma.tournament.findUnique({
+    where: { externalId: tournamentKey },
+    include: { players: true, matches: true },
+  });
+  if (replay) {
+    return reply.send({
+      tournamentId: replay.id,
+      winnerId: replay.winnerId,
+      start_at: replay.start_at,
+      end_at: replay.end_at,
+      players: replay.players,
+      matches: replay.matches,
+    });
+  }
+
   try {
     // Create tournament
     const tournament = await prisma.tournament.create({
       data: {
-        id: tournamentId,
-        name: name ?? `Tournament ${tournamentId}`,
+        externalId: tournamentKey,
+        name: name ?? "Tournament",
         winnerId,
         start_at: startAt,
         end_at: endAt,
@@ -252,8 +300,25 @@ export async function postTournamentResult(req: FastifyRequest, reply: FastifyRe
       players: tournament.players,
       matches: tournament.matches,
     });
-  } catch (err) {
-    req.log?.error?.(err);
+  } catch (err: any) {
+    // A concurrent replay of the same tournamentKey lost the race to the unique index.
+    if (err?.code === "P2002") {
+      const existing = await prisma.tournament.findUnique({
+        where: { externalId: tournamentKey },
+        include: { players: true, matches: true },
+      });
+      if (existing) {
+        return reply.send({
+          tournamentId: existing.id,
+          winnerId: existing.winnerId,
+          start_at: existing.start_at,
+          end_at: existing.end_at,
+          players: existing.players,
+          matches: existing.matches,
+        });
+      }
+    }
+    req.log?.error?.({ err }, "failed to store tournament result");
     return reply.code(500).send({ error: "Internal server error" });
   }
 }

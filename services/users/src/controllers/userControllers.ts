@@ -1,12 +1,12 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { PrismaClient, FriendshipStatus } from "@prisma/client";
+import { FriendshipStatus } from "@prisma/client";
+import { prisma } from "../db/client.ts";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import crypto from "crypto";
-import bcrypt from "bcrypt";
+import { sha256 } from "../auth/tokens.ts";
 import { validateProfileUpdate } from "../utils/validation.ts";
 
-const prisma = new PrismaClient();
 
 // Get user profile
 export async function getUserProfile(req: FastifyRequest, reply: FastifyReply) {
@@ -396,11 +396,8 @@ export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
     req.log?.info(`Search users: Found ${filteredUsers.length} results for query "${searchQuery}"`);
     return reply.send(filteredUsers);
   } catch (error: any) {
-    req.log?.error('Error searching users:', error);
-    console.error('Error searching users:', error);
-    console.error('Error stack:', error?.stack);
-    console.error('Error message:', error?.message);
-    
+    req.log?.error({ err: error }, 'Error searching users:');
+
     // Provide more specific error messages
     if (error?.code === 'P2002') {
       return reply.code(500).send({ error: "Database constraint error." });
@@ -408,13 +405,13 @@ export async function searchUsers(req: FastifyRequest, reply: FastifyReply) {
     if (error?.code?.startsWith('P')) {
       return reply.code(500).send({ 
         error: "Database error while searching users.",
-        message: error?.message || "Unknown database error"
+        message: "Please try again later."
       });
     }
     
     return reply.code(500).send({
       error: "Internal server error while searching users.",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -432,14 +429,16 @@ export async function generateApiKey(req: FastifyRequest, reply: FastifyReply) {
   }
 
   try {
-    // Generate a secure random API key
-    const apiKey = `ft_${crypto.randomBytes(32).toString('hex')}`;
-    const keyHash = await bcrypt.hash(apiKey, 10);
+    // ft_<prefix>_<secret>: the prefix is the indexed lookup key, the full key is stored
+    // only as SHA-256 (high-entropy random secret, so a fast hash is appropriate).
+    const prefix = crypto.randomBytes(6).toString('hex');
+    const apiKey = `ft_${prefix}_${crypto.randomBytes(32).toString('base64url')}`;
+    const keyHash = sha256(apiKey);
 
-    // Store the hashed key in database
     const apiKeyRecord = await prisma.apiKey.create({
       data: {
         userId,
+        prefix,
         keyHash,
         name: name.trim(),
         isActive: true,
@@ -455,10 +454,10 @@ export async function generateApiKey(req: FastifyRequest, reply: FastifyReply) {
       message: "API key created successfully. Please save this key securely - it will not be shown again."
     });
   } catch (error: any) {
-    req.log?.error('Error generating API key:', error);
+    req.log?.error({ err: error }, 'Error generating API key:');
     return reply.code(500).send({
       error: "Failed to generate API key.",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -483,10 +482,10 @@ export async function listApiKeys(req: FastifyRequest, reply: FastifyReply) {
 
     return reply.send(apiKeys);
   } catch (error: any) {
-    req.log?.error('Error listing API keys:', error);
+    req.log?.error({ err: error }, 'Error listing API keys:');
     return reply.code(500).send({
       error: "Failed to list API keys.",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -523,10 +522,10 @@ export async function revokeApiKey(req: FastifyRequest, reply: FastifyReply) {
 
     return reply.send({ message: "API key revoked successfully." });
   } catch (error: any) {
-    req.log?.error('Error revoking API key:', error);
+    req.log?.error({ err: error }, 'Error revoking API key:');
     return reply.code(500).send({
       error: "Failed to revoke API key.",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -551,10 +550,10 @@ export async function getOnlineUsers(req: FastifyRequest, reply: FastifyReply) {
 
     return reply.send(onlineUsers);
   } catch (error: any) {
-    req.log?.error('Error fetching online users:', error);
+    req.log?.error({ err: error }, 'Error fetching online users:');
     return reply.code(500).send({
       error: "Failed to fetch online users.",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }
@@ -604,10 +603,10 @@ export async function getFriendsByUserId(req: FastifyRequest, reply: FastifyRepl
 
     return reply.send(friends);
   } catch (error: any) {
-    req.log?.error('Error fetching friends by user ID:', error);
+    req.log?.error({ err: error }, 'Error fetching friends by user ID:');
     return reply.code(500).send({
       error: "Failed to fetch friends.",
-      message: error?.message || "Unknown error"
+      message: "Please try again later."
     });
   }
 }

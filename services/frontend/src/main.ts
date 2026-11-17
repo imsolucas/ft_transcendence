@@ -2,7 +2,7 @@ import './styles/style.css'
 import './i18n';
 import { initializeApp } from "./router";
 import { initializeNavbar, updateNavbar } from "./components/layout/Navbar";
-import { hasStoredToken } from "./utils/tokenManager";
+import { hasStoredToken, decodeToken } from "./utils/tokenManager";
 // Initialize Stimulus framework
 import './controllers';
 
@@ -41,7 +41,12 @@ if (root) {
             window.location.href = '/';
           }
         }, 100);
-      } else if (e.newValue && e.oldValue && e.newValue !== e.oldValue) {
+      } else if (
+        e.newValue && e.oldValue && e.newValue !== e.oldValue &&
+        // A routine 15-minute token refresh rewrites the token for the SAME user; only a
+        // different user id means someone else logged in.
+        decodeToken(e.newValue)?.id !== decodeToken(e.oldValue)?.id
+      ) {
         // Token changed (different user logged in)
         console.log('Different user logged in in another tab/window');
         updateNavbar();

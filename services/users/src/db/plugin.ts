@@ -1,10 +1,8 @@
 import fp from "fastify-plugin";
 import type { FastifyInstance } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "./client.ts";
 
 async function dbPlugin(fastify: FastifyInstance) {
-  const prisma = new PrismaClient();
-
   fastify.decorate("db", prisma);
 
   fastify.addHook("onClose", async (instance) => {

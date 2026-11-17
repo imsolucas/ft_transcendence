@@ -5,6 +5,28 @@ import { MessageBroadcaster } from "./Broadcaster.js";
 import GameService from "./GameService.js";
 import RoomService from "./RoomService.js";
 import TournamentService from "./TournamentService.js";
+import type { ConnectionErrorMessage } from "shared/index.js";
+import type { AuthenticatedUser } from "../auth/accessToken.js";
+
+const WS_OPEN = 1;
+const MAX_PICTURE_URL_LENGTH = 512;
+
+/**
+ * The avatar URL is still client-supplied (it is only a display hint) and is broadcast to
+ * other players, so accept only plain https URLs or same-origin paths.
+ */
+function sanitizePictureUrl(value: unknown): string {
+    if (typeof value !== 'string' || value.length === 0 || value.length > MAX_PICTURE_URL_LENGTH) return '';
+    if (value.startsWith('/') && !value.startsWith('//')) {
+        return /^[\w\-./]+$/.test(value) ? value : '';
+    }
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && !/["'<>\s]/.test(value) ? url.toString() : '';
+    } catch {
+        return '';
+    }
+}
 
 export default class NewMessageHandler {
     private tournamentService: TournamentService
@@ -19,16 +41,34 @@ export default class NewMessageHandler {
         this.roomService = new RoomService(roomManager);
     }
 
-    handleConnection(message: ConnectionMessage, connection: any): Player | null {
+    /**
+     * Registers the authenticated user as a player. Identity comes from the verified
+     * access token (`user`); client-sent playerId/playerName are ignored.
+     */
+    handleConnection(message: ConnectionMessage, connection: any, user: AuthenticatedUser): Player | null {
+        const id = String(user.id); // TickSystem parses this back with parseInt
+
+        const existing = this.roomManager.getPlayer(id);
+        if (existing && existing.socket !== connection && existing.socket.readyState === WS_OPEN) {
+            const refusal: ConnectionErrorMessage = {
+                type: 'connectionError',
+                data: { message: 'Already connected in another tab or window.', code: 'ALREADY_CONNECTED' },
+                timestamp: Date.now()
+            };
+            connection.send(JSON.stringify(refusal));
+            connection.close(4409, 'Already connected');
+            return null;
+        }
+
         const newPlayer: Player = {
-            id: message.data.playerId,
-            name: message.data.playerName,
+            id,
+            name: user.username,
             socket: connection,
             roomId: '',
             position: 0,
             connectedAt: Date.now(),
             isReady: false,
-            picture: message.data.picture
+            picture: sanitizePictureUrl(message.data?.picture)
         };
 
         const response = {

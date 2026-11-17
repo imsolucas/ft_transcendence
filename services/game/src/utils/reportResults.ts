@@ -1,31 +1,61 @@
-export async function reportMatchResult(result: any) {
-  const USERS_API_URL = process.env.USERS_API_URL || 'http://users:4000'; // Docker network name
-  try {
-    const response = await fetch(`${USERS_API_URL}/game/match-result`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result),
-    });
-    if (!response.ok) {
-      console.error('Failed to report match result:', await response.text());
-    }
-  } catch (err) {
-    console.error('Error reporting match result:', err);
-  }
+import crypto from 'node:crypto';
+import { config } from '../config.js';
+
+const REQUEST_TIMEOUT_MS = 5_000;
+const RETRY_DELAYS_MS = [1_000, 4_000, 15_000];
+
+type Logger = { error: (obj: object, msg: string) => void };
+let log: Logger = { error: (obj, msg) => console.error(msg, obj) };
+
+/** index.ts hands over the Fastify logger so reports log through pino. */
+export function setReportLogger(logger: Logger): void {
+  log = logger;
 }
 
-export async function reportTournamentResult(result: any) {
-  const USERS_API_URL = process.env.USERS_API_URL || 'http://users:4000'; // Docker network name
-  try {
-    const response = await fetch(`${USERS_API_URL}/game/tournament-result`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result),
-    });
-    if (!response.ok) {
-      console.error('Failed to report match result:', await response.text());
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * POSTs a result to the users service with the internal service token.
+ * Retries on network errors and 5xx; the body carries an idempotency key, so a retry
+ * after a lost response cannot record the result twice. Never awaited from the tick.
+ */
+async function postWithRetry(path: string, body: unknown, label: string): Promise<void> {
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const response = await fetch(`${config.usersApiUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.internalServiceToken}`,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (response.ok) return;
+      if (response.status < 500) {
+        // A 4xx will not succeed on retry; log status only (no body, no payload).
+        log.error({ status: response.status }, `${label} rejected by users service`);
+        return;
+      }
+      log.error({ status: response.status, attempt: attempt + 1 }, `${label} failed`);
+    } catch (err) {
+      log.error({ error: (err as Error).name, attempt: attempt + 1 }, `${label} failed`);
     }
-  } catch (err) {
-    console.error('Error reporting match result:', err);
+    const delay = RETRY_DELAYS_MS[attempt];
+    if (delay === undefined) break;
+    await sleep(delay);
   }
+  log.error({ attempts: RETRY_DELAYS_MS.length + 1 }, `${label} dropped`);
+}
+
+export function reportMatchResult(result: Record<string, unknown>): void {
+  const body = { matchId: crypto.randomUUID(), ...result };
+  void postWithRetry('/game/match-result', body, 'match result');
+}
+
+export function reportTournamentResult(result: Record<string, unknown>): void {
+  // The tournament id is the idempotency key on the users side.
+  void postWithRetry('/game/tournament-result', result, 'tournament result');
 }

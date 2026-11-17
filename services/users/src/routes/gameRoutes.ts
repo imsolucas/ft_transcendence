@@ -59,6 +59,7 @@ export default async function registerGameRoutes(app: FastifyInstance) {
           "end_at"
         ],
         properties: {
+          matchId: { type: "string", minLength: 8, maxLength: 64, description: "Idempotency key; replays with the same value return the stored match" },
           player1Id: { type: "integer" },
           player2Id: { type: "integer" },
           player1Score: { type: "integer" },
@@ -72,6 +73,10 @@ export default async function registerGameRoutes(app: FastifyInstance) {
         }
       },
       response: {
+        200: {
+          description: "Replay of an already stored matchId; the stored record is returned.",
+          $ref: "MatchHistory#"
+        },
         201: {
           description: "Match record created successfully.",
           $ref: "MatchHistory#"
@@ -131,13 +136,14 @@ export default async function registerGameRoutes(app: FastifyInstance) {
   app.post("/game/tournament-result", {
     schema: {
       summary: "Post tournament result",
-      description: "Creates a tournament record with all details after the tournament ends. The request must include tournament ID, name, winner ID, start/end times, players, and matches.",
+      description: "Creates a tournament record with all details after the tournament ends. The request must include an idempotency key (tournamentKey), name, winner ID, start/end times, players, and matches.",
       tags: ["game"],
       body: {
         type: "object",
-        required: ["tournamentId", "winnerId", "start_at", "end_at", "players", "matches"],
+        required: ["tournamentKey", "winnerId", "start_at", "end_at", "players", "matches"],
         properties: {
-          tournamentId: { type: "integer" },
+          tournamentKey: { type: "string", minLength: 8, maxLength: 64, description: "Idempotency key (UUID per tournament run); replays return the stored tournament" },
+          tournamentId: { type: "integer", description: "Deprecated and ignored; the database assigns the id" },
           name: { type: "string" },
           winnerId: { type: "integer" },
           start_at: { type: "string", format: "date-time" },

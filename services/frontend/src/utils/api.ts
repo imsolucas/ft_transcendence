@@ -1,5 +1,5 @@
 import { getCurrentUser } from './auth-script';
-import { getAccessToken, clearAccessToken } from './tokenManager';
+import { getAccessToken, clearAccessToken, fetchWithRefresh } from './tokenManager';
 import process from 'process';
 
 // API Configuration
@@ -15,19 +15,15 @@ const getToken = () => {
 
 // Helper function for making authenticated API requests
 const apiFetch = async (url: string, options: RequestInit = {}) => {
-  const token = getToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    console.warn('No auth token found for request to:', url);
-  }
-
-  const response = await fetch(url, { ...options, headers });
+  // On a 401 the session is refreshed once (rotating refresh cookie) and the call retried.
+  const response = await fetchWithRefresh(url, (token) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return { ...options, headers };
+  });
 
   // Handle 401 Unauthorized - token is invalid or expired
   if (response.status === 401) {

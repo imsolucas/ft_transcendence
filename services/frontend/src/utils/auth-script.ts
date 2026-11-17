@@ -2,7 +2,7 @@ import { navigate } from '../router';
 import type { Screen } from '../router';
 import { updateNavbar } from '../components/layout/Navbar';
 import type { UserData } from '../types/user';
-import { getAccessToken, clearAccessToken, setAccessToken, getCurrentUserId } from './tokenManager';
+import { getAccessToken, clearAccessToken, setAccessToken, getCurrentUserId, fetchWithRefresh } from './tokenManager';
 import { API_BASE_URL } from './api';
 
 // Types for API requests/responses
@@ -411,13 +411,15 @@ export async function getCurrentUser(): Promise<UserData | null> {
 		return null;
 	  }
 
-	  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+	  // Refreshes the session once on 401, so callers (e.g. the game page, right before it
+	  // opens the WebSocket) always end up with a fresh access cookie.
+	  const response = await fetchWithRefresh(`${API_BASE_URL}/user/profile`, (current) => ({
 		method: 'GET',
 		headers: {
-		  'Authorization': `Bearer ${token}`,
+		  'Authorization': `Bearer ${current ?? token}`,
 		  'Content-Type': 'application/json',
 		},
-	  });
+	  }));
 
       if (response.ok) {
 		const userData = await response.json();
@@ -431,8 +433,6 @@ export async function getCurrentUser(): Promise<UserData | null> {
 		return user;
 	  }
 
-	  // Handle 401 - token might be expired, but don't try to refresh here
-	  // to avoid circular dependency with api.ts
 	  if (response.status === 401) {
 		console.warn("getCurrentUser: Unauthorized - token may be expired");
 		return null;

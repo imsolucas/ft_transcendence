@@ -149,7 +149,7 @@ function matchMaking(container: HTMLElement) {
                     // When current user joins, add all existing players as opponents
                     if (playerJoinMsg.data.playersInRoom.length > 1){
                         playerJoinMsg.data.playersInRoom.forEach((existingPlayer) => {
-                            if (existingPlayer.id !== user!.id) {
+                            if (String(existingPlayer.id) !== String(user!.id)) { // server ids are strings
                                 player = {
                                     id: existingPlayer.id,
                                     username: existingPlayer.name,

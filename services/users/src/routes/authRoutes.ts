@@ -1,9 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import * as controllers from "../controllers/authControllers.ts";
+import { authRateLimiter } from "../middleware/rateLimiter.ts";
 
 export default async function registerAuthRoutes(app: FastifyInstance) {
   // Auth signup
   app.post("/auth/signup", {
+    preHandler: authRateLimiter,
     schema: {
       summary: "User signup",
       description: "Create a new user account.",
@@ -39,6 +41,7 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
 
   // Auth login
   app.post("/auth/login", {
+    preHandler: authRateLimiter,
     schema: {
       summary: "User login",
       description: "Login to user account.",
@@ -91,6 +94,7 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
 
   // Google auth
   app.post("/auth/google", {
+    preHandler: authRateLimiter,
     schema: {
       summary: "Sign in or sign up with Google",
       description: "Authenticates a user using a Google account. The frontend should send a Google ID token in the request body. If the user does not exist, a new account will be created. On success, returns an application JWT token and user profile.",
@@ -140,15 +144,17 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
 
   // POST /auth/verify-2fa
   app.post("/auth/verify-2fa", {
+    preHandler: authRateLimiter,
     schema: {
       summary: "Verify 2FA code",
       description: "Verifies the 2FA code and returns a JWT token if successful.",
       body: {
         type: "object",
-        required: ["userId", "code"],
+        required: ["code"],
+        additionalProperties: false,
         properties: {
-          userId: { type: "integer" },
-          code: { type: "string" }
+          userId: { type: "integer", description: "Optional; must match the user the 2FA challenge cookie was issued for" },
+          code: { type: "string", pattern: "^[0-9]{6}$" }
         }
       },
       response: {
@@ -202,16 +208,42 @@ export default async function registerAuthRoutes(app: FastifyInstance) {
     }
   }, controllers.logout);
 
+  // POST /auth/refresh
+  app.post("/auth/refresh", {
+    preHandler: authRateLimiter,
+    schema: {
+      summary: "Refresh the session",
+      description: "Exchanges the httpOnly refresh_token cookie for a new access token and a rotated refresh token. Reusing an already-rotated refresh token revokes every session of that login.",
+      response: {
+        200: {
+          description: "Session refreshed",
+          type: "object",
+          properties: {
+            token: { type: "string" },
+            user: { $ref: "UserProfile#" }
+          }
+        },
+        401: {
+          description: "Missing, expired, revoked or reused refresh token",
+          type: "object",
+          properties: { error: { type: "string" } }
+        }
+      }
+    }
+  }, controllers.refresh);
+
   // POST /auth/set-password
   app.post("/auth/set-password", {
+    preHandler: authRateLimiter,
     schema: {
       summary: "Set password for OAuth users",
       description: "Sets a password for users who signed up via OAuth. Required before accessing the application.",
       body: {
         type: "object",
-        required: ["userId", "password"],
+        required: ["password"],
+        additionalProperties: false,
         properties: {
-          userId: { type: "integer", description: "User ID from OAuth response" },
+          userId: { type: "integer", description: "Optional; must match the user the set-password challenge cookie was issued for" },
           password: { type: "string", format: "password", description: "Password to set (minimum 6 characters)" }
         }
       },

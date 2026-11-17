@@ -53,6 +53,8 @@ model Friendship {
 
 model Match {
   id           Int        @id @default(autoincrement())
+  // Idempotency key sent by the game service; a retried report with the same key is a no-op
+  externalId   String?    @unique
   tournamentId Int?
   player1Id    Int
   player2Id    Int
@@ -74,6 +76,8 @@ model Match {
 
 model Tournament {
   id        Int      @id @default(autoincrement())
+  // Idempotency key sent by the game service (a UUID per tournament run)
+  externalId String? @unique
   name      String
   players   TournamentPlayer[] @relation("TournamentPlayers")
   matches   Match[]  @relation("TournamentMatches")
@@ -109,30 +113,44 @@ enum FriendshipStatus {
   REJECTED
 }
 
+// Opaque refresh tokens, stored as SHA-256. Rotated on every use; all rows of one login
+// share a familyId so reuse of a rotated token can revoke the whole family.
 model RefreshToken {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    Int
-  tokenHash String   @unique
+  tokenHash String    @unique
+  familyId  String
   expiresAt DateTime
-  createdAt DateTime @default(now())
-  used      Boolean  @default(false)
-  user      User     @relation("RefreshTokens", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  used      Boolean   @default(false)
+  // When this token was exchanged; a second use within a few seconds is a benign
+  // multi-tab / reload race, a later one is treated as theft.
+  rotatedAt DateTime?
+  revokedAt DateTime?
+  user      User      @relation("RefreshTokens", fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([familyId])
   @@map("RefreshTokens")
 }
 
+// Revoked access tokens, keyed by JWT `jti`, kept until the token would have expired anyway.
 model TokenBlacklist {
   id        Int      @id @default(autoincrement())
-  tokenHash String   @unique
+  jti       String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
 
+  @@index([expiresAt])
   @@map("TokenBlacklist")
 }
 
+// Public API keys look like `ft_<prefix>_<secret>`. Lookup by prefix, then constant-time
+// compare of SHA-256(full key) with keyHash.
 model ApiKey {
   id         Int      @id @default(autoincrement())
   userId     Int
+  prefix     String   @unique
   keyHash    String   @unique
   name       String
   isActive   Boolean  @default(true)
