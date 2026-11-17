@@ -37,7 +37,7 @@ export default class TickSystem {
 
         // console.log("activeRooms:", activeRooms);
         for (const room of activeRooms) {
-            if (!room.gameServer) continue;
+            if (!room.gameServer || room.paused) continue;
 
             const continueGame = room.gameServer.tick(deltaTime);
 

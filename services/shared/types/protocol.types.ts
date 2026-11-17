@@ -19,7 +19,15 @@ export type GameMessage =
 | TournamentRoundEndMessage
 | TournamentEndMessage
 | PlayerJoinedMessage
-| TournamentStateMessage;
+| TournamentStateMessage
+| ForfeitMessage
+| RematchMessage
+| OpponentReconnectingMessage
+| OpponentReconnectedMessage
+| RejoinedMessage
+| RematchRequestedMessage
+| RematchReadyMessage
+| ReadyTimeoutMessage;
 
 export type GameErrorCodes =
 | 'ALREADY_IN_ROOM'
@@ -197,3 +205,54 @@ export interface GameStateMessage extends BaseMessage {
 	}
 }
 
+
+
+// ---------------------------------------------------------------- Phase 3: match lifecycle
+
+/** client → server: give up the current match (recorded as a loss) */
+export interface ForfeitMessage extends BaseMessage {
+	type: 'forfeit';
+	data: Record<string, never>;
+}
+
+/** client → server: ask for a rematch after a 1v1 ends (both must ask) */
+export interface RematchMessage extends BaseMessage {
+	type: 'rematch';
+	data: Record<string, never>;
+}
+
+/** server → room: a player dropped mid-match; the match is paused until `deadline` (ms epoch) */
+export interface OpponentReconnectingMessage extends BaseMessage {
+	type: 'opponentReconnecting';
+	data: { playerId: string; playerName: string; deadline: number };
+}
+
+/** server → room: the dropped player is back; the match resumes */
+export interface OpponentReconnectedMessage extends BaseMessage {
+	type: 'opponentReconnected';
+	data: { playerId: string };
+}
+
+/** server → returning player: you were put back into your match */
+export interface RejoinedMessage extends BaseMessage {
+	type: 'rejoined';
+	data: { roomId: string; playersInRoom: serializablePlayer[]; gameState: GameState | null };
+}
+
+/** server → room: one player wants a rematch */
+export interface RematchRequestedMessage extends BaseMessage {
+	type: 'rematchRequested';
+	data: { playerId: string; playerName: string };
+}
+
+/** server → room: both agreed; back to the ready check */
+export interface RematchReadyMessage extends BaseMessage {
+	type: 'rematchReady';
+	data: { roomId: string; playersInRoom: serializablePlayer[] };
+}
+
+/** server → room: not everyone readied up in time; the room is closed */
+export interface ReadyTimeoutMessage extends BaseMessage {
+	type: 'readyTimeout';
+	data: { roomId: string };
+}

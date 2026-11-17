@@ -191,9 +191,9 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     clearInterval(recheck);
-    if (currentPlayer && roomManager.getPlayer(currentPlayer.id)?.socket === currentPlayer.socket) {
-      messageHandler.handleDisconnection(currentPlayer);
-      roomManager.removePlayer(currentPlayer.id);
+    // Compare with this connection's adapter: after a rejoin the player has a newer socket
+    if (currentPlayer && (roomManager.getPlayer(currentPlayer.id)?.socket as unknown) === adapter) {
+      messageHandler.handleSocketClosed(currentPlayer);
     }
     currentPlayer = null;
 

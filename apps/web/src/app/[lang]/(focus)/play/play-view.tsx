@@ -59,6 +59,12 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   const [ping, setPing] = useState<number | undefined>();
   const [tournament, setTournament] = useState<TournamentState | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // Opponent dropped mid-match: paused until this time (ms epoch)
+  const [opponentAway, setOpponentAway] = useState<{ name: string; deadline: number } | null>(null);
+  // Rematch: did I ask, and who asked me
+  const [rematchAsked, setRematchAsked] = useState(false);
+  const [rematchFrom, setRematchFrom] = useState<string | null>(null);
+  const [readyDeadline, setReadyDeadline] = useState<number | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const config = useMemo(() => baseGameConfig(), []);
   const phaseRef = useRef(phase);
@@ -92,6 +98,12 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
     const offMsg = socket.onMessage((msg: ServerMessage) => {
       switch (msg.type) {
         case "connectionSuccess": {
+          const current = phaseRef.current.k;
+          if (current === "playing" || current === "countdown") {
+            // We came back after the reconnect grace period: the match was forfeited
+            setPhase({ k: "error", message: t("game.forfeitedOnDisconnect"), retry: true });
+            break;
+          }
           if (mode === "quick") {
             socket.send({ type: "joinQueue", data: { roomType: "standard" } });
             setPhase({ k: "searching", since: Date.now() });
@@ -128,6 +140,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setPhase((p) => {
             if (p.k === "playing" || p.k === "countdown" || p.k === "ended") return p;
             if (!enough || (isTournament && p.k === "waiting")) return { k: "waiting", roomId: data.roomId, tournament: isTournament };
+            if (!isTournament) setReadyDeadline(Date.now() + 30_000);
             return { k: "found", roomId: data.roomId, tournament: isTournament };
           });
           break;
@@ -142,6 +155,9 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           if (d.tournamentState) setTournament(d.tournamentState);
           setScores([0, 0]);
           setSeconds(0);
+          setReadyDeadline(null);
+          setRematchAsked(false);
+          setRematchFrom(null);
           setPhase({ k: "countdown" });
           break;
         }
@@ -167,6 +183,39 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setPhase((p) => (p.k === "playing" || p.k === "countdown" || p.k === "found" ? { k: "ended", winnerId: myIdRef.current, reason: "left" } : p));
           break;
         }
+        case "opponentReconnecting": {
+          const d = msg.data as { playerName: string; deadline: number };
+          setOpponentAway({ name: d.playerName, deadline: d.deadline });
+          break;
+        }
+        case "opponentReconnected":
+          setOpponentAway(null);
+          break;
+        case "rejoined": {
+          const d = msg.data as { playersInRoom: serializablePlayer[]; gameState: GameState | null };
+          setPlayers(d.playersInRoom);
+          if (d.gameState) stateRef.current = d.gameState;
+          setPhase({ k: "playing" });
+          break;
+        }
+        case "rematchRequested":
+          setRematchFrom((msg.data as { playerName: string }).playerName);
+          break;
+        case "rematchReady": {
+          const d = msg.data as { roomId: string; playersInRoom: serializablePlayer[] };
+          setPlayers(d.playersInRoom);
+          setReadySent(false);
+          setRematchAsked(false);
+          setRematchFrom(null);
+          setOpponentAway(null);
+          setReadyDeadline(Date.now() + 30_000);
+          setPhase({ k: "found", roomId: d.roomId, tournament: false });
+          break;
+        }
+        case "readyTimeout":
+          setReadyDeadline(null);
+          setPhase({ k: "error", message: t("matchmaking.readyTimeout"), retry: true });
+          break;
         case "Error": {
           const c = (msg.data as { code?: string }).code;
           if (c === "JOIN_FAILED" || c === "ROOM_NOT_FOUND") setPhase({ k: "error", message: t("matchmaking.roomNotFound"), retry: false });
@@ -198,12 +247,19 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
     return () => clearInterval(id);
   }, [phase, t]);
 
+  // ---- 1s clock for the ready deadline and the reconnect countdown
+  useEffect(() => {
+    if (!readyDeadline && !opponentAway) return;
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [readyDeadline, opponentAway]);
+
   // ---- match clock
   useEffect(() => {
-    if (phase.k !== "playing") return;
+    if (phase.k !== "playing" || opponentAway) return;
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [phase.k]);
+  }, [phase.k, opponentAway]);
 
   // ---- Esc: cancel search, or toggle the in-game menu
   useEffect(() => {
@@ -342,6 +398,11 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
             </div>
           ))}
         </div>
+        {readyDeadline && phase.k === "found" && (
+          <p className="num num-md c-amber" role="timer">
+            {t("matchmaking.readyDeadline", { s: Math.max(0, Math.ceil((readyDeadline - now) / 1000)) })}
+          </p>
+        )}
         {canReady &&
           (readySent || meP?.isReady ? (
             <p className="muted row">
@@ -370,9 +431,24 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         leftName={youSide === 1 ? (right?.name ?? "") : (left?.name ?? "")}
         rightName={youSide === 1 ? (left?.name ?? "") : (right?.name ?? "")}
         primary={
-          <Button variant="primary" glow="md" size="lg" onClick={onRestart}>
-            {t("game.playAgain")}
-          </Button>
+          !tournament && phase.reason !== "left" && players.length === 2 ? (
+            <Button
+              variant="primary"
+              glow="md"
+              size="lg"
+              loading={rematchAsked}
+              onClick={() => {
+                socketRef.current?.send({ type: "rematch", data: {} });
+                setRematchAsked(true);
+              }}
+            >
+              {rematchAsked ? t("game.rematchWaiting", { name: players.find((p) => p.id !== myId)?.name ?? "…" }) : t("game.rematch")}
+            </Button>
+          ) : (
+            <Button variant="primary" glow="md" size="lg" onClick={onRestart}>
+              {t("game.playAgain")}
+            </Button>
+          )
         }
         secondary={
           <Button asChild size="lg">
@@ -381,7 +457,15 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
             </Link>
           </Button>
         }
-        note={phase.reason === "left" ? <p className="muted">{t("game.opponentLeft")}</p> : null}
+        note={
+          phase.reason === "left" ? (
+            <p className="muted">{t("game.opponentLeft")}</p>
+          ) : rematchFrom && !rematchAsked ? (
+            <p className="c-cyan" role="status">
+              {t("game.rematchRequested", { name: rematchFrom })}
+            </p>
+          ) : null
+        }
       />
     );
   }
@@ -419,12 +503,25 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           youSide={youSide}
           controls="online"
           onInputs={onInputs}
-          paused={phase.k !== "playing" || spectating}
+          paused={phase.k !== "playing" || spectating || !!opponentAway}
           onFirstMove={onFirstMove}
         />
         {phase.k === "countdown" && <CountdownOverlay onDone={afterCountdown} />}
         {phase.k === "playing" && showControls && !spectating && <ControlsCard local={false} onClose={onFirstMove} />}
         {status === "reconnecting" && <ReconnectingOverlay onRetry={() => socketRef.current?.retry()} />}
+        {opponentAway && status === "connected" && (
+          <div className="overlay">
+            <div className="reconnect" role="status" aria-live="assertive">
+              <span className="spinner spinner-lg" aria-hidden />
+              <p className="t-heading">{t("game.opponentReconnecting", { name: opponentAway.name })}</p>
+              <p className="pix pix-md c-amber glow-text-amber">{Math.max(0, Math.ceil((opponentAway.deadline - now) / 1000))}</p>
+              <div className="meter" aria-hidden>
+                <i style={{ width: `${Math.max(0, Math.min(100, ((opponentAway.deadline - now) / 15000) * 100))}%` }} />
+              </div>
+              <p className="t-caption subtle">{t("game.reconnectOutcome", { s: Math.max(0, Math.ceil((opponentAway.deadline - now) / 1000)) })}</p>
+            </div>
+          </div>
+        )}
       </div>
       <GameMenu
         open={menu}
@@ -435,8 +532,9 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setShowControls(true);
         }}
         onForfeit={() => {
-          socketRef.current?.send({ type: "leaveRoom", data: { playerName: "" } });
-          setPhase({ k: "ended", winnerId: null });
+          // the server records the loss and answers with gameEnd
+          socketRef.current?.send({ type: tournament ? "leaveRoom" : "forfeit", data: {} });
+          if (tournament) setPhase({ k: "ended", winnerId: null });
         }}
       />
     </div>

@@ -196,7 +196,9 @@
     "alreadyConnected": "You're already in a game in another tab. Close it, then try again.",
     "roomNotFound": "That room doesn't exist or is full.",
     "notReady": "Not ready",
-    "readyBadge": "Ready"
+    "readyBadge": "Ready",
+    "readyTimeout": "Not everyone was ready in time.",
+    "readyDeadline": "{s}s to get ready"
   },
   "game": {
     "controlsTitle": "Controls",
@@ -223,7 +225,12 @@
     "retryNow": "Retry now",
     "first": "First to {n}",
     "upButton": "Move up",
-    "downButton": "Move down"
+    "downButton": "Move down",
+    "opponentReconnecting": "{name} is reconnecting…",
+    "reconnectOutcome": "If they don't return in {s}s, you win the match.",
+    "rematchWaiting": "Waiting for {name}…",
+    "rematchRequested": "{name} wants a rematch",
+    "forfeitedOnDisconnect": "You were disconnected for too long, so the match was forfeited."
   },
   "local": {
     "title": "LOCAL GAME",

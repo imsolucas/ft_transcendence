@@ -196,7 +196,9 @@
     "alreadyConnected": "Vous êtes déjà dans une partie dans un autre onglet. Fermez-le, puis réessayez.",
     "roomNotFound": "Ce salon n'existe pas ou est complet.",
     "notReady": "Pas prêt",
-    "readyBadge": "Prêt"
+    "readyBadge": "Prêt",
+    "readyTimeout": "Tout le monde n'était pas prêt à temps.",
+    "readyDeadline": "{s} s pour être prêt"
   },
   "game": {
     "controlsTitle": "Commandes",
@@ -223,7 +225,12 @@
     "retryNow": "Réessayer maintenant",
     "first": "Premier à {n}",
     "upButton": "Monter",
-    "downButton": "Descendre"
+    "downButton": "Descendre",
+    "opponentReconnecting": "{name} se reconnecte…",
+    "reconnectOutcome": "S'il ne revient pas dans {s} s, vous gagnez le match.",
+    "rematchWaiting": "En attente de {name}…",
+    "rematchRequested": "{name} veut une revanche",
+    "forfeitedOnDisconnect": "Vous avez été déconnecté trop longtemps, le match est perdu par forfait."
   },
   "local": {
     "title": "PARTIE LOCALE",

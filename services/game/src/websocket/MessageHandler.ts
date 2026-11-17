@@ -8,6 +8,7 @@ import TournamentService from "./TournamentService.ts";
 import type { ConnectionErrorMessage } from "shared/index.ts";
 import type { AuthenticatedUser } from "../auth/usersClient.ts";
 import { gameStarted } from "../presence.ts";
+import { MatchLifecycle } from "./MatchLifecycle.ts";
 
 const WS_OPEN = 1;
 
@@ -16,12 +17,19 @@ export default class NewMessageHandler {
     private gameService: GameService
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
+    readonly lifecycle: MatchLifecycle
 
     constructor ( private roomManager: RoomManager ) {
         this.broadcaster = new MessageBroadcaster(roomManager);
         this.tournamentService = new TournamentService(roomManager, this.broadcaster);
         this.gameService = new GameService(roomManager, this.broadcaster);
         this.roomService = new RoomService(roomManager);
+        this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p));
+    }
+
+    /** The socket behind `player` closed: hold a 1v1 player for a reconnect, otherwise drop them. */
+    handleSocketClosed(player: Player): void {
+        if (!this.lifecycle.onSocketClosed(player)) this.handleDisconnection(player);
     }
 
     /**
@@ -30,6 +38,11 @@ export default class NewMessageHandler {
      */
     handleConnection(_message: ConnectionMessage, connection: any, user: AuthenticatedUser): Player | null {
         const id = String(user.id); // TickSystem parses this back with parseInt
+
+        // Back within the reconnect grace period: reattach to the paused match (no
+        // connectionSuccess, so the client doesn't start a new search/room)
+        const rejoined = this.lifecycle.tryRejoin(id, connection);
+        if (rejoined) return rejoined;
 
         const existing = this.roomManager.getPlayer(id);
         if (existing && existing.socket !== connection && existing.socket.readyState === WS_OPEN) {
@@ -102,6 +115,12 @@ export default class NewMessageHandler {
                 break;
             case "playerInput":
                 this.handlePlayerInput(message as PlayerInputMessage, player);
+                break;
+            case "forfeit":
+                this.lifecycle.forfeit(player);
+                break;
+            case "rematch":
+                this.lifecycle.requestRematch(player);
                 break;
           default:
             console.error(`[Router] ERROR: Unknown message type: ${message.type}`);
@@ -230,6 +249,7 @@ export default class NewMessageHandler {
         if (success.startGame) {
             const room = this.roomManager.getRoom(player.roomId);
             if (!room) return;
+            this.lifecycle.clearReadyDeadline(room.id);
             const playersInRoom = this.roomManager.getPlayersInRoom(room.id);
 
             let tournamentState: TournamentState | null = null;
@@ -287,5 +307,8 @@ export default class NewMessageHandler {
             timestamp: Date.now()
         };
         this.broadcaster.broadcastToRoom(roomId, response);
+
+        const room = this.roomManager.getRoom(roomId);
+        if (room && room.mode === "standard" && this.roomManager.isRoomFull(roomId)) this.lifecycle.armReadyDeadline(room);
     }
 }

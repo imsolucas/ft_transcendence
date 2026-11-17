@@ -196,7 +196,9 @@
     "alreadyConnected": "Ya estás en una partida en otra pestaña. Ciérrala e inténtalo de nuevo.",
     "roomNotFound": "Esa sala no existe o está llena.",
     "notReady": "No listo",
-    "readyBadge": "Listo"
+    "readyBadge": "Listo",
+    "readyTimeout": "No todos estaban listos a tiempo.",
+    "readyDeadline": "{s} s para estar listo"
   },
   "game": {
     "controlsTitle": "Controles",
@@ -223,7 +225,12 @@
     "retryNow": "Reintentar ahora",
     "first": "El primero a {n}",
     "upButton": "Subir",
-    "downButton": "Bajar"
+    "downButton": "Bajar",
+    "opponentReconnecting": "{name} se está reconectando…",
+    "reconnectOutcome": "Si no vuelve en {s} s, ganas la partida.",
+    "rematchWaiting": "Esperando a {name}…",
+    "rematchRequested": "{name} quiere la revancha",
+    "forfeitedOnDisconnect": "Estuviste desconectado demasiado tiempo y la partida se dio por perdida."
   },
   "local": {
     "title": "PARTIDA LOCAL",

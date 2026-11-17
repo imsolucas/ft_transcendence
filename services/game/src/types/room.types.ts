@@ -23,6 +23,8 @@ export interface Room {
 	tournamentScores?: Map<string, number>;
 	tournamentMatches?: TournamentMatch[]; // Track all matches in a tournament
 	status: 'waiting' | 'full' | 'playing' | 'finished';
+	/** Paused while a player reconnects (the tick loop skips it) */
+	paused?: boolean;
 	createdAt: number;
 	config: GameConfig;
 	gameServer?: GameServer
