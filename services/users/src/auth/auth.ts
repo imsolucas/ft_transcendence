@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor, username } from "better-auth/plugins";
@@ -63,6 +64,24 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // extend at most once a day
   },
 
+  // Profile changes go through our /api/me (validated handle, avatar upload pipeline);
+  // Better Auth's own update endpoints would bypass those checks.
+  disabledPaths: ["/update-user", "/change-email", "/delete-user"],
+
+  databaseHooks: {
+    user: {
+      create: {
+        // Google sign-ups (and any sign-up without a username) get a unique handle
+        before: async (user) => {
+          const data = user as typeof user & { username?: string; displayUsername?: string };
+          if (data.username) return;
+          const handle = await uniqueHandle(data.name || data.email.split("@")[0]);
+          return { data: { ...user, username: handle, displayUsername: handle, name: handle } };
+        },
+      },
+    },
+  },
+
   plugins: [
     username({ minUsernameLength: 3, maxUsernameLength: 30 }),
     twoFactor({ issuer: "ft_transcendence" }),
@@ -90,3 +109,20 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
+
+/** "Lucas Deng" → "lucas_deng", "lucas_deng2", … (3–30 chars of [a-z0-9_.]) */
+async function uniqueHandle(source: string): Promise<string> {
+  let base = source
+    .normalize("NFKD")
+    .replace(/[^\w.]+/g, "_")
+    .replace(/^[_.]+|[_.]+$/g, "")
+    .toLowerCase()
+    .slice(0, 26);
+  if (base.length < 3) base = `player_${base}`.slice(0, 26);
+  for (let i = 0; i < 50; i++) {
+    const candidate = i === 0 ? base : `${base}${i + 1}`;
+    const taken = await prisma.user.findUnique({ where: { username: candidate }, select: { id: true } });
+    if (!taken) return candidate;
+  }
+  return `${base.slice(0, 18)}_${crypto.randomBytes(4).toString("hex")}`;
+}

@@ -3,7 +3,8 @@ import { Server, type Socket } from 'socket.io';
 import type { GameMessage } from 'shared';
 import type { Player } from 'shared';
 import { config } from './config.js';
-import { resolveSession, setPresence, type AuthenticatedUser } from './auth/usersClient.js';
+import { resolveSession, type AuthenticatedUser } from './auth/usersClient.js';
+import { resetAllPresence, socketClosed, socketCount, socketOpened } from './presence.js';
 import { InMemoryPlayerStorage } from './storage/playerStorage.js';
 import { MessageBroadcaster } from './websocket/Broadcaster.js';
 import { RoomManager } from './game/roomManager.js';
@@ -58,16 +59,38 @@ const io = new Server(server.server, {
   },
 });
 
+const MAX_SOCKETS_PER_USER = 5;
+const HANDSHAKES_PER_IP_PER_MINUTE = 30;
+const SESSION_RECHECK_MS = 60_000;
+
+// Per-IP handshake budget: each handshake costs a session lookup on the users service
+const handshakeBudget = new Map<string, { count: number; resetAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, b] of handshakeBudget) if (now > b.resetAt) handshakeBudget.delete(ip);
+}, 60_000).unref();
+
+function clientIp(socket: Socket) {
+  // Caddy is the only proxy; it appends the real client address last
+  const xff = socket.handshake.headers['x-forwarded-for'];
+  const last = typeof xff === 'string' ? xff.split(',').pop()?.trim() : undefined;
+  return last || socket.handshake.address;
+}
+
 // Authenticate every socket from its session cookie before it is accepted
 io.use(async (socket, next) => {
+  const ip = clientIp(socket);
+  const now = Date.now();
+  const budget = handshakeBudget.get(ip);
+  if (!budget || now > budget.resetAt) handshakeBudget.set(ip, { count: 1, resetAt: now + 60_000 });
+  else if (++budget.count > HANDSHAKES_PER_IP_PER_MINUTE) return next(new Error('RATE_LIMITED'));
+
   const user = await resolveSession(socket.handshake.headers.cookie);
   if (!user) return next(new Error('UNAUTHORIZED'));
+  if (socketCount(user.id) >= MAX_SOCKETS_PER_USER) return next(new Error('TOO_MANY_CONNECTIONS'));
   socket.data.user = user;
   next();
 });
-
-// userId -> number of live sockets, for presence
-const liveSockets = new Map<number, number>();
 
 io.on('connection', (socket) => {
   const user = socket.data.user as AuthenticatedUser;
@@ -75,9 +98,18 @@ io.on('connection', (socket) => {
   const adapter = new SocketAdapter(socket);
   let currentPlayer: Player | null = null;
 
-  const count = (liveSockets.get(user.id) ?? 0) + 1;
-  liveSockets.set(user.id, count);
-  if (count === 1) void setPresence(user.id, 'ONLINE');
+  socketOpened(user.id);
+
+  // Re-check the session regularly: a revoked or expired session loses its socket
+  const cookie = socket.handshake.headers.cookie;
+  const recheck = setInterval(async () => {
+    const still = await resolveSession(cookie);
+    if (!still || still.id !== user.id) {
+      log.info('session no longer valid; disconnecting socket');
+      socket.emit('message', JSON.stringify({ type: 'connectionError', data: { message: 'Session expired', code: 'SESSION_EXPIRED' }, timestamp: Date.now() }));
+      socket.disconnect(true);
+    }
+  }, SESSION_RECHECK_MS);
 
   // Per-socket rate limit (fixed one-second window)
   let windowStart = Date.now();
@@ -119,23 +151,21 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    clearInterval(recheck);
     if (currentPlayer && roomManager.getPlayer(currentPlayer.id)?.socket === currentPlayer.socket) {
       messageHandler.handleDisconnection(currentPlayer);
       roomManager.removePlayer(currentPlayer.id);
     }
     currentPlayer = null;
 
-    const left = (liveSockets.get(user.id) ?? 1) - 1;
-    if (left <= 0) {
-      liveSockets.delete(user.id);
-      void setPresence(user.id, 'OFFLINE');
-    } else {
-      liveSockets.set(user.id, left);
-    }
+    socketClosed(user.id);
   });
 });
 
 tickSystem.startTickSystem();
+void resetAllPresence().then((ok) => {
+  if (!ok) server.log.warn('could not reset presence on boot (users service unreachable)');
+});
 
 server.listen({ port: config.port, host: '0.0.0.0' }, (err) => {
   if (err) {

@@ -9,6 +9,12 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 // In-memory store for rate limiting
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
+// Drop expired windows so the map can't grow without bound (e.g. rotating IPv6 addresses)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) if (now > entry.resetTime) rateLimitStore.delete(key);
+}, 60 * 1000).unref();
+
 interface RateLimitOptions {
   max: number; // Maximum requests
   windowMs: number; // Time window in milliseconds
@@ -19,8 +25,9 @@ interface RateLimitOptions {
  * Simple rate limiting middleware
  * Returns 429 if rate limit exceeded
  */
-export function createRateLimiter(options: RateLimitOptions) {
+export function createRateLimiter(options: RateLimitOptions & { skip?: (req: FastifyRequest) => boolean }) {
   return async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    if (options.skip?.(req)) return;
     const key = options.keyGenerator(req);
     const now = Date.now();
     
@@ -62,6 +69,8 @@ export function createRateLimiter(options: RateLimitOptions) {
  * req.ip is the real client because app.ts sets trustProxy to the one proxy (Caddy).
  */
 export const apiRateLimiter = createRateLimiter({
+  // avatar images are cheap static reads; a page full of them shouldn't use the budget
+  skip: (req) => req.url.startsWith("/api/avatars/"),
   max: 300,
   windowMs: 60 * 1000,
   keyGenerator: (req: FastifyRequest) => `rate-limit:api:${req.ip || "unknown"}`,

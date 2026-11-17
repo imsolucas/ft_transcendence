@@ -50,12 +50,23 @@ async function postWithRetry(path: string, body: unknown, label: string): Promis
   log.error({ attempts: RETRY_DELAYS_MS.length + 1 }, `${label} dropped`);
 }
 
+// The users service caps display names at 50 characters; never lose a result over a long name
+function clipNames<T extends Record<string, unknown>>(obj: T): T {
+  const out: Record<string, unknown> = { ...obj };
+  for (const key of ['player1DisplayName', 'player2DisplayName', 'name']) {
+    if (typeof out[key] === 'string') out[key] = (out[key] as string).slice(0, 50);
+  }
+  return out as T;
+}
+
 export function reportMatchResult(result: Record<string, unknown>): void {
-  const body = { matchId: crypto.randomUUID(), ...result };
+  const body = { matchId: crypto.randomUUID(), ...clipNames(result) };
   void postWithRetry('/internal/game/match-result', body, 'match result');
 }
 
 export function reportTournamentResult(result: Record<string, unknown>): void {
   // The tournament id is the idempotency key on the users side.
-  void postWithRetry('/internal/game/tournament-result', result, 'tournament result');
+  const clipped = clipNames(result);
+  if (Array.isArray(clipped.matches)) clipped.matches = clipped.matches.map((m: Record<string, unknown>) => clipNames(m));
+  void postWithRetry('/internal/game/tournament-result', clipped, 'tournament result');
 }

@@ -55,7 +55,8 @@ export async function friendshipState(viewerId: number, targetId: number): Promi
     }),
   ]);
   if (blocks.some((b) => b.blockerId === viewerId)) return "blocked";
-  if (blocks.length > 0) return "blocked_you";
+  // Being blocked is never revealed (same answer as no relationship)
+  if (blocks.length > 0) return "none";
   if (!friendship) return "none";
   if (friendship.status === "ACCEPTED") return "friends";
   if (friendship.status === "PENDING") return friendship.requesterId === viewerId ? "request_sent" : "request_received";
@@ -93,14 +94,21 @@ export async function friendshipStates(viewerId: number, targetIds: number[]): P
   }
   for (const b of blocks) {
     if (b.blockerId === viewerId) result.set(b.blockedId, "blocked");
-    else result.set(b.blockerId, "blocked_you");
+    else result.set(b.blockerId, "none"); // never reveal being blocked
   }
   return result;
 }
 
 export function parsePage(query: unknown, defaultSize = 10, maxSize = 50) {
   const q = (query ?? {}) as { page?: unknown; pageSize?: unknown };
-  const page = Math.max(1, Math.floor(Number(q.page) || 1));
+  const page = Math.min(1000, Math.max(1, Math.floor(Number(q.page) || 1)));
   const pageSize = Math.min(maxSize, Math.max(1, Math.floor(Number(q.pageSize) || defaultSize)));
   return { page, pageSize, skip: (page - 1) * pageSize };
 }
+
+/** Params schema for routes with a numeric :id */
+export const ID_PARAMS = {
+  type: "object",
+  required: ["id"],
+  properties: { id: { type: "integer", minimum: 1, maximum: 2147483647 } },
+} as const;

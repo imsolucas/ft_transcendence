@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../../auth/auth.ts";
 import { requireUser } from "../../auth/guards.ts";
+import { ID_PARAMS } from "../shared/presenters.ts";
 import { prisma } from "../../db/client.ts";
 
 export interface SessionInfo {
@@ -38,7 +39,7 @@ export default async function sessionRoutes(app: FastifyInstance) {
     }));
   });
 
-  app.delete("/sessions/:id", async (req, reply) => {
+  app.delete("/sessions/:id", { schema: { params: ID_PARAMS } }, async (req, reply) => {
     const id = Number((req.params as { id: string }).id);
     const deleted = await prisma.session.deleteMany({ where: { id, userId: req.user!.id } });
     if (deleted.count !== 1) return reply.code(404).send({ error: "Session not found." });

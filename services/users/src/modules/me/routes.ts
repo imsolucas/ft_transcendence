@@ -28,9 +28,11 @@ async function loadMe(userId: number): Promise<Me | null> {
   return { ...toPublicUser(u), email: u.email, twoFactorEnabled: !!u.twoFactorEnabled };
 }
 
-async function removeStoredAvatar(avatar: string | null) {
+/** Deletes an uploaded avatar file, but only one this user uploaded (name starts with their id). */
+async function removeStoredAvatar(userId: number, avatar: string | null) {
   if (!avatar?.startsWith(AVATAR_URL_PREFIX)) return;
   const file = path.basename(avatar);
+  if (!file.startsWith(`${userId}-`)) return;
   await fs.unlink(path.join(config.uploadDir, file)).catch(() => {});
 }
 
@@ -67,10 +69,15 @@ export default async function meRoutes(app: FastifyInstance) {
           const taken = await prisma.user.findUnique({ where: { username: displayName.toLowerCase() }, select: { id: true } });
           if (taken) return reply.code(409).send({ error: "That username is taken." });
         }
-        await prisma.user.update({
-          where: { id: req.user!.id },
-          data: { username: displayName.toLowerCase(), displayUsername: displayName, name: displayName },
-        });
+        try {
+          await prisma.user.update({
+            where: { id: req.user!.id },
+            data: { username: displayName.toLowerCase(), displayUsername: displayName, name: displayName },
+          });
+        } catch (err: any) {
+          if (err?.code === "P2002") return reply.code(409).send({ error: "That username is taken." });
+          throw err;
+        }
       }
       return loadMe(req.user!.id);
     }
@@ -94,14 +101,14 @@ export default async function meRoutes(app: FastifyInstance) {
 
     const previous = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { avatar: true } });
     await prisma.user.update({ where: { id: req.user!.id }, data: { avatar: AVATAR_URL_PREFIX + name } });
-    await removeStoredAvatar(previous?.avatar ?? null);
+    await removeStoredAvatar(req.user!.id, previous?.avatar ?? null);
     return loadMe(req.user!.id);
   });
 
   app.delete("/me/avatar", { preHandler: requireUser }, async (req) => {
     const previous = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { avatar: true } });
     await prisma.user.update({ where: { id: req.user!.id }, data: { avatar: null } });
-    await removeStoredAvatar(previous?.avatar ?? null);
+    await removeStoredAvatar(req.user!.id, previous?.avatar ?? null);
     return loadMe(req.user!.id);
   });
 

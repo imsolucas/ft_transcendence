@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { gameEnded } from '../presence.js';
 import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, type TournamentRoundEndMessage } from "shared/index.js";
 import type { RoomManager } from "../game/roomManager.js";
 import type { MessageBroadcaster } from "./Broadcaster.js";
@@ -83,6 +84,7 @@ export default class TickSystem {
                         }
 
                         this.broadcaster.broadcastToRoom(room.id, tournamentEndMsg);
+                        gameEnded(room.playerIds);
                         //frontend has to read the tourney state to come up with winnner screen
 
                         // Report tournament result to users service
@@ -146,6 +148,7 @@ export default class TickSystem {
                     }
 
                     this.broadcaster.broadcastToRoom(room.id, gameEndMsg);
+                    gameEnded(room.playerIds);
 
                     // Report match result to users service
                     const gameState = room.gameServer.getGameState();

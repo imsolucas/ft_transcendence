@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type { ApiKeySummary, CreatedApiKey } from "../../../../shared/types/api.types.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
+import { ID_PARAMS } from "../shared/presenters.ts";
 import { sha256 } from "../../auth/crypto.ts";
 
 const MAX_KEYS_PER_USER = 10;
@@ -59,7 +60,7 @@ export default async function apiKeyRoutes(app: FastifyInstance) {
     }
   );
 
-  app.delete("/api-keys/:id", async (req, reply) => {
+  app.delete("/api-keys/:id", { schema: { params: ID_PARAMS } }, async (req, reply) => {
     const id = Number((req.params as { id: string }).id);
     const deleted = await prisma.apiKey.deleteMany({ where: { id, userId: req.user!.id } });
     if (deleted.count !== 1) return reply.code(404).send({ error: "Key not found." });

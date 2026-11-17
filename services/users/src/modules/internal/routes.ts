@@ -58,6 +58,12 @@ export default async function internalRoutes(app: FastifyInstance) {
     }
   );
 
+  // Game service boot: nobody has a live socket yet
+  app.post("/internal/presence/reset", async (_req, reply) => {
+    await prisma.user.updateMany({ where: { status: { not: "OFFLINE" } }, data: { status: "OFFLINE" } });
+    return reply.code(204).send();
+  });
+
   app.post(
     "/internal/game/match-result",
     {

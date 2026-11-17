@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import type { FriendRequest, PublicUser } from "../../../../shared/types/api.types.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
+import { ID_PARAMS } from "../shared/presenters.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
 
 const usernameBody = {
@@ -13,18 +14,6 @@ const usernameBody = {
 
 async function findUser(username: string) {
   return prisma.user.findUnique({ where: { username: username.trim().toLowerCase() }, select: { id: true } });
-}
-
-async function isBlockedEitherWay(a: number, b: number) {
-  const n = await prisma.block.count({
-    where: {
-      OR: [
-        { blockerId: a, blockedId: b },
-        { blockerId: b, blockedId: a },
-      ],
-    },
-  });
-  return n > 0;
 }
 
 function notFound(reply: FastifyReply, what = "Player not found.") {
@@ -78,43 +67,67 @@ export default async function friendsRoutes(app: FastifyInstance) {
     const target = await findUser((req.body as { username: string }).username);
     if (!target) return notFound(reply);
     if (target.id === me) return reply.code(400).send({ error: "You can't add yourself." });
-    // Same answer as "not found" so a block isn't revealed
-    if (await isBlockedEitherWay(me, target.id)) return notFound(reply);
+    type Outcome = { status: number; body: unknown };
+    // Check + create in one serializable transaction so A→B and B→A (or a request racing a
+    // block) can't both succeed. A serialization failure (P2034) means "try again".
+    const run = () =>
+      prisma.$transaction(
+        async (tx): Promise<Outcome> => {
+          const blocked = await tx.block.count({
+            where: {
+              OR: [
+                { blockerId: me, blockedId: target.id },
+                { blockerId: target.id, blockedId: me },
+              ],
+            },
+          });
+          // Same answer as "not found" so a block isn't revealed
+          if (blocked > 0) return { status: 404, body: { error: "Player not found." } };
 
-    const existing = await prisma.friendship.findFirst({
-      where: {
-        OR: [
-          { requesterId: me, addresseeId: target.id },
-          { requesterId: target.id, addresseeId: me },
-        ],
-      },
-    });
-    if (existing?.status === "ACCEPTED") return reply.code(409).send({ error: "You're already friends." });
-    if (existing?.status === "PENDING") {
-      if (existing.requesterId === me) return reply.code(409).send({ error: "Request already sent." });
-      return reply.code(409).send({ error: "They already sent you a request. Accept it instead." });
-    }
-    if (existing) await prisma.friendship.delete({ where: { id: existing.id } }); // stale REJECTED row
+          const existing = await tx.friendship.findFirst({
+            where: {
+              OR: [
+                { requesterId: me, addresseeId: target.id },
+                { requesterId: target.id, addresseeId: me },
+              ],
+            },
+          });
+          if (existing?.status === "ACCEPTED") return { status: 409, body: { error: "You're already friends." } };
+          if (existing?.status === "PENDING") {
+            return existing.requesterId === me
+              ? { status: 409, body: { error: "Request already sent." } }
+              : { status: 409, body: { error: "They already sent you a request. Accept it instead." } };
+          }
+          if (existing) await tx.friendship.delete({ where: { id: existing.id } }); // stale REJECTED row
 
-    try {
-      const created = await prisma.friendship.create({
-        data: { requesterId: me, addresseeId: target.id, status: "PENDING" },
-        select: { id: true, created_at: true, addressee: { select: PUBLIC_USER_SELECT } },
-      });
-      const body: FriendRequest = {
-        id: created.id,
-        direction: "sent",
-        user: toPublicUser(created.addressee),
-        createdAt: created.created_at.toISOString(),
-      };
-      return reply.code(201).send(body);
-    } catch (err: any) {
-      if (err?.code === "P2002") return reply.code(409).send({ error: "Request already sent." });
-      throw err;
+          const created = await tx.friendship.create({
+            data: { requesterId: me, addresseeId: target.id, status: "PENDING" },
+            select: { id: true, created_at: true, addressee: { select: PUBLIC_USER_SELECT } },
+          });
+          const body: FriendRequest = {
+            id: created.id,
+            direction: "sent",
+            user: toPublicUser(created.addressee),
+            createdAt: created.created_at.toISOString(),
+          };
+          return { status: 201, body };
+        },
+        { isolationLevel: "Serializable" }
+      );
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const outcome = await run();
+        return reply.code(outcome.status).send(outcome.body);
+      } catch (err: any) {
+        if (err?.code === "P2002") return reply.code(409).send({ error: "Request already sent." });
+        if (err?.code !== "P2034") throw err;
+      }
     }
+    return reply.code(409).send({ error: "Please try again." });
   });
 
-  app.post("/friends/requests/:id/accept", async (req, reply) => {
+  app.post("/friends/requests/:id/accept", { schema: { params: ID_PARAMS } }, async (req, reply) => {
     const me = req.user!.id;
     const id = Number((req.params as { id: string }).id);
     // Conditional update: only the addressee of a still-pending request can accept it
@@ -127,14 +140,14 @@ export default async function friendsRoutes(app: FastifyInstance) {
     return toPublicUser(row!.requester);
   });
 
-  app.post("/friends/requests/:id/decline", async (req, reply) => {
+  app.post("/friends/requests/:id/decline", { schema: { params: ID_PARAMS } }, async (req, reply) => {
     const id = Number((req.params as { id: string }).id);
     const deleted = await prisma.friendship.deleteMany({ where: { id, addresseeId: req.user!.id, status: "PENDING" } });
     if (deleted.count !== 1) return notFound(reply, "Request not found.");
     return reply.code(204).send();
   });
 
-  app.delete("/friends/requests/:id", async (req, reply) => {
+  app.delete("/friends/requests/:id", { schema: { params: ID_PARAMS } }, async (req, reply) => {
     const id = Number((req.params as { id: string }).id);
     const deleted = await prisma.friendship.deleteMany({ where: { id, requesterId: req.user!.id, status: "PENDING" } });
     if (deleted.count !== 1) return notFound(reply, "Request not found.");
@@ -174,7 +187,8 @@ export default async function friendsRoutes(app: FastifyInstance) {
     const target = await findUser((req.body as { username: string }).username);
     if (!target) return notFound(reply);
     if (target.id === me) return reply.code(400).send({ error: "You can't block yourself." });
-    await prisma.$transaction([
+    await prisma.$transaction(
+      [
       prisma.friendship.deleteMany({
         where: {
           OR: [
@@ -188,7 +202,9 @@ export default async function friendsRoutes(app: FastifyInstance) {
         create: { blockerId: me, blockedId: target.id },
         update: {},
       }),
-    ]);
+      ],
+      { isolationLevel: "Serializable" }
+    );
     return reply.code(204).send();
   });
 

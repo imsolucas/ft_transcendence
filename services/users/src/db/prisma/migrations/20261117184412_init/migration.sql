@@ -169,6 +169,9 @@ CREATE UNIQUE INDEX "Friendships_requesterId_addresseeId_key" ON "Friendships"("
 CREATE UNIQUE INDEX "Matches_externalId_key" ON "Matches"("externalId");
 
 -- CreateIndex
+CREATE INDEX "Matches_winnerId_played_at_idx" ON "Matches"("winnerId", "played_at");
+
+-- CreateIndex
 CREATE INDEX "Matches_player1Id_played_at_idx" ON "Matches"("player1Id", "played_at");
 
 -- CreateIndex

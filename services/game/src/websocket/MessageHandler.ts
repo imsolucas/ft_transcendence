@@ -7,6 +7,7 @@ import RoomService from "./RoomService.js";
 import TournamentService from "./TournamentService.js";
 import type { ConnectionErrorMessage } from "shared/index.js";
 import type { AuthenticatedUser } from "../auth/usersClient.js";
+import { gameStarted } from "../presence.js";
 
 const WS_OPEN = 1;
 
@@ -250,9 +251,8 @@ export default class NewMessageHandler {
                 timestamp: Date.now()
             };
 
-            console.log("GameStartState", startMessage);
-
             this.broadcaster.broadcastToRoom(room.id, startMessage);
+            gameStarted(room.playerIds);
         }
     }
 
