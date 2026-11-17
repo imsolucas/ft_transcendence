@@ -95,8 +95,8 @@ Postgres via Prisma (`services/users/src/db/prisma/schema.prisma`, migrations al
 - `Matches` (players, display names, scores, winner, timestamps, `externalId` idempotency key),
   `Tournaments`, `TournamentPlayers`
 - `ApiKeys` — prefix plus SHA-256 hash; the key itself is shown once
-- `Messages` — direct messages (text or game invite), read receipts
-- `UserAchievements` — achievements, stored the first time they unlock
+- `Messages` — direct messages (text, game invite, or a server-posted match/tournament notice), read receipts
+- `UserAchievements` — achievements, stored the first time they unlock; `Users.xp` / `level`
 
 ### HTTP API
 
@@ -202,10 +202,11 @@ so data operations are confirmed on screen rather than by email.
 | Web-based game (Pong) | Major | Done |
 | Remote players (reconnection, latency display) | Major | Done |
 | AI opponent (easy/normal/hard, human-like, uses the game settings) | Major | Done |
-| ORM (Prisma) · SSR · design system · 3 languages · 2FA · OAuth (Google) | Minor ×6 | Done |
+| ORM (Prisma) · SSR · design system · 3 languages · 2FA | Minor ×5 | Done |
+| OAuth 2.0 (Google) | Minor | Implemented; not tested end to end until `GOOGLE_CLIENT_SECRET` is set |
 | Game statistics and match history (with leaderboard and achievements) | Minor | Done |
-| Gamification (achievements stored in the database, leaderboard, progress bars, unlock toasts) | Minor | Done |
-| Advanced chat (blocks, invites, profile links, history, typing, read receipts) | Minor | Done |
+| Gamification (stored achievements, XP and levels, leaderboard; progress bars, unlock and level-up toasts; rules shown on the profile) | Minor | Done |
+| Advanced chat (blocks, invites, game and tournament notifications, profile links, history, typing, read receipts) | Minor | Done |
 | Health check, status page, backups and disaster recovery | Minor | Done |
 | GDPR (export, deletion with confirmation) | Minor | Partial: no confirmation emails |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
