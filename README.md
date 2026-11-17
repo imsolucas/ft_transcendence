@@ -210,12 +210,13 @@ so data operations are confirmed on screen rather than by email.
 | GDPR (export, deletion with confirmation) | Minor | Partial: no confirmation emails |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
 | Tournament system | Minor | Partial: king-of-the-hill, no bracket |
-| Game customization | Minor | Partial: local settings only, no power-ups or themes |
+| Game customization (speeds, points, 4 court themes, defaults) | Minor | Partial: no power-ups yet |
+| Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
 
 Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), LLM, RAG,
 recommendations and other AI-service modules (need a provider and API spend), ELK, Prometheus +
 Grafana, WAF + Vault, a second game, 3+ players, 3D, organizations, a permissions system, RTL,
-full WCAG audit, analytics dashboards, spectator mode, PWA, advanced search, file management,
+full WCAG audit, analytics dashboards, spectator mode, PWA, file management,
 data import, a notification centre, collaborative features.
 
 ---

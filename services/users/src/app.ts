@@ -20,8 +20,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
     try {
       done(null, body === "" || body == null ? {} : JSON.parse(body as string));
-    } catch (err) {
-      done(err as Error, undefined);
+    } catch {
+      // a malformed body is the client's mistake: 400, not a logged 500
+      done(Object.assign(new Error("Invalid JSON body."), { statusCode: 400 }), undefined);
     }
   });
 
