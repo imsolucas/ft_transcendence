@@ -1,0 +1,36 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "stack",
+      "runtimeExecutable": "make",
+      "runtimeArgs": ["up"],
+      "port": 443,
+      "autoPort": false
+    },
+    {
+      "name": "users",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd services/users && npm run dev"],
+      "port": 4000
+    },
+    {
+      "name": "game",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd services/game && npm run dev"],
+      "port": 3001
+    },
+    {
+      "name": "frontend_legacy",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd services/frontend && npm run dev"],
+      "port": 3000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd apps/web && npm run dev"],
+      "port": 3000
+    }
+  ]
+}
