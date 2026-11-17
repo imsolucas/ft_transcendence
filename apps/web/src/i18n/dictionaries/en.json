@@ -419,7 +419,11 @@
     "accept": "Join game",
     "inviteToast": "Invited you to a game",
     "open": "Open",
-    "unread": "{n} unread"
+    "unread": "{n} unread",
+    "resultNotice": "Match finished: {p1} {a} – {b} {p2}",
+    "tournamentNotice": "{winner} won the tournament “{name}”",
+    "resultPreview": "Match result {score}",
+    "tournamentPreview": "Tournament result"
   },
   "settings": {
     "title": "SETTINGS",

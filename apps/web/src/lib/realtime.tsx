@@ -52,7 +52,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           // toast only for messages sent to me, when that conversation isn't open
           if (e.message.from !== myIdRef.current && !onThread) {
             toast.info(e.from.displayName, {
-              description: e.message.kind === "invite" ? t("chat.inviteToast") : e.message.body.slice(0, 120),
+              description:
+                e.message.kind === "invite"
+                  ? t("chat.inviteToast")
+                  : e.message.kind === "result"
+                    ? t("chat.resultPreview", { score: e.message.body.replace("-", " – ") })
+                    : e.message.kind === "tournament"
+                      ? t("chat.tournamentPreview")
+                      : e.message.body.slice(0, 120),
               action: { label: t("chat.open"), onClick: () => routerRef.current.push(`${href("/chat")}?with=${e.from.username}`) },
             });
           }

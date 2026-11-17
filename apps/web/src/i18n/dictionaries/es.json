@@ -419,7 +419,11 @@
     "accept": "Unirse a la partida",
     "inviteToast": "Te invitó a una partida",
     "open": "Abrir",
-    "unread": "{n} sin leer"
+    "unread": "{n} sin leer",
+    "resultNotice": "Partida terminada: {p1} {a} – {b} {p2}",
+    "tournamentNotice": "{winner} ganó el torneo «{name}»",
+    "resultPreview": "Resultado {score}",
+    "tournamentPreview": "Resultado del torneo"
   },
   "settings": {
     "title": "AJUSTES",

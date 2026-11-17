@@ -137,7 +137,12 @@ export interface ChatMessage {
   id: number;
   from: number;
   to: number;
-  kind: "text" | "invite";
+  /**
+   * text / invite (private-room code) from players; result ("5-3", sender = player 1,
+   * recipient = player 2) and tournament (body = tournament name, sender = champion) are
+   * game notifications posted by the server.
+   */
+  kind: "text" | "invite" | "result" | "tournament";
   body: string;
   /** Private-room code for kind "invite" */
   inviteCode: string | null;

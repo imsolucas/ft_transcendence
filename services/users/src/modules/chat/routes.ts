@@ -14,7 +14,7 @@ const toMessage = (m: Row): ChatMessage => ({
   id: m.id,
   from: m.senderId,
   to: m.recipientId,
-  kind: m.kind === "invite" ? "invite" : "text",
+  kind: m.kind === "invite" || m.kind === "result" || m.kind === "tournament" ? m.kind : "text",
   body: m.body,
   inviteCode: m.inviteCode,
   createdAt: m.createdAt.toISOString(),
@@ -24,6 +24,20 @@ const toMessage = (m: Row): ChatMessage => ({
 async function peer(username: string) {
   if (isDeletedHandle(username.toLowerCase())) return null;
   return prisma.user.findUnique({ where: { username: username.toLowerCase() }, select: PUBLIC_USER_SELECT });
+}
+
+/**
+ * Game notifications in chat: the server posts a match result or a tournament win into the
+ * two players' thread (skipped if either account is deleted or one blocked the other).
+ */
+export async function postGameNotice(fromId: number, toId: number, kind: "result" | "tournament", body: string) {
+  if (fromId === toId) return;
+  const users = await prisma.user.findMany({ where: { id: { in: [fromId, toId] } }, select: PUBLIC_USER_SELECT });
+  const sender = users.find((u) => u.id === fromId);
+  if (users.length !== 2 || !sender || users.some((u) => isDeletedHandle(u.username))) return;
+  if (await blockedEitherWay(fromId, toId)) return;
+  const row = await prisma.message.create({ data: { senderId: fromId, recipientId: toId, kind, body: body.slice(0, 200) } });
+  notify([fromId, toId], { type: "chat:message", message: toMessage(row), from: toPublicUser(sender) });
 }
 
 async function blockedEitherWay(a: number, b: number) {

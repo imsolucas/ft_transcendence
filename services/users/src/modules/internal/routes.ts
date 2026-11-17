@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { auth } from "../../auth/auth.ts";
 import { requireInternalService } from "../../auth/guards.ts";
 import { syncAchievementsLater } from "../gamification/routes.ts";
+import { postGameNotice } from "../chat/routes.ts";
 import { DELETED_PREFIX } from "../privacy/routes.ts";
 
 /**
@@ -133,6 +134,12 @@ export default async function internalRoutes(app: FastifyInstance) {
           select: { id: true },
         });
         syncAchievementsLater([b.player1Id, b.player2Id], req.log);
+        // 1v1 result into the players' chat thread (tournament games get one notice at the end)
+        if (b.tournamentId == null) {
+          postGameNotice(b.player1Id, b.player2Id, "result", `${b.player1Score}-${b.player2Score}`).catch((err) =>
+            req.log.error({ err }, "result notice failed"),
+          );
+        }
         return reply.code(201).send({ id: created.id });
       } catch (err: any) {
         if (err?.code === "P2002") {
@@ -225,6 +232,11 @@ export default async function internalRoutes(app: FastifyInstance) {
           select: { id: true },
         });
         syncAchievementsLater([b.winnerId, ...b.players.map((p) => p.userId), ...b.matches.flatMap((m) => [m.player1Id, m.player2Id])], req.log);
+        for (const p of new Set(b.players.map((p) => p.userId))) {
+          if (p !== b.winnerId) {
+            postGameNotice(b.winnerId, p, "tournament", b.name ?? "Tournament").catch((err) => req.log.error({ err }, "tournament notice failed"));
+          }
+        }
         return reply.code(201).send({ id: t.id });
       } catch (err: any) {
         if (err?.code === "P2002") {

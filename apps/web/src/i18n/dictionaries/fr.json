@@ -419,7 +419,11 @@
     "accept": "Rejoindre la partie",
     "inviteToast": "Vous invite à une partie",
     "open": "Ouvrir",
-    "unread": "{n} non lus"
+    "unread": "{n} non lus",
+    "resultNotice": "Match terminé : {p1} {a} – {b} {p2}",
+    "tournamentNotice": "{winner} a gagné le tournoi « {name} »",
+    "resultPreview": "Résultat {score}",
+    "tournamentPreview": "Résultat du tournoi"
   },
   "settings": {
     "title": "PARAMÈTRES",

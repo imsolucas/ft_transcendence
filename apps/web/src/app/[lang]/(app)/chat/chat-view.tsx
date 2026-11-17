@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import useSWR, { mutate } from "swr";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCheck, Gamepad2, MessageSquare, MoreVertical, Send, ShieldOff } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Gamepad2, MessageSquare, MoreVertical, Send, ShieldOff, Swords, Trophy } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { api, ApiError } from "@/lib/api";
 import { useMe } from "@/lib/session";
@@ -92,7 +92,13 @@ function ConversationList({ active }: { active: string | null }) {
                   </div>
                   <div className="row between">
                     <span className={cn("t-caption truncate", c.unread ? "text-fg" : "subtle")}>
-                      {c.lastMessage.kind === "invite" ? t("chat.inviteToast") : c.lastMessage.body}
+                      {c.lastMessage.kind === "invite"
+                        ? t("chat.inviteToast")
+                        : c.lastMessage.kind === "result"
+                          ? t("chat.resultPreview", { score: c.lastMessage.body.replace("-", " – ") })
+                          : c.lastMessage.kind === "tournament"
+                            ? t("chat.tournamentPreview")
+                            : c.lastMessage.body}
                     </span>
                     <CountBadge count={c.unread} label={t("chat.unread", { n: c.unread })} />
                   </div>
@@ -216,7 +222,11 @@ function Thread({ username }: { username: string }) {
     }
   }
 
-  const lastMine = useMemo(() => [...(messages.data ?? [])].reverse().find((m) => m.from === me?.id), [messages.data, me?.id]);
+  // read receipts belong to what you wrote, not to server notices
+  const lastMine = useMemo(
+    () => [...(messages.data ?? [])].reverse().find((m) => m.from === me?.id && (m.kind === "text" || m.kind === "invite")),
+    [messages.data, me?.id]
+  );
 
   if (profile.error instanceof ApiError && profile.error.status === 404) {
     return (
@@ -290,6 +300,23 @@ function Thread({ username }: { username: string }) {
           <ol className="stack stack-3">
             {messages.data.map((m) => {
               const mine = m.from === me?.id;
+              if (m.kind === "result" || m.kind === "tournament") {
+                const name = (id: number) => (id === me?.id ? me?.displayName : other?.displayName) ?? "?";
+                const [a, b] = m.body.split("-");
+                return (
+                  <li key={m.id} className="flex flex-col items-center">
+                    <p className="row !gap-2 rounded-md border border-border bg-surface-1 px-3 py-1.5 t-caption muted" role="status">
+                      {m.kind === "result" ? <Swords className="ico c-cyan" aria-hidden /> : <Trophy className="ico c-amber" aria-hidden />}
+                      {m.kind === "result"
+                        ? t("chat.resultNotice", { p1: name(m.from), a, b, p2: name(m.to) })
+                        : t("chat.tournamentNotice", { winner: name(m.from), name: m.body })}
+                    </p>
+                    <time className="t-caption subtle mt-1" dateTime={m.createdAt}>
+                      {ago(m.createdAt)}
+                    </time>
+                  </li>
+                );
+              }
               return (
                 <li key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
                   {m.kind === "invite" ? (
