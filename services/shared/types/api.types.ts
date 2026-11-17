@@ -43,6 +43,7 @@ export interface Profile extends PublicUser {
   memberSince: string;
   friendship: FriendshipState;
   stats: UserStats;
+  achievements: Achievement[];
 }
 
 export interface Page<T> {
@@ -180,3 +181,30 @@ export interface StatusReport {
   checkedAt: string;
   uptimeSeconds: number;
 }
+
+// ---------------------------------------------------------------- Gamification (Phase 5)
+export type AchievementId =
+  | "first_win"
+  | "ten_wins"
+  | "fifty_wins"
+  | "regular"
+  | "streak_5"
+  | "shutout"
+  | "champion"
+  | "social";
+/** Computed from match / tournament / friend data; `progress` counts towards `target`. */
+export interface Achievement {
+  id: AchievementId;
+  unlocked: boolean;
+  progress: number;
+  target: number;
+}
+export interface LeaderboardRow {
+  rank: number;
+  user: PublicUser;
+  wins: number;
+  losses: number;
+  winRate: number; // 0..1
+}
+/** GET /api/leaderboard?page= → Page<LeaderboardRow> & { you: LeaderboardRow | null } */
+export type Leaderboard = Page<LeaderboardRow> & { you: LeaderboardRow | null };

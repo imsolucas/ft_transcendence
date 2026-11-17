@@ -44,7 +44,8 @@
     "mainNav": "Principal",
     "skip": "Aller au contenu",
     "login": "Se connecter",
-    "signup": "S'inscrire"
+    "signup": "S'inscrire",
+    "leaderboard": "Classement"
   },
   "footer": {
     "privacy": "Politique de confidentialité",
@@ -298,7 +299,8 @@
     "tabs": {
       "stats": "Statistiques",
       "history": "Historique des matchs",
-      "friends": "Amis"
+      "friends": "Amis",
+      "achievements": "Succès"
     },
     "addFriend": "Ajouter en ami",
     "requestSent": "Demande envoyée",
@@ -540,5 +542,56 @@
     "typeToConfirm": "Tapez {name} exactement pour confirmer.",
     "deleteForever": "Supprimer définitivement",
     "reauth": "Par sécurité, reconnectez-vous d'abord. Vous aurez ensuite 10 minutes pour supprimer votre compte."
+  },
+  "leaderboard": {
+    "title": "Classement",
+    "subtitle": "Classé par victoires, puis par taux de victoire.",
+    "player": "Joueur",
+    "wins": "Victoires",
+    "losses": "Défaites",
+    "winRate": "Taux",
+    "you": "Vous",
+    "loadError": "Impossible de charger le classement",
+    "empty": "Aucun joueur classé pour l'instant",
+    "emptyBody": "Terminez un match pour entrer au classement.",
+    "unranked": "Vous n'êtes pas encore classé : terminez un match pour apparaître ici.",
+    "lobbyLink": "Voir le classement",
+    "winsShort": "V"
+  },
+  "achievements": {
+    "count": "{n} sur {total} débloqués",
+    "unlocked": "Débloqué",
+    "first_win": {
+      "title": "Premier sang",
+      "body": "Gagnez votre premier match."
+    },
+    "ten_wins": {
+      "title": "Prétendant",
+      "body": "Gagnez 10 matchs."
+    },
+    "fifty_wins": {
+      "title": "Légende",
+      "body": "Gagnez 50 matchs."
+    },
+    "regular": {
+      "title": "Habitué",
+      "body": "Jouez 25 matchs."
+    },
+    "streak_5": {
+      "title": "En feu",
+      "body": "Gagnez 5 matchs d'affilée."
+    },
+    "shutout": {
+      "title": "Blanchissage",
+      "body": "Gagnez un match sans encaisser de point."
+    },
+    "champion": {
+      "title": "Champion",
+      "body": "Gagnez un tournoi."
+    },
+    "social": {
+      "title": "Escouade",
+      "body": "Ayez 5 amis."
+    }
   }
 }

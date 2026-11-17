@@ -44,7 +44,8 @@
     "mainNav": "Main",
     "skip": "Skip to content",
     "login": "Log in",
-    "signup": "Sign up"
+    "signup": "Sign up",
+    "leaderboard": "Leaderboard"
   },
   "footer": {
     "privacy": "Privacy Policy",
@@ -298,7 +299,8 @@
     "tabs": {
       "stats": "Stats",
       "history": "Match history",
-      "friends": "Friends"
+      "friends": "Friends",
+      "achievements": "Achievements"
     },
     "addFriend": "Add friend",
     "requestSent": "Request sent",
@@ -540,5 +542,56 @@
     "typeToConfirm": "Type {name} exactly to confirm.",
     "deleteForever": "Delete forever",
     "reauth": "For your safety, log in again first. Then you have 10 minutes to delete your account."
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "subtitle": "Ranked by wins, then win rate.",
+    "player": "Player",
+    "wins": "Wins",
+    "losses": "Losses",
+    "winRate": "Win rate",
+    "you": "You",
+    "loadError": "Couldn't load the leaderboard",
+    "empty": "No ranked players yet",
+    "emptyBody": "Finish a match to get on the board.",
+    "unranked": "You're not ranked yet: finish a match to appear here.",
+    "lobbyLink": "See the leaderboard",
+    "winsShort": "W"
+  },
+  "achievements": {
+    "count": "{n} of {total} unlocked",
+    "unlocked": "Unlocked",
+    "first_win": {
+      "title": "First blood",
+      "body": "Win your first match."
+    },
+    "ten_wins": {
+      "title": "Contender",
+      "body": "Win 10 matches."
+    },
+    "fifty_wins": {
+      "title": "Legend",
+      "body": "Win 50 matches."
+    },
+    "regular": {
+      "title": "Regular",
+      "body": "Play 25 matches."
+    },
+    "streak_5": {
+      "title": "On fire",
+      "body": "Win 5 matches in a row."
+    },
+    "shutout": {
+      "title": "Shutout",
+      "body": "Win a match without conceding a point."
+    },
+    "champion": {
+      "title": "Champion",
+      "body": "Win a tournament."
+    },
+    "social": {
+      "title": "Squad",
+      "body": "Have 5 friends."
+    }
   }
 }

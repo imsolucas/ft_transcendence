@@ -168,6 +168,10 @@ function PlayPanel() {
           </div>
         </Link>
       </div>
+      <Link href={href("/leaderboard")} className="row mt-4 t-label">
+        <Trophy className="ico c-amber" aria-hidden />
+        {t("leaderboard.lobbyLink")}
+      </Link>
     </Panel>
   );
 }

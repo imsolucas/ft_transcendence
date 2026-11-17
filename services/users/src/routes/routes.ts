@@ -10,6 +10,7 @@ import sessionRoutes from "../modules/sessions/routes.ts";
 import chatRoutes from "../modules/chat/routes.ts";
 import statusRoutes from "../modules/status/routes.ts";
 import privacyRoutes from "../modules/privacy/routes.ts";
+import gamificationRoutes from "../modules/gamification/routes.ts";
 import internalRoutes from "../modules/internal/routes.ts";
 import { apiRateLimiter } from "../middleware/rateLimiter.ts";
 
@@ -29,6 +30,7 @@ export default async function routes(app: FastifyInstance) {
       await api.register(chatRoutes);
       await api.register(statusRoutes);
       await api.register(privacyRoutes);
+      await api.register(gamificationRoutes);
     },
     { prefix: "/api" }
   );

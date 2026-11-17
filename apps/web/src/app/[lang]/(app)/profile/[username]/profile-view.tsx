@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { MatchCard, MatchCardSkeleton, Pager, PlayerChip } from "@/components/game/cards";
 import { ProfileActions } from "./profile-actions";
 import { ProfileStats } from "./profile-stats";
+import { Achievements } from "./achievements";
 
 const PAGE_SIZE = 10;
 
@@ -157,6 +158,12 @@ function ProfileScreen({ username }: { username: string }) {
       <Tabs defaultValue="stats" className="flex flex-col gap-6 max-sm:gap-4">
         <TabsList aria-label={t("nav.profile")}>
           <Tab value="stats">{t("profile.tabs.stats")}</Tab>
+          <Tab value="achievements">
+            {t("profile.tabs.achievements")}
+            <span className="count">
+              {profile.achievements.filter((a) => a.unlocked).length}
+            </span>
+          </Tab>
           <Tab value="history">
             {t("profile.tabs.history")}
             {matches.data && <span className="count">{matches.data.total}</span>}
@@ -169,6 +176,10 @@ function ProfileScreen({ username }: { username: string }) {
 
         <TabPanel value="stats" className="outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">
           <ProfileStats stats={stats} />
+        </TabPanel>
+
+        <TabPanel value="achievements" className="outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">
+          <Achievements items={profile.achievements} />
         </TabPanel>
 
         <TabPanel value="history" className="outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">

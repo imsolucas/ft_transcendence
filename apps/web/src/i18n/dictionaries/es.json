@@ -44,7 +44,8 @@
     "mainNav": "Principal",
     "skip": "Saltar al contenido",
     "login": "Iniciar sesión",
-    "signup": "Registrarse"
+    "signup": "Registrarse",
+    "leaderboard": "Clasificación"
   },
   "footer": {
     "privacy": "Política de privacidad",
@@ -298,7 +299,8 @@
     "tabs": {
       "stats": "Estadísticas",
       "history": "Historial de partidas",
-      "friends": "Amigos"
+      "friends": "Amigos",
+      "achievements": "Logros"
     },
     "addFriend": "Añadir amigo",
     "requestSent": "Solicitud enviada",
@@ -540,5 +542,56 @@
     "typeToConfirm": "Escribe {name} exactamente para confirmar.",
     "deleteForever": "Eliminar para siempre",
     "reauth": "Por tu seguridad, inicia sesión de nuevo. Después tendrás 10 minutos para eliminar tu cuenta."
+  },
+  "leaderboard": {
+    "title": "Clasificación",
+    "subtitle": "Ordenada por victorias y luego por porcentaje de victorias.",
+    "player": "Jugador",
+    "wins": "Victorias",
+    "losses": "Derrotas",
+    "winRate": "% victorias",
+    "you": "Tú",
+    "loadError": "No se pudo cargar la clasificación",
+    "empty": "Aún no hay jugadores clasificados",
+    "emptyBody": "Termina una partida para entrar en la tabla.",
+    "unranked": "Aún no estás clasificado: termina una partida para aparecer aquí.",
+    "lobbyLink": "Ver la clasificación",
+    "winsShort": "V"
+  },
+  "achievements": {
+    "count": "{n} de {total} desbloqueados",
+    "unlocked": "Desbloqueado",
+    "first_win": {
+      "title": "Primera sangre",
+      "body": "Gana tu primera partida."
+    },
+    "ten_wins": {
+      "title": "Aspirante",
+      "body": "Gana 10 partidas."
+    },
+    "fifty_wins": {
+      "title": "Leyenda",
+      "body": "Gana 50 partidas."
+    },
+    "regular": {
+      "title": "Habitual",
+      "body": "Juega 25 partidas."
+    },
+    "streak_5": {
+      "title": "En racha",
+      "body": "Gana 5 partidas seguidas."
+    },
+    "shutout": {
+      "title": "Imbatible",
+      "body": "Gana una partida sin encajar ningún punto."
+    },
+    "champion": {
+      "title": "Campeón",
+      "body": "Gana un torneo."
+    },
+    "social": {
+      "title": "Escuadra",
+      "body": "Ten 5 amigos."
+    }
   }
 }
