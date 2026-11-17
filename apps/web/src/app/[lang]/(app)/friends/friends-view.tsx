@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { toast } from "sonner";
-import { Ban, Check, Ellipsis, MessageSquare, Search, Swords, User, UserMinus, UserPlus, Users } from "lucide-react";
+import { Ban, Check, Ellipsis, MessageSquare, Search, Swords, User, UserMinus, UserPlus, Users, ChevronDown } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { api, ApiError, fetcher } from "@/lib/api";
-import type { FriendRequest, FriendshipState, Page, PublicUser, SearchResult } from "@/lib/types";
+import type { FriendRequest, FriendshipState, Page, PublicUser, SearchResult, SearchSort } from "@/lib/types";
 import { Button, IconButton } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
-import { Badge, CountBadge, EmptyState, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, Modal, Panel, Spinner } from "@/components/ui/primitives";
-import { PlayerChip, useTimeAgo } from "@/components/game/cards";
+import { Badge, CountBadge, EmptyState, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, Modal, Panel, Segmented, Spinner } from "@/components/ui/primitives";
+import { Pager, PlayerChip, useTimeAgo } from "@/components/game/cards";
 import { PanelError, RowsSkeleton, SectionLabel } from "./parts";
 
 const FRIENDS = "/api/friends";
@@ -211,18 +211,32 @@ function SearchPanel({
     return () => clearTimeout(id);
   }, [q]);
 
-  const typed = q.trim();
-  const key = debounced.length >= 2 ? `/api/users/search?q=${encodeURIComponent(debounced)}` : null;
-  const { data, error, isLoading, mutate } = useSWR<Page<SearchResult>>(key, fetcher);
+  const [presence, setPresence] = useState<"" | "ONLINE" | "INGAME">("");
+  const [relation, setRelation] = useState<"" | "friends" | "others">("");
+  const [sort, setSort] = useState<SearchSort>("name");
+  const [page, setPage] = useState(1);
+  const filtered = presence !== "" || relation !== "" || sort !== "name";
 
-  const tooShort = typed.length < 2;
+  const typed = q.trim();
+  // search by name (2+ characters), or browse with filters alone
+  const params = new URLSearchParams();
+  if (debounced.length >= 2) params.set("q", debounced);
+  if (presence) params.set("presence", presence);
+  if (relation) params.set("relation", relation);
+  if (sort !== "name") params.set("sort", sort);
+  if (page > 1) params.set("page", String(page));
+  const active = debounced.length >= 2 || filtered;
+  const key = active ? `/api/users/search?${params}` : null;
+  const { data, error, isLoading, mutate } = useSWR<Page<SearchResult>>(key, fetcher, { keepPreviousData: true });
+
+  const tooShort = typed.length < 2 && !filtered;
   const waiting = !tooShort && (typed !== debounced || isLoading);
   const results = !tooShort && !waiting ? data?.items : undefined;
 
   let message = "";
   let messageVisible = true;
   if (tooShort) message = t("friends.searchHint");
-  else if (results && results.length === 0) message = t("friends.noResults", { q: debounced });
+  else if (results && results.length === 0) message = debounced.length >= 2 ? t("friends.noResults", { q: debounced }) : t("friends.noMatches");
   else if (results) {
     message = t("friends.resultsCount", { n: results.length });
     messageVisible = false;
@@ -235,7 +249,10 @@ function SearchPanel({
           ref={inputRef}
           type="search"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
           placeholder={t("friends.searchPlaceholder")}
           aria-labelledby="friends-search-title"
           aria-describedby="friends-search-status"
@@ -244,6 +261,53 @@ function SearchPanel({
           icon={<Search className="ico" aria-hidden />}
           trailing={waiting ? <Spinner /> : undefined}
         />
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("friends.filters")}>
+          <Segmented
+            className="max-w-full flex-wrap"
+            label={t("friends.filterPresence")}
+            value={presence}
+            onChange={(v) => {
+              setPresence(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: t("friends.any") },
+              { value: "ONLINE", label: t("presence.ONLINE") },
+              { value: "INGAME", label: t("presence.INGAME") },
+            ]}
+          />
+          <Segmented
+            className="max-w-full flex-wrap"
+            label={t("friends.filterRelation")}
+            value={relation}
+            onChange={(v) => {
+              setRelation(v);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: t("friends.everyone") },
+              { value: "friends", label: t("friends.onlyFriends") },
+              { value: "others", label: t("friends.notFriends") },
+            ]}
+          />
+          <label className="row !gap-2 t-caption muted">
+            {t("friends.sortBy")}
+            <span className="input !h-8 !w-auto text-[13px] text-fg">
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value as SearchSort);
+                  setPage(1);
+                }}
+              >
+                <option value="name">{t("friends.sortName")}</option>
+                <option value="newest">{t("friends.sortNewest")}</option>
+                <option value="wins">{t("friends.sortWins")}</option>
+              </select>
+              <ChevronDown className="ico !h-4 !w-4 subtle" aria-hidden />
+            </span>
+          </label>
+        </div>
         <p id="friends-search-status" aria-live="polite" className={messageVisible ? (tooShort ? "t-caption subtle" : "muted") : "sr-only"}>
           {message}
         </p>
@@ -261,6 +325,7 @@ function SearchPanel({
             ))}
           </ul>
         )}
+        {data && !waiting && data.total > data.pageSize && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
       </div>
     </Panel>
   );
@@ -273,24 +338,24 @@ function SearchAction({ user, requests, requestsReady, actions }: { user: Search
   switch (state) {
     case "none":
       return (
-        <Button type="button" size="sm" loading={busy} onClick={() => actions.add(user)}>
+        <Button type="button" size="sm" className="max-sm:!px-2" loading={busy} onClick={() => actions.add(user)}>
           {!busy && <UserPlus className="ico" aria-hidden />}
-          <span>{t("profile.addFriend")}</span>
+          <span className="max-sm:sr-only">{t("profile.addFriend")}</span>
         </Button>
       );
     case "request_sent":
       return (
-        <Button type="button" size="sm" disabled>
+        <Button type="button" size="sm" className="max-sm:!px-2" disabled>
           <Check className="ico" aria-hidden />
-          <span>{t("profile.requestSent")}</span>
+          <span className="max-sm:sr-only">{t("profile.requestSent")}</span>
         </Button>
       );
     case "request_received": {
       const req = requests?.find((r) => r.direction === "received" && r.user.id === user.id);
       return (
-        <Button type="button" size="sm" loading={busy} disabled={!requestsReady || !req} onClick={() => req && actions.accept(req)}>
+        <Button type="button" size="sm" className="max-sm:!px-2" loading={busy} disabled={!requestsReady || !req} onClick={() => req && actions.accept(req)}>
           {!busy && <Check className="ico" aria-hidden />}
-          <span>{t("friends.accept")}</span>
+          <span className="max-sm:sr-only">{t("friends.accept")}</span>
         </Button>
       );
     }
@@ -298,7 +363,7 @@ function SearchAction({ user, requests, requestsReady, actions }: { user: Search
       return <Badge icon={<Users className="ico" aria-hidden />}>{t("friends.friendsBadge")}</Badge>;
     case "blocked":
       return (
-        <Button type="button" size="sm" variant="ghost" loading={busy} onClick={() => actions.unblock(user)}>
+        <Button type="button" size="sm" className="max-sm:!px-2" variant="ghost" loading={busy} onClick={() => actions.unblock(user)}>
           {t("profile.unblock")}
         </Button>
       );

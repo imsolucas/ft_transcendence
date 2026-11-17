@@ -66,9 +66,13 @@ export default async function usersRoutes(app: FastifyInstance) {
       schema: {
         querystring: {
           type: "object",
-          required: ["q"],
+          additionalProperties: false,
           properties: {
-            q: { type: "string", minLength: 2, maxLength: 30 },
+            // a name filter, or browse with the other filters alone
+            q: { type: "string", maxLength: 30 },
+            presence: { type: "string", enum: ["ONLINE", "INGAME", "OFFLINE"] },
+            relation: { type: "string", enum: ["friends", "others"] },
+            sort: { type: "string", enum: ["name", "newest", "wins"], default: "name" },
             page: { type: "integer", minimum: 1 },
             pageSize: { type: "integer", minimum: 1, maximum: 50 },
           },
@@ -76,20 +80,39 @@ export default async function usersRoutes(app: FastifyInstance) {
       },
     },
     async (req): Promise<Page<SearchResult>> => {
-      const { q } = req.query as { q: string };
+      const { q = "", presence, relation, sort = "name" } = req.query as {
+        q?: string;
+        presence?: "ONLINE" | "INGAME" | "OFFLINE";
+        relation?: "friends" | "others";
+        sort?: "name" | "newest" | "wins";
+      };
       const { page, pageSize, skip } = parsePage(req.query, 20);
       const viewerId = req.user!.id;
+      const isFriend = {
+        OR: [
+          { sentFriendships: { some: { addresseeId: viewerId, status: "ACCEPTED" as const } } },
+          { receivedFriendships: { some: { requesterId: viewerId, status: "ACCEPTED" as const } } },
+        ],
+      };
       const where = {
         username: { contains: q.trim().toLowerCase(), not: { startsWith: DELETED_PREFIX } },
         id: { not: viewerId },
         // people who blocked the viewer don't show up
         blocksMade: { none: { blockedId: viewerId } },
+        ...(presence ? { status: presence } : {}),
+        ...(relation === "friends" ? isFriend : relation === "others" ? { NOT: isFriend } : {}),
       };
+      const orderBy =
+        sort === "newest"
+          ? [{ created_at: "desc" as const }, { id: "desc" as const }]
+          : sort === "wins"
+            ? [{ matchesWon: { _count: "desc" as const } }, { username: "asc" as const }, { id: "asc" as const }]
+            : [{ username: "asc" as const }, { id: "asc" as const }];
       const [rows, total] = await Promise.all([
         prisma.user.findMany({
           where,
           select: PUBLIC_USER_SELECT,
-          orderBy: [{ username: "asc" }, { id: "asc" }],
+          orderBy,
           skip,
           take: pageSize,
         }),

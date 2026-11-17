@@ -53,7 +53,12 @@ export interface Page<T> {
   total: number;
 }
 
-/** GET /api/users/search?q=&page= → Page<PublicUser & { friendship: FriendshipState }> (q ≥ 2 chars) */
+/**
+ * GET /api/users/search?q=&presence=&relation=&sort=&page= → Page<SearchResult>
+ * q: name contains (optional); presence: ONLINE | INGAME | OFFLINE; relation: friends | others;
+ * sort: name (default) | newest | wins.
+ */
+export type SearchSort = "name" | "newest" | "wins";
 export type SearchResult = PublicUser & { friendship: FriendshipState };
 
 export interface MatchSummary {
