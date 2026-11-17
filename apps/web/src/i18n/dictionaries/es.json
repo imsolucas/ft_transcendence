@@ -333,7 +333,11 @@
     "historyError": "No se pudo cargar el historial de partidas",
     "loadError": "No se pudo cargar este perfil",
     "friendsPrivate": "La lista de amigos es privada",
-    "friendsPrivateBody": "Solo {name} puede ver con quién tiene amistad."
+    "friendsPrivateBody": "Solo {name} puede ver con quién tiene amistad.",
+    "level": "Nivel {n}",
+    "xpToNext": "Faltan {xp} XP para el siguiente nivel",
+    "xpRules": "XP: 10 por partida, +20 por victoria, +100 por torneo ganado, +25 por logro",
+    "levelUp": "¡Subes de nivel! Has alcanzado el nivel {n}."
   },
   "friends": {
     "title": "AMIGOS",
@@ -577,7 +581,8 @@
     "emptyBody": "Termina una partida para entrar en la tabla.",
     "unranked": "Aún no estás clasificado: termina una partida para aparecer aquí.",
     "lobbyLink": "Ver la clasificación",
-    "winsShort": "V"
+    "winsShort": "V",
+    "level": "Nivel"
   },
   "achievements": {
     "count": "{n} de {total} desbloqueados",

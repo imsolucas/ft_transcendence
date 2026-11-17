@@ -136,8 +136,8 @@ export default async function usersRoutes(app: FastifyInstance) {
     });
     if (!u || isDeletedHandle(u.username)) return reply.code(404).send({ error: "Player not found." });
     const [friendship, stats] = await Promise.all([friendshipState(req.user!.id, u.id), computeStats(u.id)]);
-    const achievements = await syncAchievements(u.id, false);
-    return { ...toPublicUser(u), memberSince: u.created_at.toISOString(), friendship, stats, achievements };
+    const { achievements, progress } = await syncAchievements(u.id, "read");
+    return { ...toPublicUser(u), memberSince: u.created_at.toISOString(), friendship, stats, achievements, progress };
   });
 
   app.get("/users/:username/matches", { preHandler: requireUser }, async (req, reply): Promise<Page<MatchSummary> | void> => {

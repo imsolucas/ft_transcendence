@@ -30,6 +30,9 @@ model User {
   messagesSent      Message[]          @relation("MessagesSent")
   messagesReceived  Message[]          @relation("MessagesReceived")
   achievements      UserAchievement[]
+  // gamification: XP from matches, wins, titles and achievements; level derives from it
+  xp                Int                @default(0)
+  level             Int                @default(1)
   blockedBy         Block[]            @relation("Blocked")
 
   name             String

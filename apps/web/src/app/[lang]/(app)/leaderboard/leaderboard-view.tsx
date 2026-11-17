@@ -34,6 +34,7 @@ export function LeaderboardView() {
       <td className="min-w-0 max-w-[48vw]">
         <PlayerChip user={r.user} meta={you ? t("leaderboard.you") : undefined} ring={you ? "you" : undefined} />
       </td>
+      <td className="num text-right max-sm:hidden">{r.level}</td>
       <td className="num text-right">{r.wins}</td>
       <td className="num text-right max-sm:hidden">{r.losses}</td>
       <td className="num text-right">{pct(r.winRate)}</td>
@@ -66,6 +67,7 @@ export function LeaderboardView() {
               <tr className="font-mono text-[12px] uppercase tracking-[.06em] text-fg-subtle [&_th]:font-medium">
                 <th scope="col" className="text-center">#</th>
                 <th scope="col" className="text-left">{t("leaderboard.player")}</th>
+                <th scope="col" className="text-right max-sm:hidden">{t("leaderboard.level")}</th>
                 <th scope="col" className="text-right">
                   <span className="max-sm:hidden">{t("leaderboard.wins")}</span>
                   <abbr className="no-underline sm:hidden" title={t("leaderboard.wins")}>

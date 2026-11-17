@@ -144,6 +144,7 @@ function ProfileScreen({ username }: { username: string }) {
                 {t("profile.record", { wins: stats.wins, losses: stats.losses })} · {pct}
               </span>
             </span>
+            <LevelBar progress={profile.progress} />
             <span className="t-caption subtle">{t("profile.memberSince", { date: since })}</span>
           </div>
           {!meLoading && me && (
@@ -322,5 +323,23 @@ function FriendsList({ query }: { query: ReturnType<typeof useSWR<PublicUser[]>>
         ))}
       </ul>
     </Panel>
+  );
+}
+
+/** Level + XP towards the next level (gamification). */
+function LevelBar({ progress }: { progress: Profile["progress"] }) {
+  const { t } = useI18n();
+  const span = progress.nextLevelXp - progress.levelXp;
+  const into = progress.xp - progress.levelXp;
+  return (
+    <span className="row wrap !gap-2" title={t("profile.xpRules")}>
+      <Badge tone="amber">{t("profile.level", { n: progress.level })}</Badge>
+      <span className="meter !w-28" role="progressbar" aria-label={t("profile.xpToNext", { xp: progress.nextLevelXp - progress.xp })} aria-valuemin={0} aria-valuemax={span} aria-valuenow={into}>
+        <i style={{ width: `${(100 * into) / span}%` }} />
+      </span>
+      <span className="num num-sm subtle">
+        {progress.xp} / {progress.nextLevelXp} XP
+      </span>
+    </span>
   );
 }

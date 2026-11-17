@@ -27,16 +27,34 @@ function sync(userId: number) {
 export function socketOpened(userId: number): number {
   const n = (liveSockets.get(userId) ?? 0) + 1;
   liveSockets.set(userId, n);
+  // back within the grace period: the pending OFFLINE never happens (ONLINE re-synced anyway)
+  const pending = offlineTimers.get(userId);
+  if (pending) {
+    clearTimeout(pending);
+    offlineTimers.delete(userId);
+  }
   if (n === 1) sync(userId);
   return n;
 }
+
+/** A reload closes the old socket just before the new one opens: wait before going OFFLINE. */
+const OFFLINE_GRACE_MS = 5_000;
+const offlineTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 export function socketClosed(userId: number) {
   const n = (liveSockets.get(userId) ?? 1) - 1;
   if (n <= 0) {
     liveSockets.delete(userId);
     inGame.delete(userId);
-    sync(userId);
+    clearTimeout(offlineTimers.get(userId));
+    offlineTimers.set(
+      userId,
+      setTimeout(() => {
+        offlineTimers.delete(userId);
+        // still no socket after the grace period: really gone
+        if (!liveSockets.has(userId)) sync(userId);
+      }, OFFLINE_GRACE_MS),
+    );
   } else {
     liveSockets.set(userId, n);
   }

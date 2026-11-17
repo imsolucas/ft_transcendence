@@ -70,6 +70,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         case "achievement":
           announceAchievement(e.id, t, myNameRef.current ? () => routerRef.current.push(href(`/profile/${myNameRef.current}`)) : undefined);
           break;
+        case "levelUp":
+          announceLevelUp(e.level, t);
+          break;
         case "friend:accepted":
           void mutate("/api/friends");
           void mutate("/api/friends/requests");
@@ -111,4 +114,9 @@ export function announceAchievement(id: AchievementId, t: (key: string, vars?: R
     description: t(`achievements.${id}.body`),
     ...(onView ? { action: { label: t("achievements.view"), onClick: onView } } : {}),
   });
+}
+
+/** "Level up" toast (shared by the app shell and the game screen). */
+export function announceLevelUp(level: number, t: (key: string, vars?: Record<string, string | number>) => string) {
+  toast.success(t("profile.levelUp", { n: level }));
 }

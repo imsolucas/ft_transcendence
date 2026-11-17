@@ -44,6 +44,7 @@ export interface Profile extends PublicUser {
   friendship: FriendshipState;
   stats: UserStats;
   achievements: Achievement[];
+  progress: Progress;
 }
 
 export interface Page<T> {
@@ -171,7 +172,8 @@ export type RealtimeEvent =
   | { type: "friend:request"; from: PublicUser }
   | { type: "friend:accepted"; by: PublicUser }
   | { type: "presence"; userId: number; presence: Presence }
-  | { type: "achievement"; id: AchievementId };
+  | { type: "achievement"; id: AchievementId }
+  | { type: "levelUp"; level: number };
 
 // ---------------------------------------------------------------- Status (Phase 4)
 export type ServiceState = "up" | "degraded" | "down";
@@ -207,9 +209,18 @@ export interface Achievement {
   progress: number;
   target: number;
 }
+/** XP/level (stored on the user; earned from matches, wins, titles and achievements). */
+export interface Progress {
+  xp: number;
+  level: number;
+  /** XP where the current level starts and where the next one starts */
+  levelXp: number;
+  nextLevelXp: number;
+}
 export interface LeaderboardRow {
   rank: number;
   user: PublicUser;
+  level: number;
   wins: number;
   losses: number;
   winRate: number; // 0..1

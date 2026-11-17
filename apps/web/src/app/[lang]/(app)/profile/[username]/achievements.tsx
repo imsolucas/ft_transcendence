@@ -24,7 +24,8 @@ export function Achievements({ items }: { items: Achievement[] }) {
   const unlocked = items.filter((a) => a.unlocked).length;
   return (
     <Panel>
-      <p className="t-label muted mb-4">{t("achievements.count", { n: unlocked, total: items.length })}</p>
+      <p className="t-label muted">{t("achievements.count", { n: unlocked, total: items.length })}</p>
+      <p className="t-caption subtle mb-4">{t("profile.xpRules")}</p>
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((a) => {
           const Icon = ICONS[a.id];

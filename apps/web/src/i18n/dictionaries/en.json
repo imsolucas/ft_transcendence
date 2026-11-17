@@ -333,7 +333,11 @@
     "historyError": "Couldn't load match history",
     "loadError": "Couldn't load this profile",
     "friendsPrivate": "Friends list is private",
-    "friendsPrivateBody": "Only {name} can see who they're friends with."
+    "friendsPrivateBody": "Only {name} can see who they're friends with.",
+    "level": "Level {n}",
+    "xpToNext": "{xp} XP to the next level",
+    "xpRules": "XP: 10 per match, +20 per win, +100 per tournament title, +25 per achievement",
+    "levelUp": "Level up! You reached level {n}."
   },
   "friends": {
     "title": "FRIENDS",
@@ -577,7 +581,8 @@
     "emptyBody": "Finish a match to get on the board.",
     "unranked": "You're not ranked yet: finish a match to appear here.",
     "lobbyLink": "See the leaderboard",
-    "winsShort": "W"
+    "winsShort": "W",
+    "level": "Level"
   },
   "achievements": {
     "count": "{n} of {total} unlocked",

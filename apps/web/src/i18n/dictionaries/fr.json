@@ -333,7 +333,11 @@
     "historyError": "Impossible de charger l'historique des matchs",
     "loadError": "Impossible de charger ce profil",
     "friendsPrivate": "La liste d'amis est privée",
-    "friendsPrivateBody": "Seul {name} peut voir avec qui il est ami."
+    "friendsPrivateBody": "Seul {name} peut voir avec qui il est ami.",
+    "level": "Niveau {n}",
+    "xpToNext": "Encore {xp} XP pour le niveau suivant",
+    "xpRules": "XP : 10 par match, +20 par victoire, +100 par tournoi gagné, +25 par succès",
+    "levelUp": "Niveau supérieur ! Vous êtes niveau {n}."
   },
   "friends": {
     "title": "AMIS",
@@ -577,7 +581,8 @@
     "emptyBody": "Terminez un match pour entrer au classement.",
     "unranked": "Vous n'êtes pas encore classé : terminez un match pour apparaître ici.",
     "lobbyLink": "Voir le classement",
-    "winsShort": "V"
+    "winsShort": "V",
+    "level": "Niveau"
   },
   "achievements": {
     "count": "{n} sur {total} débloqués",
