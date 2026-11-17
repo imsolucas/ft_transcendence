@@ -604,7 +604,7 @@
     },
     "shutout": {
       "title": "Shutout",
-      "body": "Win a match without conceding a point."
+      "body": "Win a match scoring 3+ points without conceding one."
     },
     "champion": {
       "title": "Champion",

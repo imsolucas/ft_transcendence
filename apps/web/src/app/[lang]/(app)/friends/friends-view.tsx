@@ -231,7 +231,8 @@ function SearchPanel({
 
   const tooShort = typed.length < 2 && !filtered;
   const waiting = !tooShort && (typed !== debounced || isLoading);
-  const results = !tooShort && !waiting ? data?.items : undefined;
+  // never show the previous query's results under a failed request
+  const results = !tooShort && !waiting && !error ? data?.items : undefined;
 
   let message = "";
   let messageVisible = true;
@@ -312,7 +313,7 @@ function SearchPanel({
           {message}
         </p>
         {waiting && <RowsSkeleton rows={2} />}
-        {!tooShort && !waiting && error && !data && <PanelError title={t("friends.searchError")} error={error} onRetry={() => mutate()} />}
+        {!tooShort && !waiting && error && <PanelError title={t("friends.searchError")} error={error} onRetry={() => mutate()} />}
         {results && results.length > 0 && (
           <ul className="stack">
             {results.map((user) => (
@@ -325,7 +326,7 @@ function SearchPanel({
             ))}
           </ul>
         )}
-        {data && !waiting && data.total > data.pageSize && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
+        {results && data && data.total > data.pageSize && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
       </div>
     </Panel>
   );

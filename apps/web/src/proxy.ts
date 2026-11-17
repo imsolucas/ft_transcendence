@@ -8,7 +8,7 @@ import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, type Locale } from "@/i18n/con
  *    login/signup with one go to the lobby. This is only UX; the API checks every request.
  */
 const SESSION_COOKIES = ["__Secure-ft.session_token", "ft.session_token"];
-const PROTECTED = ["/lobby", "/play", "/profile", "/friends", "/chat", "/settings", "/tournament"];
+const PROTECTED = ["/lobby", "/play", "/profile", "/friends", "/chat", "/settings", "/tournament", "/leaderboard"];
 const GUEST_ONLY = ["/login", "/signup"];
 
 function preferredLocale(req: NextRequest): Locale {

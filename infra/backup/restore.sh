@@ -12,11 +12,15 @@ db="/backups/${1:?usage: restore.sh <db-dump> [uploads-archive]}"
 case "$db" in *.tmp) echo "refusing an unfinished backup: $db"; exit 1;; esac
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
-{
-  echo 'DROP SCHEMA public CASCADE;'
-  echo 'CREATE SCHEMA public;'
-  pg_restore --no-owner --no-privileges --file - "$db"
-} | psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" --quiet --single-transaction -v ON_ERROR_STOP=1 >/dev/null
+# 1. convert the dump to SQL first: a bad, truncated or wrong file fails HERE (set -e),
+#    before the database is touched
+sql=$(mktemp /tmp/restore.XXXXXX)
+trap 'rm -f "$sql"' EXIT
+pg_restore --no-owner --no-privileges --file "$sql" "$db"
+[ -s "$sql" ] || { echo "backup produced no SQL: $db"; exit 1; }
+# 2. replace the schema and replay it in ONE transaction; any SQL error rolls everything back
+psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" --quiet --single-transaction -v ON_ERROR_STOP=1 \
+  -c 'DROP SCHEMA public CASCADE' -c 'CREATE SCHEMA public' -f "$sql" >/dev/null
 
 if [ -n "${2:-}" ]; then
   up="/backups/$2"

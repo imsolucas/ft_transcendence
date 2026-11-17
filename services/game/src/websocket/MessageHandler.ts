@@ -159,7 +159,9 @@ export default class NewMessageHandler {
     }
 
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
-        const result = this.roomService.joinQueue(player, message.data.roomType);
+        // only the two known modes; anything else is a standard match (never a custom mode)
+        const roomType = message.data?.roomType === "tournament" ? "tournament" : "standard";
+        const result = this.roomService.joinQueue(player, roomType);
         if (!result) {
             this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
             return;

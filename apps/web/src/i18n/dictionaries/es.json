@@ -604,7 +604,7 @@
     },
     "shutout": {
       "title": "Imbatible",
-      "body": "Gana una partida sin encajar ningún punto."
+      "body": "Gana una partida con 3 o más puntos sin encajar ninguno."
     },
     "champion": {
       "title": "Campeón",
