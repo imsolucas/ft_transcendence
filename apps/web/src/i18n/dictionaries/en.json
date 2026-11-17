@@ -401,7 +401,8 @@
       "profile": "Profile",
       "security": "Security",
       "apiKeys": "API keys",
-      "preferences": "Preferences"
+      "preferences": "Preferences",
+      "data": "Your data"
     },
     "avatar": "Avatar",
     "uploadAvatar": "Upload image",
@@ -526,5 +527,18 @@
     "uptime": "API uptime: {h} h {m} min",
     "refresh": "Refreshes every 10 seconds.",
     "unreachable": "Can't reach the status service. The site may be down for maintenance."
+  },
+  "data": {
+    "exportTitle": "Download your data",
+    "exportBody": "One JSON file with your profile, sign-in methods, sessions, friends, blocks, matches, tournaments, messages and API keys (names only).",
+    "download": "Download my data",
+    "deleteTitle": "Delete account",
+    "deleteBody": "Deletes your profile, friends, messages, API keys and sign-in methods. Your past matches stay in your opponents' history as \"Deleted player\". This can't be undone.",
+    "delete": "Delete my account",
+    "deleteConfirm": "Everything listed above is deleted immediately and you are logged out.",
+    "typeLabel": "Type {name} to confirm",
+    "typeToConfirm": "Type {name} exactly to confirm.",
+    "deleteForever": "Delete forever",
+    "reauth": "For your safety, log in again first. Then you have 10 minutes to delete your account."
   }
 }

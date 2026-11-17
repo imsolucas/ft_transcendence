@@ -56,14 +56,14 @@ export const privacy: LegalDoc = {
       id: "retention",
       title: "Combien de temps nous les conservons",
       body: [
-        "Vos données sont conservées tant que votre compte existe. Les sessions expirent après 7 jours sans utilisation. La suppression de votre compte efface votre profil, vos amis, vos sessions, vos clés et votre avatar ; les matchs terminés restent dans l'historique de vos adversaires sous votre ancien nom d'utilisateur.",
+        "Vos données sont conservées tant que votre compte existe. Les sessions expirent après 7 jours sans utilisation. La suppression de votre compte efface immédiatement votre profil, votre e-mail, vos amis, blocages, messages, sessions, méthodes de connexion, double authentification, clés d'API et avatar ; les matchs terminés restent dans l'historique de vos adversaires sous « Joueur supprimé ».",
       ],
     },
     {
       id: "rights",
       title: "Vos droits",
       body: [
-        "Vous pouvez consulter et modifier votre profil dans les Paramètres, révoquer vos sessions et vos clés d'API, et demander une copie ou la suppression de vos données. Les demandes reçoivent une réponse sous 30 jours.",
+        "Vous pouvez consulter et modifier votre profil dans les Paramètres, révoquer vos sessions et vos clés d'API, et, dans Paramètres → Vos données, télécharger une copie de tout ce que nous conservons sur vous ou supprimer vous-même votre compte. Pour toute autre demande, écrivez-nous : nous répondons sous 30 jours.",
       ],
     },
     {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { KeyRound, LogOut, Shield, SlidersHorizontal, User } from "lucide-react";
+import { Database, KeyRound, LogOut, Shield, SlidersHorizontal, User } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/cn";
@@ -11,12 +11,14 @@ import { ProfileSection } from "./profile-section";
 import { SecuritySection } from "./security-section";
 import { ApiKeysSection } from "./api-keys-section";
 import { PreferencesSection } from "./preferences-section";
+import { DataSection } from "./data-section";
 
 const SECTIONS = [
   { id: "profile", key: "settings.sections.profile", icon: User },
   { id: "security", key: "settings.sections.security", icon: Shield },
   { id: "api-keys", key: "settings.sections.apiKeys", icon: KeyRound },
   { id: "preferences", key: "settings.sections.preferences", icon: SlidersHorizontal },
+  { id: "data", key: "settings.sections.data", icon: Database },
 ] as const;
 type SectionId = (typeof SECTIONS)[number]["id"];
 const PANEL = "rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fg";
@@ -93,6 +95,9 @@ export function SettingsView() {
             </TabPanel>
             <TabPanel value="preferences" className={PANEL}>
               <PreferencesSection />
+            </TabPanel>
+            <TabPanel value="data" className={PANEL}>
+              <DataSection />
             </TabPanel>
           </div>
         </div>

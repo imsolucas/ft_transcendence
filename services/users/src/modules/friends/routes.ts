@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import type { FriendRequest, PublicUser } from "../../../../shared/types/api.types.ts";
+import { isDeletedHandle } from "../privacy/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { ID_PARAMS } from "../shared/presenters.ts";
@@ -14,6 +15,7 @@ const usernameBody = {
 } as const;
 
 async function findUser(username: string) {
+  if (isDeletedHandle(username.trim().toLowerCase())) return null;
   return prisma.user.findUnique({ where: { username: username.trim().toLowerCase() }, select: { id: true } });
 }
 

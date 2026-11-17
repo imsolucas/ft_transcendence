@@ -401,7 +401,8 @@
       "profile": "Profil",
       "security": "Sécurité",
       "apiKeys": "Clés d'API",
-      "preferences": "Préférences"
+      "preferences": "Préférences",
+      "data": "Vos données"
     },
     "avatar": "Avatar",
     "uploadAvatar": "Téléverser une image",
@@ -526,5 +527,18 @@
     "uptime": "Disponibilité de l'API : {h} h {m} min",
     "refresh": "Actualisé toutes les 10 secondes.",
     "unreachable": "Impossible de joindre le service d'état. Le site est peut-être en maintenance."
+  },
+  "data": {
+    "exportTitle": "Télécharger vos données",
+    "exportBody": "Un fichier JSON avec votre profil, vos méthodes de connexion, sessions, amis, blocages, matchs, tournois, messages et clés d'API (noms uniquement).",
+    "download": "Télécharger mes données",
+    "deleteTitle": "Supprimer le compte",
+    "deleteBody": "Supprime votre profil, vos amis, messages, clés d'API et méthodes de connexion. Vos anciens matchs restent dans l'historique de vos adversaires sous « Joueur supprimé ». Action irréversible.",
+    "delete": "Supprimer mon compte",
+    "deleteConfirm": "Tout ce qui précède est supprimé immédiatement et vous êtes déconnecté.",
+    "typeLabel": "Tapez {name} pour confirmer",
+    "typeToConfirm": "Tapez {name} exactement pour confirmer.",
+    "deleteForever": "Supprimer définitivement",
+    "reauth": "Par sécurité, reconnectez-vous d'abord. Vous aurez ensuite 10 minutes pour supprimer votre compte."
   }
 }

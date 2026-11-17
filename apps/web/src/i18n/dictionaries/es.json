@@ -401,7 +401,8 @@
       "profile": "Perfil",
       "security": "Seguridad",
       "apiKeys": "Claves de API",
-      "preferences": "Preferencias"
+      "preferences": "Preferencias",
+      "data": "Tus datos"
     },
     "avatar": "Avatar",
     "uploadAvatar": "Subir imagen",
@@ -526,5 +527,18 @@
     "uptime": "Tiempo activo de la API: {h} h {m} min",
     "refresh": "Se actualiza cada 10 segundos.",
     "unreachable": "No se puede contactar con el servicio de estado. El sitio puede estar en mantenimiento."
+  },
+  "data": {
+    "exportTitle": "Descarga tus datos",
+    "exportBody": "Un archivo JSON con tu perfil, métodos de inicio de sesión, sesiones, amigos, bloqueos, partidas, torneos, mensajes y claves de API (solo nombres).",
+    "download": "Descargar mis datos",
+    "deleteTitle": "Eliminar cuenta",
+    "deleteBody": "Elimina tu perfil, amigos, mensajes, claves de API y métodos de inicio de sesión. Tus partidas pasadas siguen en el historial de tus rivales como \"Jugador eliminado\". No se puede deshacer.",
+    "delete": "Eliminar mi cuenta",
+    "deleteConfirm": "Todo lo anterior se elimina de inmediato y se cierra tu sesión.",
+    "typeLabel": "Escribe {name} para confirmar",
+    "typeToConfirm": "Escribe {name} exactamente para confirmar.",
+    "deleteForever": "Eliminar para siempre",
+    "reauth": "Por tu seguridad, inicia sesión de nuevo. Después tendrás 10 minutos para eliminar tu cuenta."
   }
 }

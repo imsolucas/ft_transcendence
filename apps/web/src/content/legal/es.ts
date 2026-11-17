@@ -56,14 +56,14 @@ export const privacy: LegalDoc = {
       id: "retention",
       title: "Cuánto tiempo los conservamos",
       body: [
-        "Tus datos se conservan mientras exista tu cuenta. Las sesiones caducan tras 7 días sin uso. Al eliminar tu cuenta se borran tu perfil, amigos, sesiones, claves y avatar; las partidas terminadas permanecen en el historial de tus oponentes con tu antiguo nombre de usuario.",
+        "Tus datos se conservan mientras exista tu cuenta. Las sesiones caducan tras 7 días sin uso. Al eliminar tu cuenta se borran de inmediato tu perfil, correo, amigos, bloqueos, mensajes, sesiones, métodos de inicio de sesión, verificación en dos pasos, claves de API y avatar; las partidas terminadas permanecen en el historial de tus oponentes como \"Jugador eliminado\".",
       ],
     },
     {
       id: "rights",
       title: "Tus derechos",
       body: [
-        "Puedes ver y cambiar tu perfil en Ajustes, revocar sesiones y claves de API, y pedir una copia o la eliminación de tus datos. Respondemos a las solicitudes en un plazo de 30 días.",
+        "Puedes ver y cambiar tu perfil en Ajustes, revocar sesiones y claves de API, y, en Ajustes → Tus datos, descargar una copia de todo lo que guardamos sobre ti o eliminar tu cuenta tú mismo. Para cualquier otra cosa, escríbenos y respondemos en un plazo de 30 días.",
       ],
     },
     {

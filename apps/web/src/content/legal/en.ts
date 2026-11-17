@@ -56,14 +56,14 @@ export const privacy: LegalDoc = {
       id: "retention",
       title: "How long we keep it",
       body: [
-        "Your data stays while your account exists. Sessions expire after 7 days without use. Deleting your account removes your profile, friends, sessions, keys and avatar; finished matches remain in your opponents' history under your former username.",
+        "Your data stays while your account exists. Sessions expire after 7 days without use. Deleting your account removes your profile, email, friends, blocks, messages, sessions, sign-in methods, two-factor setup, API keys and avatar immediately; finished matches remain in your opponents' history as \"Deleted player\".",
       ],
     },
     {
       id: "rights",
       title: "Your rights",
       body: [
-        "You can view and change your profile in Settings, revoke sessions and API keys, and ask for a copy or deletion of your data. Requests are answered within 30 days.",
+        "You can view and change your profile in Settings, revoke sessions and API keys, and, under Settings → Your data, download a copy of everything we store about you or delete your account yourself. Anything else: ask us, and we answer within 30 days.",
       ],
     },
     {

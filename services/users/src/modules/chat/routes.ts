@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import type { ChatMessage, Conversation } from "../../../../shared/types/api.types.ts";
+import { isDeletedHandle } from "../privacy/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { notify } from "../../realtime/notify.ts";
@@ -21,6 +22,7 @@ const toMessage = (m: Row): ChatMessage => ({
 });
 
 async function peer(username: string) {
+  if (isDeletedHandle(username.toLowerCase())) return null;
   return prisma.user.findUnique({ where: { username: username.toLowerCase() }, select: PUBLIC_USER_SELECT });
 }
 

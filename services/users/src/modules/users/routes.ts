@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { MatchSummary, Page, Profile, SearchResult, UserStats } from "../../../../shared/types/api.types.ts";
+import { DELETED_PREFIX, isDeletedHandle } from "../privacy/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { PUBLIC_USER_SELECT, friendshipState, friendshipStates, parsePage, toPublicUser } from "../shared/presenters.ts";
@@ -78,7 +79,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       const { page, pageSize, skip } = parsePage(req.query, 20);
       const viewerId = req.user!.id;
       const where = {
-        username: { contains: q.trim().toLowerCase() },
+        username: { contains: q.trim().toLowerCase(), not: { startsWith: DELETED_PREFIX } },
         id: { not: viewerId },
         // people who blocked the viewer don't show up
         blocksMade: { none: { blockedId: viewerId } },
@@ -109,7 +110,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       where: { username: username.toLowerCase() },
       select: { ...PUBLIC_USER_SELECT, created_at: true },
     });
-    if (!u) return reply.code(404).send({ error: "Player not found." });
+    if (!u || isDeletedHandle(u.username)) return reply.code(404).send({ error: "Player not found." });
     const [friendship, stats] = await Promise.all([friendshipState(req.user!.id, u.id), computeStats(u.id)]);
     return { ...toPublicUser(u), memberSince: u.created_at.toISOString(), friendship, stats };
   });
@@ -117,7 +118,9 @@ export default async function usersRoutes(app: FastifyInstance) {
   app.get("/users/:username/matches", { preHandler: requireUser }, async (req, reply): Promise<Page<MatchSummary> | void> => {
     const { username } = req.params as { username: string };
     const { page, pageSize, skip } = parsePage(req.query, 10, 50);
-    const target = await prisma.user.findUnique({ where: { username: username.toLowerCase() }, select: { id: true } });
+    const target = isDeletedHandle(username.toLowerCase())
+      ? null
+      : await prisma.user.findUnique({ where: { username: username.toLowerCase() }, select: { id: true } });
     if (!target) return reply.code(404).send({ error: "Player not found." });
     const where = { OR: [{ player1Id: target.id }, { player2Id: target.id }] };
 
