@@ -72,6 +72,5 @@ export function reportTournamentResult(result: Record<string, unknown>): void {
   // The tournament id is the idempotency key on the users side.
   const clipped = clipNames(result);
   if (Array.isArray(clipped.matches)) clipped.matches = clipped.matches.map((m: Record<string, unknown>) => clipNames(m));
-  matchesFinished.inc({ mode: 'tournament' });
   void postWithRetry('/internal/game/tournament-result', clipped, 'tournament result', 'tournament');
 }

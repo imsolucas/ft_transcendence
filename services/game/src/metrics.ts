@@ -11,10 +11,11 @@ const ROOM_MODES = ['standard', 'tournament'] as const;
 
 export const matchesFinished = new Counter({
   name: 'game_matches_finished_total',
-  help: 'Matches that ended and were sent to the users service, by mode',
+  help: 'Matches that ended (each tournament round counts as one match), by mode',
   labelNames: ['mode'] as const,
   registers: [registry],
 });
+for (const mode of ROOM_MODES) matchesFinished.inc({ mode }, 0);
 
 export const resultReportsFailed = new Counter({
   name: 'game_result_reports_failed_total',
@@ -22,6 +23,8 @@ export const resultReportsFailed = new Counter({
   labelNames: ['kind'] as const,
   registers: [registry],
 });
+// start every label at 0 so increase() sees the first event after a restart
+for (const kind of ['match', 'tournament']) resultReportsFailed.inc({ kind }, 0);
 
 // One tick simulates every playing room; the budget at 60 Hz is ~16.7 ms.
 export const tickDuration = new Histogram({

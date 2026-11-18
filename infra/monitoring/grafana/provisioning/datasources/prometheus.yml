@@ -10,3 +10,5 @@ datasources:
     editable: false
     jsonData:
       timeInterval: 15s
+      # list Prometheus' own alert rules under Grafana > Alerting
+      manageAlerts: true

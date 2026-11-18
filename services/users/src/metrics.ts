@@ -35,6 +35,8 @@ export const resultsRecorded = new Counter({
   labelNames: ["kind"] as const,
   registers: [registry],
 });
+// start every label at 0 so increase() sees the first event after a restart
+for (const kind of ["match", "tournament"]) resultsRecorded.inc({ kind }, 0);
 
 const METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
 

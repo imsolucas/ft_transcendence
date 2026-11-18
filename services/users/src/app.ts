@@ -38,6 +38,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     reply.code(status).send({ error: status >= 500 ? "Something went wrong. Please try again." : err.message });
   });
 
+  // Prometheus: request counter/histogram for every route below, and GET /metrics
+  registerHttpMetrics(app);
+
   await app.register(fastifySwagger, {
     openapi: {
       info: {
@@ -64,9 +67,6 @@ export async function buildApp(): Promise<FastifyInstance> {
     // Swagger UI sets a few inline styles itself; scripts stay restricted to 'self'
     transformStaticCSP: (header) => header.replace("style-src 'self' https:", "style-src 'self' https: 'unsafe-inline'"),
   });
-
-  // Prometheus: request counter/histogram for every route below, and GET /metrics
-  registerHttpMetrics(app);
 
   await app.register(dbPlugin);
   await app.register(routes);
