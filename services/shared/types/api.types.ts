@@ -252,3 +252,43 @@ export interface LeaderboardRow {
 }
 /** GET /api/leaderboard?page= → Page<LeaderboardRow> & { you: LeaderboardRow | null } */
 export type Leaderboard = Page<LeaderboardRow> & { you: LeaderboardRow | null };
+
+// ---- Tournament results on chain (services/users/src/chain) ----
+
+/**
+ * verified: the on-chain hash equals the hash recomputed from the database.
+ * mismatch: a record exists but its hash differs (the database or the record changed).
+ * pending: not recorded yet (chain down, still confirming, or the tournament isn't finished).
+ * disabled: this deployment has no chain configured. unavailable: the chain couldn't be read now.
+ */
+export type ChainStatus = "verified" | "mismatch" | "pending" | "disabled" | "unavailable";
+
+/** GET /api/tournaments/:id/chain */
+export interface ChainVerification {
+  status: ChainStatus;
+  txHash: string | null;
+  blockNumber: number | null;
+  contract: string | null;
+  chainId: number | null;
+  /** keccak256 of the canonical result, recomputed from the database now */
+  resultHash: string;
+  onChainHash: string | null;
+  /** block explorer link to the transaction, when CHAIN_EXPLORER_URL is set */
+  explorerUrl: string | null;
+}
+
+export interface TournamentSummary {
+  id: number;
+  name: string;
+  startedAt: string;
+  endedAt: string | null;
+  playerCount: number;
+  matchCount: number;
+  winner: PublicUser | null;
+  /** the requested player won it */
+  won: boolean;
+  /** stored state only (no chain call); the UI asks /chain for the verified status */
+  chain: { enabled: boolean; txHash: string | null; explorerUrl: string | null };
+}
+
+/** GET /api/users/:username/tournaments?page=&pageSize=10 → Page<TournamentSummary> (newest first) */

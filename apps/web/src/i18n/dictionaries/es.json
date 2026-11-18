@@ -354,7 +354,8 @@
       "stats": "Estadísticas",
       "history": "Historial de partidas",
       "friends": "Amigos",
-      "achievements": "Logros"
+      "achievements": "Logros",
+      "tournaments": "Torneos"
     },
     "addFriend": "Añadir amigo",
     "requestSent": "Solicitud enviada",
@@ -728,5 +729,23 @@
     "body": "No tienes conexión. Las partidas online, el chat, los amigos y tu perfil necesitan la red. Una partida local en este dispositivo funciona sin ella.",
     "playLocal": "Jugar en local",
     "hint": "Esta página se recarga sola cuando vuelva la conexión."
+  },
+  "chain": {
+    "explainer": "Los torneos terminados se registran en una blockchain: allí se guarda una huella de cada marcador que no se puede modificar, así que cualquiera puede comprobar que estos resultados no se han editado.",
+    "none": "Aún no hay torneos.",
+    "noneBody": "Aquí aparecen los torneos en los que participa este jugador.",
+    "loadError": "No se pudieron cargar los torneos",
+    "champion": "Campeón",
+    "winner": "Ganador",
+    "meta": "{players} jugadores · {matches} partidas",
+    "verified": "Verificado en la blockchain",
+    "mismatch": "No coincide con la blockchain",
+    "mismatchBody": "Estos resultados difieren de los registrados en la blockchain.",
+    "pending": "Pendiente",
+    "disabled": "No configurado",
+    "unavailable": "Blockchain no disponible",
+    "tx": "Transacción",
+    "copyTx": "Copiar el hash de la transacción",
+    "explorer": "Abrir en el explorador de bloques (nueva pestaña)"
   }
 }

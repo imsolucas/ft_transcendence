@@ -103,7 +103,32 @@ model Tournament {
   start_at   DateTime           @default(now())
   end_at     DateTime?
 
+  // Blockchain record (src/chain). chainContract = the contract this row was processed
+  // against; a row whose chainContract differs from the current contract is still pending.
+  chainContract   String?
+  chainTxHash     String?
+  chainBlock      Int?
+  chainResultHash String?
+  chainRecordedAt DateTime?
+  // "conflict" = the chain already holds a different hash for this tournament's key
+  chainError      String?
+
+  @@index([chainContract])
   @@map("Tournaments")
+}
+
+// Contracts the users service deployed itself (when CHAIN_CONTRACT_ADDRESS is not set)
+model ChainDeployment {
+  id          Int      @id @default(autoincrement())
+  chainId     Int
+  address     String
+  owner       String
+  txHash      String
+  blockNumber Int
+  created_at  DateTime @default(now())
+
+  @@index([chainId, owner, id])
+  @@map("ChainDeployments")
 }
 
 model TournamentPlayer {

@@ -40,6 +40,12 @@ services:
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
       SEED_DEV_DATA: ${SEED_DEV_DATA:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Tournament results on chain (optional; see the "Blockchain" section of the README)
+      CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}
+      CHAIN_PRIVATE_KEY: ${CHAIN_PRIVATE_KEY:-}
+      CHAIN_CONTRACT_ADDRESS: ${CHAIN_CONTRACT_ADDRESS:-}
+      CHAIN_ID: ${CHAIN_ID:-}
+      CHAIN_EXPLORER_URL: ${CHAIN_EXPLORER_URL:-}
     volumes:
       - uploads:/usr/src/app/uploads
     depends_on:
@@ -101,6 +107,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+
+  # Local EVM test chain for the blockchain module (profile "chain": COMPOSE_PROFILES=chain).
+  # Avalanche-compatible: same EVM and JSON-RPC as the C-Chain, with a local chain id
+  # (Fuji is 43113). Internal network only: no published port. State survives restarts
+  # (dumped to the anvil_data volume); if it is lost, users redeploys and re-records.
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.8.7
+    profiles: [chain]
+    entrypoint: ["anvil"]
+    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "43112", "--state", "/home/foundry/anvil-state.json", "--state-interval", "30"]
+    init: true
+    volumes:
+      - anvil_data:/home/foundry
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks: [internal]
     restart: unless-stopped
 
@@ -204,6 +230,7 @@ volumes:
   caddy_config:
   prometheus_data:
   grafana_data:
+  anvil_data:
 
 networks:
   internal:

@@ -13,6 +13,7 @@ import privacyRoutes from "../modules/privacy/routes.ts";
 import gamificationRoutes from "../modules/gamification/routes.ts";
 import aiRoutes from "../modules/ai/routes.ts";
 import internalRoutes from "../modules/internal/routes.ts";
+import tournamentRoutes from "../modules/tournaments/routes.ts";
 import { apiRateLimiter } from "../middleware/rateLimiter.ts";
 
 export default async function routes(app: FastifyInstance) {
@@ -33,6 +34,7 @@ export default async function routes(app: FastifyInstance) {
       await api.register(privacyRoutes);
       await api.register(gamificationRoutes);
       await api.register(aiRoutes);
+      await api.register(tournamentRoutes);
     },
     { prefix: "/api" }
   );
