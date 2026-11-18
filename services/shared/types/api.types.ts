@@ -148,6 +148,8 @@ export interface ChatMessage {
   inviteCode: string | null;
   createdAt: string;
   readAt: string | null;
+  /** removed by content moderation (body is then empty) */
+  removed?: boolean;
 }
 
 export interface Conversation {
@@ -178,7 +180,25 @@ export type RealtimeEvent =
   | { type: "friend:accepted"; by: PublicUser }
   | { type: "presence"; userId: number; presence: Presence }
   | { type: "achievement"; id: AchievementId }
-  | { type: "levelUp"; level: number };
+  | { type: "levelUp"; level: number }
+  /** a chat message was removed by moderation (both people in the thread get it) */
+  | { type: "chat:removed"; messageId: number }
+  /** to the sender of a removed message; mutedUntil is set after repeated removals */
+  | { type: "moderation:warning"; category: ModerationCategory; mutedUntil: string | null };
+
+export type ModerationCategory = "harassment" | "hate" | "threat" | "sexual" | "spam" | "other";
+
+// ---------------------------------------------------------------- AI coach
+/** POST /api/ai/chat body; the answer streams back as SSE: delta {text} … done {stopReason} | error {code} */
+export interface CoachRequest {
+  messages: { role: "user" | "assistant"; content: string }[];
+}
+/** GET /api/ai/status */
+export interface AiStatus {
+  enabled: boolean;
+  remaining: number;
+  limit: number;
+}
 
 // ---------------------------------------------------------------- Status (Phase 4)
 export type ServiceState = "up" | "degraded" | "down";

@@ -33,6 +33,8 @@ model User {
   // gamification: XP from matches, wins, titles and achievements; level derives from it
   xp                Int                @default(0)
   level             Int                @default(1)
+  // content moderation: sending chat is blocked until this time (repeated removals)
+  chatMutedUntil    DateTime?
   blockedBy         Block[]            @relation("Blocked")
 
   name             String
@@ -232,6 +234,9 @@ model Message {
   inviteCode  String?
   createdAt   DateTime  @default(now())
   readAt      DateTime?
+  // content moderation: "removed" when the AI flagged it (body is then blanked)
+  moderation  String?
+  moderationReason String?
   sender      User      @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
   recipient   User      @relation("MessagesReceived", fields: [recipientId], references: [id], onDelete: Cascade)
 

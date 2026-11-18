@@ -35,6 +35,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-ft_transcendence <no-reply@localhost>}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
       SEED_DEV_DATA: ${SEED_DEV_DATA:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:

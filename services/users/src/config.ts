@@ -36,6 +36,8 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
 // Outgoing email (verification, password reset, GDPR confirmations). Optional: without
 // SMTP_HOST, emails are logged and skipped. Locally `make env` points it at Mailpit.
 const smtpHost = process.env.SMTP_HOST || "";
+// Claude (AI coach + chat moderation). Optional: without a key both features are off.
+const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
 
 export const config = Object.freeze({
   port: Number(process.env.PORT || 4000),
@@ -59,6 +61,7 @@ export const config = Object.freeze({
         from: process.env.SMTP_FROM || "ft_transcendence <no-reply@localhost>",
       }
     : null,
+  ai: anthropicKey ? { apiKey: anthropicKey, model: process.env.ANTHROPIC_MODEL || "claude-opus-5-5" } : null,
   // Avatar uploads live here (a Docker volume in compose)
   uploadDir: process.env.UPLOAD_DIR || "/usr/src/app/uploads",
 });

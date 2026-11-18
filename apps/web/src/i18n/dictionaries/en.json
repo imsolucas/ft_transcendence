@@ -45,7 +45,8 @@
     "skip": "Skip to content",
     "login": "Log in",
     "signup": "Sign up",
-    "leaderboard": "Leaderboard"
+    "leaderboard": "Leaderboard",
+    "coach": "Coach"
   },
   "footer": {
     "privacy": "Privacy Policy",
@@ -442,7 +443,19 @@
     "resultNotice": "Match finished: {p1} {a} – {b} {p2}",
     "tournamentNotice": "{winner} won the tournament “{name}”",
     "resultPreview": "Match result {score}",
-    "tournamentPreview": "Tournament result"
+    "tournamentPreview": "Tournament result",
+    "removed": "Message removed by moderation",
+    "removedWarning": "Your message was removed ({category}).",
+    "mutedUntil": "You can't send messages until {time}.",
+    "muted": "You can't send messages for a while after several removed messages.",
+    "category": {
+      "harassment": "harassment",
+      "hate": "hate",
+      "threat": "threat",
+      "sexual": "sexual content",
+      "spam": "spam",
+      "other": "breaks the rules"
+    }
   },
   "settings": {
     "title": "SETTINGS",
@@ -661,5 +674,25 @@
     "ownMatch": "You're playing in this match.",
     "inLobby": "Watch live matches",
     "watchFriend": "Watch"
+  },
+  "coach": {
+    "title": "Coach",
+    "subtitle": "Ask about Pong tactics or how the site works. Answers come from Claude, an AI: they can be wrong.",
+    "intro": "Hi! I can help with tactics, practice ideas and how features work. Try one of these:",
+    "suggestAngles": "How do I aim my shots?",
+    "suggestAi": "How do I beat the hard computer?",
+    "suggestTournament": "How do tournaments work?",
+    "placeholder": "Ask the coach…",
+    "you": "You",
+    "thinking": "Thinking…",
+    "stop": "Stop",
+    "newChat": "New chat",
+    "remaining": "{n} of {limit} questions left this hour.",
+    "disabled": "The coach is turned off",
+    "disabledBody": "This server has no Claude API key, so the coach isn't available. An admin can add ANTHROPIC_API_KEY to turn it on.",
+    "errLimit": "You've reached this hour's limit. Try again later.",
+    "errBusy": "The coach is busy right now. Try again in a moment.",
+    "errUnavailable": "The coach can't be reached right now.",
+    "refused": "I can't help with that one."
   }
 }

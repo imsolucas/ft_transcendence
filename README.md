@@ -43,6 +43,19 @@ over SMTP. `make env` points it at a local **Mailpit** (compose profile `mail`):
 `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `infra/.env` and clear
 `COMPOSE_PROFILES`. Without `SMTP_HOST` the app still works; emails are skipped and logged.
 
+### AI features (optional)
+
+Set `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, default `claude-opus-5-5`) in
+`infra/.env` and run `make re`. Without a key both features are off: the Coach page says so and
+chat messages aren't moderated.
+- **Coach** (`/coach`): a chat about Pong tactics and the site, streamed from Claude over
+  Server-Sent Events; 20 questions per user per hour, at most 20 turns of history.
+- **Chat moderation**: every text message is classified after delivery (structured JSON
+  output, low effort). Harassment, hate, threats, sexual content and spam are removed for both
+  people, the sender is warned, and 3 removals in 24 hours mute them for an hour.
+- Requests use server-side refusal fallbacks and prompt caching. API usage is billed to the
+  key's account.
+
 ### Google sign-in (optional)
 
 Create an OAuth client in Google Cloud Console with the redirect URI
@@ -222,9 +235,11 @@ not required to play.
 | Game customization (power-ups, speeds, points, 4 court themes, defaults; the AI plays with all of them) | Minor | Done |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
 | Spectator mode (live public matches, read-only view, live spectator count) | Minor | Done |
+| LLM system interface: the Coach (Claude, streamed over SSE, per-user limits, error handling) | Major | Done; needs `ANTHROPIC_API_KEY` |
+| Content moderation AI (auto-removal, warnings, temporary mute) | Minor | Done; needs `ANTHROPIC_API_KEY` |
 
-Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), LLM, RAG,
-recommendations and other AI-service modules (need a provider and API spend), ELK, Prometheus +
+Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), RAG,
+recommendations and other AI-service modules, ELK, Prometheus +
 Grafana, WAF + Vault, a second game, 3+ players, 3D, organizations, a permissions system, RTL,
 full WCAG audit, analytics dashboards, PWA, file management,
 data import, a notification centre, collaborative features.

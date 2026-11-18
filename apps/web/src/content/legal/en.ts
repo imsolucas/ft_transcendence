@@ -43,6 +43,13 @@ export const privacy: LegalDoc = {
       ],
     },
     {
+      id: "ai",
+      title: "AI features",
+      body: [
+        "When the server operator turns them on, two features use Claude, an AI model provided by Anthropic: the Coach (your questions and its answers are sent to Anthropic to generate the reply; they are not stored by us) and chat moderation (each chat message you send is sent to Anthropic once to check it for harassment, hate, threats, sexual content or spam). Flagged messages are hidden from both people and the reason is stored; three removals within 24 hours pause your chat for an hour. Nothing else about your account is sent.",
+      ],
+    },
+    {
       id: "cookies",
       title: "Cookies and local storage",
       list: [

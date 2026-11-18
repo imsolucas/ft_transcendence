@@ -43,6 +43,13 @@ export const privacy: LegalDoc = {
       ],
     },
     {
+      id: "ai",
+      title: "Funciones de IA",
+      body: [
+        "Cuando el operador del servidor las activa, dos funciones usan Claude, un modelo de IA de Anthropic: el Coach (tus preguntas y sus respuestas se envían a Anthropic para generar la respuesta; nosotros no las guardamos) y la moderación del chat (cada mensaje que envías se manda una vez a Anthropic para comprobar si contiene acoso, odio, amenazas, contenido sexual o spam). Los mensajes marcados se ocultan para ambas personas y se guarda el motivo; tres eliminaciones en 24 horas pausan tu chat durante una hora. No se envía nada más de tu cuenta.",
+      ],
+    },
+    {
       id: "cookies",
       title: "Cookies y almacenamiento local",
       list: [
