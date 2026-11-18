@@ -61,13 +61,16 @@ export class RoomManager {
     return Array.from(this.rooms.values());
   }
 
-  /** 1v1 rooms hold two; a tournament room holds its chosen size (4, 6 or 8). */
+  /** 1v1 rooms hold two; a party room four; a tournament room its chosen size (4, 6 or 8). */
   capacity(room: Room): number {
+    if (room.mode === 'party') return 4;
     return room.mode === 'standard' ? 2 : Math.min(8, room.config.numPlayers ?? 8);
   }
 
   /** A tournament only takes players during registration (it is closed once the bracket is drawn). */
   private acceptsPlayers(room: Room): boolean {
+    // a party takes players only in its lobby (a 3-player party in play has a free seat)
+    if (room.mode === 'party') return room.status === 'waiting' || room.status === 'full';
     return room.mode !== 'tournament' || !room.tournament || room.tournament.phase === 'registration';
   }
 

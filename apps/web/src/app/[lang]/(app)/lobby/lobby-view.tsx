@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import useSWR from "swr";
-import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus, Eye } from "lucide-react";
+import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus, Eye, Users } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
 import type { FriendRequest, MatchSummary, Page, Profile, PublicUser } from "@/lib/types";
@@ -44,15 +44,17 @@ function PlayPanel() {
   const [tCode, setTCode] = useState("");
   const [tError, setTError] = useState<string>();
   const [size, setSize] = useState(4);
+  const [pCode, setPCode] = useState("");
+  const [pError, setPError] = useState<string>();
 
-  function join(e: FormEvent, code: string, setErr: (s?: string) => void, mode: string) {
+  function join(e: FormEvent, code: string, setErr: (s?: string) => void, mode: string, path = "/play") {
     e.preventDefault();
     const c = code.trim();
     if (!ROOM_CODE.test(c)) {
       setErr(t("matchmaking.roomNotFound"));
       return;
     }
-    router.push(`${href("/play")}?mode=${mode}&code=${c.toLowerCase()}`);
+    router.push(`${href(path)}?mode=${mode}&code=${c.toLowerCase()}`);
   }
 
   return (
@@ -147,6 +149,51 @@ function PlayPanel() {
             {tError && (
               <p className="field-error" role="alert">
                 {tError}
+              </p>
+            )}
+          </form>
+        </div>
+
+        {/* Party: 3–4 players on one square court */}
+        <div className="panel panel-2 stack stack-3">
+          <div className="row">
+            <Users className="ico c-green" aria-hidden />
+            <h3 className="t-heading">{t("party.lobbyCard")}</h3>
+          </div>
+          <p className="muted t-caption">{t("party.lobbyCardBody")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm">
+              <Link href={`${href("/party")}?mode=quick`} className="no-underline">
+                {t("party.quick")}
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link href={`${href("/party")}?mode=create`} className="no-underline">
+                {t("party.create")}
+              </Link>
+            </Button>
+          </div>
+          <form className="stack" onSubmit={(e) => join(e, pCode, setPError, "join", "/party")} noValidate>
+            <div className="flex flex-wrap gap-2 [&>.input]:min-w-0 [&>.input]:flex-1">
+              <Input
+                aria-label={t("party.codeLabel")}
+                placeholder={t("lobby.roomCodePlaceholder")}
+                mono
+                maxLength={8}
+                invalid={!!pError}
+                value={pCode}
+                onChange={(e) => {
+                  setPCode(e.target.value);
+                  setPError(undefined);
+                }}
+              />
+              <Button size="sm" type="submit">
+                {t("party.join")}
+              </Button>
+            </div>
+            {pError && (
+              <p className="field-error" role="alert">
+                {pError}
               </p>
             )}
           </form>

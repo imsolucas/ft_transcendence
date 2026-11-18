@@ -145,6 +145,11 @@ export default class RoomService {
         const success = this.roomManager.removePlayerFromRoom(player.roomId, player.id);
         if (!success) return null;
 
+        // A party in play or over keeps its status (the seat becomes a wall; PartyService)
+        if (room.mode === 'party') {
+            if (room.status === 'full') room.status = 'waiting';
+            return room;
+        }
         // A started tournament keeps its own status (TournamentService); anything else reopens
         if (room.mode !== 'tournament' || !room.tournament || room.tournament.phase === 'registration') room.status = 'waiting';
         return room;

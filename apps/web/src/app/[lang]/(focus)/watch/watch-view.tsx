@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Eye, Radio, Trophy } from "lucide-react";
-import type { GameConfig, GameState, LiveMatch } from "shared";
+import type { GameConfig, GameState, LiveMatch, PartyPlayer, PartyState } from "shared";
 import { useI18n } from "@/i18n/I18nProvider";
 import { GameSocket, type ConnectionStatus } from "@/lib/game/socket";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,13 @@ import { Callout } from "@/components/ui/form";
 import { EmptyState, Panel, Skeleton } from "@/components/ui/primitives";
 import { Court } from "@/components/game/court";
 import { ConnectionQuality, ScoreBoard } from "@/components/game/hud";
+import { PartyCourt, PartyRoster } from "@/components/game/party";
 
 type View =
   | { k: "list" }
   | { k: "watching"; match: LiveMatch; config: GameConfig }
+  /** a party (3–4 players): square court, lives per seat */
+  | { k: "party"; match: LiveMatch; players: PartyPlayer[] }
   | { k: "ended"; match: LiveMatch; winner: string }
   | { k: "error"; message: string };
 
@@ -38,6 +41,9 @@ export function WatchView() {
   const socketRef = useRef<GameSocket | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const [scores, setScores] = useState<[number, number]>([0, 0]);
+  const partyRef = useRef<PartyState | null>(null);
+  // re-rendered only when lives change
+  const [partyRoster, setPartyRoster] = useState<PartyState | null>(null);
   const viewRef = useRef(view);
   useEffect(() => {
     viewRef.current = view;
@@ -57,6 +63,14 @@ export function WatchView() {
           setMatches(msg.data.matches);
           break;
         case "spectateStarted":
+          if (msg.data.party) {
+            partyRef.current = msg.data.party.state;
+            setPartyRoster(msg.data.party.state);
+            setSpectators(msg.data.match.spectators);
+            setStartedAt((s) => s || Date.now());
+            setView({ k: "party", match: msg.data.match, players: msg.data.party.players });
+            break;
+          }
           stateRef.current = msg.data.gameState;
           setScores([msg.data.gameState?.scores[0] ?? 0, msg.data.gameState?.scores[1] ?? 0]);
           setSpectators(msg.data.match.spectators);
@@ -67,6 +81,19 @@ export function WatchView() {
           const s = msg.data.gameState;
           stateRef.current = s;
           setScores((prev) => (prev[0] === s.scores[0] && prev[1] === s.scores[1] ? prev : [s.scores[0] ?? 0, s.scores[1] ?? 0]));
+          break;
+        }
+        case "partyState": {
+          const prev = partyRef.current;
+          const next = msg.data.state;
+          partyRef.current = next;
+          const key = (s: PartyState | null) => (s ? s.paddles.map((p) => `${p.lives}${p.alive ? 1 : 0}`).join(",") : "");
+          if (key(prev) !== key(next)) setPartyRoster(next);
+          break;
+        }
+        case "partyEnd": {
+          const v = viewRef.current;
+          if (v.k === "party") setView({ k: "ended", match: v.match, winner: msg.data.winner?.name ?? "" });
           break;
         }
         case "spectatorCount":
@@ -107,7 +134,7 @@ export function WatchView() {
 
   // clock + connection quality, refreshed once a second while watching
   useEffect(() => {
-    if (view.k !== "watching") return;
+    if (view.k !== "watching" && view.k !== "party") return;
     const id = setInterval(() => {
       setNow(Date.now());
       setPing(socketRef.current?.pingMs);
@@ -117,6 +144,7 @@ export function WatchView() {
   const seconds = startedAt && now > startedAt ? Math.floor((now - startedAt) / 1000) : 0;
 
   const getState = useCallback(() => stateRef.current, []);
+  const getParty = useCallback(() => partyRef.current, []);
   const back = () => router.push(href("/watch"));
 
   if (view.k === "error")
@@ -129,6 +157,44 @@ export function WatchView() {
         </Button>
       </Centered>
     );
+
+  if (view.k === "party" || (view.k === "ended" && view.match.mode === "party")) {
+    return (
+      <div className="flex h-dvh flex-col gap-3 p-3 md:p-6">
+        <div className="row justify-between">
+          <span className="row !gap-2 t-label">
+            <Eye className="ico" aria-hidden />
+            <span className="sr-only">{t("watch.watching")}: </span>
+            {t("party.title")} · {t("watch.spectators", { n: spectators })}
+          </span>
+          <ConnectionQuality offline={status !== "connected"} ms={ping} />
+        </div>
+        {view.k === "party" && <PartyRoster players={view.players} state={partyRoster} myId={null} viewSide={0} />}
+        <div className="relative min-h-0 flex-1">
+          {view.k === "party" && <PartyCourt getState={getParty} viewSide={0} you={null} controls="none" />}
+          {view.k === "ended" && (
+            <div className="grid h-full place-items-center">
+              <Panel className="stack stack-4 items-center text-center">
+                <Trophy className="ico !h-8 !w-8 c-amber" aria-hidden />
+                <h1 className="t-heading" role="status">
+                  {view.winner ? t("watch.winner", { name: view.winner }) : t("party.noWinner")}
+                </h1>
+                <Button onClick={back}>{t("watch.backToList")}</Button>
+              </Panel>
+            </div>
+          )}
+        </div>
+        {view.k === "party" && (
+          <div className="row justify-center">
+            <Button variant="ghost" onClick={back}>
+              <ArrowLeft className="ico" aria-hidden />
+              {t("watch.stop")}
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (view.k === "watching" || view.k === "ended") {
     const [a, b] = view.match.players;
@@ -203,11 +269,12 @@ export function WatchView() {
               <li key={m.roomId} className="list-row">
                 <div className="grow min-w-0">
                   <p className="t-strong truncate">
-                    {m.players.map((p) => p.name).join(" vs ")}
+                    {m.players.map((p) => p.name).join(m.mode === "party" ? " · " : " vs ")}
                     {m.mode === "tournament" && <span className="t-caption subtle"> · {t("watch.tournament")}</span>}
+                    {m.mode === "party" && <span className="t-caption subtle"> · {t("watch.party")}</span>}
                   </p>
                   <p className="t-caption muted row !gap-2">
-                    <span className="num">{m.scores.join(" – ")}</span>
+                    <span className="num">{m.mode === "party" ? t("party.livesList", { list: m.scores.join(" · ") }) : m.scores.join(" – ")}</span>
                     <span aria-hidden>·</span>
                     <Eye className="ico !h-3.5 !w-3.5" aria-hidden />
                     {t("watch.spectators", { n: m.spectators })}

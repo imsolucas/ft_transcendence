@@ -6,6 +6,7 @@ import type { MessageBroadcaster } from "./Broadcaster.ts";
 import { reportMatchResult } from "../utils/reportResults.ts";
 import { gameEnded } from "../presence.ts";
 import type TournamentService from "./TournamentService.ts";
+import type PartyService from "./PartyService.ts";
 
 export /** all reconnect pauses of one player in one room together, at most */
 const PAUSE_BUDGET_MS = 30_000;
@@ -33,7 +34,8 @@ export class MatchLifecycle {
     private broadcaster: MessageBroadcaster,
     /** removes a player for good (queue, room, storage) and tells the room */
     private dropPlayer: (player: Player) => void,
-    private tournaments: TournamentService
+    private tournaments: TournamentService,
+    private party: PartyService
   ) {}
 
   // ---------------------------------------------------------------- reconnect grace
@@ -43,7 +45,10 @@ export class MatchLifecycle {
     const room = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
     if (!room) return false;
     const tournament = room.mode === "tournament";
-    if (tournament ? !this.tournaments.holdsSlot(room, player.id) : room.mode !== "standard" || room.status !== "playing") return false;
+    if (room.mode === "party") {
+      // a party player still in the running is held (paused); a knocked-out one just leaves
+      if (!this.party.isAlive(room, player.id)) return false;
+    } else if (tournament ? !this.tournaments.holdsSlot(room, player.id) : room.mode !== "standard" || room.status !== "playing") return false;
 
     // a player can't freeze a match forever by reconnecting just in time: all their pauses in
     // this room share one budget; once it is spent, leaving forfeits at once
@@ -112,6 +117,10 @@ export class MatchLifecycle {
     };
     socket.send(JSON.stringify(rejoined));
     if (tournament) this.tournaments.sendState(room, player);
+    if (room.mode === "party") {
+      const start = this.party.startMessage(room);
+      if (start) socket.send(JSON.stringify(start));
+    }
     if (hold.loud) {
       const back: OpponentReconnectedMessage = { type: "opponentReconnected", data: { playerId }, timestamp: Date.now() };
       this.broadcaster.broadcastToRoom(room.id, back, playerId);
@@ -131,6 +140,13 @@ export class MatchLifecycle {
     if (room?.mode === "tournament") {
       // lose the current match and stay in the room as a watcher
       this.tournaments.forfeit(room, player.id);
+      return;
+    }
+    if (room?.mode === "party") {
+      // out of the party (their side becomes a wall); they stay in the room to watch
+      this.party.eliminate(room, player.id);
+      // the reconnect hold paused the party: resume unless someone else is still away
+      if (!room.playerIds.some((id) => id !== player.id && this.pending.has(id))) room.paused = false;
       return;
     }
     if (!room || room.mode !== "standard" || room.status !== "playing" || !room.gameServer) return;
@@ -201,7 +217,8 @@ export class MatchLifecycle {
 
   /** Room just filled (or a rematch was agreed): everyone must ready up within the deadline. */
   armReadyDeadline(room: Room) {
-    if (room.mode !== "standard") return;
+    // 1v1, and matchmade parties (a private party waits in its lobby for friends)
+    if (room.mode !== "standard" && !(room.mode === "party" && !room.config.isPrivate)) return;
     this.clearReadyDeadline(room.id);
     const timer = setTimeout(() => {
       this.readyTimers.delete(room.id);

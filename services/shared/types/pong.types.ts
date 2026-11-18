@@ -107,7 +107,7 @@ export interface GameConfig {
     backgroundColor: string;
     pointsToWin: number;
     isPrivate: boolean;
-    mode: 'tournament' | 'standard';
+    mode: 'tournament' | 'standard' | 'party';
     numPlayers?: number; // For tournament mode
     /** opt-in power-ups (local / vs-AI games) */
     powerUps?: boolean;

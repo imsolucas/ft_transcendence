@@ -25,7 +25,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
   app.get("/me/export", { preHandler: requireUser }, async (req, reply) => {
     const id = req.user!.id;
     const involves = { OR: [{ player1Id: id }, { player2Id: id }] };
-    const [user, accounts, sessions, friendships, blocks, matches, tournaments, messages, apiKeys, achievements] = await Promise.all([
+    const [user, accounts, sessions, friendships, blocks, matches, tournaments, messages, apiKeys, achievements, parties] = await Promise.all([
       prisma.user.findUnique({
         where: { id },
         select: { id: true, username: true, displayUsername: true, email: true, emailVerified: true, avatar: true, twoFactorEnabled: true, created_at: true, last_updated: true },
@@ -54,6 +54,12 @@ export default async function privacyRoutes(app: FastifyInstance) {
       }),
       prisma.apiKey.findMany({ where: { userId: id }, select: { name: true, prefix: true, isActive: true, createdAt: true, lastUsedAt: true }, orderBy: { id: "asc" } }),
       prisma.userAchievement.findMany({ where: { userId: id }, select: { achievement: true, unlockedAt: true }, orderBy: { id: "asc" } }),
+      prisma.partyMatchPlayer.findMany({
+        where: { userId: id },
+        select: { placement: true, livesLeft: true, partyMatch: { select: { played_at: true, end_at: true, players: { select: { displayName: true, placement: true }, orderBy: { placement: "asc" } } } } },
+        orderBy: { id: "asc" },
+        take: EXPORT_LIMIT,
+      }),
     ]);
     if (!user) return reply.code(404).send({ error: "User not found" });
 
@@ -82,6 +88,13 @@ export default async function privacyRoutes(app: FastifyInstance) {
           tournament: m.tournamentId !== null,
         };
       }),
+      parties: parties.map((p) => ({
+        playedAt: p.partyMatch.played_at,
+        endedAt: p.partyMatch.end_at,
+        yourPlace: p.placement,
+        yourLivesLeft: p.livesLeft,
+        players: p.partyMatch.players.map((x) => ({ name: x.displayName, place: x.placement })),
+      })),
       tournaments: tournaments.map((t) => ({ ...t.tournament, winnerId: undefined, won: t.tournament.winnerId === id })),
       messages: messages.map((m) => ({ from: m.sender.username, to: m.recipient.username, kind: m.kind, body: m.body, inviteCode: m.inviteCode, sentAt: m.createdAt, readAt: m.readAt })),
       apiKeys,
@@ -135,6 +148,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
         prisma.session.deleteMany({ where: { userId: id } }),
         prisma.match.updateMany({ where: { player1Id: id }, data: { player1DisplayName: "Deleted player" } }),
         prisma.match.updateMany({ where: { player2Id: id }, data: { player2DisplayName: "Deleted player" } }),
+        prisma.partyMatchPlayer.updateMany({ where: { userId: id }, data: { displayName: "Deleted player" } }),
         prisma.user.update({
           where: { id },
           data: {
