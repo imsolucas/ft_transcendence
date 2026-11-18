@@ -383,7 +383,7 @@
     "friendsPrivateBody": "Solo {name} puede ver con quién tiene amistad.",
     "level": "Nivel {n}",
     "xpToNext": "Faltan {xp} XP para el siguiente nivel",
-    "xpRules": "XP: 10 por partida, +20 por victoria, +100 por torneo ganado, +25 por logro",
+    "xpRules": "XP: 10 por partida (también en fiesta), +20 por victoria, +100 por torneo ganado, +25 por logro",
     "levelUp": "¡Subes de nivel! Has alcanzado el nivel {n}."
   },
   "friends": {
@@ -620,7 +620,7 @@
   },
   "data": {
     "exportTitle": "Descarga tus datos",
-    "exportBody": "Un archivo JSON con tu perfil, métodos de inicio de sesión, sesiones, amigos, bloqueos, partidas, torneos, mensajes y claves de API (solo nombres).",
+    "exportBody": "Un archivo JSON con tu perfil, métodos de inicio de sesión, sesiones, amigos, bloqueos, partidas, fiestas, torneos, mensajes y claves de API (solo nombres).",
     "download": "Descargar mis datos",
     "deleteTitle": "Eliminar cuenta",
     "deleteBody": "Elimina tu perfil, amigos, mensajes, claves de API y métodos de inicio de sesión. Tus partidas pasadas siguen en el historial de tus rivales como \"Jugador eliminado\". No se puede deshacer.",
@@ -700,7 +700,8 @@
     "notFound": "Esta partida ya no está en directo o es privada.",
     "ownMatch": "Estás jugando esta partida.",
     "inLobby": "Ver partidas en directo",
-    "watchFriend": "Ver"
+    "watchFriend": "Ver",
+    "party": "fiesta"
   },
   "coach": {
     "title": "Coach",
@@ -747,5 +748,50 @@
     "tx": "Transacción",
     "copyTx": "Copiar el hash de la transacción",
     "explorer": "Abrir en el explorador de bloques (nueva pestaña)"
+  },
+  "party": {
+    "title": "Fiesta",
+    "lobbyCard": "Fiesta (3–4 jugadores)",
+    "lobbyCardBody": "Cada jugador defiende un lado de una pista cuadrada. 3 vidas cada uno; gana el último en pie.",
+    "quick": "Buscar fiesta",
+    "create": "Crear sala de fiesta",
+    "join": "Unirse a la fiesta",
+    "codeLabel": "Código de la sala de fiesta",
+    "searching": "Buscando jugadores",
+    "searchingBody": "Una fiesta empieza con 4 jugadores, o con 3 tras una breve espera. Pulsa Esc para cancelar.",
+    "queueCount": "{n}/{max} jugadores",
+    "startsIn": "Empieza con 3 jugadores en {s} s. Aún puede unirse un 4.º.",
+    "found": "Fiesta encontrada",
+    "lobbyTitle": "Sala de fiesta",
+    "shareCode": "Comparte este código con 2 o 3 amigos:",
+    "lobbyCount": "{n}/{max} jugadores en la sala",
+    "needMore": "Esperando al menos {n} jugadores…",
+    "readyHint": "La fiesta empieza cuando todos los de la sala están listos.",
+    "standings": "Clasificación",
+    "place": "Puesto {n}",
+    "winnerBadge": "Ganador",
+    "out": "Eliminado",
+    "noWinner": "Nadie ganó: todos se fueron.",
+    "youreOut": "Estás eliminado. Sigue mirando o sal desde el menú.",
+    "reconnectOutcome": "La fiesta está en pausa. Quien no vuelva a tiempo queda eliminado.",
+    "keys": "Muévete con A / D o ← / →. Tu lado está abajo. Esc abre el menú.",
+    "forfeit": "Rendirse",
+    "forfeitConfirm": "¿Rendirte en esta fiesta?",
+    "forfeitHint": "Quedas eliminado y tu lado se convierte en una pared. Puedes seguir mirando.",
+    "leave": "Salir de la fiesta",
+    "leaveHint": "Vuelves al lobby.",
+    "droppedOut": "Estuviste fuera demasiado tiempo, así que quedaste eliminado de la fiesta.",
+    "roomNotFound": "Esa sala de fiesta no existe, está llena o ya ha empezado.",
+    "timeoutBody": "Ahora mismo no hay suficientes jugadores buscando fiesta. Inténtalo de nuevo o crea una sala para tus amigos.",
+    "courtLabel": "Pista de Pong de fiesta, tu lado abajo",
+    "leftButton": "Mover a la izquierda",
+    "rightButton": "Mover a la derecha",
+    "players": "Jugadores",
+    "lives": "Quedan {n} vidas",
+    "livesList": "Vidas: {list}",
+    "sideBottom": "Abajo",
+    "sideLeft": "Lado izquierdo",
+    "sideTop": "Arriba",
+    "sideRight": "Lado derecho"
   }
 }

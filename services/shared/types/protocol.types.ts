@@ -1,5 +1,6 @@
 import type { Player, serializablePlayer } from "./player.types.ts";
 import type { GameConfig, GameState, PlayerInputs, TournamentState } from "./pong.types.ts";
+import type { PartyPlayer, PartyStanding, PartyState } from "./party.types.ts";
 
 export type GameMessage =
 | ConnectionMessage
@@ -34,7 +35,11 @@ export type GameMessage =
 | LiveMatchesMessage
 | SpectateStartedMessage
 | SpectatorCountMessage
-| StartTournamentMessage;
+| StartTournamentMessage
+| PartyQueueMessage
+| PartyStartMessage
+| PartyStateMessage
+| PartyEndMessage;
 
 export type GameErrorCodes =
 | 'ALREADY_IN_ROOM'
@@ -79,7 +84,8 @@ export interface JoinQueueMessage extends BaseMessage {
 	data: {
 		roomId?: string;
 		config?: GameConfig;
-		roomType: 'standard' | 'tournament';
+		/** 'party' = the 3–4 player queue */
+		roomType: 'standard' | 'tournament' | 'party';
 	}
 }
 
@@ -262,6 +268,35 @@ export interface RejoinedMessage extends BaseMessage {
 	data: { roomId: string; playersInRoom: serializablePlayer[]; gameState: GameState | null };
 }
 
+// ---------------------------------------------------------------- Party mode (3–4 players)
+// Client → server reuses joinQueue (roomType 'party'), createRoom (config.mode 'party'),
+// joinRoom, playerReady, playerInput (left/right drive your paddle), forfeit, leaveQueue,
+// leaveRoom. The lobby reuses playerJoined / playerReady / playerLeft.
+
+/** server → queued party players: how many are waiting; startsAt (ms epoch) once 3 wait */
+export interface PartyQueueMessage extends BaseMessage {
+	type: 'partyQueue';
+	data: { waiting: number; needed: number; startsAt: number | null };
+}
+
+/** server → room (and watchers): the party started (also re-sent to a player who rejoins) */
+export interface PartyStartMessage extends BaseMessage {
+	type: 'partyStart';
+	data: { roomId: string; players: PartyPlayer[]; state: PartyState };
+}
+
+/** server → room (and watchers), every tick */
+export interface PartyStateMessage extends BaseMessage {
+	type: 'partyState';
+	data: { state: PartyState };
+}
+
+/** server → room (and watchers): the party ended; standings[0] is the winner */
+export interface PartyEndMessage extends BaseMessage {
+	type: 'partyEnd';
+	data: { winner: { id: string; name: string } | null; standings: PartyStanding[] };
+}
+
 /** server → room: one player wants a rematch */
 export interface RematchRequestedMessage extends BaseMessage {
 	type: 'rematchRequested';
@@ -287,8 +322,10 @@ export interface ReadyTimeoutMessage extends BaseMessage {
 /** One live, public match (private rooms are never listed or watchable). */
 export interface LiveMatch {
 	roomId: string;
-	mode: 'standard' | 'tournament';
+	mode: 'standard' | 'tournament' | 'party';
+	/** party: every seat, in seat order */
 	players: { id: string; name: string }[];
+	/** 1v1/tournament: points · party: lives left per seat */
 	scores: number[];
 	spectators: number;
 }
@@ -320,7 +357,7 @@ export interface LiveMatchesMessage extends BaseMessage {
 /** server → spectator: what you are watching, with the current state */
 export interface SpectateStartedMessage extends BaseMessage {
 	type: 'spectateStarted';
-	data: { match: LiveMatch; config: GameConfig; gameState: GameState | null };
+	data: { match: LiveMatch; config: GameConfig; gameState: GameState | null; party?: { players: PartyPlayer[]; state: PartyState } };
 }
 
 /** server → players and spectators of a room */

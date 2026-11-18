@@ -74,6 +74,11 @@
   --court-you: var(--neon-magenta);
   --court-opp: var(--neon-cyan);
   --court-ball: var(--fg);
+  /* party mode (3–4 players): one colour per seat, the same for every viewer and every theme */
+  --party-seat-0: var(--neon-magenta);
+  --party-seat-1: var(--neon-cyan);
+  --party-seat-2: var(--neon-amber);
+  --party-seat-3: var(--neon-green);
 }
 [data-court-theme="phosphor"] {
   --court-bg: #03130a;

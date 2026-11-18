@@ -9,6 +9,8 @@ import type { GameConfig } from "shared/index.ts";
 export function roomConfigFrom(input: unknown): GameConfig {
     const c = (input && typeof input === "object" ? input : {}) as Partial<GameConfig>;
     const base = structuredClone(default_config.standardGame);
+    // party: a private room by code for 3–4 players (the public ones come from the party queue)
+    if (c.mode === "party") return partyConfig(true);
     const mode = c.mode === "tournament" ? "tournament" : "standard";
     const pointsToWin = [3, 5, 7, 11].includes(c.pointsToWin as number) ? (c.pointsToWin as number) : mode === "tournament" ? 3 : 5;
     const numPlayers = mode === "tournament" && [4, 6, 8].includes(c.numPlayers as number) ? (c.numPlayers as number) : undefined;
@@ -23,6 +25,7 @@ import type { ConnectionErrorMessage } from "shared/index.ts";
 import type { AuthenticatedUser } from "../auth/usersClient.ts";
 import { gameStarted } from "../presence.ts";
 import { MatchLifecycle } from "./MatchLifecycle.ts";
+import PartyService, { partyConfig } from "./PartyService.ts";
 
 const WS_OPEN = 1;
 
@@ -32,6 +35,7 @@ export default class NewMessageHandler {
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
     readonly lifecycle: MatchLifecycle
+    readonly partyService: PartyService
 
     // one shared broadcaster: index.ts attaches the spectator mirror to it
     constructor ( private roomManager: RoomManager, broadcaster?: MessageBroadcaster ) {
@@ -39,12 +43,22 @@ export default class NewMessageHandler {
         this.gameService = new GameService(roomManager, this.broadcaster);
         this.tournamentService = new TournamentService(roomManager, this.broadcaster, (room) => this.gameService.startGame(room));
         this.roomService = new RoomService(roomManager);
-        this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p), this.tournamentService);
+        this.partyService = new PartyService(
+            roomManager,
+            this.broadcaster,
+            (room, players) => {
+                const last = players[players.length - 1];
+                if (last) this.broadcastPlayerJoined(room.id, last);
+                this.lifecycle.armReadyDeadline(room);
+            },
+            (room) => this.lifecycle.clearReadyDeadline(room.id)
+        );
+        this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p), this.tournamentService, this.partyService);
     }
 
     /** Matchmaking queue sizes per mode (read by /metrics). */
-    queueLengths(): { standard: number; tournament: number } {
-        return this.roomService.queueLengths();
+    queueLengths(): { standard: number; tournament: number; party: number } {
+        return { ...this.roomService.queueLengths(), party: this.partyService.queueLength() };
     }
 
     /** The socket behind `player` closed: hold a match/bracket player for a reconnect, otherwise drop them. */
@@ -99,6 +113,7 @@ export default class NewMessageHandler {
 
     handleDisconnection(player: Player): void {
         this.roomService.leaveQueue(player);
+        this.partyService.leaveQueue(player);
         this.leaveCurrentRoom(player);
         this.roomManager.removePlayer(player.id);
     }
@@ -107,6 +122,8 @@ export default class NewMessageHandler {
     private leaveCurrentRoom(player: Player) {
         const current = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
         if (current?.mode === 'tournament') this.tournamentService.onLeaving(current, player);
+        // a party in play: the leaver is out and their side becomes a wall
+        if (current?.mode === 'party') this.partyService.eliminate(current, player.id);
         const room = this.roomService.leaveRoom(player);
         if (!room) return null;
         const leaveMessage: PlayerLeftMessage = {
@@ -120,6 +137,10 @@ export default class NewMessageHandler {
     }
 
     routeMessage(message: GameMessage, player: Player): void {
+        // one search at a time: starting anything else leaves the party queue (idempotent)
+        if (message.type === "createRoom" || message.type === "joinRoom" || (message.type === "joinQueue" && message.data?.roomType !== "party")) {
+            this.partyService.leaveQueue(player);
+        }
         switch (message.type) {
             case "createRoom":
                 this.handleCreateRoom(message as CreateRoomMessage, player);
@@ -174,7 +195,12 @@ export default class NewMessageHandler {
     }
 
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
-        // only the two known modes; anything else is a standard match (never a custom mode)
+        if (message.data?.roomType === "party") {
+            this.roomService.leaveQueue(player);
+            if (!this.partyService.joinQueue(player)) this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
+            return;
+        }
+        // only the known modes; anything else is a standard match (never a custom mode)
         const roomType = message.data?.roomType === "tournament" ? "tournament" : "standard";
         const result = this.roomService.joinQueue(player, roomType);
         if (!result) {
@@ -240,7 +266,7 @@ export default class NewMessageHandler {
     }
 
     handleLeaveQueue(player: Player) {
-        const wasInQueue = this.roomService.leaveQueue(player);
+        const wasInQueue = this.roomService.leaveQueue(player) || this.partyService.leaveQueue(player);
         if (!wasInQueue) {
             this.sendError("Player not in queue", 'INVALID_REQUEST', player.socket);
             return;
@@ -263,6 +289,10 @@ export default class NewMessageHandler {
         if (current?.mode === 'tournament') {
             // only the two players of the current bracket match ready up; the state says who did
             this.tournamentService.setReady(current, player, ready);
+            return;
+        }
+        if (current?.mode === 'party') {
+            this.partyService.setReady(current, player, ready);
             return;
         }
         message.data = { ready };
@@ -307,6 +337,12 @@ export default class NewMessageHandler {
     }
 
     handlePlayerInput(message: PlayerInputMessage, player: Player) {
+        const room = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
+        if (room?.mode === 'party') {
+            const inputs = message.data?.inputs;
+            this.partyService.input(room, player, inputs && typeof inputs === 'object' ? inputs : undefined);
+            return;
+        }
         const success = this.gameService.playerInput(message, player);
         if (!success) {
             this.sendError("Invalid Room", 'INVALID_REQUEST', player.socket);

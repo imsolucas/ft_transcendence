@@ -360,6 +360,7 @@ not required to play.
 | Monitoring with Prometheus and Grafana (exporters, custom dashboard, alert rules, login-only Grafana on localhost) | Major | Done |
 | GDPR (export, deletion with confirmation, confirmation emails) | Minor | Done |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
+| Multiplayer game (3–4 players, party mode: square court, one side each, 3 lives, last one standing; queue or private code, ready check, reconnect grace, spectators; results stored per placement) | Major | Implemented, engine + flow checked headlessly (`npm run party:check`, `npm run party:flow` in services/game); not yet verified in the Docker stack with 3–4 browsers |
 | Tournament system (single-elimination bracket for 3 to 8 players: registration by room code, random seeding with byes, ready check per match, forfeits and walkovers, live bracket for players and watchers) | Minor | Done |
 | Game customization (power-ups, speeds, points, 4 court themes, defaults; the AI plays with all of them) | Minor | Done |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
@@ -370,7 +371,7 @@ not required to play.
 | Tournament scores on the blockchain (Solidity contract on an Avalanche-compatible chain: anvil locally, Fuji testnet by config; verification on the profile) | Major | Done (verified on the local anvil chain; Fuji needs a funded test key) |
 
 Not started; each needs a decision first: ICP blockchain backend (conflicts with SSR), RAG,
-recommendations and other AI-service modules, ELK, WAF + Vault, a second game, 3+ players, 3D,
+recommendations and other AI-service modules, ELK, WAF + Vault, a second game, 3D,
 organizations, a permissions system, RTL, full WCAG audit, analytics dashboards, file management,
 data import, a notification centre, collaborative features.
 

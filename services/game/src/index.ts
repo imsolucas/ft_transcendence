@@ -47,7 +47,7 @@ const broadcaster = new MessageBroadcaster(roomManager);
 const messageHandler = new NewMessageHandler(roomManager, broadcaster);
 // one TournamentService: it owns the bracket timers, so the tick loop shares the handler's
 const tournamentService = messageHandler.tournamentService;
-const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
+const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster, messageHandler.partyService);
 
 // ---- Spectator mode: watchers of room X join the Socket.IO room "watch:X"
 const watchRoom = (roomId: string) => `watch:${roomId}`;
@@ -57,6 +57,13 @@ const spectatorCount = (roomId: string) => io.sockets.adapter.rooms.get(watchRoo
 function liveMatch(roomId: string): LiveMatch | null {
   const room = roomManager.getRoom(roomId);
   if (!room || room.config.isPrivate || room.status !== 'playing') return null;
+  if (room.mode === 'party') {
+    // every seat (knocked-out players stay listed); scores = lives left per seat
+    const party = room.party;
+    if (!party) return null;
+    const lives = party.engine.getState().paddles.map((p) => p.lives);
+    return { roomId: room.id, mode: 'party', players: party.seats.map((s) => ({ id: s.id, name: s.name })), scores: lives, spectators: spectatorCount(room.id) };
+  }
   // a tournament room plays one bracket match at a time: its two players
   const ids = room.mode === 'tournament' ? (tournamentService.currentPair(room) ?? []) : room.playerIds.slice(0, 2);
   const players = ids
@@ -241,7 +248,12 @@ io.on('connection', (socket) => {
       const room = roomManager.getRoom(match.roomId)!;
       const started: SpectateStartedMessage = {
         type: 'spectateStarted',
-        data: { match: { ...match, spectators: spectatorCount(match.roomId) }, config: room.config, gameState: room.gameServer?.getGameState() ?? null },
+        data: {
+          match: { ...match, spectators: spectatorCount(match.roomId) },
+          config: room.config,
+          gameState: room.gameServer?.getGameState() ?? null,
+          ...(room.party ? { party: { players: room.party.seats, state: room.party.engine.getState() } } : {}),
+        },
         timestamp: Date.now(),
       };
       adapter.send(JSON.stringify(started));

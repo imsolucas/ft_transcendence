@@ -383,7 +383,7 @@
     "friendsPrivateBody": "Seul {name} peut voir avec qui il est ami.",
     "level": "Niveau {n}",
     "xpToNext": "Encore {xp} XP pour le niveau suivant",
-    "xpRules": "XP : 10 par match, +20 par victoire, +100 par tournoi gagné, +25 par succès",
+    "xpRules": "XP : 10 par match (parties à plusieurs comprises), +20 par victoire, +100 par tournoi gagné, +25 par succès",
     "levelUp": "Niveau supérieur ! Vous êtes niveau {n}."
   },
   "friends": {
@@ -620,7 +620,7 @@
   },
   "data": {
     "exportTitle": "Télécharger vos données",
-    "exportBody": "Un fichier JSON avec votre profil, vos méthodes de connexion, sessions, amis, blocages, matchs, tournois, messages et clés d'API (noms uniquement).",
+    "exportBody": "Un fichier JSON avec votre profil, vos méthodes de connexion, sessions, amis, blocages, matchs, parties à plusieurs, tournois, messages et clés d'API (noms uniquement).",
     "download": "Télécharger mes données",
     "deleteTitle": "Supprimer le compte",
     "deleteBody": "Supprime votre profil, vos amis, messages, clés d'API et méthodes de connexion. Vos anciens matchs restent dans l'historique de vos adversaires sous « Joueur supprimé ». Action irréversible.",
@@ -700,7 +700,8 @@
     "notFound": "Ce match n'est plus en direct, ou il est privé.",
     "ownMatch": "Vous jouez dans ce match.",
     "inLobby": "Regarder les matchs en direct",
-    "watchFriend": "Regarder"
+    "watchFriend": "Regarder",
+    "party": "à plusieurs"
   },
   "coach": {
     "title": "Coach",
@@ -747,5 +748,50 @@
     "tx": "Transaction",
     "copyTx": "Copier le hash de la transaction",
     "explorer": "Ouvrir dans l'explorateur de blocs (nouvel onglet)"
+  },
+  "party": {
+    "title": "Partie à plusieurs",
+    "lobbyCard": "Partie à plusieurs (3–4 joueurs)",
+    "lobbyCardBody": "Chaque joueur défend un côté d'un terrain carré. 3 vies chacun ; le dernier en lice gagne.",
+    "quick": "Trouver une partie",
+    "create": "Créer un salon",
+    "join": "Rejoindre la partie",
+    "codeLabel": "Code du salon",
+    "searching": "Recherche de joueurs",
+    "searchingBody": "Une partie démarre à 4 joueurs, ou à 3 après une courte attente. Échap pour annuler.",
+    "queueCount": "{n}/{max} joueurs",
+    "startsIn": "Départ à 3 joueurs dans {s} s. Un 4e peut encore rejoindre.",
+    "found": "Partie trouvée",
+    "lobbyTitle": "Salon de la partie",
+    "shareCode": "Partagez ce code avec 2 ou 3 amis :",
+    "lobbyCount": "{n}/{max} joueurs dans le salon",
+    "needMore": "En attente d'au moins {n} joueurs…",
+    "readyHint": "La partie démarre quand tout le monde dans le salon est prêt.",
+    "standings": "Classement",
+    "place": "Place {n}",
+    "winnerBadge": "Vainqueur",
+    "out": "Éliminé",
+    "noWinner": "Personne n'a gagné : tout le monde est parti.",
+    "youreOut": "Vous êtes éliminé. Regardez la suite ou quittez depuis le menu.",
+    "reconnectOutcome": "La partie est en pause. Un joueur qui ne revient pas à temps est éliminé.",
+    "keys": "Déplacez-vous avec A / D ou ← / →. Votre côté est en bas. Échap ouvre le menu.",
+    "forfeit": "Abandonner",
+    "forfeitConfirm": "Abandonner cette partie ?",
+    "forfeitHint": "Vous êtes éliminé et votre côté devient un mur. Vous pouvez continuer à regarder.",
+    "leave": "Quitter la partie",
+    "leaveHint": "Vous revenez au lobby.",
+    "droppedOut": "Vous avez été absent trop longtemps : vous êtes éliminé de la partie.",
+    "roomNotFound": "Ce salon n'existe pas, est complet ou a déjà commencé.",
+    "timeoutBody": "Pas assez de joueurs cherchent une partie en ce moment. Réessayez, ou créez un salon pour vos amis.",
+    "courtLabel": "Terrain de Pong à plusieurs, votre côté en bas",
+    "leftButton": "Aller à gauche",
+    "rightButton": "Aller à droite",
+    "players": "Joueurs",
+    "lives": "{n} vies restantes",
+    "livesList": "Vies : {list}",
+    "sideBottom": "En bas",
+    "sideLeft": "Côté gauche",
+    "sideTop": "En haut",
+    "sideRight": "Côté droit"
   }
 }

@@ -1,4 +1,4 @@
-import type { GameConfig, TournamentPhase, TournamentPlayer } from "shared/index.ts";
+import type { GameConfig, PartyEngine, PartyPlayer, TournamentPhase, TournamentPlayer } from "shared/index.ts";
 import { GameServer } from "../game/GameServer.ts";
 import type { Bracket } from "../tournament/bracket.ts";
 
@@ -37,11 +37,23 @@ export interface TournamentRuntime {
 	timer: ReturnType<typeof setTimeout> | null;
 }
 
+/** Server-side party (3–4 players) of one room. Seats are snapshotted at the start. */
+export interface PartyRuntime {
+	/** idempotency key for the report */
+	key: string;
+	engine: PartyEngine;
+	/** seat i = seats[i]; a leaver keeps their seat (it becomes a wall) */
+	seats: PartyPlayer[];
+	startedAt: number;
+	finished: boolean;
+}
+
 export interface Room {
 	id: string;
-	mode: 'standard' | 'tournament'
+	mode: 'standard' | 'tournament' | 'party'
 	playerIds: string[]; //indexes 0 and 1 will be considered as player 1 and 2 respectively
 	tournament?: TournamentRuntime;
+	party?: PartyRuntime;
 	status: 'waiting' | 'full' | 'playing' | 'finished';
 	/** Paused while a player reconnects (the tick loop skips it) */
 	paused?: boolean;

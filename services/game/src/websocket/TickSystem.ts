@@ -4,6 +4,7 @@ import { toSerializablePlayer, type GameEndMessage } from "shared/index.ts";
 import type { RoomManager } from "../game/roomManager.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
 import type TournamentService from "./TournamentService.ts";
+import type PartyService from "./PartyService.ts";
 import { reportMatchResult } from "../utils/reportResults.ts";
 
 export default class TickSystem {
@@ -12,7 +13,7 @@ export default class TickSystem {
     private readonly TICK_INTERVAL = (1000 / this.TICK_RATE);
     private tickInterval: NodeJS.Timeout | null = null;
 
-    constructor(private roomManager: RoomManager, private tournamentService: TournamentService, private broadcaster: MessageBroadcaster) {}
+    constructor(private roomManager: RoomManager, private tournamentService: TournamentService, private broadcaster: MessageBroadcaster, private partyService: PartyService) {}
 
     startTickSystem(): void {
         if (this.tickInterval) clearInterval(this.tickInterval);
@@ -35,6 +36,11 @@ export default class TickSystem {
 
         // console.log("activeRooms:", activeRooms);
         for (const room of activeRooms) {
+            if (room.mode === 'party') {
+                // PartyService runs the engine, broadcasts and finishes the party
+                if (!room.paused) this.partyService.tick(room, deltaTime);
+                continue;
+            }
             if (!room.gameServer || room.paused) continue;
 
             const continueGame = room.gameServer.tick(deltaTime);

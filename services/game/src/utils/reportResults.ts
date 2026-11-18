@@ -68,6 +68,12 @@ export function reportMatchResult(result: Record<string, unknown>): void {
   void postWithRetry('/internal/game/match-result', body, 'match result', 'match');
 }
 
+/** A finished party (3–4 players): one row with every player's placement. */
+export function reportPartyResult(result: { matchId: string; players: { displayName: string }[] } & Record<string, unknown>): void {
+  const body = { ...result, players: result.players.map((p) => ({ ...p, displayName: p.displayName.slice(0, 50) })) };
+  void postWithRetry('/internal/game/party-result', body, 'party result', 'match');
+}
+
 export function reportTournamentResult(result: Record<string, unknown>): void {
   // The tournament id is the idempotency key on the users side.
   const clipped = clipNames(result);

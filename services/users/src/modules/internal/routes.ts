@@ -154,6 +154,90 @@ export default async function internalRoutes(app: FastifyInstance) {
     }
   );
 
+  // Party mode (3–4 players): one PartyMatch with every player's placement. Stored apart from
+  // the 1v1 Match table so win rates and head-to-head history are not distorted.
+  app.post(
+    "/internal/game/party-result",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["matchId", "winnerId", "played_at", "end_at", "players"],
+          additionalProperties: false,
+          properties: {
+            matchId: { type: "string", minLength: 8, maxLength: 64 },
+            winnerId: { type: ["integer", "null"], minimum: 1 },
+            played_at: { type: "string", format: "date-time" },
+            end_at: { type: "string", format: "date-time" },
+            players: {
+              type: "array",
+              minItems: 3,
+              maxItems: 4,
+              items: {
+                type: "object",
+                required: ["userId", "displayName", "placement", "livesLeft"],
+                additionalProperties: false,
+                properties: {
+                  userId: { type: "integer", minimum: 1 },
+                  displayName: { type: "string", maxLength: 50 },
+                  placement: { type: "integer", minimum: 1, maximum: 4 },
+                  livesLeft: { type: "integer", minimum: 0, maximum: 9 },
+                },
+              },
+            },
+          },
+        },
+        response: {
+          200: { type: "object", properties: { id: { type: "integer" } } },
+          201: { type: "object", properties: { id: { type: "integer" } } },
+          400: { type: "object", properties: { error: { type: "string" } } },
+        },
+      },
+    },
+    async (req, reply) => {
+      const b = req.body as {
+        matchId: string; winnerId: number | null; played_at: string; end_at: string;
+        players: { userId: number; displayName: string; placement: number; livesLeft: number }[];
+      };
+      const ids = b.players.map((p) => p.userId);
+      if (new Set(ids).size !== ids.length || (b.winnerId !== null && !ids.includes(b.winnerId))) {
+        return reply.code(400).send({ error: "Invalid party result" });
+      }
+      const existing = await prisma.partyMatch.findUnique({ where: { externalId: b.matchId }, select: { id: true } });
+      if (existing) return reply.code(200).send({ id: existing.id });
+      const gone = await deletedIds(ids);
+      try {
+        const created = await prisma.partyMatch.create({
+          data: {
+            externalId: b.matchId,
+            winnerId: b.winnerId,
+            played_at: new Date(b.played_at),
+            end_at: new Date(b.end_at),
+            players: {
+              create: b.players.map((p) => ({
+                userId: p.userId,
+                displayName: gone.has(p.userId) ? DELETED_NAME : p.displayName,
+                placement: p.placement,
+                livesLeft: p.livesLeft,
+              })),
+            },
+          },
+          select: { id: true },
+        });
+        // party games and wins count toward XP (see syncAchievements)
+        syncAchievementsLater(ids, req.log);
+        resultsRecorded.inc({ kind: "party" });
+        return reply.code(201).send({ id: created.id });
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          const row = await prisma.partyMatch.findUnique({ where: { externalId: b.matchId }, select: { id: true } });
+          if (row) return reply.code(200).send({ id: row.id });
+        }
+        throw err;
+      }
+    }
+  );
+
   app.post(
     "/internal/game/tournament-result",
     {

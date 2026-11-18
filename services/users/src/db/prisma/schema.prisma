@@ -30,6 +30,8 @@ model User {
   messagesSent      Message[]          @relation("MessagesSent")
   messagesReceived  Message[]          @relation("MessagesReceived")
   achievements      UserAchievement[]
+  partyMatches      PartyMatchPlayer[]
+  partiesWon        PartyMatch[]       @relation("PartyMatch_winner")
   // gamification: XP from matches, wins, titles and achievements; level derives from it
   xp                Int                @default(0)
   level             Int                @default(1)
@@ -129,6 +131,39 @@ model ChainDeployment {
 
   @@index([chainId, owner, id])
   @@map("ChainDeployments")
+}
+
+// Party mode (3–4 players): one row per party, one PartyMatchPlayer per seat. Kept apart from
+// Match (which is strictly 1v1) so win rates, streaks and head-to-head history stay honest.
+model PartyMatch {
+  id         Int                @id @default(autoincrement())
+  // Idempotency key sent by the game service; a retried report is a no-op
+  externalId String             @unique
+  winnerId   Int?
+  winner     User?              @relation("PartyMatch_winner", fields: [winnerId], references: [id])
+  players    PartyMatchPlayer[]
+  played_at  DateTime
+  end_at     DateTime
+
+  @@index([winnerId])
+  @@map("PartyMatches")
+}
+
+model PartyMatchPlayer {
+  id           Int    @id @default(autoincrement())
+  partyMatchId Int
+  userId       Int
+  displayName  String
+  // 1 = winner; then by how long they lasted
+  placement    Int
+  livesLeft    Int
+
+  partyMatch PartyMatch @relation(fields: [partyMatchId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([partyMatchId, userId])
+  @@index([userId])
+  @@map("PartyMatchPlayers")
 }
 
 model TournamentPlayer {

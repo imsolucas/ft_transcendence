@@ -383,7 +383,7 @@
     "friendsPrivateBody": "Only {name} can see who they're friends with.",
     "level": "Level {n}",
     "xpToNext": "{xp} XP to the next level",
-    "xpRules": "XP: 10 per match, +20 per win, +100 per tournament title, +25 per achievement",
+    "xpRules": "XP: 10 per match (party games too), +20 per win, +100 per tournament title, +25 per achievement",
     "levelUp": "Level up! You reached level {n}."
   },
   "friends": {
@@ -620,7 +620,7 @@
   },
   "data": {
     "exportTitle": "Download your data",
-    "exportBody": "One JSON file with your profile, sign-in methods, sessions, friends, blocks, matches, tournaments, messages and API keys (names only).",
+    "exportBody": "One JSON file with your profile, sign-in methods, sessions, friends, blocks, matches, party games, tournaments, messages and API keys (names only).",
     "download": "Download my data",
     "deleteTitle": "Delete account",
     "deleteBody": "Deletes your profile, friends, messages, API keys and sign-in methods. Your past matches stay in your opponents' history as \"Deleted player\". This can't be undone.",
@@ -700,7 +700,8 @@
     "notFound": "This match isn't live any more, or it's private.",
     "ownMatch": "You're playing in this match.",
     "inLobby": "Watch live matches",
-    "watchFriend": "Watch"
+    "watchFriend": "Watch",
+    "party": "party"
   },
   "coach": {
     "title": "Coach",
@@ -747,5 +748,50 @@
     "tx": "Transaction",
     "copyTx": "Copy transaction hash",
     "explorer": "Open in block explorer (new tab)"
+  },
+  "party": {
+    "title": "Party",
+    "lobbyCard": "Party (3–4 players)",
+    "lobbyCardBody": "Everyone defends one side of a square court. 3 lives each; last one standing wins.",
+    "quick": "Find a party",
+    "create": "Create party room",
+    "join": "Join party",
+    "codeLabel": "Party room code",
+    "searching": "Looking for players",
+    "searchingBody": "A party starts with 4 players, or with 3 after a short wait. Press Esc to cancel.",
+    "queueCount": "{n}/{max} players",
+    "startsIn": "Starting with 3 players in {s}s. A 4th can still join.",
+    "found": "Party found",
+    "lobbyTitle": "Party room",
+    "shareCode": "Share this code with 2 or 3 friends:",
+    "lobbyCount": "{n}/{max} players in the room",
+    "needMore": "Waiting for at least {n} players…",
+    "readyHint": "The party starts when everyone in the room is ready.",
+    "standings": "Standings",
+    "place": "Place {n}",
+    "winnerBadge": "Winner",
+    "out": "Out",
+    "noWinner": "Nobody won: everyone left.",
+    "youreOut": "You're out. Keep watching or leave from the menu.",
+    "reconnectOutcome": "The party is paused. A player who doesn't return in time is knocked out.",
+    "keys": "Move with A / D or ← / →. Your side is at the bottom. Esc opens the menu.",
+    "forfeit": "Give up",
+    "forfeitConfirm": "Give up this party?",
+    "forfeitHint": "You're knocked out and your side becomes a wall. You can keep watching.",
+    "leave": "Leave party",
+    "leaveHint": "You go back to the lobby.",
+    "droppedOut": "You were away too long, so you were knocked out of the party.",
+    "roomNotFound": "That party room doesn't exist, is full or has already started.",
+    "timeoutBody": "Not enough players are looking for a party right now. Try again, or create a party room for friends.",
+    "courtLabel": "Party Pong court, your side at the bottom",
+    "leftButton": "Move left",
+    "rightButton": "Move right",
+    "players": "Players",
+    "lives": "{n} lives left",
+    "livesList": "Lives: {list}",
+    "sideBottom": "Bottom",
+    "sideLeft": "Left side",
+    "sideTop": "Top",
+    "sideRight": "Right side"
   }
 }

@@ -7,7 +7,7 @@ registry.setDefaultLabels({ service: 'game' });
 collectDefaultMetrics({ register: registry });
 
 const ROOM_STATUSES = ['waiting', 'full', 'playing', 'finished'] as const;
-const ROOM_MODES = ['standard', 'tournament'] as const;
+const ROOM_MODES = ['standard', 'tournament', 'party'] as const;
 
 export const matchesFinished = new Counter({
   name: 'game_matches_finished_total',
@@ -37,7 +37,7 @@ export const tickDuration = new Histogram({
 type Sources = {
   connectedSockets: () => number;
   rooms: () => { status: string; mode: string }[];
-  queueLengths: () => { standard: number; tournament: number };
+  queueLengths: () => { standard: number; tournament: number; party: number };
 };
 
 /** Wires the gauges to live state; values are read at scrape time, so nothing to keep in sync. */
@@ -74,6 +74,7 @@ export function registerGameGauges(src: Sources): void {
       const q = src.queueLengths();
       this.set({ mode: 'standard' }, q.standard);
       this.set({ mode: 'tournament' }, q.tournament);
+      this.set({ mode: 'party' }, q.party);
     },
   });
 }

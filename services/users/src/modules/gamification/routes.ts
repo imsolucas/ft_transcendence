@@ -53,7 +53,11 @@ export async function computeAchievements(userId: number, wins: number, played: 
   ];
 }
 
-/** XP rules (shown on the profile): 10 per match, +20 per win, +100 per title, +25 per achievement. */
+/**
+ * XP rules (shown on the profile): 10 per match, +20 per win, +100 per title, +25 per achievement.
+ * Party games (3–4 players) count as matches and a party won as a win, for XP only: 1v1 stats,
+ * win rate and achievements still read the 1v1 Match table.
+ */
 export const XP = { match: 10, win: 20, title: 100, achievement: 25 } as const;
 
 /** Level n starts at 50·n·(n−1) XP: 0, 100, 300, 600, 1000… */
@@ -75,12 +79,14 @@ type SyncMode = "read" | "store" | "announce";
  */
 export async function syncAchievements(userId: number, mode: SyncMode = "read"): Promise<{ achievements: Achievement[]; progress: Progress }> {
   const involves = { OR: [{ player1Id: userId }, { player2Id: userId }] };
-  const [wins, played, titles, stored, user] = await Promise.all([
+  const [wins, played, titles, stored, user, partyPlayed, partyWins] = await Promise.all([
     prisma.match.count({ where: { winnerId: userId } }),
     prisma.match.count({ where: involves }),
     prisma.tournament.count({ where: { winnerId: userId } }),
     prisma.userAchievement.findMany({ where: { userId }, select: { achievement: true, unlockedAt: true } }),
     prisma.user.findUnique({ where: { id: userId }, select: { level: true, xp: true } }),
+    prisma.partyMatchPlayer.count({ where: { userId } }),
+    prisma.partyMatch.count({ where: { winnerId: userId } }),
   ]);
   const computed = await computeAchievements(userId, wins, played);
   const known = new Map(stored.map((s) => [s.achievement, s.unlockedAt]));
@@ -99,7 +105,7 @@ export async function syncAchievements(userId: number, mode: SyncMode = "read"):
     const at = known.get(c.id);
     return at ? { ...c, unlocked: true, progress: c.target, unlockedAt: at.toISOString() } : c;
   });
-  const xp = played * XP.match + wins * XP.win + titles * XP.title + known.size * XP.achievement;
+  const xp = (played + partyPlayed) * XP.match + (wins + partyWins) * XP.win + titles * XP.title + known.size * XP.achievement;
   const progress = levelFor(xp);
   if (mode !== "read" && user && (user.xp !== xp || user.level !== progress.level)) {
     // conditional update: only the call that raises the stored level announces it
