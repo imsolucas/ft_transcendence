@@ -58,16 +58,80 @@ const T = {
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const fill = (s: string, vars: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
 
-/** Plain, readable HTML (email clients ignore most CSS); every value is escaped. */
-function render(lead: string, note: string, button?: { label: string; url: string }) {
-  const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#0b0614;font-family:system-ui,sans-serif;color:#f3eeff">
-<div style="max-width:520px;margin:0 auto;background:#1a1030;border:1px solid #3a2b5c;border-radius:8px;padding:24px">
-<p style="font-family:monospace;letter-spacing:1px;color:#ff2e97;margin:0 0 16px">VOLLEY.EXE</p>
-<p style="line-height:1.5;margin:0 0 20px">${esc(lead)}</p>
-${button ? `<p style="margin:0 0 20px"><a href="${esc(button.url)}" style="display:inline-block;background:#ff2e97;color:#0b0614;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:6px">${esc(button.label)}</a></p><p style="font-size:12px;color:#a79bc4;word-break:break-all;margin:0 0 20px">${esc(button.url)}</p>` : ""}
-<p style="font-size:13px;color:#a79bc4;line-height:1.5;margin:0">${esc(note)}</p>
-</div></body></html>`;
-  const text = [lead, button ? `${button.label}: ${button.url}` : "", note].filter(Boolean).join("\n\n");
+/** Shared chrome of every email (fallback link, footer) */
+const CHROME = {
+  en: { fallback: "Button not working? Copy and paste this link into your browser:", footer: "This is an automated message from VOLLEY.EXE, so replies aren't read.", privacy: "Privacy", terms: "Terms" },
+  es: { fallback: "¿El botón no funciona? Copia y pega este enlace en tu navegador:", footer: "Este es un mensaje automático de VOLLEY.EXE; las respuestas no se leen.", privacy: "Privacidad", terms: "Términos" },
+  fr: { fallback: "Le bouton ne fonctionne pas ? Copiez et collez ce lien dans votre navigateur :", footer: "Ceci est un message automatique de VOLLEY.EXE ; les réponses ne sont pas lues.", privacy: "Confidentialité", terms: "Conditions" },
+} as const;
+
+// Named stacks: system-ui lets some phones swap in a decorative system font
+const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const MONO = "'SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace";
+
+/**
+ * Table-based HTML (the only layout every client renders the same, Outlook included), inline
+ * styles only, dark by design (color-scheme meta stops clients from inverting it). Every value
+ * is escaped. The title is the subject; the hidden preheader is the inbox preview line.
+ */
+function render(locale: Locale, title: string, lead: string, note: string, button?: { label: string; url: string }) {
+  const c = CHROME[locale];
+  const origin = config.publicOrigin;
+  const host = new URL(origin).host;
+  const link = (href: string, label: string) => `<a href="${esc(href)}" style="color:#b9abd8;text-decoration:underline">${esc(label)}</a>`;
+  const cta = button
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px"><tr>
+<td bgcolor="#ff2e97" style="border-radius:8px;background:#ff2e97">
+<a href="${esc(button.url)}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:${SANS};font-size:15px;font-weight:700;line-height:1;color:#14051f;text-decoration:none;border-radius:8px">${esc(button.label)}</a>
+</td></tr></table>`
+    : "";
+  const fallback = button
+    ? `<tr><td style="padding:20px 0 0;border-top:1px solid #3a2b5c;font-family:${SANS};font-size:12px;line-height:1.6;color:#9d8ec2">
+${esc(c.fallback)}<br><a href="${esc(button.url)}" style="color:#2de2e6;text-decoration:none;word-break:break-all">${esc(button.url)}</a>
+</td></tr>`
+    : "";
+  const html = `<!doctype html>
+<html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"><title>${esc(title)}</title></head>
+<body style="margin:0;padding:0;background:#0b0614;-webkit-text-size-adjust:100%">
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all">${esc(lead)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0b0614" style="background:#0b0614">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
+<tr><td style="padding:0 4px 20px">
+<img src="${esc(origin)}/icons/icon-192.png" width="28" height="28" alt="" style="display:inline-block;vertical-align:middle;border:0;border-radius:6px">
+<span style="display:inline-block;vertical-align:middle;margin-left:10px;font-family:${MONO};font-size:15px;font-weight:700;letter-spacing:3px;color:#f3eeff">VOLLEY<span style="color:#ff2e97">.EXE</span></span>
+</td></tr>
+<tr><td bgcolor="#1a1030" style="background:#1a1030;border:1px solid #3a2b5c;border-radius:12px;overflow:hidden">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td height="4" bgcolor="#ff2e97" style="height:4px;line-height:4px;font-size:0;background:#ff2e97;background-image:linear-gradient(90deg,#ff2e97,#b04dff,#2de2e6)">&nbsp;</td></tr>
+<tr><td style="padding:36px 32px 32px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="font-family:${SANS};font-size:22px;font-weight:700;line-height:1.3;color:#f3eeff;padding:0 0 14px">${esc(title)}</td></tr>
+<tr><td style="font-family:${SANS};font-size:15px;line-height:1.65;color:#ddd3f5;padding:0 0 28px">${esc(lead)}</td></tr>
+<tr><td>${cta}</td></tr>
+<tr><td style="font-family:${SANS};font-size:13px;line-height:1.6;color:#b9abd8;padding:0 0 24px">${esc(note)}</td></tr>
+${fallback}
+</table>
+</td></tr>
+</table>
+</td></tr>
+<tr><td align="center" style="padding:24px 16px 0;font-family:${SANS};font-size:12px;line-height:1.7;color:#9d8ec2">
+${esc(c.footer)}<br>
+${link(origin, host)} &nbsp;·&nbsp; ${link(`${origin}/${locale}/privacy`, c.privacy)} &nbsp;·&nbsp; ${link(`${origin}/${locale}/terms`, c.terms)}
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+  const text = [
+    "VOLLEY.EXE",
+    title,
+    lead,
+    button ? `${button.label}:\n${button.url}` : "",
+    note,
+    `--\n${c.footer}\n${origin}`,
+  ].filter(Boolean).join("\n\n");
   return { html, text };
 }
 
@@ -118,7 +182,7 @@ export const mail = {
       return Promise.resolve();
     }
     const t = T.verify[locale];
-    return send(to, t.subject, render(t.lead, t.note, { label: t.button, url }), log, "verify");
+    return send(to, t.subject, render(locale, t.subject, t.lead, t.note, { label: t.button, url }), log, "verify");
   },
   reset: (to: string, url: string, locale: Locale, log: Log) => {
     if (throttled("reset", to)) {
@@ -126,11 +190,11 @@ export const mail = {
       return Promise.resolve();
     }
     const t = T.reset[locale];
-    return send(to, t.subject, render(t.lead, t.note, { label: t.button, url }), log, "reset");
+    return send(to, t.subject, render(locale, t.subject, t.lead, t.note, { label: t.button, url }), log, "reset");
   },
   exported: (to: string, locale: Locale, log: Log) => {
     const t = T.exported[locale];
-    return send(to, t.subject, render(fill(t.lead, { when: when(locale) }), t.note), log, "exported");
+    return send(to, t.subject, render(locale, t.subject, fill(t.lead, { when: when(locale) }), t.note), log, "exported");
   },
   existing: (to: string, url: string, locale: Locale, log: Log) => {
     if (throttled("existing", to)) {
@@ -138,14 +202,14 @@ export const mail = {
       return Promise.resolve();
     }
     const t = T.existing[locale];
-    return send(to, t.subject, render(fill(t.lead, { when: when(locale) }), t.note, { label: t.button, url }), log, "existing");
+    return send(to, t.subject, render(locale, t.subject, fill(t.lead, { when: when(locale) }), t.note, { label: t.button, url }), log, "existing");
   },
   newSignIn: (to: string, name: string, device: string, url: string, locale: Locale, log: Log) => {
     const t = T.newSignIn[locale];
-    return send(to, t.subject, render(fill(t.lead, { when: when(locale), name, device }), t.note, { label: t.button, url }), log, "new-sign-in");
+    return send(to, t.subject, render(locale, t.subject, fill(t.lead, { when: when(locale), name, device }), t.note, { label: t.button, url }), log, "new-sign-in");
   },
   deleted: (to: string, name: string, locale: Locale, log: Log) => {
     const t = T.deleted[locale];
-    return send(to, t.subject, render(fill(t.lead, { when: when(locale), name }), t.note), log, "deleted");
+    return send(to, t.subject, render(locale, t.subject, fill(t.lead, { when: when(locale), name }), t.note), log, "deleted");
   },
 };
