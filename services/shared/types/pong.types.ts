@@ -16,6 +16,10 @@ export interface GameState {
         {x: number, y: number;}  // right player
     ];
     scores: number[]; // [left, right]
+    /** current paddle heights (power-ups change them); absent = the configured size */
+    paddleHeights?: [number, number];
+    /** the power-up on the court, if any */
+    powerUp?: PowerUpView | null;
     isPlaying: boolean;
     lastUpdate: number
 }
@@ -64,4 +68,15 @@ export interface GameConfig {
     isPrivate: boolean;
     mode: 'tournament' | 'standard';
     numPlayers?: number; // For tournament mode
+    /** opt-in power-ups (local / vs-AI games) */
+    powerUps?: boolean;
+    /** seed for power-up randomness (same seed + inputs = same game) */
+    seed?: number;
+}
+
+export type PowerUpKind = "grow" | "shrink" | "fast";
+export interface PowerUpView {
+    x: number;
+    y: number;
+    kind: PowerUpKind;
 }

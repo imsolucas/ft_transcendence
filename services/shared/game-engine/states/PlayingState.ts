@@ -10,6 +10,7 @@ export default class PlayingState extends BaseGameState {
     update(deltaTime: number): StateResult | null {
         this.getEntityManager().tickEntities(deltaTime);
         this.getEntityManager().checkCollisions();
+        this.context.powerUps?.update(deltaTime, this.getEntityManager());
 
         if (this.getEntityManager().getBall().isDestroyed())
         {

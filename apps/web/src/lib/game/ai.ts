@@ -10,7 +10,9 @@ export type AiLevel = "easy" | "normal" | "hard";
  *   one misjudgement per shot (`error`, in court units; the paddle covers about ±14), so
  *   some shots are simply misread and missed;
  * - between shots it drifts back towards the middle (not on easy);
- * - a small dead zone stops jittering, so it sometimes arrives a little late.
+ * - a small dead zone stops jittering, so it sometimes arrives a little late;
+ * - with power-ups on, it angles its return towards the item on the court (the engine sets the
+ *   ball's outgoing angle from where it hits the paddle), so it uses them like a player would.
  * Tuned by simulation against a perfect opponent: easy misses ~25% of shots, normal ~10%,
  * hard ~3%.
  */
@@ -51,6 +53,24 @@ export class PongAi {
     return py;
   }
 
+  /**
+   * Where on the paddle to meet the ball so the return heads for the power-up (0 = centre).
+   * The engine sends the ball off at normalizedHit × 0.75 × speed vertically, where
+   * normalizedHit = (ball − paddle centre) / (paddle height / 2).
+   */
+  private aimOffset(s: GameState, predicted: number): number {
+    const item = s.powerUp;
+    if (!item) return 0;
+    const speed = Math.abs(s.ball.vx);
+    const dx = s.paddles[1].x - item.x;
+    if (speed === 0 || dx <= 0) return 0;
+    const neededVy = (item.y - predicted) / (dx / speed);
+    // keep the contact point well inside the paddle so aiming doesn't cost the return
+    const normalized = Math.max(-0.6, Math.min(0.6, neededVy / (0.75 * speed)));
+    const half = (s.paddleHeights?.[1] ?? 25) / 2;
+    return normalized * half;
+  }
+
   /** Call every frame with the current state and time (ms); returns the AI's inputs. */
   decide(s: GameState, nowMs: number): PlayerInputs {
     if (nowMs - this.lastRead >= this.cfg.reactMs) {
@@ -61,7 +81,7 @@ export class PongAi {
         this.target = this.cfg.recentre ? this.court.y / 2 : null;
       } else {
         this.shotError ??= (this.random() * 2 - 1) * this.cfg.error;
-        this.target = Math.max(0, Math.min(this.court.y, predicted + this.shotError));
+        this.target = Math.max(0, Math.min(this.court.y, predicted - this.aimOffset(s, predicted) + this.shotError));
       }
     }
     const inputs = idle();

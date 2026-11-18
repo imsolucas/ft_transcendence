@@ -219,7 +219,7 @@ not required to play.
 | GDPR (export, deletion with confirmation, confirmation emails) | Minor | Done |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
 | Tournament system | Minor | Partial: king-of-the-hill, no bracket |
-| Game customization (speeds, points, 4 court themes, defaults) | Minor | Partial: no power-ups yet |
+| Game customization (power-ups, speeds, points, 4 court themes, defaults; the AI plays with all of them) | Minor | Done |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
 | Spectator mode (live public matches, read-only view, live spectator count) | Minor | Done |
 

@@ -291,7 +291,11 @@
     "aiSubtitle": "Play against the computer. It reacts like a person: not instantly, and not always right.",
     "difficulty": "Difficulty",
     "easy": "Easy",
-    "hard": "Hard"
+    "hard": "Hard",
+    "powerUps": "Power-ups",
+    "powerUpsHint": "Default: off. Hit the ball through an item: + grows your paddle, − shrinks your opponent's, » speeds up the ball.",
+    "on": "On",
+    "off": "Off"
   },
   "tournament": {
     "title": "TOURNAMENT",

@@ -7,6 +7,8 @@ export interface CourtColors {
   opp: string;
   ball: string;
   border: string;
+  /** power-ups: grow (green), shrink (red), fast (amber) */
+  power: { grow: string; shrink: string; fast: string };
 }
 
 /** Reads the design tokens from CSS so the canvas uses the same palette as the UI. */
@@ -20,6 +22,7 @@ export function readCourtColors(el: Element): CourtColors {
     opp: v("--court-opp", "#2de2e6"),
     ball: v("--court-ball", "#f3eeff"),
     border: v("--court-border", "#3a2b5c"),
+    power: { grow: v("--neon-green", "#39ff88"), shrink: v("--neon-red", "#ff4d6d"), fast: v("--neon-amber", "#ffb000") },
   };
 }
 
@@ -75,8 +78,9 @@ export function drawFrame(
 
   // paddles (positions are centres)
   const pw = (config.paddleConfig.size?.x ?? 4) * sx;
-  const ph = (config.paddleConfig.size?.y ?? 25) * sy;
   state.paddles.forEach((p, i) => {
+    // power-ups change paddle heights; the state carries the current ones
+    const ph = (state.paddleHeights?.[i] ?? config.paddleConfig.size?.y ?? 25) * sy;
     const colour = opts.youSide === null ? (i === 0 ? colors.you : colors.opp) : i === opts.youSide ? colors.you : colors.opp;
     ctx.fillStyle = colour;
     if (opts.glow) {
@@ -90,6 +94,39 @@ export function drawFrame(
     ctx.fill();
     ctx.shadowBlur = 0;
   });
+
+  // power-up: a diamond with a symbol (shapes, not text, so mirroring can't flip it)
+  if (state.powerUp) {
+    const { x, y, kind } = state.powerUp;
+    const cx = x * sx, cy = y * sy, s = 4 * Math.min(sx, sy);
+    const colour = colors.power[kind];
+    ctx.strokeStyle = colour;
+    ctx.fillStyle = colour;
+    ctx.lineWidth = Math.max(1.5, s / 4);
+    if (opts.glow) {
+      ctx.shadowColor = colour;
+      ctx.shadowBlur = 14;
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s);
+    ctx.lineTo(cx + s, cy);
+    ctx.lineTo(cx, cy + s);
+    ctx.lineTo(cx - s, cy);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    const k = s * 0.45;
+    ctx.beginPath();
+    if (kind === "grow") {
+      ctx.moveTo(cx - k, cy); ctx.lineTo(cx + k, cy); ctx.moveTo(cx, cy - k); ctx.lineTo(cx, cy + k);
+    } else if (kind === "shrink") {
+      ctx.moveTo(cx - k, cy); ctx.lineTo(cx + k, cy);
+    } else {
+      ctx.moveTo(cx - k, cy - k); ctx.lineTo(cx, cy); ctx.lineTo(cx - k, cy + k);
+      ctx.moveTo(cx, cy - k); ctx.lineTo(cx + k, cy); ctx.lineTo(cx, cy + k);
+    }
+    ctx.stroke();
+  }
 
   // ball
   const r = ((config.ballConfig.size?.x ?? 4) / 2) * Math.min(sx, sy);

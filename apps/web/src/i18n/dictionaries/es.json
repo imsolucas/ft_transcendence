@@ -291,7 +291,11 @@
     "aiSubtitle": "Juega contra el ordenador. Reacciona como una persona: no al instante y no siempre bien.",
     "difficulty": "Dificultad",
     "easy": "Fácil",
-    "hard": "Difícil"
+    "hard": "Difícil",
+    "powerUps": "Potenciadores",
+    "powerUpsHint": "Por defecto: no. Haz pasar la bola por un objeto: + agranda tu pala, − encoge la del rival, » acelera la bola.",
+    "on": "Sí",
+    "off": "No"
   },
   "tournament": {
     "title": "TORNEO",

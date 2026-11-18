@@ -291,7 +291,11 @@
     "aiSubtitle": "Jouez contre l'ordinateur. Il réagit comme une personne : pas instantanément, et pas toujours juste.",
     "difficulty": "Difficulté",
     "easy": "Facile",
-    "hard": "Difficile"
+    "hard": "Difficile",
+    "powerUps": "Bonus",
+    "powerUpsHint": "Par défaut : non. Faites passer la balle sur un objet : + agrandit votre raquette, − rétrécit celle de l'adversaire, » accélère la balle.",
+    "on": "Oui",
+    "off": "Non"
   },
   "tournament": {
     "title": "TOURNOI",

@@ -15,6 +15,18 @@ export default class Paddle extends Entity {
         this.#size = {...paddleConfig.size!};
     }
 
+    /** Power-ups resize the paddle; it stays inside the court. */
+    setHeight(height: number): void {
+        this.#size.y = height;
+        if (this.hitbox) this.hitbox.height = height;
+        const half = height / 2;
+        this.pos.y = Math.min(Math.max(this.pos.y, half), this.config.courtSize!.y - half);
+    }
+
+    getHeight(): number {
+        return this.#size.y;
+    }
+
     getOldBorder(): Border {
         return {
             top: this.#oldpos.y - this.#size.y / 2,

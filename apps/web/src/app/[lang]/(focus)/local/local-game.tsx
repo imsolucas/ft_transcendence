@@ -21,7 +21,7 @@ type Speed = "slow" | "normal" | "fast";
 const BALL: Record<Speed, number> = { slow: 35, normal: 50, fast: 70 };
 const PADDLE: Record<Speed, number> = { slow: 35, normal: 47, fast: 65 };
 const POINTS = [5, 7, 11] as const;
-const DEFAULTS = { ball: "normal" as Speed, paddle: "normal" as Speed, points: 11 };
+const DEFAULTS = { ball: "normal" as Speed, paddle: "normal" as Speed, points: 11, powerUps: false };
 
 interface Setup {
   p1: string;
@@ -31,6 +31,8 @@ interface Setup {
   ball: Speed;
   paddle: Speed;
   points: number;
+  /** grow / shrink / fast items on the court */
+  powerUps: boolean;
 }
 
 function buildConfig(s: Setup): GameConfig {
@@ -39,6 +41,9 @@ function buildConfig(s: Setup): GameConfig {
     ...base,
     playerNames: [s.p1.trim(), s.p2.trim()],
     pointsToWin: s.points,
+    powerUps: s.powerUps,
+    // a fresh seed per game, so items don't appear in the same places every time
+    seed: Math.floor(Math.random() * 2 ** 31),
     ballConfig: { ...base.ballConfig, speed: BALL[s.ball] },
     paddleConfig: { ...base.paddleConfig, speed: PADDLE[s.paddle] },
   };
@@ -137,6 +142,17 @@ function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boole
               <Row label={t("local.paddleSpeed")} hint={t("local.default", { value: t("local.normal") })}>
                 <Segmented label={t("local.paddleSpeed")} value={s.paddle} onChange={(v) => setS({ ...s, paddle: v })} options={speedOptions} />
               </Row>
+              <Row label={t("local.powerUps")} hint={t("local.powerUpsHint")}>
+                <Segmented
+                  label={t("local.powerUps")}
+                  value={s.powerUps ? "on" : "off"}
+                  onChange={(v) => setS({ ...s, powerUps: v === "on" })}
+                  options={[
+                    { value: "off", label: t("local.off") },
+                    { value: "on", label: t("local.on") },
+                  ]}
+                />
+              </Row>
               <Row label={t("local.pointsToWin")} hint={t("local.default", { value: 11 })}>
                 <Segmented label={t("local.pointsToWin")} value={s.points} onChange={(v) => setS({ ...s, points: v })} options={POINTS.map((p) => ({ value: p, label: String(p) }))} />
               </Row>
@@ -150,6 +166,7 @@ function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boole
             <SummaryRow k={t("local.ballSpeed")} v={t(`local.${s.ball}`)} />
             <SummaryRow k={t("local.paddleSpeed")} v={t(`local.${s.paddle}`)} />
             <SummaryRow k={t("local.pointsToWin")} v={String(s.points)} />
+            <SummaryRow k={t("local.powerUps")} v={s.powerUps ? t("local.on") : t("local.off")} />
           </dl>
           <div className="stack stack-3">
             <Button type="submit" variant="primary" glow="sm" block disabled={!valid}>
@@ -157,7 +174,7 @@ function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boole
             </Button>
             {!valid && <p className="field-hint">{errors.p1 ?? errors.p2}</p>}
             <Button type="button" variant="ghost" block onClick={() => {
-                setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points, ...(vsAi ? { ai: "normal" as AiLevel } : {}) });
+                setS({ ...s, ball: DEFAULTS.ball, paddle: DEFAULTS.paddle, points: DEFAULTS.points, powerUps: DEFAULTS.powerUps, ...(vsAi ? { ai: "normal" as AiLevel } : {}) });
                 setPref("courtTheme", "neon");
               }}>
               <RotateCcw className="ico" aria-hidden />

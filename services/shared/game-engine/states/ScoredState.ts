@@ -26,6 +26,7 @@ export default class ScoredState extends BaseGameState {
         
         ball.reset()
         ball.setVelocity({x: newVelx, y: 0});
+        this.context.powerUps?.reset(this.getEntityManager());
     }
 
     update(deltaTime: number): StateResult | null {

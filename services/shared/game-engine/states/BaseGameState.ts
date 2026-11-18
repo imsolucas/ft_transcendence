@@ -1,3 +1,4 @@
+import type { PowerUpSystem } from "../PowerUps.ts";
 import type { GameConfig, PlayerInputs } from "../../types/pong.types.ts";
 import type EntityManager from "../managers/EntityManager.ts";
 
@@ -7,6 +8,7 @@ export interface GameContext {
 		entityManager: EntityManager;
 		playerScore: number[];
 		previousState?: StateName // The state previous to the current one
+		powerUps?: PowerUpSystem
 }
 
 export type StateName = "PausedState" | "PlayingState" | "ScoredState" | "GameOverState" | "GameStartState" | "ListenState"

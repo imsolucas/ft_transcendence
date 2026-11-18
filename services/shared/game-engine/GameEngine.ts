@@ -1,3 +1,4 @@
+import { PowerUpSystem } from "./PowerUps.ts";
 import type { GameConfig, GameState, PlayerInputs } from "../types/pong.types.ts";
 import Ball from "./entities/Ball.ts";
 import Paddle from "./entities/Paddle.ts";
@@ -24,7 +25,8 @@ export class GameEngine {
         this.#context = {
             config: config,
             entityManager: this.#entityManager,
-            playerScore: [0, 0]
+            playerScore: [0, 0],
+            ...(config.powerUps ? { powerUps: new PowerUpSystem(this.#config.courtSize!, config.seed ?? 1) } : {}),
         }
         this.#stateManager = new StateManager(this.#context);
         this.#initEntities();
@@ -84,6 +86,8 @@ export class GameEngine {
                 {x: paddles[1]!.getPos().x, y: paddles[1]!.getPos().y}
             ],
             scores: context.playerScore,
+            paddleHeights: [paddles[0]!.getHeight(), paddles[1]!.getHeight()],
+            powerUp: context.powerUps?.item() ?? null,
             isPlaying: true,
             lastUpdate: Date.now()
         }
