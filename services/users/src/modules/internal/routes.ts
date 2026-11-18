@@ -4,6 +4,7 @@ import { requireInternalService } from "../../auth/guards.ts";
 import { syncAchievementsLater } from "../gamification/routes.ts";
 import { postGameNotice } from "../chat/routes.ts";
 import { DELETED_PREFIX } from "../privacy/routes.ts";
+import { resultsRecorded } from "../../metrics.ts";
 
 /**
  * The game caches display names at connect time; a player who deleted their account during
@@ -140,6 +141,7 @@ export default async function internalRoutes(app: FastifyInstance) {
             req.log.error({ err }, "result notice failed"),
           );
         }
+        resultsRecorded.inc({ kind: "match" });
         return reply.code(201).send({ id: created.id });
       } catch (err: any) {
         if (err?.code === "P2002") {
@@ -237,6 +239,7 @@ export default async function internalRoutes(app: FastifyInstance) {
             postGameNotice(b.winnerId, p, "tournament", b.name ?? "Tournament").catch((err) => req.log.error({ err }, "tournament notice failed"));
           }
         }
+        resultsRecorded.inc({ kind: "tournament" });
         return reply.code(201).send({ id: t.id });
       } catch (err: any) {
         if (err?.code === "P2002") {

@@ -6,6 +6,7 @@ import dbPlugin from "./db/plugin.ts";
 import routes from "./routes/routes.ts";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import { registerHttpMetrics } from "./metrics.ts";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -63,6 +64,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     // Swagger UI sets a few inline styles itself; scripts stay restricted to 'self'
     transformStaticCSP: (header) => header.replace("style-src 'self' https:", "style-src 'self' https: 'unsafe-inline'"),
   });
+
+  // Prometheus: request counter/histogram for every route below, and GET /metrics
+  registerHttpMetrics(app);
 
   await app.register(dbPlugin);
   await app.register(routes);

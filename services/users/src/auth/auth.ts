@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor, username } from "better-auth/plugins";
 import { config } from "../config.ts";
 import { prisma } from "../db/client.ts";
+import { signUps } from "../metrics.ts";
 
 /**
  * Better Auth owns sign-up, sign-in (username or email + password, Google), sessions,
@@ -79,6 +80,9 @@ export const auth = betterAuth({
           if (data.username) return;
           const handle = await uniqueHandle(data.name || data.email.split("@")[0]);
           return { data: { ...user, username: handle, displayUsername: handle, name: handle } };
+        },
+        after: async () => {
+          signUps.inc();
         },
       },
     },

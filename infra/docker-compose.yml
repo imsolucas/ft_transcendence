@@ -1,5 +1,6 @@
 # ft_transcendence — one command: `make up` (docker compose -f infra/docker-compose.yml up -d --build)
-# Browser origin: https://localhost:8443 (Caddy, automatic HTTPS). Only Caddy publishes a port.
+# Browser origin: https://localhost:8443 (Caddy, automatic HTTPS). Only Caddy publishes a public
+# port; the optional "monitoring" profile binds Grafana and Prometheus to 127.0.0.1 only.
 name: ft_transcendence
 
 services:
@@ -110,11 +111,82 @@ services:
     networks: [internal]
     restart: unless-stopped
 
+  # ---- Monitoring (opt-in): COMPOSE_PROFILES=monitoring or `--profile monitoring`.
+  # Prometheus scrapes users:4000/metrics, game:3001/metrics and postgres-exporter over the
+  # internal network (Caddy never routes /metrics). See README > Operations > Monitoring.
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    profiles: [monitoring]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --storage.tsdb.retention.size=2GB
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      # UI (targets, alerts) for the host only
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    networks: [internal]
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+    profiles: [monitoring]
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB:-ft}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_USER:-ft}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.1.10
+    profiles: [monitoring]
+    # Refuse to start without an admin password (Grafana would fall back to admin/admin)
+    entrypoint:
+      - /bin/sh
+      - -c
+      - '[ -n "$$GF_SECURITY_ADMIN_PASSWORD" ] || { echo "set GRAFANA_ADMIN_PASSWORD in infra/.env" >&2; exit 1; }; exec /run.sh'
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_SECURITY_COOKIE_SAMESITE: strict
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://localhost:${GRAFANA_PORT:-3002}/
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/ft-overview.json
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3002}:3000"
+    depends_on:
+      - prometheus
+    networks: [internal]
+    restart: unless-stopped
+
 volumes:
   pgdata:
   uploads:
   caddy_data:
   caddy_config:
+  prometheus_data:
+  grafana_data:
 
 networks:
   internal:
