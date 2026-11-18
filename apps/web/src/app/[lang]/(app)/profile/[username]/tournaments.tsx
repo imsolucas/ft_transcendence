@@ -106,6 +106,8 @@ function ChainStatus({ tournament: tr }: { tournament: TournamentSummary }) {
   const { data, error, isLoading } = useSWR<ChainVerification>(ask ? `/api/tournaments/${tr.id}/chain` : null, fetcher, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
+    // a fresh tournament is usually confirmed within seconds: look again while it's pending
+    refreshInterval: (latest) => (latest?.status === "pending" ? 20_000 : 0),
   });
 
   let badge;

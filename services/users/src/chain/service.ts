@@ -7,7 +7,7 @@
 // Never blocks the tournament write: callers fire and forget, and a periodic sweep picks up
 // whatever failed (chain down at the time, users restarted mid-way, anvil reset).
 import type { FastifyBaseLogger } from "fastify";
-import { Contract, ContractFactory, FetchRequest, JsonRpcProvider, Network, Wallet } from "ethers";
+import { Contract, ContractFactory, FetchRequest, JsonRpcProvider, Network, Wallet, getAddress } from "ethers";
 import { config } from "../config.ts";
 import { prisma } from "../db/client.ts";
 import { TOURNAMENT_SCORES_ABI, TOURNAMENT_SCORES_BYTECODE } from "./artifact.ts";
@@ -98,7 +98,8 @@ async function getConn(allowDeploy: boolean, log: FastifyBaseLogger): Promise<Co
   if (conn) return conn;
   const b = await getBase();
   const owner = b.wallet.address;
-  const configured = config.chain!.contractAddress;
+  // checksummed, so chainContract comparisons don't depend on how the env was typed
+  const configured = config.chain!.contractAddress ? getAddress(config.chain!.contractAddress) : null;
   if (configured) {
     if (!(await hasCode(b, configured))) throw new ChainRefused(`no contract at CHAIN_CONTRACT_ADDRESS on chain ${b.chainId}`);
     const c = attach(b, configured);
@@ -140,9 +141,12 @@ async function getConn(allowDeploy: boolean, log: FastifyBaseLogger): Promise<Co
 /** Forget the cached contract (and provider on a hard failure), so the next call re-checks. */
 function resetConn(hard = false) {
   conn = null;
-  if (hard && base) {
-    base.provider.destroy();
-    base = null;
+  // dropped through the queue, so an in-flight send/wait keeps its provider until it ends
+  if (hard) {
+    void serial(async () => {
+      base?.provider.destroy();
+      base = null;
+    });
   }
 }
 
@@ -265,6 +269,8 @@ async function recordWithRetry(tournamentId: number, log: FastifyBaseLogger, del
     }
   } finally {
     inFlight.delete(tournamentId);
+    // the stored state may have changed: the next verification reads it fresh
+    verifyCache.delete(tournamentId);
   }
 }
 
@@ -281,8 +287,11 @@ async function sweep(log: FastifyBaseLogger): Promise<void> {
   let c: Conn | null;
   try {
     // a restarted anvil keeps its chain id but loses the contract: re-resolve if the code is gone
-    if (conn && !(await hasCode(conn, conn.address))) resetConn();
-    c = await serial(() => getConn(true, log));
+    // inside the queue, so a hard reset below never destroys the provider under a pending write
+    c = await serial(async () => {
+      if (conn && !(await hasCode(conn, conn.address))) resetConn();
+      return getConn(true, log);
+    });
     if (chainUp !== true) log.info({ chainId: c?.chainId, contract: c?.address }, "[chain] connected");
     chainUp = true;
   } catch (err) {
@@ -373,7 +382,8 @@ export async function verifyTournament(tournamentId: number, log: FastifyBaseLog
         : { ...out, status: "pending", chainId: c.chainId, contract: c.address, txHash: null, blockNumber: null, explorerUrl: null };
     }
   } catch (err) {
-    resetConn(!(err instanceof ChainRefused));
+    // soft reset only: the provider may be serving an in-flight write (the write path recreates it)
+    resetConn(false);
     log.warn({ tournamentId, err: errSummary(err) }, "[chain] verification read failed");
     return { ...out, status: "unavailable" };
   }

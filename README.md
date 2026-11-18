@@ -279,7 +279,7 @@ so data operations are confirmed on screen rather than by email.
 | Tournament system | Minor | Partial: king-of-the-hill, no bracket |
 | Game customization (speeds, points, 4 court themes, defaults) | Minor | Partial: no power-ups yet |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
-| Tournament scores on the blockchain (Solidity contract on an Avalanche-compatible chain: anvil locally, Fuji testnet by config; verification on the profile) | Major | Done |
+| Tournament scores on the blockchain (Solidity contract on an Avalanche-compatible chain: anvil locally, Fuji testnet by config; verification on the profile) | Major | Implemented; contract tested in an in-process EVM, the Docker run with anvil not yet tested end to end |
 
 Not started; each needs a decision first: ICP blockchain backend (conflicts with SSR), LLM, RAG,
 recommendations and other AI-service modules (need a provider and API spend), ELK, Prometheus +
