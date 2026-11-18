@@ -694,5 +694,13 @@
     "errBusy": "El coach está ocupado. Inténtalo en un momento.",
     "errUnavailable": "Ahora mismo no se puede contactar con el coach.",
     "refused": "No puedo ayudarte con eso."
+  },
+  "offline": {
+    "metaTitle": "Sin conexión",
+    "title": "OFFLINE",
+    "line": "Señal perdida",
+    "body": "No tienes conexión. Las partidas online, el chat, los amigos y tu perfil necesitan la red. Una partida local en este dispositivo funciona sin ella.",
+    "playLocal": "Jugar en local",
+    "hint": "Esta página se recarga sola cuando vuelva la conexión."
   }
 }

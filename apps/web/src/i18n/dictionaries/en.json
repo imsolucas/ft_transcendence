@@ -694,5 +694,13 @@
     "errBusy": "The coach is busy right now. Try again in a moment.",
     "errUnavailable": "The coach can't be reached right now.",
     "refused": "I can't help with that one."
+  },
+  "offline": {
+    "metaTitle": "Offline",
+    "title": "OFFLINE",
+    "line": "Signal lost",
+    "body": "You're not connected. Online matches, chat, friends and your profile need the network. A local match on this device works without one.",
+    "playLocal": "Play local",
+    "hint": "This page reloads by itself when the connection comes back."
   }
 }

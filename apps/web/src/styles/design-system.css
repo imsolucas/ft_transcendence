@@ -158,6 +158,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .toast-body { flex: 1; min-width: 0; }
 .banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--neon-amber); background: var(--surface-3); color: var(--fg); font-size: 14px; }
 .banner > .ico { color: var(--neon-amber); }
+/* The offline page (also served by the service worker at other URLs) carries its own message */
+body:has([data-offline-page]) .offline-banner { display: none; }
 .callout { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-2); }
 .callout-error { border-color: var(--neon-red); } .callout-error > .ico { color: var(--neon-red); }
 .callout-warn { border-color: var(--neon-amber); } .callout-warn > .ico { color: var(--neon-amber); }

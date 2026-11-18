@@ -60,7 +60,8 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next internals, our backends and files with an extension
-  matcher: ["/((?!_next|api|ws|favicon.ico|.*\\..*).*)"],
+  // Everything except Next internals, our backends, the PWA files (service worker, manifest,
+  // icons: never locale- or auth-redirected) and any other file with an extension
+  matcher: ["/((?!_next|api|ws|favicon.ico|sw\\.js|manifest\\.webmanifest|icons/|.*\\..*).*)"],
 };
 

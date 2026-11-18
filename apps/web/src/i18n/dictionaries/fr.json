@@ -694,5 +694,13 @@
     "errBusy": "Le coach est occupé. Réessayez dans un instant.",
     "errUnavailable": "Le coach est injoignable pour le moment.",
     "refused": "Je ne peux pas vous aider sur ce point."
+  },
+  "offline": {
+    "metaTitle": "Hors ligne",
+    "title": "OFFLINE",
+    "line": "Signal perdu",
+    "body": "Vous n'êtes pas connecté. Les parties en ligne, le chat, les amis et votre profil ont besoin du réseau. Une partie locale sur cet appareil fonctionne sans.",
+    "playLocal": "Jouer en local",
+    "hint": "Cette page se recharge toute seule quand la connexion revient."
   }
 }
