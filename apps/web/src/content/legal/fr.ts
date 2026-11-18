@@ -63,7 +63,7 @@ export const privacy: LegalDoc = {
       id: "rights",
       title: "Vos droits",
       body: [
-        "Vous pouvez consulter et modifier votre profil dans les Paramètres, révoquer vos sessions et vos clés d'API, et, dans Paramètres → Vos données, télécharger une copie de tout ce que nous conservons sur vous ou supprimer vous-même votre compte. Pour toute autre demande, écrivez-nous : nous répondons sous 30 jours.",
+        "Vous pouvez consulter et modifier votre profil dans les Paramètres, révoquer vos sessions et vos clés d'API, et, dans Paramètres → Vos données, télécharger une copie de tout ce que nous conservons sur vous ou supprimer vous-même votre compte. Pour toute autre demande, écrivez-nous : nous répondons sous 30 jours. Nous vous écrivons uniquement pour confirmer votre adresse, réinitialiser votre mot de passe et confirmer un téléchargement de données ou la suppression du compte.",
       ],
     },
     {

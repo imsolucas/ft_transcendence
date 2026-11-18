@@ -202,6 +202,9 @@ export function LoginForm() {
             />
           )}
         </FormField>
+        <p className="-mt-2 text-right t-caption">
+          <Link href={href("/forgot-password")}>{t("auth.forgotLink")}</Link>
+        </p>
         <Button type="submit" variant="primary" glow="sm" block loading={busy}>
           {busy ? t("auth.loggingIn") : t("auth.login")}
         </Button>

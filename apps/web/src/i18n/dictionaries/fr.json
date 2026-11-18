@@ -117,7 +117,9 @@
       "invalidEmail": "Saisissez une adresse e-mail valide.",
       "passwordTooShort": "Utilisez au moins 8 caractères.",
       "tooManyAttempts": "Trop de tentatives. Attendez une minute, puis réessayez.",
-      "googleUnavailable": "La connexion avec Google n'est pas encore configurée sur ce serveur."
+      "googleUnavailable": "La connexion avec Google n'est pas encore configurée sur ce serveur.",
+      "passwordTooLong": "128 caractères maximum.",
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas."
     },
     "twoFactorTitle": "Code à deux facteurs",
     "twoFactorSubtitle": "Saisissez le code à 6 chiffres de votre application d'authentification.",
@@ -133,7 +135,20 @@
     "sessionExpiredTitle": "Session expirée",
     "sessionExpiredBody": "Vous avez été déconnecté. Connectez-vous de nouveau pour reprendre où vous en étiez.",
     "loginAgain": "Se reconnecter",
-    "googleFailed": "La connexion Google n'a pas abouti. Réessayez, ou utilisez votre nom d'utilisateur et votre mot de passe."
+    "googleFailed": "La connexion Google n'a pas abouti. Réessayez, ou utilisez votre nom d'utilisateur et votre mot de passe.",
+    "forgotLink": "Mot de passe oublié ?",
+    "forgotTitle": "Mot de passe oublié",
+    "forgotSubtitle": "Saisissez l'e-mail de votre compte et nous vous enverrons un lien pour choisir un nouveau mot de passe.",
+    "sendResetLink": "Envoyer le lien",
+    "resetSent": "Si un compte utilise {email}, un lien est en route. Vérifiez votre boîte de réception (et les indésirables) ; il est valable une heure.",
+    "backToLogin": "Retour à la connexion",
+    "resetTitle": "Choisissez un nouveau mot de passe",
+    "resetSubtitle": "Vous serez ensuite déconnecté partout.",
+    "resetLinkInvalid": "Ce lien est invalide ou a expiré.",
+    "requestNewLink": "Demander un nouveau lien",
+    "resetDone": "Votre mot de passe a été modifié. Connectez-vous avec le nouveau.",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "setPassword": "Enregistrer le mot de passe"
   },
   "lobby": {
     "title": "LOBBY",

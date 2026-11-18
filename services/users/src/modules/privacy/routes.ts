@@ -7,6 +7,7 @@ import { auth } from "../../auth/auth.ts";
 import { prisma } from "../../db/client.ts";
 import { config } from "../../config.ts";
 import { requireUser } from "../../auth/guards.ts";
+import { localeFrom, mail } from "../../email/mailer.ts";
 
 /** Handles of deleted accounts. Real handles are [a-z0-9_.] only, so this can't collide. */
 export const DELETED_PREFIX = "deleted-";
@@ -85,6 +86,8 @@ export default async function privacyRoutes(app: FastifyInstance) {
       apiKeys,
       achievements,
     };
+    // GDPR: confirm the data operation by email (so an unexpected export is noticed)
+    void mail.exported(user.email, localeFrom(req), req.log);
     reply.header("Content-Type", "application/json; charset=utf-8");
     reply.header("Content-Disposition", `attachment; filename="ft_transcendence-${user.username}-${new Date().toISOString().slice(0, 10)}.json"`);
     reply.header("Cache-Control", "no-store");
@@ -114,7 +117,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
         return reply.code(403).send({ error: "For your safety, log in again, then delete your account within 10 minutes.", code: "REAUTH" });
       }
 
-      const before = await prisma.user.findUnique({ where: { id }, select: { avatar: true } });
+      const before = await prisma.user.findUnique({ where: { id }, select: { avatar: true, email: true, displayUsername: true, username: true } });
       const anon = `${DELETED_PREFIX}${id}`;
       await prisma.$transaction([
         prisma.message.deleteMany({ where: { OR: [{ senderId: id }, { recipientId: id }] } }),
@@ -149,6 +152,8 @@ export default async function privacyRoutes(app: FastifyInstance) {
         await fs.unlink(path.join(config.uploadDir, path.basename(avatar))).catch(() => {});
       }
       req.log.info({ userId: id }, "account deleted");
+      // confirmation to the address the account had (captured before it was erased)
+      if (before) void mail.deleted(before.email, before.displayUsername ?? before.username, localeFrom(req), req.log);
       for (const name of COOKIE_NAMES) reply.header("Set-Cookie", `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
       return reply.code(204).send();
     }

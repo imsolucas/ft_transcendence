@@ -63,7 +63,7 @@ export const privacy: LegalDoc = {
       id: "rights",
       title: "Tus derechos",
       body: [
-        "Puedes ver y cambiar tu perfil en Ajustes, revocar sesiones y claves de API, y, en Ajustes → Tus datos, descargar una copia de todo lo que guardamos sobre ti o eliminar tu cuenta tú mismo. Para cualquier otra cosa, escríbenos y respondemos en un plazo de 30 días.",
+        "Puedes ver y cambiar tu perfil en Ajustes, revocar sesiones y claves de API, y, en Ajustes → Tus datos, descargar una copia de todo lo que guardamos sobre ti o eliminar tu cuenta tú mismo. Para cualquier otra cosa, escríbenos y respondemos en un plazo de 30 días. Solo te enviamos correos para confirmar tu dirección, restablecer tu contraseña y confirmar una descarga de datos o la eliminación de la cuenta.",
       ],
     },
     {

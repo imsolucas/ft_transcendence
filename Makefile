@@ -12,6 +12,7 @@ env:
 		sed -i "s#^BETTER_AUTH_SECRET=.*#BETTER_AUTH_SECRET=$$(openssl rand -base64 48)#" infra/.env; \
 		sed -i "s#^INTERNAL_SERVICE_TOKEN=.*#INTERNAL_SERVICE_TOKEN=$$(openssl rand -base64 48)#" infra/.env; \
 		sed -i "s#^SEED_DEV_DATA=.*#SEED_DEV_DATA=true#" infra/.env; \
+		sed -i "s#^SMTP_HOST=.*#SMTP_HOST=mailpit#; s#^SMTP_PORT=.*#SMTP_PORT=1025#; s#^COMPOSE_PROFILES=.*#COMPOSE_PROFILES=mail#" infra/.env; \
 		echo "created infra/.env"; }
 
 # basic lifecycle

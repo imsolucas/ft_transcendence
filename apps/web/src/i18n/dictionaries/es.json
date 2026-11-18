@@ -117,7 +117,9 @@
       "invalidEmail": "Introduce un correo válido.",
       "passwordTooShort": "Usa al menos 8 caracteres.",
       "tooManyAttempts": "Demasiados intentos. Espera un minuto e inténtalo de nuevo.",
-      "googleUnavailable": "El inicio de sesión con Google aún no está configurado en este servidor."
+      "googleUnavailable": "El inicio de sesión con Google aún no está configurado en este servidor.",
+      "passwordTooLong": "Usa como máximo 128 caracteres.",
+      "passwordsDontMatch": "Las contraseñas no coinciden."
     },
     "twoFactorTitle": "Código en dos pasos",
     "twoFactorSubtitle": "Introduce el código de 6 dígitos de tu aplicación de autenticación.",
@@ -133,7 +135,20 @@
     "sessionExpiredTitle": "Sesión caducada",
     "sessionExpiredBody": "Se cerró tu sesión. Inicia sesión de nuevo para continuar donde lo dejaste.",
     "loginAgain": "Iniciar sesión de nuevo",
-    "googleFailed": "El inicio de sesión con Google no terminó. Inténtalo de nuevo o usa tu nombre de usuario y contraseña."
+    "googleFailed": "El inicio de sesión con Google no terminó. Inténtalo de nuevo o usa tu nombre de usuario y contraseña.",
+    "forgotLink": "¿Olvidaste tu contraseña?",
+    "forgotTitle": "Contraseña olvidada",
+    "forgotSubtitle": "Escribe el correo de tu cuenta y te enviaremos un enlace para elegir una contraseña nueva.",
+    "sendResetLink": "Enviar enlace",
+    "resetSent": "Si alguna cuenta usa {email}, el enlace va en camino. Revisa tu bandeja de entrada (y el spam); es válido durante una hora.",
+    "backToLogin": "Volver a iniciar sesión",
+    "resetTitle": "Elige una contraseña nueva",
+    "resetSubtitle": "Después se cerrarán todas tus sesiones.",
+    "resetLinkInvalid": "Este enlace no es válido o ha caducado.",
+    "requestNewLink": "Pedir un enlace nuevo",
+    "resetDone": "Tu contraseña se ha cambiado. Inicia sesión con la nueva.",
+    "confirmPassword": "Confirmar contraseña nueva",
+    "setPassword": "Guardar contraseña nueva"
   },
   "lobby": {
     "title": "VESTÍBULO",

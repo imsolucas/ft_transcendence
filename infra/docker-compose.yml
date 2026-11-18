@@ -30,6 +30,11 @@ services:
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set INTERNAL_SERVICE_TOKEN in infra/.env}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-ft_transcendence <no-reply@localhost>}
       SEED_DEV_DATA: ${SEED_DEV_DATA:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
@@ -62,6 +67,16 @@ services:
     depends_on:
       users:
         condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+
+  # Local mail catcher (profile "mail", enabled by `make env`): every email the users
+  # service sends lands in the inbox at http://localhost:8025 (bound to this machine only).
+  mailpit:
+    image: axllent/mailpit:v1.27
+    profiles: [mail]
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
     networks: [internal]
     restart: unless-stopped
 

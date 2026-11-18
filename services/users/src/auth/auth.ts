@@ -3,6 +3,8 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor, username } from "better-auth/plugins";
 import { config } from "../config.ts";
+import { localeFrom, mail } from "../email/mailer.ts";
+import { log } from "../log.ts";
 import { prisma } from "../db/client.ts";
 
 /**
@@ -36,6 +38,23 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
+    // "Forgot password?": the link lands on /<lang>/reset-password?token=…
+    sendResetPassword: async ({ user, url }, request) => {
+      void mail.reset(user.email, url, localeFrom(request), log);
+    },
+    resetPasswordTokenExpiresIn: 60 * 60,
+    // a reset ends every existing session (whoever had the old password is logged out)
+    revokeSessionsOnPasswordReset: true,
+  },
+
+  // Verify addresses after sign-up (not required to play: dev accounts and Google work as before)
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 60 * 60,
+    sendVerificationEmail: async ({ user, url }, request) => {
+      void mail.verify(user.email, url, localeFrom(request), log);
+    },
   },
 
   socialProviders: config.google
@@ -98,6 +117,10 @@ export const auth = betterAuth({
       "/sign-in/email": { window: 60, max: 10 },
       "/sign-up/email": { window: 60, max: 5 },
       "/two-factor/*": { window: 60, max: 10 },
+      // these send email: keep them tight so the app can't be used to flood an inbox
+      "/request-password-reset": { window: 300, max: 3 },
+      "/send-verification-email": { window: 300, max: 3 },
+      "/reset-password": { window: 60, max: 5 },
     },
   },
 

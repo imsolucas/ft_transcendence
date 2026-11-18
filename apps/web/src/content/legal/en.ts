@@ -63,7 +63,7 @@ export const privacy: LegalDoc = {
       id: "rights",
       title: "Your rights",
       body: [
-        "You can view and change your profile in Settings, revoke sessions and API keys, and, under Settings → Your data, download a copy of everything we store about you or delete your account yourself. Anything else: ask us, and we answer within 30 days.",
+        "You can view and change your profile in Settings, revoke sessions and API keys, and, under Settings → Your data, download a copy of everything we store about you or delete your account yourself. Anything else: ask us, and we answer within 30 days. We email you only to confirm your address, reset your password, and confirm a data download or an account deletion.",
       ],
     },
     {

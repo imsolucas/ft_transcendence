@@ -33,6 +33,9 @@ function parseOrigin(name: string, raw: string): string {
 const publicOrigin = parseOrigin("PUBLIC_ORIGIN", requireValue("PUBLIC_ORIGIN"));
 const googleClientId = process.env.GOOGLE_CLIENT_ID || "";
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+// Outgoing email (verification, password reset, GDPR confirmations). Optional: without
+// SMTP_HOST, emails are logged and skipped. Locally `make env` points it at Mailpit.
+const smtpHost = process.env.SMTP_HOST || "";
 
 export const config = Object.freeze({
   port: Number(process.env.PORT || 4000),
@@ -45,6 +48,17 @@ export const config = Object.freeze({
     googleClientId && googleClientSecret ? { clientId: googleClientId, clientSecret: googleClientSecret } : null,
   // Game service (Socket.IO hub) for pushing realtime events
   gameInternalUrl: process.env.GAME_INTERNAL_URL || "http://game:3001",
+  smtp: smtpHost
+    ? {
+        host: smtpHost,
+        port: Number(process.env.SMTP_PORT || 587),
+        // implicit TLS on 465; STARTTLS is negotiated otherwise
+        secure: Number(process.env.SMTP_PORT || 587) === 465,
+        user: process.env.SMTP_USER || "",
+        pass: process.env.SMTP_PASS || "",
+        from: process.env.SMTP_FROM || "ft_transcendence <no-reply@localhost>",
+      }
+    : null,
   // Avatar uploads live here (a Docker volume in compose)
   uploadDir: process.env.UPLOAD_DIR || "/usr/src/app/uploads",
 });

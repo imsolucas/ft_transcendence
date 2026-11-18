@@ -5,6 +5,7 @@ import { config } from "./config.ts";
 import dbPlugin from "./db/plugin.ts";
 import routes from "./routes/routes.ts";
 import fastifySwagger from "@fastify/swagger";
+import { setLogger } from "./log.ts";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -15,6 +16,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     trustProxy: 1,
     bodyLimit: 1024 * 1024,
   });
+  setLogger(app.log);
 
   // Allow empty JSON bodies (e.g. POST /api/friends/requests/:id/accept)
   app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {

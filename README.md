@@ -35,6 +35,14 @@ for deployments), so an empty database gets four dev accounts:
 Other commands: `make logs SERVICE=users`, `make down`, `make re`, `make clean-volumes` (deletes
 the database), `make ps`.
 
+### Email
+
+Sign-up verification, password reset ("Forgot password?") and GDPR confirmations are sent
+over SMTP. `make env` points it at a local **Mailpit** (compose profile `mail`): open
+**http://localhost:8025** to read every email the app sends. On a real domain, set `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `infra/.env` and clear
+`COMPOSE_PROFILES`. Without `SMTP_HOST` the app still works; emails are skipped and logged.
+
 ### Google sign-in (optional)
 
 Create an OAuth client in Google Cloud Console with the redirect URI
@@ -187,8 +195,8 @@ warned about unused preloads.
 | 5 | Modules of the 42 subject (see below) | In progress |
 
 Known limitations: tournaments are king-of-the-hill rather than a bracket; the court stays
-landscape on phones; chat has no docked panel yet (full page only); there is no email sender,
-so data operations are confirmed on screen rather than by email.
+landscape on phones; chat has no docked panel yet (full page only); email verification is sent but
+not required to play.
 
 ### Subject modules (v21, chapter IV)
 
@@ -208,7 +216,7 @@ so data operations are confirmed on screen rather than by email.
 | Gamification (stored achievements, XP and levels, leaderboard; progress bars, unlock and level-up toasts; rules shown on the profile) | Minor | Done |
 | Advanced chat (blocks, invites, game and tournament notifications, profile links, history, typing, read receipts) | Minor | Done |
 | Health check, status page, backups and disaster recovery | Minor | Done |
-| GDPR (export, deletion with confirmation) | Minor | Partial: no confirmation emails |
+| GDPR (export, deletion with confirmation, confirmation emails) | Minor | Done |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
 | Tournament system | Minor | Partial: king-of-the-hill, no bracket |
 | Game customization (speeds, points, 4 court themes, defaults) | Minor | Partial: no power-ups yet |

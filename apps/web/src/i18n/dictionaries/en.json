@@ -117,7 +117,9 @@
       "invalidEmail": "Enter a valid email address.",
       "passwordTooShort": "Use at least 8 characters.",
       "tooManyAttempts": "Too many attempts. Wait a minute, then try again.",
-      "googleUnavailable": "Google sign-in isn't set up on this server yet."
+      "googleUnavailable": "Google sign-in isn't set up on this server yet.",
+      "passwordTooLong": "Use at most 128 characters.",
+      "passwordsDontMatch": "The passwords don't match."
     },
     "twoFactorTitle": "Two-factor code",
     "twoFactorSubtitle": "Enter the 6-digit code from your authenticator app.",
@@ -133,7 +135,20 @@
     "sessionExpiredTitle": "Session expired",
     "sessionExpiredBody": "You were signed out. Log in again to continue where you left off.",
     "loginAgain": "Log in again",
-    "googleFailed": "Google sign-in didn't finish. Try again, or use your username and password."
+    "googleFailed": "Google sign-in didn't finish. Try again, or use your username and password.",
+    "forgotLink": "Forgot password?",
+    "forgotTitle": "Forgot password",
+    "forgotSubtitle": "Enter your account's email and we'll send you a link to choose a new password.",
+    "sendResetLink": "Send reset link",
+    "resetSent": "If an account uses {email}, a reset link is on its way. Check your inbox (and spam); the link works for one hour.",
+    "backToLogin": "Back to log in",
+    "resetTitle": "Choose a new password",
+    "resetSubtitle": "You'll be logged out everywhere after this.",
+    "resetLinkInvalid": "This reset link is invalid or has expired.",
+    "requestNewLink": "Request a new link",
+    "resetDone": "Your password was changed. Log in with the new one.",
+    "confirmPassword": "Confirm new password",
+    "setPassword": "Set new password"
   },
   "lobby": {
     "title": "LOBBY",
