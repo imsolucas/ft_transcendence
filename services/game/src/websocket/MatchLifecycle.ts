@@ -19,7 +19,8 @@ const WS_OPEN = 1;
  * TournamentService; rematches and the room-wide ready deadline are 1v1 only.
  */
 export class MatchLifecycle {
-  private pending = new Map<string, { roomId: string; timer: ReturnType<typeof setTimeout> }>();
+  /** loud: the room was told (and paused); a silently held tournament watcher is not */
+  private pending = new Map<string, { roomId: string; timer: ReturnType<typeof setTimeout>; loud: boolean }>();
   private rematchVotes = new Map<string, Set<string>>();
   private readyTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -41,8 +42,11 @@ export class MatchLifecycle {
     if (tournament ? !this.tournaments.holdsSlot(room, player.id) : room.mode !== "standard" || room.status !== "playing") return false;
 
     const deadline = Date.now() + RECONNECT_GRACE_MS;
+    // gone during their ready check: no longer ready (the game must not start without them)
+    if (tournament) this.tournaments.unready(room, player.id);
     // a tournament player who is only watching right now is held silently
-    if (!tournament || this.tournaments.isLivePlayer(room, player.id)) {
+    const loud = !tournament || this.tournaments.isLivePlayer(room, player.id);
+    if (loud) {
       room.paused = true;
       const msg: OpponentReconnectingMessage = {
         type: "opponentReconnecting",
@@ -58,7 +62,7 @@ export class MatchLifecycle {
       this.forfeit(player);
       this.dropPlayer(player);
     }, RECONNECT_GRACE_MS);
-    this.pending.set(player.id, { roomId: room.id, timer });
+    this.pending.set(player.id, { roomId: room.id, timer, loud });
     return true;
   }
 
@@ -89,8 +93,10 @@ export class MatchLifecycle {
     };
     socket.send(JSON.stringify(rejoined));
     if (tournament) this.tournaments.sendState(room, player);
-    const back: OpponentReconnectedMessage = { type: "opponentReconnected", data: { playerId }, timestamp: Date.now() };
-    this.broadcaster.broadcastToRoom(room.id, back, playerId);
+    if (hold.loud) {
+      const back: OpponentReconnectedMessage = { type: "opponentReconnected", data: { playerId }, timestamp: Date.now() };
+      this.broadcaster.broadcastToRoom(room.id, back, playerId);
+    }
     return player;
   }
 

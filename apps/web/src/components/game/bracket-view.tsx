@@ -103,13 +103,13 @@ function Side({ match, side, player, myId, t }: { match: BracketMatch; side: 0 |
   return (
     <div className={cn("bk-p", won && "won", lost && "out")}>
       <span className="min-w-0 truncate">
-        {player.name}
+        <span className="bk-name">{player.name}</span>
         {id === myId && <span className="subtle"> ({t("common.you")})</span>}
         {player.withdrawn && !won && <span className="subtle"> · {t("tournament.left")}</span>}
       </span>
       <span className="row shrink-0 !gap-1">
         {lost && match.result === "forfeit" && <span className="t-caption">{t("tournament.forfeit")}</span>}
-        {won && (match.result === "walkover" || match.result === "bye") && <span className="t-caption">{t("tournament.walkover")}</span>}
+        {won && match.result === "walkover" && <span className="t-caption">{t("tournament.walkover")}</span>}
         {score !== null && <span className="num">{score}</span>}
         {won && (
           <span className="row !gap-1 c-green t-caption">

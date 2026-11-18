@@ -208,6 +208,13 @@ export default class TournamentService {
         else this.broadcastState(room);
     }
 
+    /** A player of the current ready check disconnected: they are not ready any more. */
+    unready(room: Room, playerId: string): void {
+        const t = room.tournament;
+        if (t?.phase !== "ready" || !t.readyIds.delete(playerId)) return;
+        this.broadcastState(room);
+    }
+
     private beginMatch(room: Room, pair: [string, string]): void {
         const t = room.tournament!;
         this.clearTimer(t);

@@ -247,7 +247,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .bk-p + .bk-p { border-top: 1px solid var(--border); }
 .bk-p .num { color: var(--fg-muted); }
 .bk-p.won { font-weight: 600; } .bk-p.won .num { color: var(--fg); }
-.bk-p.out { color: var(--fg-subtle); text-decoration: line-through; }
+.bk-p.out { color: var(--fg-subtle); }
+.bk-p.out .bk-name { text-decoration: line-through; }
 .bk-p.tbd { color: var(--fg-subtle); font-style: italic; }
 .bk-cell { position: relative; }
 .bk-tag { position: absolute; top: -23px; left: -1px; }

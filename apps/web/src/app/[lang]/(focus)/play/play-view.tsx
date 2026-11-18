@@ -14,7 +14,7 @@ import { announceAchievement, announceLevelUp } from "@/lib/realtime";
 import { GameSocket, type ConnectionStatus, type ServerMessage } from "@/lib/game/socket";
 import { baseGameConfig } from "@/lib/game/config";
 import { Button } from "@/components/ui/button";
-import { Avatar, Badge, EmptyState, Panel, Spinner } from "@/components/ui/primitives";
+import { Avatar, Badge, EmptyState, Modal, Panel, Spinner } from "@/components/ui/primitives";
 import { Court } from "@/components/game/court";
 import { ConnectionQuality, ControlsCard, CountdownOverlay, GameMenu, MatchEnd, ReconnectingOverlay, ScoreBoard } from "@/components/game/hud";
 import { BracketView, ChampionBanner, currentMatch, isOut, nextMatchOf, roundName } from "@/components/game/bracket-view";
@@ -66,6 +66,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   // local-clock end of the bracket match's ready check (from the server's remaining time)
   const [readyEndsAt, setReadyEndsAt] = useState<number | null>(null);
   const [roundWinner, setRoundWinner] = useState<string | null>(null);
+  const [bracketOpen, setBracketOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   // Opponent dropped mid-match: paused until this time (ms epoch)
   const [opponentAway, setOpponentAway] = useState<{ name: string; deadline: number } | null>(null);
@@ -232,7 +233,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           const leaverId = (msg.data as { playerId?: string }).playerId;
           setPlayers((ps) => ps.filter((p) => p.id !== leaverId));
           // tournament: the server forfeits the leaver's match and sends the new bracket
-          if (mode.startsWith("tournament")) break;
+          if (mode.startsWith("tournament") || tournamentRef.current) break;
           setPhase((p) => {
             if (p.k === "playing" || p.k === "countdown") {
               return { k: "ended", winnerId: myIdRef.current, reason: "left" };
@@ -258,7 +259,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setPlayers(d.playersInRoom);
           if (d.gameState) stateRef.current = d.gameState;
           // tournament between games: the bracket state that follows picks the screen
-          setPhase(d.gameState || !mode.startsWith("tournament") ? { k: "playing" } : { k: "tournament" });
+          setPhase(d.gameState || !(mode.startsWith("tournament") || tournamentRef.current) ? { k: "playing" } : { k: "tournament" });
           break;
         }
         case "rematchRequested":
@@ -416,6 +417,9 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
       return (
         <Centered>
           <Spinner large label={t("matchmaking.connecting")} />
+          <Button variant="ghost" onClick={cancel}>
+            {t("common.cancel")}
+          </Button>
         </Centered>
       );
     }
@@ -428,7 +432,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         onReady={ready}
         onStart={startTournament}
         onLeave={cancel}
-        onNew={onRestart}
+        onNew={mode === "tournament-create" ? onRestart : undefined}
       />
     );
   }
@@ -628,6 +632,20 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           </div>
         )}
       </div>
+      {tournament && spectating && (
+        <>
+          <div className="fixed right-4 bottom-4 z-10">
+            <Button size="sm" onClick={() => setBracketOpen(true)}>
+              <Trophy className="ico" aria-hidden /> {t("tournament.bracket")}
+            </Button>
+          </div>
+          <Modal open={bracketOpen} onOpenChange={setBracketOpen} title={t("tournament.bracket")}>
+            <div className="mt-4 max-h-[70dvh] overflow-y-auto">
+              <BracketView state={tournament} myId={myId} />
+            </div>
+          </Modal>
+        </>
+      )}
       <GameMenu
         open={menu}
         onOpenChange={setMenu}
@@ -671,7 +689,8 @@ function TournamentScreen({
   onReady: () => void;
   onStart: () => void;
   onLeave: () => void;
-  onNew: () => void;
+  /** only the creator can open a fresh tournament (a joiner has no new code to join) */
+  onNew?: (() => void) | undefined;
 }) {
   const { t, href } = useI18n();
   const nameOf = (id: string | null) => state.players.find((p) => p.id === id)?.name ?? "?";
@@ -812,9 +831,11 @@ function TournamentScreen({
       <div className="row wrap justify-center">
         {state.phase === "finished" ? (
           <>
-            <Button variant="primary" glow="sm" onClick={onNew}>
-              {t("tournament.newTournament")}
-            </Button>
+            {onNew && (
+              <Button variant="primary" glow="sm" onClick={onNew}>
+                {t("tournament.newTournament")}
+              </Button>
+            )}
             <Button asChild>
               <Link href={href("/lobby")} className="no-underline">
                 {t("common.backToLobby")}
