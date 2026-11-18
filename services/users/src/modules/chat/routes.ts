@@ -4,12 +4,13 @@ import { isDeletedHandle } from "../privacy/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { notify } from "../../realtime/notify.ts";
+import { moderateMessage } from "../../ai/moderation.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
 
 const MAX_BODY = 1000;
 const ROOM_CODE = /^[0-9a-f]{8}$/;
 
-type Row = { id: number; senderId: number; recipientId: number; kind: string; body: string; inviteCode: string | null; createdAt: Date; readAt: Date | null };
+type Row = { id: number; senderId: number; recipientId: number; kind: string; body: string; inviteCode: string | null; createdAt: Date; readAt: Date | null; moderation?: string | null };
 const toMessage = (m: Row): ChatMessage => ({
   id: m.id,
   from: m.senderId,
@@ -19,6 +20,7 @@ const toMessage = (m: Row): ChatMessage => ({
   inviteCode: m.inviteCode,
   createdAt: m.createdAt.toISOString(),
   readAt: m.readAt?.toISOString() ?? null,
+  ...(m.moderation === "removed" ? { removed: true, body: "" } : {}),
 });
 
 async function peer(username: string) {
@@ -147,6 +149,11 @@ export default async function chatRoutes(app: FastifyInstance) {
       // Same answer as an unknown player, so a block isn't revealed
       if (await blockedEitherWay(me, other.id)) return notFound(reply);
 
+      // muted after repeated moderation removals
+      const mute = await prisma.user.findUnique({ where: { id: me }, select: { chatMutedUntil: true } });
+      if (mute?.chatMutedUntil && mute.chatMutedUntil > new Date()) {
+        return reply.code(403).send({ error: "You can't send messages for a while.", code: "MUTED", until: mute.chatMutedUntil.toISOString() });
+      }
       const { body, invite } = req.body as { body?: string; invite?: string };
       const text = (body ?? "").trim();
       if (!invite && !text) return reply.code(400).send({ error: "Write a message first." });
@@ -164,6 +171,8 @@ export default async function chatRoutes(app: FastifyInstance) {
       const message = toMessage(row);
       const sender = await prisma.user.findUnique({ where: { id: me }, select: PUBLIC_USER_SELECT });
       notify([other.id, me], { type: "chat:message", message, from: toPublicUser(sender!) });
+      // AI moderation runs after delivery (never delays sending); no-op without an API key
+      if (row.kind === "text") void moderateMessage(row.id, me, other.id, row.body, req.log);
       return reply.code(201).send(message);
     }
   );

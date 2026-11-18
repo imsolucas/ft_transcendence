@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { config } from '../config.ts';
+import { matchesFinished, resultReportsFailed } from '../metrics.ts';
 
 const REQUEST_TIMEOUT_MS = 5_000;
 const RETRY_DELAYS_MS = [1_000, 4_000, 15_000];
@@ -21,7 +22,7 @@ function sleep(ms: number) {
  * Retries on network errors and 5xx; the body carries an idempotency key, so a retry
  * after a lost response cannot record the result twice. Never awaited from the tick.
  */
-async function postWithRetry(path: string, body: unknown, label: string): Promise<void> {
+async function postWithRetry(path: string, body: unknown, label: string, kind: 'match' | 'tournament'): Promise<void> {
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
       const response = await fetch(`${config.usersApiUrl}${path}`, {
@@ -37,6 +38,7 @@ async function postWithRetry(path: string, body: unknown, label: string): Promis
       if (response.status < 500) {
         // A 4xx will not succeed on retry; log status only (no body, no payload).
         log.error({ status: response.status }, `${label} rejected by users service`);
+        resultReportsFailed.inc({ kind });
         return;
       }
       log.error({ status: response.status, attempt: attempt + 1 }, `${label} failed`);
@@ -48,6 +50,7 @@ async function postWithRetry(path: string, body: unknown, label: string): Promis
     await sleep(delay);
   }
   log.error({ attempts: RETRY_DELAYS_MS.length + 1 }, `${label} dropped`);
+  resultReportsFailed.inc({ kind });
 }
 
 // The users service caps display names at 50 characters; never lose a result over a long name
@@ -61,12 +64,13 @@ function clipNames<T extends Record<string, unknown>>(obj: T): T {
 
 export function reportMatchResult(result: Record<string, unknown>): void {
   const body = { matchId: crypto.randomUUID(), ...clipNames(result) };
-  void postWithRetry('/internal/game/match-result', body, 'match result');
+  matchesFinished.inc({ mode: 'standard' });
+  void postWithRetry('/internal/game/match-result', body, 'match result', 'match');
 }
 
 export function reportTournamentResult(result: Record<string, unknown>): void {
   // The tournament id is the idempotency key on the users side.
   const clipped = clipNames(result);
   if (Array.isArray(clipped.matches)) clipped.matches = clipped.matches.map((m: Record<string, unknown>) => clipNames(m));
-  void postWithRetry('/internal/game/tournament-result', clipped, 'tournament result');
+  void postWithRetry('/internal/game/tournament-result', clipped, 'tournament result', 'tournament');
 }

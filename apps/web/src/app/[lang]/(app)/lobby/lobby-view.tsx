@@ -177,6 +177,10 @@ function PlayPanel() {
           <Eye className="ico c-cyan" aria-hidden />
           {t("watch.inLobby")}
         </Link>
+        <Link href={href("/coach")} className="row t-label">
+          <Bot className="ico c-cyan" aria-hidden />
+          {t("coach.title")}
+        </Link>
       </div>
     </Panel>
   );

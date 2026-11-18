@@ -45,7 +45,8 @@
     "skip": "Saltar al contenido",
     "login": "Iniciar sesión",
     "signup": "Registrarse",
-    "leaderboard": "Clasificación"
+    "leaderboard": "Clasificación",
+    "coach": "Coach"
   },
   "footer": {
     "privacy": "Política de privacidad",
@@ -468,7 +469,19 @@
     "resultNotice": "Partida terminada: {p1} {a} – {b} {p2}",
     "tournamentNotice": "{winner} ganó el torneo «{name}»",
     "resultPreview": "Resultado {score}",
-    "tournamentPreview": "Resultado del torneo"
+    "tournamentPreview": "Resultado del torneo",
+    "removed": "Mensaje eliminado por moderación",
+    "removedWarning": "Tu mensaje se eliminó ({category}).",
+    "mutedUntil": "No puedes enviar mensajes hasta las {time}.",
+    "muted": "No puedes enviar mensajes durante un rato tras varios mensajes eliminados.",
+    "category": {
+      "harassment": "acoso",
+      "hate": "odio",
+      "threat": "amenaza",
+      "sexual": "contenido sexual",
+      "spam": "spam",
+      "other": "incumple las normas"
+    }
   },
   "settings": {
     "title": "AJUSTES",
@@ -687,5 +700,25 @@
     "ownMatch": "Estás jugando esta partida.",
     "inLobby": "Ver partidas en directo",
     "watchFriend": "Ver"
+  },
+  "coach": {
+    "title": "Coach",
+    "subtitle": "Pregunta sobre tácticas de Pong o cómo funciona el sitio. Las respuestas vienen de Claude, una IA: pueden ser incorrectas.",
+    "intro": "¡Hola! Te ayudo con tácticas, ideas para practicar y cómo funcionan las secciones. Prueba una de estas:",
+    "suggestAngles": "¿Cómo apunto mis golpes?",
+    "suggestAi": "¿Cómo le gano al ordenador en difícil?",
+    "suggestTournament": "¿Cómo funcionan los torneos?",
+    "placeholder": "Pregunta al coach…",
+    "you": "Tú",
+    "thinking": "Pensando…",
+    "stop": "Detener",
+    "newChat": "Nueva conversación",
+    "remaining": "Te quedan {n} de {limit} preguntas esta hora.",
+    "disabled": "El coach está desactivado",
+    "disabledBody": "Este servidor no tiene una clave de la API de Claude, así que el coach no está disponible. Un administrador puede añadir ANTHROPIC_API_KEY para activarlo.",
+    "errLimit": "Has llegado al límite de esta hora. Inténtalo más tarde.",
+    "errBusy": "El coach está ocupado. Inténtalo en un momento.",
+    "errUnavailable": "Ahora mismo no se puede contactar con el coach.",
+    "refused": "No puedo ayudarte con eso."
   }
 }

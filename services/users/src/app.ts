@@ -7,6 +7,7 @@ import routes from "./routes/routes.ts";
 import fastifySwagger from "@fastify/swagger";
 import { setLogger } from "./log.ts";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import { registerHttpMetrics } from "./metrics.ts";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -38,6 +39,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     if (status >= 500) req.log.error({ err }, "unhandled error");
     reply.code(status).send({ error: status >= 500 ? "Something went wrong. Please try again." : err.message });
   });
+
+  // Prometheus: request counter/histogram for every route below, and GET /metrics
+  registerHttpMetrics(app);
 
   await app.register(fastifySwagger, {
     openapi: {

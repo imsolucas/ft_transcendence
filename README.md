@@ -43,6 +43,19 @@ over SMTP. `make env` points it at a local **Mailpit** (compose profile `mail`):
 `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `infra/.env` and clear
 `COMPOSE_PROFILES`. Without `SMTP_HOST` the app still works; emails are skipped and logged.
 
+### AI features (optional)
+
+Set `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, default `claude-opus-5-5`) in
+`infra/.env` and run `make re`. Without a key both features are off: the Coach page says so and
+chat messages aren't moderated.
+- **Coach** (`/coach`): a chat about Pong tactics and the site, streamed from Claude over
+  Server-Sent Events; 20 questions per user per hour, at most 20 turns of history.
+- **Chat moderation**: every text message is classified after delivery (structured JSON
+  output, low effort). Harassment, hate, threats, sexual content and spam are removed for both
+  people, the sender is warned, and 3 removals in 24 hours mute them for an hour.
+- Requests use server-side refusal fallbacks and prompt caching. API usage is billed to the
+  key's account.
+
 ### Google sign-in (optional)
 
 Create an OAuth client in Google Cloud Console with the redirect URI
@@ -75,7 +88,7 @@ browser ── https://localhost:8443 ──► Caddy (automatic HTTPS, security
 | `services/users` | Accounts and data. Better Auth at `/api/auth/*`, our API at `/api/*`, the public API at `/api/public/*` (API keys), internal routes for the game | Fastify 5, Better Auth 1.7, Prisma 6, Postgres 17, Node 24 (runs TypeScript natively) |
 | `services/game` | Authoritative Pong server: matchmaking, rooms, tournaments, 60 Hz simulation, result reporting | Fastify 5, Socket.IO 4 |
 | `services/shared` | Game engine, WebSocket protocol types and the HTTP API contract, imported by web and game | TypeScript |
-| `infra` | `docker-compose.yml`, `caddy/Caddyfile`, `backup/` scripts, `.env.example` | Docker Compose, Caddy 2.11 |
+| `infra` | `docker-compose.yml`, `caddy/Caddyfile`, `backup/` scripts, `monitoring/` (Prometheus, alert rules, Grafana provisioning), `.env.example` | Docker Compose, Caddy 2.11 |
 
 **One origin.** The browser only ever talks to `https://localhost:8443`, so there is no CORS
 configuration. Every state-changing request and the game's socket handshake must carry that
@@ -156,6 +169,56 @@ Restore drills on 2026-11-18: a deleted match row came back (10 → 9 → 10 row
 before the achievements migration restored cleanly (the migration was re-applied on start),
 then the latest dump brought the current data back (18 matches, 8 achievements).
 
+### Monitoring
+
+Prometheus, Grafana and a Postgres exporter run under the compose profile `monitoring`, so a
+plain `make` / `docker compose up` doesn't start them.
+
+```bash
+COMPOSE_PROFILES=monitoring make up      # or: docker compose -f infra/docker-compose.yml --profile monitoring up -d
+                                         # with mail too: COMPOSE_PROFILES=mail,monitoring
+```
+
+- **Grafana:** `http://localhost:3002` (`GRAFANA_PORT`). It is bound to `127.0.0.1` only (on a
+  server, reach it through an SSH tunnel). Log in as `admin` (`GRAFANA_ADMIN_USER`) with
+  `GRAFANA_ADMIN_PASSWORD` from `infra/.env`. Anonymous access, sign-up and org creation are off,
+  and the container refuses to start without a password. `make env` generates the password for a
+  new `.env`. With an existing `.env`, add it yourself:
+  `echo "GRAFANA_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> infra/.env`. The password only takes
+  effect when the `grafana_data` volume is created (see `.env.example` for how to reset it).
+- **Prometheus:** `http://localhost:9090` (`PROMETHEUS_PORT`, also `127.0.0.1` only). It scrapes
+  every 15 s, keeps 15 days of data (`PROMETHEUS_RETENTION`, capped at 2 GB) and reads its
+  config and rules from `infra/monitoring/`.
+- **Metrics:** `users:4000/metrics` and `game:3001/metrics` (prom-client) are reachable only on
+  the internal Docker network. Caddy never routes `/metrics`, and both services refuse requests
+  that carry `X-Forwarded-For`.
+  - users: Node process metrics, `http_requests_total` and `http_request_duration_seconds` by
+    route pattern and status, `users_signups_total`, `users_game_results_recorded_total`.
+  - game: `game_connected_sockets`, `game_rooms{status,mode}`, `game_queue_players{mode}`,
+    `game_matches_finished_total{mode}`, `game_result_reports_failed_total`,
+    `game_tick_duration_seconds`.
+  - Postgres: `postgres-exporter` (`pg_up`, connections, transactions, database size).
+- **Dashboard:** *ft_transcendence overview* is provisioned as the home dashboard. It shows:
+  - up/down for each service and for Postgres, the number of firing alerts, and sign-ups
+  - memory and event-loop lag
+  - users request rate by status, p50/p95/p99 latency, 5xx ratio, and the busiest and slowest
+    routes
+  - game sockets, rooms by status, queue size, matches finished, stored and failed results, and
+    tick time against the 16.7 ms budget
+  - Postgres connections against `max_connections`, transactions per second, and database size
+- **Alerts** (`infra/monitoring/alerts.yml`, evaluated by Prometheus):
+  - `ServiceDown`: users, game or the exporter is not scraped for 1 min
+  - `PostgresDown`: `pg_up == 0`
+  - `UsersHigh5xxRate`: more than 5 % 5xx for 5 min
+  - `UsersSlowRequests`: p95 above 1 s
+  - `GameTickTooSlow`: p99 above 10 ms
+  - `GameResultsDropped`
+  - `PostgresTooManyConnections`: above 80 % of `max_connections`
+
+  They appear at `http://localhost:9090/alerts`, in Grafana under *Alerting → Alert rules*
+  (data source-managed), and as the *Firing alerts* tile. There is no Alertmanager, so nothing
+  is sent by e-mail or chat.
+
 ---
 
 ## Development
@@ -216,17 +279,19 @@ not required to play.
 | Gamification (stored achievements, XP and levels, leaderboard; progress bars, unlock and level-up toasts; rules shown on the profile) | Minor | Done |
 | Advanced chat (blocks, invites, game and tournament notifications, profile links, history, typing, read receipts) | Minor | Done |
 | Health check, status page, backups and disaster recovery | Minor | Done |
+| Monitoring with Prometheus and Grafana (exporters, custom dashboard, alert rules, login-only Grafana on localhost) | Major | Done |
 | GDPR (export, deletion with confirmation, confirmation emails) | Minor | Done |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
 | Tournament system (single-elimination bracket for 3 to 8 players: registration by room code, random seeding with byes, ready check per match, forfeits and walkovers, live bracket for players and watchers) | Minor | Done |
 | Game customization (power-ups, speeds, points, 4 court themes, defaults; the AI plays with all of them) | Minor | Done |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
 | Spectator mode (live public matches, read-only view, live spectator count) | Minor | Done |
+| LLM system interface: the Coach (Claude, streamed over SSE, per-user limits, error handling) | Major | Done; needs `ANTHROPIC_API_KEY` |
+| Content moderation AI (auto-removal, warnings, temporary mute) | Minor | Done; needs `ANTHROPIC_API_KEY` |
 
-Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), LLM, RAG,
-recommendations and other AI-service modules (need a provider and API spend), ELK, Prometheus +
-Grafana, WAF + Vault, a second game, 3+ players, 3D, organizations, a permissions system, RTL,
-full WCAG audit, analytics dashboards, PWA, file management,
+Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), RAG,
+recommendations and other AI-service modules, ELK, WAF + Vault, a second game, 3+ players, 3D,
+organizations, a permissions system, RTL, full WCAG audit, analytics dashboards, PWA, file management,
 data import, a notification centre, collaborative features.
 
 ---

@@ -45,7 +45,8 @@
     "skip": "Aller au contenu",
     "login": "Se connecter",
     "signup": "S'inscrire",
-    "leaderboard": "Classement"
+    "leaderboard": "Classement",
+    "coach": "Coach"
   },
   "footer": {
     "privacy": "Politique de confidentialité",
@@ -468,7 +469,19 @@
     "resultNotice": "Match terminé : {p1} {a} – {b} {p2}",
     "tournamentNotice": "{winner} a gagné le tournoi « {name} »",
     "resultPreview": "Résultat {score}",
-    "tournamentPreview": "Résultat du tournoi"
+    "tournamentPreview": "Résultat du tournoi",
+    "removed": "Message supprimé par la modération",
+    "removedWarning": "Votre message a été supprimé ({category}).",
+    "mutedUntil": "Vous ne pouvez plus envoyer de messages avant {time}.",
+    "muted": "Vous ne pouvez plus envoyer de messages pendant un moment après plusieurs messages supprimés.",
+    "category": {
+      "harassment": "harcèlement",
+      "hate": "haine",
+      "threat": "menace",
+      "sexual": "contenu sexuel",
+      "spam": "spam",
+      "other": "contraire aux règles"
+    }
   },
   "settings": {
     "title": "PARAMÈTRES",
@@ -687,5 +700,25 @@
     "ownMatch": "Vous jouez dans ce match.",
     "inLobby": "Regarder les matchs en direct",
     "watchFriend": "Regarder"
+  },
+  "coach": {
+    "title": "Coach",
+    "subtitle": "Posez vos questions sur la tactique au Pong ou le fonctionnement du site. Les réponses viennent de Claude, une IA : elles peuvent être fausses.",
+    "intro": "Bonjour ! Je peux vous aider pour la tactique, l'entraînement et le fonctionnement du site. Essayez :",
+    "suggestAngles": "Comment viser mes coups ?",
+    "suggestAi": "Comment battre l'ordinateur en difficile ?",
+    "suggestTournament": "Comment fonctionnent les tournois ?",
+    "placeholder": "Demandez au coach…",
+    "you": "Vous",
+    "thinking": "Réflexion…",
+    "stop": "Arrêter",
+    "newChat": "Nouvelle conversation",
+    "remaining": "Il vous reste {n} questions sur {limit} cette heure-ci.",
+    "disabled": "Le coach est désactivé",
+    "disabledBody": "Ce serveur n'a pas de clé d'API Claude, le coach n'est donc pas disponible. Un administrateur peut ajouter ANTHROPIC_API_KEY pour l'activer.",
+    "errLimit": "Vous avez atteint la limite de cette heure. Réessayez plus tard.",
+    "errBusy": "Le coach est occupé. Réessayez dans un instant.",
+    "errUnavailable": "Le coach est injoignable pour le moment.",
+    "refused": "Je ne peux pas vous aider sur ce point."
   }
 }

@@ -77,6 +77,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         case "achievement":
           announceAchievement(e.id, t, myNameRef.current ? () => routerRef.current.push(href(`/profile/${myNameRef.current}`)) : undefined);
           break;
+        case "chat:removed":
+          void mutate((key) => typeof key === "string" && key.startsWith("/api/chat/"));
+          break;
+        case "moderation:warning":
+          toast.warning(t("chat.removedWarning", { category: t(`chat.category.${e.category}`) }), {
+            description: e.mutedUntil ? t("chat.mutedUntil", { time: new Date(e.mutedUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) : undefined,
+          });
+          break;
         case "levelUp":
           announceLevelUp(e.level, t);
           break;

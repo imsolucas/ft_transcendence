@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import useSWR, { mutate } from "swr";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCheck, Gamepad2, MessageSquare, MoreVertical, Send, ShieldOff, Swords, Trophy } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Gamepad2, MessageSquare, MoreVertical, Send, ShieldOff, Swords, Trophy, ShieldAlert } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { api, ApiError } from "@/lib/api";
 import { useMe } from "@/lib/session";
@@ -92,7 +92,9 @@ function ConversationList({ active }: { active: string | null }) {
                   </div>
                   <div className="row between">
                     <span className={cn("t-caption truncate", c.unread ? "text-fg" : "subtle")}>
-                      {c.lastMessage.kind === "invite"
+                      {c.lastMessage.removed
+                        ? t("chat.removed")
+                        : c.lastMessage.kind === "invite"
                         ? t("chat.inviteToast")
                         : c.lastMessage.kind === "result"
                           ? t("chat.resultPreview", { score: c.lastMessage.body.replace("-", " – ") })
@@ -189,6 +191,7 @@ function Thread({ username }: { username: string }) {
       void mutate("/api/chat/conversations");
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) setUnavailable(true);
+      if (err instanceof ApiError && err.code === "MUTED") toast.error(t("chat.muted"));
       setPending((p) => p.map((x) => (x.tempId === tempId ? { ...x, failed: true } : x)));
     }
   }
@@ -319,7 +322,12 @@ function Thread({ username }: { username: string }) {
               }
               return (
                 <li key={m.id} className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
-                  {m.kind === "invite" ? (
+                  {m.removed ? (
+                    <p className="row !gap-2 max-w-[75%] rounded-md border border-dashed border-border px-3 py-2 t-caption subtle italic">
+                      <ShieldAlert className="ico" aria-hidden />
+                      {t("chat.removed")}
+                    </p>
+                  ) : m.kind === "invite" ? (
                     <InviteCard mine={mine} code={m.inviteCode ?? ""} name={other?.displayName ?? ""} />
                   ) : (
                     <p

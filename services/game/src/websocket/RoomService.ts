@@ -167,6 +167,11 @@ export default class RoomService {
         return this.standardQueue.length + this.tournamentQueue.length;
     }
 
+    /** Matchmaking queue sizes per mode (read by /metrics). */
+    queueLengths(): { standard: number; tournament: number } {
+        return { standard: this.standardQueue.length, tournament: this.tournamentQueue.length };
+    }
+
     isInQueue(playerId: string): boolean {
         return this.standardQueue.some(p => p.id === playerId) ||
                this.tournamentQueue.some(p => p.id === playerId);

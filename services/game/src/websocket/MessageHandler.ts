@@ -42,6 +42,11 @@ export default class NewMessageHandler {
         this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p), this.tournamentService);
     }
 
+    /** Matchmaking queue sizes per mode (read by /metrics). */
+    queueLengths(): { standard: number; tournament: number } {
+        return this.roomService.queueLengths();
+    }
+
     /** The socket behind `player` closed: hold a match/bracket player for a reconnect, otherwise drop them. */
     handleSocketClosed(player: Player): void {
         if (!this.lifecycle.onSocketClosed(player)) this.handleDisconnection(player);
