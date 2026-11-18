@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { gameEnded } from '../presence.ts';
+import { matchesFinished, tickDuration } from '../metrics.ts';
 import { toSerializablePlayer, type GameEndMessage, type TournamentEndMessage, type TournamentRoundEndMessage } from "shared/index.ts";
 import type { RoomManager } from "../game/roomManager.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
@@ -28,7 +29,9 @@ export default class TickSystem {
 
             this.lastTime = currentTime;
 
-            this.tick(deltaTime)
+            const endTimer = tickDuration.startTimer();
+            this.tick(deltaTime);
+            endTimer();
         }, this.TICK_INTERVAL);
     }
 
@@ -69,6 +72,7 @@ export default class TickSystem {
                         
                         if (!room.tournamentMatches) room.tournamentMatches = [];
                         room.tournamentMatches.push(matchRecord);
+                        matchesFinished.inc({ mode: 'tournament' });
                     }
 
                     const tournamentResult = this.tournamentService.endRound(room, winnerId);
