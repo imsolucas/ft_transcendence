@@ -13,7 +13,6 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { Modal } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { ServiceWorkerRegistrar } from "@/components/layout/service-worker";
-import { ArcadeScroll } from "@/components/arcade/arcade-scroll";
 
 /** Routes where a 401 is expected and must not open the session-expired modal */
 const PUBLIC_PATHS = ["", "/login", "/signup", "/privacy", "/terms", "/local"];
@@ -91,7 +90,6 @@ export function Providers({ locale, dict, children }: { locale: Locale; dict: Di
       <PrefsProvider>
         <SWRConfig value={{ fetcher }}>
           <ServiceWorkerRegistrar />
-          <ArcadeScroll />
           <OfflineBanner />
           {children}
           <Suspense>

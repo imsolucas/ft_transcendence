@@ -17,18 +17,6 @@
      clipped afterwards. 8 steps = 8 cheap repaints, no per-frame work */
   :root:not(.reduce-motion) .arcade-enter { animation: arcade-wipe 240ms steps(8, end) backwards; }
 
-  /* scrolling: cards, rows and matches "spawn" in chunky steps as they come into view, like
-     sprites on an arcade screen. Driven by the scroll position (no JS, no per-frame work): only
-     translate + opacity, so the compositor does it. Browsers without scroll timelines just show them. */
-  @supports (animation-timeline: view()) {
-    :root:not(.reduce-motion) main :is(.panel:not(:has(.panel)), .list-row, .match, .division, .arcade-scroll) {
-      animation: arcade-spawn linear both;
-      animation-timing-function: steps(5, end);
-      animation-timeline: view();
-      animation-range: entry 0% entry 90%;
-    }
-  }
-
   /* a label that blinks three times, then stays (INSERT COIN) */
   :root:not(.reduce-motion) .arcade-blink { animation: arcade-blink 900ms steps(1, end) 3; }
   /* while the boot plays on top, start blinking after it */
@@ -50,11 +38,6 @@
 @keyframes arcade-wipe {
   from { clip-path: inset(0 0 100% 0); }
   to { clip-path: inset(0 0 0 0); }
-}
-@keyframes arcade-spawn {
-  from { opacity: 0; translate: 0 32px; }
-  60% { opacity: 1; }
-  to { opacity: 1; translate: 0 0; }
 }
 @keyframes arcade-blink {
   0%, 49% { opacity: 1; }
