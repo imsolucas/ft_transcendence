@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { Bit } from "@/components/arcade/bit";
 import { io, type Socket } from "socket.io-client";
 import { mutate } from "swr";
 import { toast } from "sonner";
@@ -133,5 +134,5 @@ export function announceAchievement(id: AchievementId, t: (key: string, vars?: R
 
 /** "Level up" toast (shared by the app shell and the game screen). */
 export function announceLevelUp(level: number, t: (key: string, vars?: Record<string, string | number>) => string) {
-  toast.success(t("profile.levelUp", { n: level }));
+  toast.success(t("profile.levelUp", { n: level }), { icon: <Bit mood="cheer" size={28} /> });
 }

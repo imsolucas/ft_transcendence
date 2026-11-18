@@ -9,12 +9,14 @@ export type CourtTheme = (typeof COURT_THEMES)[number];
 export interface Prefs {
   courtTheme: CourtTheme;
   crt: boolean;
+  /** arcade display: pixel fonts, pixel shapes, CRT monitor, low-res game screen */
+  arcade: boolean;
   reducedMotion: boolean;
   sound: boolean;
   seenControls: boolean;
 }
 
-const DEFAULTS: Prefs = { courtTheme: "neon", crt: true, reducedMotion: false, sound: true, seenControls: false };
+const DEFAULTS: Prefs = { courtTheme: "neon", crt: true, arcade: true, reducedMotion: false, sound: true, seenControls: false };
 const KEY = "ft_prefs";
 
 // A tiny external store over localStorage, so server render and hydration use the defaults
@@ -69,7 +71,8 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.classList.toggle("crt-off", !prefs.crt);
     root.classList.toggle("reduce-motion", prefs.reducedMotion);
-  }, [prefs.crt, prefs.reducedMotion]);
+    root.classList.toggle("arcade", prefs.arcade);
+  }, [prefs.crt, prefs.reducedMotion, prefs.arcade]);
 
   const setPref = useCallback<Ctx["setPref"]>((key, value) => {
     write({ ...readStored(), [key]: value });

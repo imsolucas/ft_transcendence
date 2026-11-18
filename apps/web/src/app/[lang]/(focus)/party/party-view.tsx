@@ -325,7 +325,7 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
           {lobby.map((p) => (
             <li key={p.id}>
               <Panel>
-                <div className="row row-3">
+                <div className="row !gap-3">
                   <Avatar name={p.name} src={p.picture} look={p.look} size="lg" ring={p.id === myId ? "you" : "opp"} />
                   <div className="min-w-0">
                     <p className="t-heading truncate">{p.name}</p>

@@ -81,6 +81,9 @@ API contract: `services/shared/types/api.types.ts` (source of truth for web ↔ 
   (`apps/web/src/lib/game/clip.ts`, recorded in the browser), favicon (`scripts/generate-icons.mjs`).
   Deploy prep done: docs/DEPLOY.md, `make deploy-check`, `make prod`, CSP in the Caddyfile.
   Going live waits for the user's domain + server.
+  Gotcha: `docker compose up -d <one service>` that recreates it (rebuild, changed ports/env)
+  also removes the services depending on it (Compose v5) and doesn't start them again: follow
+  any partial `up` with a full `docker compose -f infra/docker-compose.yml up -d`.
   Gotcha: the users service runs TS with Node type stripping (`erasableSyntaxOnly` is on):
   no parameter properties or enums there. Its Dockerfile copies all of `services/shared`.
 - Fastify stays as the auth authority and the game server; Next.js never re-implements auth.

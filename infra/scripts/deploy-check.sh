@@ -134,5 +134,12 @@ if [ "$MODE" = direct ] && [ -n "$HOST" ] && command -v getent >/dev/null; then
 fi
 
 echo
-if [ $errors -gt 0 ]; then echo "✖ $errors error(s), $warnings warning(s): fix infra/.env, then run 'make deploy-check' again."; exit 1; fi
+if [ $errors -gt 0 ]; then
+  echo "✖ $errors error(s), $warnings warning(s): fix $(basename "$ENV_FILE"), then run the check again."
+  # checked the dev config while a production copy is set up next to it
+  if [ "$ENV_FILE" = "$PWD/.env" ] && [ -f .env.prod ]; then
+    echo "  (this is your dev config; for the production copy run: make prod ENV=infra/.env.prod)"
+  fi
+  exit 1
+fi
 echo "✔ ready to deploy ($warnings warning(s)): make prod"

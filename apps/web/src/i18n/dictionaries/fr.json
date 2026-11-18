@@ -109,7 +109,8 @@
       "1": "Faible. Ajoutez des caractères.",
       "2": "Moyen. Ajoutez un symbole ou un chiffre.",
       "3": "Bon.",
-      "4": "Solide."
+      "4": "Solide.",
+      "breached": "Trouvé dans une fuite de données : les attaquants l'essaient en premier. Choisissez-en un autre."
     },
     "errors": {
       "invalidCredentials": "Le nom d'utilisateur ou le mot de passe est incorrect. Vérifiez les deux et réessayez.",
@@ -588,7 +589,9 @@
     "passkeyAddedOn": "Ajoutée le {date}",
     "removePasskey": "Supprimer la clé d'accès",
     "passkeyReauth": "Par sécurité, reconnectez-vous avant de modifier vos clés d'accès.",
-    "signInAgain": "Se reconnecter"
+    "signInAgain": "Se reconnecter",
+    "arcade": "Écran arcade",
+    "arcadeBody": "Polices pixel, panneaux aux coins pixelisés, aspect moniteur CRT et un écran de jeu basse résolution. Désactivez pour un texte net et lisse."
   },
   "legal": {
     "contents": "Sommaire",

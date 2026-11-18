@@ -13,3 +13,13 @@ export function useMe() {
   const signedOut = error instanceof ApiError && error.status === 401;
   return { me: signedOut ? null : (data ?? null), isLoading: isLoading && !signedOut, signedOut, error: signedOut ? undefined : error, mutate };
 }
+
+/**
+ * Signed in? via Better Auth's session endpoint, which answers 200 + null for guests (no 401 in
+ * the console, unlike /api/me), so pages open to guests can ask. null while loading.
+ */
+export function useSignedIn(): boolean | null {
+  const { data, isLoading } = useSWR<{ user?: unknown } | null>("/api/auth/get-session", fetcher, { revalidateOnFocus: false });
+  if (isLoading) return null;
+  return !!data?.user;
+}

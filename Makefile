@@ -18,20 +18,24 @@ env:
 # ---- production (see docs/DEPLOY.md): check infra/.env, then start with the prod overrides.
 # Behind a Cloudflare Tunnel (COMPOSE_PROFILES contains tunnel or quick-tunnel) the tunnel
 # override is added: Caddy serves plain HTTP inside Docker and publishes no port.
-# one detector for the mode, shared with deploy-check (same parsing of infra/.env)
-MODE := $(shell bash infra/scripts/deploy-check.sh --mode 2>/dev/null)
+# ENV picks the env file; another file runs as its own Compose project (own containers, volumes,
+# database), e.g. a production copy next to the dev stack: make prod ENV=infra/.env.prod
+ENV ?= infra/.env
+PROJECT := $(shell grep -E '^COMPOSE_PROJECT_NAME=' $(ENV) 2>/dev/null | tail -1 | cut -d= -f2)
+# one detector for the mode, shared with deploy-check (same parsing of the env file)
+MODE := $(shell ENV_FILE=$(ENV) bash infra/scripts/deploy-check.sh --mode 2>/dev/null)
 TUNNEL_MODE := $(filter tunnel quick-tunnel,$(MODE))
-PROD = docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml $(if $(TUNNEL_MODE),-f infra/docker-compose.tunnel.yml)
+PROD = docker compose --env-file $(ENV) $(if $(PROJECT),-p $(PROJECT)) -f infra/docker-compose.yml -f infra/docker-compose.prod.yml $(if $(TUNNEL_MODE),-f infra/docker-compose.tunnel.yml)
 
 deploy-check:
-	@bash infra/scripts/deploy-check.sh
+	@ENV_FILE=$(ENV) bash infra/scripts/deploy-check.sh
 
 prod: deploy-check
 	$(PROD) up -d --build --remove-orphans
 ifeq ($(MODE),quick-tunnel)
 	@echo "waiting for the quick tunnel's address…"; \
-	  for i in $$(seq 1 30); do $(MAKE) --no-print-directory -s tunnel-origin >/dev/null 2>&1 && break; sleep 2; done; \
-	  grep '^PUBLIC_ORIGIN=' infra/.env
+	  for i in $$(seq 1 30); do $(MAKE) --no-print-directory -s tunnel-origin ENV=$(ENV) >/dev/null 2>&1 && break; sleep 2; done; \
+	  grep '^PUBLIC_ORIGIN=' $(ENV)
 endif
 
 prod-logs:
@@ -49,8 +53,8 @@ prod-re: deploy-check prod-down prod
 set-origin:
 	@printf '%s' "$(ORIGIN)" | grep -Eq '^https://[A-Za-z0-9.-]+/?$$' || { echo "usage: make set-origin ORIGIN=https://your-host (no port or path)"; exit 1; }
 	@o=$$(printf '%s' "$(ORIGIN)" | sed 's#/$$##'); h=$${o#https://}; \
-	  sed -i "s#^PUBLIC_ORIGIN=.*#PUBLIC_ORIGIN=$$o#" infra/.env; \
-	  if [ -z "$(TUNNEL_MODE)" ]; then sed -i "s#^SITE_ADDRESS=.*#SITE_ADDRESS=$$h#" infra/.env; fi; \
+	  sed -i "s#^PUBLIC_ORIGIN=.*#PUBLIC_ORIGIN=$$o#" $(ENV); \
+	  if [ -z "$(TUNNEL_MODE)" ]; then sed -i "s#^SITE_ADDRESS=.*#SITE_ADDRESS=$$h#" $(ENV); fi; \
 	  echo "PUBLIC_ORIGIN=$$o"
 	$(PROD) up -d users game caddy
 
@@ -58,7 +62,7 @@ set-origin:
 tunnel-origin:
 	@url=$$($(PROD) logs cloudflared-quick 2>/dev/null | grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' | grep -v '^https://api\.' | tail -1); \
 	  if [ -z "$$url" ]; then echo "no quick-tunnel address yet: is COMPOSE_PROFILES=...,quick-tunnel and did 'make prod' start it?"; exit 1; fi; \
-	  $(MAKE) --no-print-directory set-origin ORIGIN=$$url
+	  $(MAKE) --no-print-directory set-origin ENV=$(ENV) ORIGIN=$$url
 
 # basic lifecycle
 up:

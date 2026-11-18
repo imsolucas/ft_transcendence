@@ -12,6 +12,8 @@ x-logging: &logging
 services:
   postgres:
     logging: *logging
+    # production: the database is never published, not even on localhost
+    ports: !reset []
   users:
     logging: *logging
   game:

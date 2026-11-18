@@ -13,7 +13,11 @@ import aiRoutes from "../modules/ai/routes.ts";
 import internalRoutes from "../modules/internal/routes.ts";
 import tournamentRoutes from "../modules/tournaments/routes.ts";
 import rankedRoutes from "../modules/ranked/routes.ts";
-import { apiRateLimiter } from "../middleware/rateLimiter.ts";
+import { apiRateLimiter, createRateLimiter } from "../middleware/rateLimiter.ts";
+import { isBreachedHash } from "../auth/breached.ts";
+
+/** the strength meter asks while someone types (debounced): generous, but bounded per IP */
+const passwordCheckLimiter = createRateLimiter({ max: 30, windowMs: 60_000, keyGenerator: (req) => `rate-limit:pwcheck:${req.ip}` });
 import { config } from "../config.ts";
 import type { PublicConfig } from "../../../shared/types/api.types.ts";
 
@@ -57,6 +61,31 @@ export default async function routes(app: FastifyInstance) {
     async (_req, reply): Promise<PublicConfig> => {
     reply.header("Cache-Control", "public, max-age=300");
     return { turnstileSiteKey: config.turnstile?.siteKey ?? null, emailVerification: config.requireEmailVerification };
+    }
+  );
+
+  // Live breach hint for the password strength meter (sign-up, reset, change). The browser
+  // sends only the password's SHA-1, never the password; we ask Have I Been Pwned with the
+  // first 5 characters of it (k-anonymity) and answer yes/no. The real check still runs when
+  // the password is submitted.
+  app.post(
+    "/api/password-check",
+    {
+      preHandler: passwordCheckLimiter,
+      schema: {
+        body: { type: "object", additionalProperties: false, required: ["sha1"], properties: { sha1: { type: "string", pattern: "^[0-9a-fA-F]{40}$" } } },
+        response: {
+          200: { type: "object", properties: { breached: { type: "boolean" }, checked: { type: "boolean" } }, required: ["breached", "checked"] },
+          403: { type: "object", properties: { error: { type: "string" } } },
+        },
+      },
+    },
+    async (req, reply) => {
+      // our pages only: not a free relay for other sites
+      if (req.headers.origin !== config.publicOrigin) return reply.code(403).send({ error: "Forbidden" });
+      const result = await isBreachedHash((req.body as { sha1: string }).sha1);
+      reply.header("Cache-Control", "no-store");
+      return { breached: result === true, checked: result !== null };
     }
   );
 

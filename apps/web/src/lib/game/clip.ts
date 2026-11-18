@@ -1,6 +1,6 @@
 import type { GameConfig, PaddleSkinId } from "shared";
 import type { ReplayFrame } from "./fx";
-import { drawFrame, readCourtColors } from "./renderer";
+import { PIXEL_H, PIXEL_W, drawFrame, readCourtColors } from "./renderer";
 
 /**
  * Shareable clips: the deciding point re-drawn on a hidden canvas and recorded with
@@ -39,6 +39,8 @@ export interface ClipOptions {
   caption: ClipCaption;
   /** the player's court theme (data-court-theme), so the clip looks like their game */
   courtTheme: string;
+  /** arcade display: the court is drawn low-res and scaled up with hard pixel edges */
+  pixel?: boolean;
   onProgress?: (fraction: number) => void;
   signal?: AbortSignal;
 }
@@ -95,6 +97,13 @@ export async function recordClip(opts: ClipOptions): Promise<{ blob: Blob; exten
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("no 2d context");
     const colors = readCourtColors(canvas);
+    // arcade display: draw the court into a small buffer, then blow it up without smoothing
+    const low = opts.pixel ? document.createElement("canvas") : null;
+    const lowCtx = low?.getContext("2d") ?? null;
+    if (low) {
+      low.width = PIXEL_W;
+      low.height = PIXEL_H;
+    }
     stream = canvas.captureStream(FPS);
     const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
     const chunks: Blob[] = [];
@@ -105,7 +114,13 @@ export async function recordClip(opts: ClipOptions): Promise<{ blob: Blob; exten
     const scoreLine = () => `${opts.caption.left}  ${opts.caption.scores[0]} – ${opts.caption.scores[1]}  ${opts.caption.right}`;
     const draw = (elapsed: number, i: number) => {
       if (elapsed < playMs) {
-        drawFrame(ctx, frames[i]!.s, opts.config, colors, { youSide: opts.youSide, vertical: false, glow: true, skins: opts.skins });
+        if (low && lowCtx) {
+          drawFrame(lowCtx, frames[i]!.s, opts.config, colors, { youSide: opts.youSide, vertical: false, glow: true, skins: opts.skins, pixel: true });
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(low, 0, 0, WIDTH, HEIGHT);
+        } else {
+          drawFrame(ctx, frames[i]!.s, opts.config, colors, { youSide: opts.youSide, vertical: false, glow: true, skins: opts.skins });
+        }
         ctx.fillStyle = colors.bg;
         ctx.fillRect(0, HEIGHT - 72, WIDTH, 72);
         ctx.textBaseline = "middle";

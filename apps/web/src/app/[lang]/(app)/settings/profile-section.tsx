@@ -28,7 +28,7 @@ function ProfileSkeleton() {
     <div className="stack stack-5" aria-hidden>
       <Panel className="stack stack-4">
         <Skeleton className="h-6 w-24" />
-        <div className="row row-4">
+        <div className="row !gap-4">
           <Skeleton circle className="!h-24 !w-24" />
           <div className="stack stack-3 grow">
             <Skeleton className="h-10 w-64 max-w-full" />
@@ -160,7 +160,7 @@ function ProfileForm({ me }: { me: Me }) {
         <h2 className="t-heading" id="settings-avatar">
           {t("settings.avatar")}
         </h2>
-        <div className="row row-4 wrap">
+        <div className="row !gap-4 wrap">
           <Avatar name={me.displayName} src={preview ?? me.avatar} look={me.look} size="xl" />
           <div className="stack stack-3">
             <input

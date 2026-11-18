@@ -109,7 +109,8 @@
       "1": "Débil. Añade más caracteres.",
       "2": "Aceptable. Añade un símbolo o un número.",
       "3": "Buena.",
-      "4": "Fuerte."
+      "4": "Fuerte.",
+      "breached": "Aparece en una filtración de datos: los atacantes la prueban primero. Elige otra."
     },
     "errors": {
       "invalidCredentials": "El nombre de usuario o la contraseña son incorrectos. Revisa ambos e inténtalo de nuevo.",
@@ -588,7 +589,9 @@
     "passkeyAddedOn": "Añadida el {date}",
     "removePasskey": "Eliminar llave de acceso",
     "passkeyReauth": "Por tu seguridad, vuelve a iniciar sesión antes de cambiar tus llaves de acceso.",
-    "signInAgain": "Iniciar sesión de nuevo"
+    "signInAgain": "Iniciar sesión de nuevo",
+    "arcade": "Pantalla arcade",
+    "arcadeBody": "Fuentes pixeladas, paneles con esquinas de píxel, aspecto de monitor CRT y una pantalla de juego de baja resolución. Desactívalo para un texto liso y suave."
   },
   "legal": {
     "contents": "Contenido",

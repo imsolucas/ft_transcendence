@@ -5,7 +5,7 @@ import { Clapperboard, Download, Share2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { GameConfig, PaddleSkinId } from "shared";
 import type { ReplayFrame } from "@/lib/game/fx";
-import { drawFrame, readCourtColors } from "@/lib/game/renderer";
+import { PIXEL_H, PIXEL_W, drawFrame, readCourtColors } from "@/lib/game/renderer";
 import { usePrefs, useReducedMotion } from "@/lib/prefs";
 import { useI18n } from "@/i18n/I18nProvider";
 import { Badge } from "@/components/ui/primitives";
@@ -36,7 +36,7 @@ export function Replay({
 }) {
   const { t } = useI18n();
   const reduced = useReducedMotion();
-  const { courtTheme } = usePrefs().prefs;
+  const { courtTheme, arcade } = usePrefs().prefs;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [closed, setClosed] = useState(false);
 
@@ -48,8 +48,9 @@ export function Replay({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const fit = () => {
       const w = canvas.getBoundingClientRect().width;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round((w / 16) * 10 * dpr);
+      canvas.width = arcade ? PIXEL_W : Math.round(w * dpr);
+      canvas.height = arcade ? PIXEL_H : Math.round((w / 16) * 10 * dpr);
+      canvas.style.imageRendering = arcade ? "pixelated" : "";
     };
     fit();
     const colors = readCourtColors(canvas);
@@ -66,12 +67,12 @@ export function Replay({
         i = 0;
       }
       while (i < frames.length - 1 && frames[i + 1]!.t - t0 <= elapsed) i++;
-      drawFrame(ctx, frames[i]!.s, config, colors, { youSide, vertical: false, glow: true, skins });
+      drawFrame(ctx, frames[i]!.s, config, colors, { youSide, vertical: false, glow: true, skins, pixel: arcade });
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [frames, config, youSide, skins, reduced, closed, courtTheme]);
+  }, [frames, config, youSide, skins, reduced, closed, courtTheme, arcade]);
 
   if (frames.length < 2) return null;
   const clip = caption ? <ClipButton frames={frames} config={config} youSide={youSide} skins={skins} caption={caption} /> : null;
@@ -99,7 +100,7 @@ export function Replay({
  */
 function ClipButton({ frames, config, youSide, skins, caption }: { frames: ReplayFrame[]; config: GameConfig; youSide: 0 | 1 | null; skins?: readonly [PaddleSkinId, PaddleSkinId]; caption: ClipCaption }) {
   const { t } = useI18n();
-  const { courtTheme } = usePrefs().prefs;
+  const { courtTheme, arcade } = usePrefs().prefs;
   const [progress, setProgress] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -115,7 +116,7 @@ function ClipButton({ frames, config, youSide, skins, caption }: { frames: Repla
     abortRef.current = ctrl;
     setProgress(0);
     try {
-      const { blob, extension } = await recordClip({ frames, config, youSide, skins, caption, courtTheme, onProgress: setProgress, signal: ctrl.signal });
+      const { blob, extension } = await recordClip({ frames, config, youSide, skins, caption, courtTheme, pixel: arcade, onProgress: setProgress, signal: ctrl.signal });
       setFile(new File([blob], `volley-exe-clip-${new Date().toISOString().slice(0, 10)}.${extension}`, { type: blob.type }));
     } catch (err) {
       if (err instanceof ClipInterrupted) toast.error(t("clip.interrupted"));

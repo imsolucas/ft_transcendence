@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TickNumber } from "@/components/arcade/tick-number";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Eye, Trophy } from "lucide-react";
@@ -494,7 +495,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
             <div key={p.id} className="contents">
               {!isTournament && i === 1 && <span className="pix pix-md self-center subtle">{t("match.vs")}</span>}
               <Panel className="flex-1">
-                <div className="row row-3">
+                <div className="row !gap-3">
                   <Avatar name={p.name} src={p.picture} look={p.look} size="lg" ring={p.id === myId ? "you" : "opp"} />
                   <div className="min-w-0">
                     <p className="t-heading truncate">{p.name}</p>
@@ -748,7 +749,7 @@ function TournamentScreen({
           {state.players.map((p) => (
             <li key={p.id}>
               <Panel>
-                <div className="row row-3">
+                <div className="row !gap-3">
                   <Avatar name={p.name} src={p.picture} look={p.look} size="md" ring={p.id === myId ? "you" : "opp"} />
                   <div className="min-w-0">
                     <p className="t-heading truncate">{p.name}</p>
@@ -885,7 +886,7 @@ function RatingChangeLine({ change }: { change: RatingChange }) {
     <p className="row wrap justify-center !gap-2" role="status">
       <span className={cn("num num-md", up ? "c-green" : "c-red")}>
         {up ? "+" : "−"}
-        {Math.abs(change.delta)}
+        <TickNumber value={Math.abs(change.delta)} />
       </span>
       <span className="muted">
         {t("ranked.rating")} <span className="num">{change.rating}</span>

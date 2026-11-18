@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { GameConfig, GameState, PaddleSkinId, PlayerInputs } from "shared";
-import { drawFrame, readCourtColors } from "@/lib/game/renderer";
+import { PIXEL_H, PIXEL_W, drawFrame, readCourtColors } from "@/lib/game/renderer";
 import { CourtFx, type ReplayFrame } from "@/lib/game/fx";
 import { playSfx, unlockAudio } from "@/lib/game/sfx";
 import { usePrefs, useReducedMotion } from "@/lib/prefs";
@@ -51,7 +51,7 @@ export function Court({
   const inputs = useRef<[PlayerInputs, PlayerInputs]>([idle(), idle()]);
   const moved = useRef(false);
   const reduced = useReducedMotion();
-  const { courtTheme, sound: soundPref } = usePrefs().prefs;
+  const { courtTheme, sound: soundPref, arcade } = usePrefs().prefs;
   const [vertical, setVertical] = useState(false);
 
   // Size the canvas to the container (device-pixel aware) and pick orientation
@@ -75,14 +75,16 @@ export function Court({
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
+      // arcade display: a fixed low-res buffer, scaled up with hard pixel edges
+      canvas.width = arcade ? PIXEL_W : Math.round(w * dpr);
+      canvas.height = arcade ? PIXEL_H : Math.round(h * dpr);
+      canvas.style.imageRendering = arcade ? "pixelated" : "";
     };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, []);
+  }, [arcade]);
 
   // read by the render loop on every frame (no restart when a skin arrives)
   const skinsRef = useRef(skins);
@@ -124,6 +126,7 @@ export function Court({
           vertical,
           glow: !reduced,
           skins: skinsRef.current,
+          pixel: arcade,
           overlay: (c, sx, sy, w, h) => fx.draw(c, sx, sy, now, w, h),
         });
         const o = fx.shakeOffset(now);
@@ -134,7 +137,7 @@ export function Court({
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // courtTheme: the canvas' data-court-theme changes --court-*, so re-read the colours
-  }, [config, getState, youSide, vertical, reduced, courtTheme]);
+  }, [config, getState, youSide, vertical, reduced, courtTheme, arcade]);
 
   // Keyboard
   useEffect(() => {

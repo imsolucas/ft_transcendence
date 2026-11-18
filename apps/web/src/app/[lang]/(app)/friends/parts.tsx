@@ -24,7 +24,7 @@ export function RowsSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="stack stack-3" aria-busy="true" role="status" aria-label={t("common.loading")}>
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="row row-3 px-3 py-2" aria-hidden>
+        <div key={i} className="row !gap-3 px-3 py-2" aria-hidden>
           <span className="skel skel-circle" />
           <span className="stack grow">
             <span className="skel" style={{ width: `${widths[i % 4][0]}%` }} />

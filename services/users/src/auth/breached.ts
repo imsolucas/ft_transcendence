@@ -6,8 +6,9 @@ import { log } from "../log.ts";
  * password's SHA-1 leave the server. Fails open: if the service is slow or down, the password
  * is accepted (logged) rather than blocking sign-up, password change and reset.
  */
-export async function isBreachedPassword(password: string): Promise<boolean> {
-  const hash = crypto.createHash("sha1").update(password, "utf8").digest("hex").toUpperCase();
+/** Breached? for an uppercase SHA-1 hex digest; null when the service couldn't be asked. */
+export async function isBreachedHash(sha1: string): Promise<boolean | null> {
+  const hash = sha1.toUpperCase();
   const prefix = hash.slice(0, 5);
   const suffix = hash.slice(5);
   try {
@@ -23,6 +24,12 @@ export async function isBreachedPassword(password: string): Promise<boolean> {
     });
   } catch (err) {
     log.error({ err: (err as Error).message }, "breached-password check unavailable (password accepted)");
-    return false;
+    return null;
   }
+}
+
+/** Fails open: if the service is slow or down, the password is accepted. */
+export async function isBreachedPassword(password: string): Promise<boolean> {
+  const hash = crypto.createHash("sha1").update(password, "utf8").digest("hex");
+  return (await isBreachedHash(hash)) === true;
 }

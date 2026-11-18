@@ -1,5 +1,9 @@
 import type { GameConfig, GameState, PaddleSkinId } from "shared";
 
+/** Arcade display: the court is drawn at this many pixels (16:10) and scaled up with hard edges. */
+export const PIXEL_W = 320;
+export const PIXEL_H = 200;
+
 export interface CourtColors {
   bg: string;
   line: string;
@@ -41,6 +45,8 @@ export function drawFrame(
     vertical: boolean;
     glow: boolean;
     skins?: readonly [PaddleSkinId, PaddleSkinId];
+    /** arcade display: low-res canvas, so the ball is a square pixel block */
+    pixel?: boolean;
     /** drawn last, inside the court transform (effects: particles, flash) */
     overlay?: (ctx: CanvasRenderingContext2D, sx: number, sy: number, w: number, h: number) => void;
   }
@@ -140,9 +146,13 @@ export function drawFrame(
     ctx.shadowColor = colors.ball;
     ctx.shadowBlur = 10;
   }
-  ctx.beginPath();
-  ctx.arc(state.ball.x * sx, state.ball.y * sy, r, 0, Math.PI * 2);
-  ctx.fill();
+  if (opts.pixel) {
+    ctx.fillRect(Math.round(state.ball.x * sx - r), Math.round(state.ball.y * sy - r), Math.round(r * 2), Math.round(r * 2));
+  } else {
+    ctx.beginPath();
+    ctx.arc(state.ball.x * sx, state.ball.y * sy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.shadowBlur = 0;
   opts.overlay?.(ctx, sx, sy, w, h);
   ctx.restore();

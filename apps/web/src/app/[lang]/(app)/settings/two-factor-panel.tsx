@@ -147,7 +147,7 @@ export function TwoFactorPanel() {
         )}
 
         {setup ? (
-          <form className="row row-4 wrap items-start" onSubmit={verify} noValidate>
+          <form className="row !gap-4 wrap items-start" onSubmit={verify} noValidate>
             <div className="rounded-md bg-fg p-3 text-bg" role="img" aria-label={t("settings.qrLabel")}>
               <QRCodeSVG value={setup.totpURI} size={160} bgColor="transparent" fgColor="currentColor" marginSize={0} aria-hidden />
             </div>

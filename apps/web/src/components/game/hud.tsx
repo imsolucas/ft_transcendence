@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { TickNumber } from "@/components/arcade/tick-number";
+import { PixelBurst } from "@/components/arcade/pixel-burst";
+import { Bit } from "@/components/arcade/bit";
 import { playSfx } from "@/lib/game/sfx";
 import type { PlayerLook } from "shared";
 import { Menu as MenuIcon, WifiOff } from "lucide-react";
@@ -296,13 +299,17 @@ export function MatchEnd({
         {won !== null && (
           <Badge tone={won ? "green" : "red"}>{won ? t("match.win") : t("match.loss")}</Badge>
         )}
+        <span className="relative inline-flex">
+          {won !== false && <PixelBurst radius={140} />}
+          <Bit mood={won === false ? "sad" : "cheer"} size={72} />
+        </span>
         <h1 className={cn("pix pix-lg", won === false ? "c-red" : "c-magenta glow-text-magenta")}>{title}</h1>
         <div className="stack items-center">
           <p className="t-label subtle">{t("game.finalScore")}</p>
           <p className="pix pix-score" aria-label={`${leftName} ${scores[0]}, ${rightName} ${scores[1]}`}>
-            <span className="c-magenta">{scores[0]}</span>
+            <TickNumber value={scores[0]} className="c-magenta" />
             <span className="subtle"> : </span>
-            <span className="c-cyan">{scores[1]}</span>
+            <TickNumber value={scores[1]} className="c-cyan" />
           </p>
           <p className="muted">
             {leftName} · {rightName}

@@ -12,6 +12,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-ft}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # dev only: reachable from this machine (pgAdmin, psql) on 127.0.0.1:47432, never from the
+    # network; docker-compose.prod.yml removes it
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-47432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s

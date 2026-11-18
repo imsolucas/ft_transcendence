@@ -3,6 +3,8 @@ export function CRTFrame() {
   return (
     <div className="crt" aria-hidden>
       <div className="crt-noise" />
+      {/* RGB phosphor grid, shown with the arcade display (styles/arcade.css) */}
+      <div className="crt-mask" />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Bit } from "@/components/arcade/bit";
 import { useEffect } from "react";
 import { Gamepad2, RotateCcw, WifiOff } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -11,6 +12,7 @@ export function NotFoundView() {
   const { t, href } = useI18n();
   return (
     <main id="main" className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
+      <Bit mood="sad" size={80} />
       <p className="pix pix-lg c-cyan">{t("system.notFoundTitle")}</p>
       <h1 className="pix pix-sm">{t("system.notFoundLine")}</h1>
       <p className="muted max-w-[420px]">{t("system.notFoundBody")}</p>

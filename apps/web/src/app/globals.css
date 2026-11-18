@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 @import "../styles/design-system.css";
+@import "../styles/arcade.css";
 
 /* Tailwind reads the design tokens; utilities like bg-surface-2, text-neon-cyan,
    border-border-strong, font-display, rounded-lg map straight to them. */

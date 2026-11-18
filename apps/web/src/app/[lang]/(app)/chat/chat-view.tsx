@@ -249,7 +249,7 @@ function Thread({ username }: { username: string }) {
   return (
     <Panel className="flex h-[70dvh] flex-col !p-0">
       <header className="row between border-b border-border px-4 py-3">
-        <div className="row row-3 min-w-0">
+        <div className="row !gap-3 min-w-0">
           <Link href={href("/chat")} className="icon-btn md:hidden" aria-label={t("common.back")}>
             <ArrowLeft className="ico" aria-hidden />
           </Link>

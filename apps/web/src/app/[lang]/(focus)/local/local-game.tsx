@@ -12,6 +12,7 @@ import { CourtThemePicker } from "@/components/game/court-theme-picker";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
 import { usePrefs } from "@/lib/prefs";
+import { useSignedIn } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { FormField, Input } from "@/components/ui/form";
 import { Kbd, Panel, Segmented } from "@/components/ui/primitives";
@@ -60,7 +61,8 @@ export function LocalGame() {
 }
 
 function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boolean }) {
-  const { t, href } = useI18n();
+  const { t } = useI18n();
+  const backHref = useBackHref();
   const { setPref } = usePrefs();
   const [s, setS] = useState<Setup>({
     ...DEFAULTS,
@@ -82,7 +84,7 @@ function SetupForm({ onStart, vsAi }: { onStart: (s: Setup) => void; vsAi: boole
 
   return (
     <div className="mx-auto w-full max-w-[1120px] px-4 py-8 md:px-8">
-      <Link href={href("/")} className="row t-label mb-4 no-underline text-fg-muted">
+      <Link href={backHref} className="row t-label mb-4 no-underline text-fg-muted">
         <ArrowLeft className="ico" aria-hidden /> {t("common.back")}
       </Link>
       <h1 className="pix pix-md mb-1">{vsAi ? t("local.aiTitle") : t("local.title")}</h1>
@@ -211,7 +213,8 @@ function SummaryRow({ k, v }: { k: string; v: string }) {
 }
 
 function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPlayAgain: () => void; onChangeSetup: () => void }) {
-  const { t, href } = useI18n();
+  const { t } = useI18n();
+  const backHref = useBackHref();
   const { prefs, setPref } = usePrefs();
   const [config] = useState(() => buildConfig(setup));
   const [engine] = useState(() => new GameEngine(structuredClone(config)));
@@ -305,7 +308,7 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
           </Button>
         }
         note={
-          <Link href={href("/")} className="t-label">
+          <Link href={backHref} className="t-label">
             {t("common.back")}
           </Link>
         }
@@ -340,4 +343,10 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
       />
     </div>
   );
+}
+
+/** Back goes where the player came from: the lobby when signed in, the landing page for guests. */
+function useBackHref() {
+  const { href } = useI18n();
+  return href(useSignedIn() ? "/lobby" : "/");
 }

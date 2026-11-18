@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { TickNumber } from "@/components/arcade/tick-number";
+import { Bit } from "@/components/arcade/bit";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import useSWR from "swr";
@@ -24,9 +26,12 @@ export function LobbyView() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="stack stack-5 min-w-0">
-        <div>
-          <h1 className="pix pix-md">{t("lobby.title")}</h1>
-          {me && <p className="muted mt-1">{t("lobby.greeting", { name: me.displayName })}</p>}
+        <div className="flex items-center gap-3">
+          <Bit size={48} />
+          <div>
+            <h1 className="pix pix-md">{t("lobby.title")}</h1>
+            {me && <p className="muted mt-1">{t("lobby.greeting", { name: me.displayName })}</p>}
+          </div>
         </div>
         <PlayPanel />
         <div className="grid gap-5 xl:grid-cols-2">
@@ -206,21 +211,23 @@ function PlayPanel() {
           </form>
         </div>
 
-        {/* Local + vs AI */}
-        <Link href={href("/local")} className="panel panel-2 row row-3 no-underline text-fg hover:border-border-strong">
+        {/* Local + vs AI: stacked in the column next to Party, each at its own height */}
+        <div className="grid content-start gap-4">
+        <Link href={href("/local")} className="panel panel-2 row !gap-3 no-underline text-fg hover:border-border-strong">
           <Keyboard className="ico c-cyan" aria-hidden />
           <div>
             <h3 className="t-heading">{t("lobby.local")}</h3>
             <p className="muted t-caption">{t("lobby.localBody")}</p>
           </div>
         </Link>
-        <Link href={`${href("/local")}?mode=ai`} className="panel panel-2 row row-3 no-underline text-fg hover:border-border-strong">
+        <Link href={`${href("/local")}?mode=ai`} className="panel panel-2 row !gap-3 no-underline text-fg hover:border-border-strong">
           <Bot className="ico c-cyan" aria-hidden />
           <div>
             <h3 className="t-heading">{t("lobby.vsAi")}</h3>
             <p className="muted t-caption">{t("lobby.vsAiBody")}</p>
           </div>
         </Link>
+        </div>
       </div>
       <div className="row wrap mt-4 !gap-x-6">
         <Link href={href("/leaderboard")} className="row t-label">
@@ -262,7 +269,7 @@ function StatsPanel({ username }: { username?: string }) {
               {tile ? (
                 <>
                   <p className="t-label subtle">{tile.k}</p>
-                  <p className={`num num-lg ${tile.c}`}>{tile.v}</p>
+                  <p className={`num num-lg ${tile.c}`}>{typeof tile.v === "number" ? <TickNumber value={tile.v} /> : tile.v}</p>
                 </>
               ) : (
                 <>

@@ -1,0 +1,108 @@
+/* Arcade motion layer: 8-bit "stepped" motion on top of the design system.
+   Everything here moves only when motion is allowed: the OS setting (prefers-reduced-motion)
+   AND the in-app preference (html.reduce-motion). Quick: entrances stay under ~400 ms and
+   nothing you read keeps moving. */
+
+/* ---- shared pixel bits (static) */
+.arcade-burst { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.arcade-burst i { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; opacity: 0; background: var(--c, var(--neon-amber)); }
+.bit { display: inline-block; image-rendering: pixelated; flex: none; }
+/* while visible it takes taps (they skip it) instead of letting them reach the hidden page */
+.boot { position: fixed; inset: 0; z-index: 80; display: none; place-items: center; background: var(--bg); color: var(--fg); pointer-events: auto; }
+.boot-line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--fg); transform: scaleX(0); }
+.boot-inner { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); opacity: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* every page (lobby included) loads top to bottom in 8 pixel steps. `backwards`: nothing stays
+     clipped afterwards. 8 steps = 8 cheap repaints, no per-frame work */
+  :root:not(.reduce-motion) .arcade-enter { animation: arcade-wipe 240ms steps(8, end) backwards; }
+
+  /* a label that blinks three times, then stays (INSERT COIN) */
+  :root:not(.reduce-motion) .arcade-blink { animation: arcade-blink 900ms steps(1, end) 3; }
+  /* while the boot plays on top, start blinking after it */
+  :root:not(.reduce-motion):not([data-booted]) .arcade-blink { animation-delay: 1.4s; }
+
+  /* arcade buttons: a short, stepped press */
+  :root:not(.reduce-motion) .btn { transition: transform 80ms steps(2, end), background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out; }
+  :root:not(.reduce-motion) .btn-primary:active { transform: translateY(3px); }
+
+  /* burst squares fly out in steps */
+  :root:not(.reduce-motion) .arcade-burst i { animation: arcade-burst 520ms steps(6, end) forwards; animation-delay: var(--d, 0ms); }
+
+  /* power-on boot (first load of a session; html[data-booted] skips it) */
+  :root:not(.reduce-motion):not([data-booted]) .boot { display: grid; animation: boot-out 1300ms steps(1, end) forwards; }
+  :root:not(.reduce-motion):not([data-booted]) .boot-line { animation: boot-line 420ms steps(6, end) forwards; }
+  :root:not(.reduce-motion):not([data-booted]) .boot-inner { animation: boot-in 300ms steps(3, end) 450ms forwards; }
+}
+
+@keyframes arcade-wipe {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes arcade-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes arcade-burst {
+  0% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))); }
+}
+@keyframes boot-line {
+  0% { transform: scaleX(0); }
+  70% { transform: scaleX(1); height: 2px; }
+  100% { transform: scaleX(1); height: 0; }
+}
+@keyframes boot-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes boot-out {
+  0%, 99% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* ===================================================================== Arcade display
+   html.arcade (Settings → Preferences → Arcade display, on by default): the app looks like an
+   arcade monitor. Readable pixel fonts, square pixel-cornered shapes, pixelated photos, a CRT
+   with an RGB phosphor grid. Static: none of this moves. Turning it off restores the plain look. */
+html.arcade {
+  --font-body: var(--font-pixelify), var(--font-outfit), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-vt323), var(--font-jetbrains), ui-monospace, monospace;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  /* one "pixel" of the stair-stepped corners */
+  --px: 4px;
+  --pixel-corners: polygon(0 var(--px), var(--px) var(--px), var(--px) 0, calc(100% - var(--px)) 0, calc(100% - var(--px)) var(--px), 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, var(--px) calc(100% - var(--px)), 0 calc(100% - var(--px)));
+  --scanline-opacity: .22;
+  --vignette-opacity: .75;
+}
+/* pixel fonts run small and narrow: match their x-height to the normal UI font so text keeps its size */
+html.arcade body { font-size-adjust: ex-height 0.58; }
+html.arcade .pix, html.arcade .pix * { font-size-adjust: none; }
+/* numbers in VT323 read best a little bigger */
+html.arcade :is(.num, .t-label, code, kbd, .switch, .seg) { font-size-adjust: ex-height 0.66; }
+html.arcade body { -webkit-font-smoothing: none; font-smooth: never; }
+
+/* square boxes with stair-stepped corners. Focus rings go inside (the clip would hide them) */
+html.arcade :is(.panel, .btn, .input, .badge, .seg, .division, .match, .tab-list, [data-sonner-toast]) { clip-path: var(--pixel-corners); }
+html.arcade :is(.btn, .icon-btn, .tab, .seg button, .look-choice):focus-visible { outline-offset: -4px; }
+html.arcade .input:focus-within { outline-offset: -4px; }
+html.arcade :is(.panel, .btn, .input) { border-width: 2px; }
+html.arcade :is(.avatar, .avatar img, .avatar svg, .look-choice, .paddle-swatch, .presence, .switch-track, .switch-track::after, .check-box, [role="switch"], [role="switch"] > span) { border-radius: 0 !important; }
+/* the pixel-corner clip cuts glows: arcade buttons get a hard pixel "drop" instead */
+html.arcade .btn-primary { box-shadow: none; border-bottom-width: 4px; border-bottom-color: color-mix(in srgb, var(--neon-magenta) 55%, var(--ink-black)); }
+html.arcade .btn-primary:active { border-bottom-width: 2px; }
+
+/* photos (uploaded avatars) become pixel art: an SVG mosaic filter (#vx-pixelate in the root layout) */
+html.arcade .avatar img { filter: url(#vx-pixelate); image-rendering: pixelated; }
+html.arcade img:not(.avatar img) { image-rendering: pixelated; }
+
+/* CRT monitor: an RGB phosphor grid, deeper scanlines and a curved-glass vignette (static) */
+.crt-mask { display: none; }
+html.arcade:not(.crt-off) .crt-mask {
+  /* plain low-opacity layer: no blend mode, so the browser composites it once instead of every frame */
+  display: block; position: absolute; inset: 0; opacity: .045;
+  background: repeating-linear-gradient(90deg, #ff2a2a 0 1px, #2aff6a 1px 2px, #2a6aff 2px 3px);
+}
+html.arcade:not(.crt-off) .crt { box-shadow: inset 0 0 0 3px var(--ink-black), inset 0 0 90px rgba(0, 0, 0, .55); }

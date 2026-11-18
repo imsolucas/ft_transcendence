@@ -202,7 +202,7 @@ export function Switch({
   id: string;
 }) {
   return (
-    <div className="row between row-4 py-2">
+    <div className="row between !gap-4 py-2">
       <div className="grow">
         <label htmlFor={id} className="t-strong">
           {label}

@@ -292,7 +292,7 @@ function FriendsList({ query }: { query: ReturnType<typeof useSWR<PublicUser[]>>
       <Panel>
         <div className="stack stack-3" aria-busy="true" aria-label={t("common.loading")}>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="row row-3">
+            <div key={i} className="row !gap-3">
               <Skeleton circle />
               <span className="stack grow">
                 <Skeleton style={{ width: "40%" }} />

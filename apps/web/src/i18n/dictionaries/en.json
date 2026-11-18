@@ -109,7 +109,8 @@
       "1": "Weak. Add more characters.",
       "2": "Fair. Add a symbol or a number.",
       "3": "Good.",
-      "4": "Strong."
+      "4": "Strong.",
+      "breached": "Found in a data breach: attackers try it first. Choose another."
     },
     "errors": {
       "invalidCredentials": "That username or password is wrong. Check both and try again.",
@@ -588,7 +589,9 @@
     "passkeyAddedOn": "Added {date}",
     "removePasskey": "Remove passkey",
     "passkeyReauth": "For your safety, sign in again before changing your passkeys.",
-    "signInAgain": "Sign in again"
+    "signInAgain": "Sign in again",
+    "arcade": "Arcade display",
+    "arcadeBody": "Pixel fonts, pixel-cornered panels, a CRT monitor look and a chunky low-res game screen. Turn off for plain, smooth text."
   },
   "legal": {
     "contents": "Contents",

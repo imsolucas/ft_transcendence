@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Bit } from "@/components/arcade/bit";
 import useSWR from "swr";
 import { Bot, Send, Square, Trash2 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -120,9 +121,12 @@ export function CoachView() {
   return (
     <div className="mx-auto flex w-full max-w-[880px] flex-col gap-4">
       <div className="row between wrap">
-        <div>
-          <h1 className="pix pix-md uppercase">{t("coach.title")}</h1>
-          <p className="muted mt-1">{t("coach.subtitle")}</p>
+        <div className="flex items-center gap-3">
+          <Bit mood={busy ? "wave" : "idle"} size={48} />
+          <div>
+            <h1 className="pix pix-md uppercase">{t("coach.title")}</h1>
+            <p className="muted mt-1">{t("coach.subtitle")}</p>
+          </div>
         </div>
         {status.enabled && turns.length > 0 && !busy && (
           <Button variant="ghost" size="sm" onClick={() => setTurns([])}>

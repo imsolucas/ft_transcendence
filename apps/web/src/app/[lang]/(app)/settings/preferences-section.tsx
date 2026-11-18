@@ -7,7 +7,8 @@ import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { SettingRow } from "./settings-ui";
 import { CourtThemePicker } from "@/components/game/court-theme-picker";
 
-const TOGGLES: { key: keyof Pick<Prefs, "crt" | "reducedMotion" | "sound">; label: string; body: string }[] = [
+const TOGGLES: { key: keyof Pick<Prefs, "crt" | "arcade" | "reducedMotion" | "sound">; label: string; body: string }[] = [
+  { key: "arcade", label: "settings.arcade", body: "settings.arcadeBody" },
   { key: "crt", label: "settings.crt", body: "settings.crtBody" },
   { key: "reducedMotion", label: "settings.reducedMotion", body: "settings.reducedMotionBody" },
   { key: "sound", label: "settings.sound", body: "settings.soundBody" },

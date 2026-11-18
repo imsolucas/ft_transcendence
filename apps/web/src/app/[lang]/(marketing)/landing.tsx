@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Bit } from "@/components/arcade/bit";
 import { ArrowRight, Gamepad2, Keyboard, Trophy, Users } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { Button } from "@/components/ui/button";
@@ -77,7 +78,10 @@ export function Landing() {
           <Horizon />
           <div className="relative z-10 mx-auto grid max-w-[1200px] items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div className="flex flex-col items-center gap-5 text-center lg:items-start lg:text-left">
-              <p className="pix pix-sm c-amber">{t("landing.insertCoin")}</p>
+              <div className="flex items-end gap-3">
+                <Bit mood="wave" size={56} />
+                <p className="pix pix-sm c-amber arcade-blink">{t("landing.insertCoin")}</p>
+              </div>
               <h1 className="text-[26px] leading-[38px] sm:text-[36px] sm:leading-[48px]">
                 <BrandMark />
               </h1>
