@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import useSWR from "swr";
+import { fetcher } from "@/lib/api";
 import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus, Eye, Users } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
@@ -11,6 +12,8 @@ import type { FriendRequest, MatchSummary, Page, Profile, PublicUser } from "@/l
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { CountBadge, EmptyState, Panel, Segmented, Skeleton } from "@/components/ui/primitives";
+import { RankedStandingLine, useSeasonLabel } from "@/components/game/ranked";
+import type { RankedMe } from "@/lib/types";
 import { MatchCard, MatchCardSkeleton, PlayerChip } from "@/components/game/cards";
 
 const ROOM_CODE = /^[0-9a-f]{8}$/i;
@@ -66,6 +69,10 @@ function PlayPanel() {
             <Swords className="ico mb-3 c-magenta !h-6 !w-6" aria-hidden />
             <h3 className="t-title">{t("lobby.quickMatch")}</h3>
             <p className="muted">{t("lobby.quickMatchBody")}</p>
+            <div className="mt-3 stack !gap-1">
+              <RankedStandingLine path="/api/ranked/me" />
+              <SeasonCaption />
+            </div>
           </div>
           <Button asChild variant="primary" size="lg" glow="md" block>
             <Link href={`${href("/play")}?mode=quick`} className="no-underline">
@@ -399,4 +406,11 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
       </Button>
     </div>
   );
+}
+
+/** "Season 1 · ends in 12 days" (shares the /api/ranked/me request with the standing line) */
+function SeasonCaption() {
+  const { data } = useSWR<RankedMe>("/api/ranked/me", fetcher, { revalidateOnFocus: false });
+  const label = useSeasonLabel(data?.season);
+  return label ? <span className="t-caption subtle">{label}</span> : null;
 }

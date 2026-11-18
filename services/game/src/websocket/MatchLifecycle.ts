@@ -1,4 +1,5 @@
 import type { GameEndMessage, OpponentReconnectedMessage, OpponentReconnectingMessage, Player, ReadyTimeoutMessage, RejoinedMessage, RematchReadyMessage, RematchRequestedMessage } from "shared/index.ts";
+import { applyRatings } from "./ranked.ts";
 import { toSerializablePlayer } from "shared/index.ts";
 import type { RoomManager } from "../game/roomManager.ts";
 import type { Room } from "../types/room.types.ts";
@@ -178,7 +179,9 @@ export class MatchLifecycle {
         winnerId: parseInt(winnerId),
         played_at: new Date(room.createdAt).toISOString(),
         end_at: new Date().toISOString(),
-      });
+        // a forfeit in a ranked match counts as a loss for the one who left
+        ranked: !!room.ranked,
+      }, (ratings) => applyRatings(this.roomManager, room.id, ratings));
     }
   }
 
@@ -203,6 +206,9 @@ export class MatchLifecycle {
     room.status = "full";
     delete room.gameServer;
     room.createdAt = Date.now();
+    // only the queue-made game is ranked: a rematch between the same two players is friendly
+    // (otherwise two accounts could farm rating by rematching each other)
+    room.ranked = false;
     for (const p of players) p.isReady = false;
     const msg: RematchReadyMessage = {
       type: "rematchReady",

@@ -13,7 +13,7 @@ const require = createRequire(new URL("../../../apps/web/package.json", import.m
 type ClientSocket = { on(ev: string, fn: (...args: any[]) => void): void; emit(ev: string, ...args: unknown[]): void; disconnect(): void };
 const { io } = require("socket.io-client") as { io: (url: string, opts: Record<string, unknown>) => ClientSocket };
 
-const ORIGIN = "https://localhost:8443";
+const ORIGIN = "https://localhost:47443";
 const TOKEN = crypto.randomBytes(48).toString("base64");
 
 // ---------------------------------------------------------------- stub users service

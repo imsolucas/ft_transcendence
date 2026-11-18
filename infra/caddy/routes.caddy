@@ -1,0 +1,51 @@
+# Shared by Caddyfile (direct HTTPS) and Caddyfile.tunnel (behind a Cloudflare Tunnel):
+# compression, security headers, body limit and the path routing. Imported inside a site block.
+encode zstd gzip
+
+header {
+	# HSTS only makes sense on a real domain (on localhost it would affect every port)
+	{$HSTS_HEADER:-Strict-Transport-Security}
+	X-Content-Type-Options "nosniff"
+	X-Frame-Options "DENY"
+	Referrer-Policy "strict-origin-when-cross-origin"
+	Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	# Content-Security-Policy: only our origin, plus what the app really uses. Next.js inlines
+	# its bootstrap scripts and styles ('unsafe-inline'); avatars are generated or uploaded
+	# (same origin); clips use blob: video; the game socket is same-origin ('self' covers wss);
+	# Cloudflare Turnstile (optional bot check) needs its script, frame and requests.
+	Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+	-Server
+}
+
+request_body {
+	max_size 4MB
+}
+
+@internal path /internal /internal/* /docs /docs/*
+handle @internal {
+	respond 404
+}
+
+handle /api/* {
+	reverse_proxy {$USERS_UPSTREAM:users:4000} {
+		header_up X-Forwarded-For {client_ip}
+	}
+}
+
+handle /ws/* {
+	reverse_proxy {$GAME_UPSTREAM:game:3001} {
+		header_up X-Forwarded-For {client_ip}
+	}
+}
+
+handle /ws {
+	reverse_proxy {$GAME_UPSTREAM:game:3001} {
+		header_up X-Forwarded-For {client_ip}
+	}
+}
+
+handle {
+	reverse_proxy {$WEB_UPSTREAM:web:3000} {
+		header_up X-Forwarded-For {client_ip}
+	}
+}

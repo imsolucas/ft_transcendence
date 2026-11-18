@@ -1,8 +1,8 @@
-/* Ported from the ft_transcendence Design System artifact
+/* Ported from the VOLLEY.EXE Design System artifact
    (https://claude.ai/artifact/BMeufmTDn4KNsRPaXkvAov, project/components/bundle.css).
    Component classes driven entirely by the tokens in tokens.css. Keep in sync with the artifact. */
 @layer components {
-/* ft_transcendence — component styles. Every colour, radius and glow is a token. */
+/* VOLLEY.EXE — component styles. Every colour, radius and glow is a token. */
 body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 22px; -webkit-font-smoothing: antialiased; }
 h1, h2, h3, h4, p, ul, ol, figure { margin: 0; padding: 0; }
 ul, ol { list-style: none; }
@@ -175,6 +175,13 @@ body:has([data-offline-page]) .offline-banner { display: none; }
 .avatar-xl { width: 96px; height: 96px; font-size: 30px; }
 .avatar.you { border: 2px solid var(--neon-magenta); }
 .avatar.opp { border: 2px solid var(--neon-cyan); }
+.avatar > svg { overflow: hidden; }
+/* Cosmetic frames (unlocked by level / achievements). Static: no animation, so reduced motion is unaffected. */
+.avatar.frame-neon { box-shadow: 0 0 0 2px var(--neon-cyan), 0 0 10px var(--neon-cyan-glow); }
+.avatar.frame-duo { box-shadow: 0 0 0 2px var(--neon-magenta), 0 0 0 4px var(--neon-cyan); }
+.avatar.frame-gold { box-shadow: 0 0 0 2px var(--neon-amber), 0 0 12px var(--neon-amber-glow); }
+.avatar.frame-glitch { box-shadow: -2px 0 0 1px var(--neon-magenta), 2px 0 0 1px var(--neon-cyan), 0 0 0 1px var(--fg); }
+.avatar-sm.frame-duo { box-shadow: 0 0 0 1px var(--neon-magenta), 0 0 0 2px var(--neon-cyan); }
 .presence { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border: 2px solid var(--surface-1); border-radius: var(--radius-full); box-sizing: content-box; }
 .presence-online { background: var(--neon-green); }
 .presence-ingame { background: var(--neon-cyan); border-radius: var(--radius-sm); transform: rotate(45deg) scale(.82); }
@@ -302,3 +309,37 @@ body:has([data-offline-page]) .offline-banner { display: none; }
 }
 
 }
+
+/* Avatar builder (settings → Avatar) */
+.look-choice { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); cursor: pointer; transition: border-color 150ms ease-out, background-color 150ms ease-out; }
+.look-choice-wide { width: auto; height: 44px; padding: 0 var(--space-3); }
+.look-choice:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.look-choice.is-checked { border-color: var(--neon-magenta); box-shadow: inset 0 0 0 1px var(--neon-magenta); }
+.look-choice.is-locked { cursor: not-allowed; opacity: 0.45; }
+.look-choice.is-locked:hover { border-color: var(--border); background: var(--bg); }
+.look-choice:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.look-lock { position: absolute; right: -6px; top: -6px; display: inline-flex; padding: 3px; border-radius: var(--radius-full); background: var(--surface-3); color: var(--fg); }
+.look-lock .ico { width: 12px; height: 12px; }
+/* paddle skin swatches mirror the canvas skins in lib/game/renderer.ts */
+.paddle-swatch { display: inline-block; width: 8px; height: 28px; border-radius: 3px; background: var(--neon-magenta); }
+.paddle-swatch.skin-hollow { background: transparent; box-shadow: inset 0 0 0 2px var(--neon-magenta); }
+.paddle-swatch.skin-striped { background: repeating-linear-gradient(to bottom, var(--neon-magenta) 0 6px, var(--bg) 6px 9px); }
+.paddle-swatch.skin-pixel { border-radius: 0; background: repeating-linear-gradient(to bottom, var(--neon-magenta) 0 8px, transparent 8px 10px); }
+.paddle-swatch.skin-gold { background: linear-gradient(to right, var(--neon-amber) 0 25%, var(--fg) 25% 45%, var(--neon-amber) 45%); }
+.paddle-swatch.skin-prism { background: linear-gradient(to bottom, var(--neon-magenta), var(--neon-amber), var(--neon-cyan)); }
+
+/* Landing attract mode */
+.attract-score { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-2); font: 600 13px/18px var(--font-mono); text-transform: uppercase; color: var(--fg-muted); }
+.attract-hint { position: absolute; left: 50%; bottom: var(--space-3); transform: translateX(-50%); padding: 4px 10px; border-radius: var(--radius-full); background: var(--scrim); color: var(--fg); white-space: nowrap; pointer-events: none; }
+.attract-overlay { position: absolute; inset: 28px 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-lg); background: var(--scrim); text-align: center; }
+
+/* Ranked divisions: icon + word, the colour only reinforces */
+.division { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border: 1px solid currentColor; border-radius: var(--radius-sm); font: 600 12px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.division .ico { width: 14px; height: 14px; }
+.division-none { color: var(--fg-subtle); }
+.division-bronze { color: var(--neon-amber); border-style: dashed; }
+.division-silver { color: var(--fg-muted); }
+.division-gold { color: var(--neon-amber); background: var(--neon-amber-soft); }
+.division-platinum { color: var(--neon-cyan); background: var(--neon-cyan-soft); }
+.division-diamond { color: var(--neon-magenta); background: var(--neon-magenta-soft); }
+.division-master { color: var(--neon-green); background: var(--neon-green-soft); box-shadow: 0 0 10px var(--neon-green-glow); }

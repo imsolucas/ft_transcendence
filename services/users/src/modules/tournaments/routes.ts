@@ -1,10 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import type { ChainVerification, Page, TournamentSummary } from "../../../../shared/types/api.types.ts";
+import type { Page, TournamentSummary } from "../../../../shared/types/api.types.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { isDeletedHandle } from "../privacy/routes.ts";
-import { ID_PARAMS, PUBLIC_USER_SELECT, parsePage, toPublicUser } from "../shared/presenters.ts";
-import { chainEnabled, explorerTx, verifyTournament } from "../../chain/service.ts";
+import { PUBLIC_USER_SELECT, parsePage, toPublicUser } from "../shared/presenters.ts";
 
 const PUBLIC_USER_SCHEMA = {
   type: "object",
@@ -14,6 +13,8 @@ const PUBLIC_USER_SCHEMA = {
     displayName: { type: "string" },
     avatar: { type: ["string", "null"] },
     presence: { type: "string" },
+    // validated look (services/shared/cosmetics/look.ts); passed through as is
+    look: { type: "object", additionalProperties: true },
   },
 } as const;
 
@@ -39,32 +40,14 @@ const TOURNAMENT_PAGE_SCHEMA = {
           matchCount: { type: "integer" },
           winner: { anyOf: [PUBLIC_USER_SCHEMA, { type: "null" }] },
           won: { type: "boolean" },
-          chain: {
-            type: "object",
-            properties: { enabled: { type: "boolean" }, txHash: NULLABLE_STRING, explorerUrl: NULLABLE_STRING },
-          },
         },
       },
     },
   },
 } as const;
 
-const CHAIN_VERIFICATION_SCHEMA = {
-  type: "object",
-  properties: {
-    status: { type: "string", enum: ["verified", "mismatch", "pending", "disabled", "unavailable"] },
-    txHash: NULLABLE_STRING,
-    blockNumber: { type: ["integer", "null"] },
-    contract: NULLABLE_STRING,
-    chainId: { type: ["integer", "null"] },
-    resultHash: { type: "string" },
-    onChainHash: NULLABLE_STRING,
-    explorerUrl: NULLABLE_STRING,
-  },
-} as const;
-
 export default async function tournamentRoutes(app: FastifyInstance) {
-  // Tournaments a player took part in, newest first, with the stored chain state (no RPC call).
+  // Tournaments a player took part in, newest first.
   app.get(
     "/users/:username/tournaments",
     {
@@ -101,13 +84,11 @@ export default async function tournamentRoutes(app: FastifyInstance) {
             end_at: true,
             winnerId: true,
             winner: { select: PUBLIC_USER_SELECT },
-            chainTxHash: true,
             _count: { select: { players: true, matches: true } },
           },
         }),
         prisma.tournament.count({ where }),
       ]);
-      const enabled = chainEnabled();
       return {
         page,
         pageSize,
@@ -121,25 +102,9 @@ export default async function tournamentRoutes(app: FastifyInstance) {
           matchCount: t._count.matches,
           winner: t.winner ? toPublicUser(t.winner) : null,
           won: t.winnerId === target.id,
-          chain: { enabled, txHash: t.chainTxHash, explorerUrl: enabled ? explorerTx(t.chainTxHash) : null },
         })),
       };
     }
   );
 
-  // Recompute the tournament's canonical hash and compare it with the on-chain record.
-  app.get(
-    "/tournaments/:id/chain",
-    {
-      preHandler: requireUser,
-      schema: { params: ID_PARAMS, response: { 200: CHAIN_VERIFICATION_SCHEMA, 404: ERROR } },
-    },
-    async (req, reply): Promise<ChainVerification | void> => {
-      const { id } = req.params as { id: number };
-      const result = await verifyTournament(id, req.log);
-      if (!result) return reply.code(404).send({ error: "Tournament not found." });
-      reply.header("Cache-Control", "no-store");
-      return result;
-    }
-  );
 }

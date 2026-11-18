@@ -1,6 +1,6 @@
-# ft_transcendence — one command: `make up` (docker compose -f infra/docker-compose.yml up -d --build)
-# Browser origin: https://localhost:8443 (Caddy, automatic HTTPS). Only Caddy publishes a public
-# port; the optional "monitoring" profile binds Grafana and Prometheus to 127.0.0.1 only.
+# VOLLEY.EXE (repo ft_transcendence) — one command: `make up` (docker compose -f infra/docker-compose.yml up -d --build)
+# Browser origin: https://localhost:47443 (Caddy, automatic HTTPS). Only Caddy publishes a public
+# port; the optional "mail" profile binds Mailpit to 127.0.0.1 only. Host ports are all 47xxx.
 name: ft_transcendence
 
 services:
@@ -26,26 +26,24 @@ services:
       dockerfile: services/users/Dockerfile
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ft}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ft}
-      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:8443}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:47443}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in infra/.env}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?set INTERNAL_SERVICE_TOKEN in infra/.env}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-ft_transcendence <no-reply@localhost>}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
+      SMTP_FROM: ${SMTP_FROM:-VOLLEY.EXE <no-reply@localhost>}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-true}
+      # Bot check on sign-up/sign-in/reset (Cloudflare Turnstile); both empty = off
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      # Coach: an OpenAI-compatible chat API (local Ollama by default, or a remote provider); empty = off
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
       SEED_DEV_DATA: ${SEED_DEV_DATA:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      # Tournament results on chain (optional; see the "Blockchain" section of the README)
-      CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}
-      CHAIN_PRIVATE_KEY: ${CHAIN_PRIVATE_KEY:-}
-      CHAIN_CONTRACT_ADDRESS: ${CHAIN_CONTRACT_ADDRESS:-}
-      CHAIN_ID: ${CHAIN_ID:-}
-      CHAIN_EXPLORER_URL: ${CHAIN_EXPLORER_URL:-}
     volumes:
       - uploads:/usr/src/app/uploads
     depends_on:
@@ -59,7 +57,7 @@ services:
       context: ..
       dockerfile: services/game/Dockerfile
     environment:
-      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:8443}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:47443}
       INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
       USERS_API_URL: http://users:4000
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -80,12 +78,70 @@ services:
     restart: unless-stopped
 
   # Local mail catcher (profile "mail", enabled by `make env`): every email the users
-  # service sends lands in the inbox at http://localhost:8025 (bound to this machine only).
+  # service sends lands in the inbox at http://localhost:47025 (bound to this machine only).
   mailpit:
     image: axllent/mailpit:v1.27
     profiles: [mail]
     ports:
-      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_PORT:-47025}:8025"
+    networks: [internal]
+    restart: unless-stopped
+
+  # Local LLM for the Coach (profile "ai", enabled by `make env`). Free and private: runs on this
+  # machine's CPU, internal network only (no published port). The users service reaches it at
+  # AI_BASE_URL=http://ollama:11434/v1 (OpenAI-compatible). ollama-pull downloads AI_MODEL once
+  # into the ollama_data volume (about 1 GB for qwen2.5:1.5b).
+  ollama:
+    image: ollama/ollama:0.40.16
+    profiles: [ai]
+    environment:
+      # keep the model in memory between questions (the first load takes a few seconds)
+      OLLAMA_KEEP_ALIVE: 30m
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+    restart: unless-stopped
+
+  ollama-pull:
+    image: ollama/ollama:0.40.16
+    profiles: [ai]
+    entrypoint: ["ollama", "pull", "${AI_MODEL:-qwen2.5:1.5b}"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks: [internal]
+    # a failed download (network down) is retried; a finished one exits 0 and stays stopped
+    restart: on-failure
+
+  # Cloudflare Tunnel (no domain or open ports needed; see docs/DEPLOY.md). Outbound only: it
+  # connects to Cloudflare and forwards visitors to caddy:80 on the internal network.
+  #   profile "quick-tunnel": a free random https://<name>.trycloudflare.com (changes on restart)
+  #   profile "tunnel": a named tunnel from your Cloudflare account (CLOUDFLARE_TUNNEL_TOKEN), stable
+  cloudflared-quick:
+    image: cloudflare/cloudflared:2025.8.1
+    profiles: [quick-tunnel]
+    command: ["tunnel", "--no-autoupdate", "--url", "http://caddy:80"]
+    depends_on:
+      - caddy
+    networks: [internal]
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.8.1
+    profiles: [tunnel]
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      # read from the environment, not the command line (which `docker inspect` / ps would show)
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - caddy
     networks: [internal]
     restart: unless-stopped
 
@@ -110,38 +166,21 @@ services:
     networks: [internal]
     restart: unless-stopped
 
-  # Local EVM test chain for the blockchain module (profile "chain": COMPOSE_PROFILES=chain).
-  # Avalanche-compatible: same EVM and JSON-RPC as the C-Chain, with a local chain id
-  # (Fuji is 43113). Internal network only: no published port. State survives restarts
-  # (dumped to the anvil_data volume); if it is lost, users redeploys and re-records.
-  anvil:
-    image: ghcr.io/foundry-rs/foundry:v1.8.7
-    profiles: [chain]
-    entrypoint: ["anvil"]
-    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "43112", "--state", "/home/foundry/anvil-state.json", "--state-interval", "30"]
-    init: true
-    volumes:
-      - anvil_data:/home/foundry
-    healthcheck:
-      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks: [internal]
-    restart: unless-stopped
-
   caddy:
     image: caddy:2.11-alpine
+    # direct HTTPS (local CA or Let's Encrypt); docker-compose.tunnel.yml switches to Caddyfile.tunnel
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
     environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:-localhost:8443}
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost:47443}
       TLS_MODE: ${TLS_MODE:-internal}
       HSTS_HEADER: ${HSTS_HEADER:--Strict-Transport-Security}
     ports:
-      # HTTPS (8443 locally, 443 on a real domain) and HTTP for ACME challenges / redirects
-      - "${HTTPS_PORT:-8443}:${CADDY_HTTPS_PORT:-8443}"
-      - "${HTTP_PORT:-18080}:80"
+      # HTTPS (47443 locally, 443 on a real domain) and HTTP for ACME challenges / redirects
+      - "${HTTPS_PORT:-47443}:${CADDY_HTTPS_PORT:-47443}"
+      - "${HTTP_PORT:-47080}:80"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # the whole folder: Caddyfile / Caddyfile.tunnel both import routes.caddy
+      - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -154,83 +193,12 @@ services:
     networks: [internal]
     restart: unless-stopped
 
-  # ---- Monitoring (opt-in): COMPOSE_PROFILES=monitoring or `--profile monitoring`.
-  # Prometheus scrapes users:4000/metrics, game:3001/metrics and postgres-exporter over the
-  # internal network (Caddy never routes /metrics). See README > Operations > Monitoring.
-  prometheus:
-    image: prom/prometheus:v3.15.1
-    profiles: [monitoring]
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
-      - --storage.tsdb.retention.size=2GB
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      # UI (targets, alerts) for the host only
-      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
-    networks: [internal]
-    restart: unless-stopped
-
-  postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
-    profiles: [monitoring]
-    environment:
-      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB:-ft}?sslmode=disable
-      DATA_SOURCE_USER: ${POSTGRES_USER:-ft}
-      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks: [internal]
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:13.1.10
-    profiles: [monitoring]
-    # Refuse to start without an admin password (Grafana would fall back to admin/admin)
-    entrypoint:
-      - /bin/sh
-      - -c
-      - '[ -n "$$GF_SECURITY_ADMIN_PASSWORD" ] || { echo "set GRAFANA_ADMIN_PASSWORD in infra/.env" >&2; exit 1; }; exec /run.sh'
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
-      GF_SECURITY_DISABLE_GRAVATAR: "true"
-      GF_SECURITY_COOKIE_SAMESITE: strict
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_AUTH_DISABLE_LOGIN_FORM: "false"
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_USERS_ALLOW_ORG_CREATE: "false"
-      GF_ANALYTICS_REPORTING_ENABLED: "false"
-      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
-      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
-      GF_NEWS_NEWS_FEED_ENABLED: "false"
-      GF_SERVER_ROOT_URL: http://localhost:${GRAFANA_PORT:-3002}/
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/ft-overview.json
-    volumes:
-      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "127.0.0.1:${GRAFANA_PORT:-3002}:3000"
-    depends_on:
-      - prometheus
-    networks: [internal]
-    restart: unless-stopped
-
 volumes:
   pgdata:
   uploads:
   caddy_data:
   caddy_config:
-  prometheus_data:
-  grafana_data:
-  anvil_data:
+  ollama_data:
 
 networks:
   internal:

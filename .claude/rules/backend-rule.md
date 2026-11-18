@@ -14,7 +14,7 @@ paths:
   extension today (`ts-node-esm` / `tsx`); keep the style of the file you edit.
 - `services/users/src`: `routes/` (schema + wiring only) → `controllers/` (request handling)
   → Prisma. `schemas/index.ts` holds shared JSON schemas registered with `app.addSchema`.
-  `middleware/` holds hooks (`apiKeyAuth.ts`, `rateLimiter.ts`).
+  `middleware/` holds hooks (`rateLimiter.ts`).
 - `services/game/src`: `websocket/` (MessageHandler, RoomService, GameService,
   TournamentService, TickSystem, Broadcaster), `game/` (RoomManager), `utils/reportResults.ts`.
 - Logic that both browser and server run (physics, protocol types) lives in

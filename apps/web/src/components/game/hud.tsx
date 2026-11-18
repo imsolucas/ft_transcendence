@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { playSfx } from "@/lib/game/sfx";
+import type { PlayerLook } from "shared";
 import { Menu as MenuIcon, WifiOff } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
-import { useReducedMotion } from "@/lib/prefs";
+import { usePrefs, useReducedMotion } from "@/lib/prefs";
 import { Avatar, Badge, Kbd, Modal, Spinner } from "@/components/ui/primitives";
 import { Button, IconButton } from "@/components/ui/button";
 import { Horizon } from "@/components/layout/crt";
@@ -12,6 +14,7 @@ import { Horizon } from "@/components/layout/crt";
 export interface Side {
   name: string;
   avatar?: string | null;
+  look?: PlayerLook | null;
   meta?: string;
 }
 
@@ -41,7 +44,7 @@ export function ScoreBoard({
   return (
     <div className="scoreboard !grid-cols-[1fr_auto_1fr] max-sm:!gap-2 max-sm:!px-3">
       <div className="pchip min-w-0">
-        <Avatar name={left.name} src={left.avatar} ring={leftIsYou ? "you" : undefined} size="md" className="max-sm:!h-7 max-sm:!w-7" />
+        <Avatar name={left.name} src={left.avatar} look={left.look} ring={leftIsYou ? "you" : undefined} size="md" className="max-sm:!h-7 max-sm:!w-7" />
         <div className="min-w-0">
           <div className="pchip-name truncate">{left.name}</div>
           {left.meta && <div className="pchip-meta max-sm:hidden">{left.meta}</div>}
@@ -58,7 +61,7 @@ export function ScoreBoard({
         </div>
       </div>
       <div className="pchip right min-w-0">
-        <Avatar name={right.name} src={right.avatar} ring="opp" size="md" className="max-sm:!h-7 max-sm:!w-7" />
+        <Avatar name={right.name} src={right.avatar} look={right.look} ring="opp" size="md" className="max-sm:!h-7 max-sm:!w-7" />
         <div className="min-w-0">
           <div className="pchip-name truncate">{right.name}</div>
           {right.meta && <div className="pchip-meta max-sm:hidden">{right.meta}</div>}
@@ -267,6 +270,7 @@ export function MatchEnd({
   primary,
   secondary,
   note,
+  replay,
 }: {
   won: boolean | null;
   title: string;
@@ -276,8 +280,15 @@ export function MatchEnd({
   primary: ReactNode;
   secondary: ReactNode;
   note?: ReactNode;
+  /** slow-motion replay of the deciding point */
+  replay?: ReactNode;
 }) {
   const { t } = useI18n();
+  // a short jingle (only plays if the player already made a sound-enabled gesture)
+  const { sound } = usePrefs().prefs;
+  useEffect(() => {
+    if (sound && won !== null) playSfx(won ? "win" : "lose");
+  }, [sound, won]);
   return (
     <div className="relative flex min-h-[70dvh] flex-col items-center justify-center gap-6 overflow-hidden px-4 pb-48 pt-10 text-center">
       <Horizon />
@@ -298,6 +309,7 @@ export function MatchEnd({
           </p>
         </div>
         {won === false && <p className="pix pix-sm c-amber">{t("game.insertCoinContinue")}</p>}
+        {replay}
         <div className="flex flex-wrap justify-center gap-3">
           {primary}
           {secondary}

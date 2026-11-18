@@ -1,4 +1,4 @@
-/* ft_transcendence service worker (registered in production builds only, see
+/* VOLLEY.EXE service worker (registered in production builds only, see
  * src/components/layout/service-worker.tsx).
  *
  * What is cached is decided by URL allow-list, never by inspecting the response: browsers

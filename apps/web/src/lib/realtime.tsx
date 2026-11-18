@@ -81,7 +81,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           void mutate((key) => typeof key === "string" && key.startsWith("/api/chat/"));
           break;
         case "moderation:warning":
-          toast.warning(t("chat.removedWarning", { category: t(`chat.category.${e.category}`) }), {
+          toast.warning(t("chat.strikeWarning", { category: t(`chat.category.${e.category}`) }), {
             description: e.mutedUntil ? t("chat.mutedUntil", { time: new Date(e.mutedUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) : undefined,
           });
           break;

@@ -1,13 +1,9 @@
 import Fastify from "fastify";
 import type { FastifyInstance } from "fastify";
 import { InternalServerError } from "./schemas/index.ts";
-import { config } from "./config.ts";
 import dbPlugin from "./db/plugin.ts";
 import routes from "./routes/routes.ts";
-import fastifySwagger from "@fastify/swagger";
 import { setLogger } from "./log.ts";
-import fastifySwaggerUi from "@fastify/swagger-ui";
-import { registerHttpMetrics } from "./metrics.ts";
 
 /** Strips one-time tokens from a URL before it is logged. */
 export function redactTokens(url: string): string {
@@ -57,36 +53,6 @@ export async function buildApp(): Promise<FastifyInstance> {
     const status = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
     if (status >= 500) req.log.error({ err }, "unhandled error");
     reply.code(status).send({ error: status >= 500 ? "Something went wrong. Please try again." : err.message });
-  });
-
-  // Prometheus: request counter/histogram for every route below, and GET /metrics
-  registerHttpMetrics(app);
-
-  await app.register(fastifySwagger, {
-    openapi: {
-      info: {
-        title: "ft_transcendence public API",
-        version: "2.0.0",
-        description: "Authenticate with an API key from Settings > API keys, sent as the X-API-Key header. Limit: 120 requests per minute per key (429 when exceeded). Write endpoints act as the key's owner.",
-      },
-      servers: [{ url: config.publicOrigin }],
-      components: {
-        securitySchemes: {
-          apiKeyAuth: { type: "apiKey", in: "header", name: "X-API-Key" },
-        },
-      },
-    },
-    transform: ({ schema, url }) => ({
-      schema: url.startsWith("/api/public/") ? schema : { ...(schema ?? {}), hide: true },
-      url,
-    }),
-  });
-  // Public API documentation (only /api/public/* is documented; everything else is hidden).
-  await app.register(fastifySwaggerUi, {
-    routePrefix: "/api/public/docs",
-    staticCSP: true,
-    // Swagger UI sets a few inline styles itself; scripts stay restricted to 'self'
-    transformStaticCSP: (header) => header.replace("style-src 'self' https:", "style-src 'self' https: 'unsafe-inline'"),
   });
 
   await app.register(dbPlugin);

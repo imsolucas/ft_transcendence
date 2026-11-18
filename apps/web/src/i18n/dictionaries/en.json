@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "ft_transcendence",
-    "description": "Real-time Pong with friends, tournaments and chat."
+    "title": "VOLLEY.EXE",
+    "description": "Retro arcade Pong in your browser. Play in one click, invite a friend with a link, win the bracket."
   },
   "common": {
     "play": "Play",
@@ -52,7 +52,7 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "language": "Language",
-    "rights": "A 42 school project, rebuilt.",
+    "rights": "VOLLEY.EXE · retro Pong, born as a 42 school project.",
     "status": "Status"
   },
   "landing": {
@@ -98,7 +98,6 @@
     "loggingIn": "Logging in…",
     "signup": "Create account",
     "signingUp": "Creating account…",
-    "google": "Continue with Google",
     "noAccount": "New here?",
     "createOne": "Create an account",
     "haveAccount": "Already have an account?",
@@ -120,9 +119,13 @@
       "invalidEmail": "Enter a valid email address.",
       "passwordTooShort": "Use at least 8 characters.",
       "tooManyAttempts": "Too many attempts. Wait a minute, then try again.",
-      "googleUnavailable": "Google sign-in isn't set up on this server yet.",
       "passwordTooLong": "Use at most 128 characters.",
-      "passwordsDontMatch": "The passwords don't match."
+      "passwordsDontMatch": "The passwords don't match.",
+      "passwordBreached": "This password has appeared in a data breach. Choose a different one.",
+      "verifyFirst": "Verify your email address first. We've just sent you a new link.",
+      "captcha": "The bot check failed. Try again.",
+      "passkeyFailed": "Passkey sign-in didn't work. Try again or use your password.",
+      "captchaLoad": "The bot check couldn't load. Check your connection or ad blocker, then retry."
     },
     "twoFactorTitle": "Two-factor code",
     "twoFactorSubtitle": "Enter the 6-digit code from your authenticator app.",
@@ -138,7 +141,6 @@
     "sessionExpiredTitle": "Session expired",
     "sessionExpiredBody": "You were signed out. Log in again to continue where you left off.",
     "loginAgain": "Log in again",
-    "googleFailed": "Google sign-in didn't finish. Try again, or use your username and password.",
     "forgotLink": "Forgot password?",
     "forgotTitle": "Forgot password",
     "forgotSubtitle": "Enter your account's email and we'll send you a link to choose a new password.",
@@ -151,14 +153,21 @@
     "requestNewLink": "Request a new link",
     "resetDone": "Your password was changed. Log in with the new one.",
     "confirmPassword": "Confirm new password",
-    "setPassword": "Set new password"
+    "setPassword": "Set new password",
+    "checkInboxTitle": "Check your inbox",
+    "checkInboxBody": "If {email} can be used for a new account, we've sent a link there to confirm it. Open it to finish signing up.",
+    "checkInboxHint": "No email after a few minutes? Check your spam folder, or send it again.",
+    "resendVerification": "Send the link again",
+    "verificationResent": "Link sent",
+    "passkeySignIn": "Sign in with a passkey",
+    "accountCreated": "Account created. Log in to play."
   },
   "lobby": {
     "title": "LOBBY",
     "greeting": "Ready, {name}?",
     "playTitle": "Play",
-    "quickMatch": "Quick match",
-    "quickMatchBody": "Find an opponent online.",
+    "quickMatch": "Ranked match",
+    "quickMatchBody": "Matched with a player near your rating. Every quick match counts for the season.",
     "findMatch": "Find match",
     "privateRoom": "Private room",
     "privateRoomBody": "Play a friend with a room code.",
@@ -474,9 +483,8 @@
     "resultPreview": "Match result {score}",
     "tournamentPreview": "Tournament result",
     "removed": "Message removed by moderation",
-    "removedWarning": "Your message was removed ({category}).",
     "mutedUntil": "You can't send messages until {time}.",
-    "muted": "You can't send messages for a while after several removed messages.",
+    "muted": "You can't send messages for a while after several warnings.",
     "category": {
       "harassment": "harassment",
       "hate": "hate",
@@ -485,16 +493,19 @@
       "spam": "spam",
       "other": "breaks the rules"
     },
-    "slowDown": "You're sending messages too fast. Wait a moment."
+    "slowDown": "You're sending messages too fast. Wait a moment.",
+    "strikeWarning": "Warning: your message broke the chat rules ({category}).",
+    "linkNotAllowed": "You can only send links to friends.",
+    "repeated": "You've already sent that message several times."
   },
   "settings": {
     "title": "SETTINGS",
     "sections": {
       "profile": "Profile",
       "security": "Security",
-      "apiKeys": "API keys",
       "preferences": "Preferences",
-      "data": "Your data"
+      "data": "Your data",
+      "avatar": "Avatar"
     },
     "avatar": "Avatar",
     "uploadAvatar": "Upload image",
@@ -534,12 +545,6 @@
     "sessionRevoked": "Session revoked.",
     "lastActive": "Signed in {when}",
     "unknownDevice": "Unknown device",
-    "apiKeysBody": "Keys let your own programs (bots, scripts) use the public API as you: read profiles, matches and the leaderboard, and manage your display name and friends. They can't touch your password, email, messages or account. Treat them like passwords.",
-    "keyName": "Key name",
-    "createKey": "Create key",
-    "newKeyWarning": "Copy this key now. You won't see it again.",
-    "noKeys": "No API keys yet.",
-    "revokeKeyConfirm": "Revoke {name}? Apps using it stop working immediately.",
     "lastUsed": "Last used {when}",
     "neverUsed": "Never used",
     "language": "Language",
@@ -568,19 +573,22 @@
     "revokeOthersBody": "Every other device will be logged out. This device stays logged in.",
     "othersRevoked": "Logged out of every other session.",
     "revoking": "Revoking…",
-    "createKeyTitle": "Create an API key",
-    "yourKeys": "Your keys",
-    "keyNamePlaceholder": "e.g. stats-bot",
     "creating": "Creating…",
-    "tooManyKeys": "You can have up to 10 keys. Revoke one first.",
-    "keyRevoked": "Key revoked.",
-    "revokeKeyTitle": "Revoke API key?",
-    "colKey": "Key",
     "colCreated": "Created",
     "colLastUsed": "Last used",
-    "noKeysBody": "Create one above to use the public API.",
     "languageBody": "Applies to the whole app.",
-    "apiDocs": "Read the API documentation."
+    "otherDevicesSignedOut": "Every other device was signed out.",
+    "passkeys": "Passkeys",
+    "passkeysBody": "Sign in with Face ID, a fingerprint or a security key instead of a password. Passkeys can't be phished.",
+    "addPasskey": "Add a passkey",
+    "passkeyAdded": "Passkey added.",
+    "passkeyRemoved": "Passkey removed.",
+    "noPasskeys": "No passkeys yet",
+    "passkey": "Passkey",
+    "passkeyAddedOn": "Added {date}",
+    "removePasskey": "Remove passkey",
+    "passkeyReauth": "For your safety, sign in again before changing your passkeys.",
+    "signInAgain": "Sign in again"
   },
   "legal": {
     "contents": "Contents",
@@ -600,7 +608,7 @@
   },
   "status": {
     "title": "STATUS",
-    "subtitle": "Live health of ft_transcendence.",
+    "subtitle": "Live health of VOLLEY.EXE.",
     "overall": {
       "up": "All systems operational",
       "degraded": "Some systems are slow",
@@ -708,7 +716,7 @@
   },
   "coach": {
     "title": "Coach",
-    "subtitle": "Ask about Pong tactics or how the site works. Answers come from Claude, an AI: they can be wrong.",
+    "subtitle": "Ask about Pong tactics or how the site works. Answers come from an AI model: they can be wrong.",
     "intro": "Hi! I can help with tactics, practice ideas and how features work. Try one of these:",
     "suggestAngles": "How do I aim my shots?",
     "suggestAi": "How do I beat the hard computer?",
@@ -720,11 +728,12 @@
     "newChat": "New chat",
     "remaining": "{n} of {limit} questions left this hour.",
     "disabled": "The coach is turned off",
-    "disabledBody": "This server has no Claude API key, so the coach isn't available. An admin can add ANTHROPIC_API_KEY to turn it on.",
+    "disabledBody": "The coach isn't set up on this server. An admin can turn it on with AI_BASE_URL, AI_MODEL and AI_API_KEY.",
     "errLimit": "You've reached this hour's limit. Try again later.",
     "errBusy": "The coach is busy right now. Try again in a moment.",
     "errUnavailable": "The coach can't be reached right now.",
-    "refused": "I can't help with that one."
+    "refused": "I can't help with that one.",
+    "errWarming": "The coach is still downloading its model. Try again in a few minutes."
   },
   "offline": {
     "metaTitle": "Offline",
@@ -734,23 +743,13 @@
     "playLocal": "Play local",
     "hint": "This page reloads by itself when the connection comes back."
   },
-  "chain": {
-    "explainer": "Finished tournaments are recorded on a blockchain: a fingerprint of every score is stored there and can't be changed, so anyone can check these results weren't edited.",
+  "tournamentHistory": {
     "none": "No tournaments yet.",
     "noneBody": "Tournaments this player takes part in show up here.",
     "loadError": "Couldn't load tournaments",
     "champion": "Champion",
     "winner": "Winner",
-    "meta": "{players} players · {matches} matches",
-    "verified": "Verified on chain",
-    "mismatch": "Doesn't match the chain",
-    "mismatchBody": "These results differ from the ones recorded on chain.",
-    "pending": "Pending",
-    "disabled": "Not configured",
-    "unavailable": "Chain unreachable",
-    "tx": "Transaction",
-    "copyTx": "Copy transaction hash",
-    "explorer": "Open in block explorer (new tab)"
+    "meta": "{players} players · {matches} matches"
   },
   "party": {
     "title": "Party",
@@ -796,5 +795,154 @@
     "sideLeft": "Left side",
     "sideTop": "Top",
     "sideRight": "Right side"
+  },
+  "look": {
+    "title": "Avatar",
+    "body": "Build your pixel avatar and pick a frame and a paddle skin. More options unlock as you level up and earn achievements.",
+    "level": "Level {n}",
+    "randomize": "Randomize",
+    "reset": "Undo changes",
+    "save": "Save look",
+    "saved": "Look saved.",
+    "errLocked": "You haven't unlocked one of those yet.",
+    "photoNote": "You've uploaded a photo, so it's shown instead of your pixel avatar. Remove it under Profile to show this one. Your frame and paddle skin apply either way.",
+    "unlockLevel": "unlocks at level {n}",
+    "unlockAchievement": "unlocks with “{name}”",
+    "frame": "Frame",
+    "paddle": "Paddle skin",
+    "slot": {
+      "skin": "Skin",
+      "hair": "Hair",
+      "hairColor": "Hair colour",
+      "eyes": "Eyes",
+      "mouth": "Mouth",
+      "shirt": "Shirt",
+      "bg": "Background",
+      "item": "Item"
+    },
+    "frames": {
+      "none": "None",
+      "neon": "Neon",
+      "duo": "Duo",
+      "gold": "Gold",
+      "glitch": "Glitch"
+    },
+    "paddles": {
+      "classic": "Classic",
+      "hollow": "Hollow",
+      "striped": "Striped",
+      "pixel": "Pixel",
+      "gold": "Gold",
+      "prism": "Prism"
+    },
+    "part": {
+      "skin": {
+        "porcelain": "Porcelain",
+        "sand": "Sand",
+        "copper": "Copper",
+        "umber": "Umber",
+        "ebony": "Ebony",
+        "synth": "Synth (mint)"
+      },
+      "hair": {
+        "short": "Short",
+        "spiky": "Spiky",
+        "long": "Long",
+        "afro": "Afro",
+        "bald": "Bald",
+        "mohawk": "Mohawk",
+        "bun": "Bun"
+      },
+      "eyes": {
+        "dots": "Dots",
+        "wide": "Wide",
+        "sleepy": "Sleepy",
+        "wink": "Wink"
+      },
+      "mouth": {
+        "smile": "Smile",
+        "flat": "Flat",
+        "open": "Open",
+        "grin": "Grin"
+      },
+      "item": {
+        "none": "None",
+        "headband": "Headband",
+        "shades": "Shades",
+        "visor": "Visor",
+        "headphones": "Headphones",
+        "horns": "Horns",
+        "crown": "Crown",
+        "halo": "Halo"
+      },
+      "colour": "{slot} {n}"
+    }
+  },
+  "attract": {
+    "you": "You",
+    "cpu": "CPU",
+    "hintKeys": "Take over:",
+    "hintTouch": "Tap the court to play",
+    "play": "Play the bot",
+    "won": "You win!",
+    "lost": "CPU wins",
+    "next": "Sign up to play real people online, in tournaments and with friends.",
+    "nextSignedIn": "Ready for a real opponent?",
+    "signup": "Sign up free",
+    "again": "Play again"
+  },
+  "invite": {
+    "title": "Join a match",
+    "joining": "Joining the room…",
+    "invalid": "This invite link isn't valid",
+    "invalidBody": "Check the link, or ask your friend for a new one.",
+    "copyLink": "Copy invite link",
+    "linkCopied": "Invite link copied.",
+    "codeCopied": "Room code copied.",
+    "share": "Share",
+    "shareTitle": "VOLLEY.EXE invite",
+    "shareText": "Play Pong with me on VOLLEY.EXE"
+  },
+  "replay": {
+    "label": "Slow-motion replay of the last point",
+    "badge": "Replay · slow-mo",
+    "skip": "Close the replay"
+  },
+  "ranked": {
+    "placement": "Placement · {n} left",
+    "unranked": "Unranked",
+    "division": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum",
+      "diamond": "Diamond",
+      "master": "Master"
+    },
+    "record": "{w}W · {l}L",
+    "season": "Season {n}",
+    "endsIn": "ends in {n} days",
+    "endsSoon": "ends today",
+    "rating": "Rating",
+    "seasonTab": "Season",
+    "allTimeTab": "All-time",
+    "leaderboardSubtitle": "This season's ranked ladder: quick matches only. Divisions show after 5 placement games.",
+    "emptyTitle": "Nobody is placed yet",
+    "emptyBody": "Play 5 ranked quick matches to appear on this season's ladder.",
+    "notPlaced": "Play 5 ranked quick matches this season to get a division and appear here.",
+    "divisionCol": "Division",
+    "recordCol": "Record"
+  },
+  "clip": {
+    "save": "Save clip",
+    "recording": "Recording… {n}%",
+    "saved": "Clip downloaded.",
+    "failed": "Couldn't record the clip. Try again.",
+    "shareTitle": "VOLLEY.EXE clip",
+    "shareText": "Watch this point on VOLLEY.EXE",
+    "share": "Share clip",
+    "download": "Download clip",
+    "ready": "Clip ready to share or download.",
+    "interrupted": "Recording stopped because the tab was hidden. Keep this tab open and try again."
   }
 }

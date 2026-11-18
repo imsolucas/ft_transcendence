@@ -54,6 +54,7 @@ export interface PartyPlayer {
 	id: string;
 	name: string;
 	picture?: string;
+	look?: import("../cosmetics/look.ts").PlayerLook;
 	seat: number;
 }
 

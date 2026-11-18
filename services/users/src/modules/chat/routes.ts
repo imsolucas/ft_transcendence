@@ -4,7 +4,8 @@ import { isDeletedHandle } from "../privacy/routes.ts";
 import { prisma } from "../../db/client.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { notify } from "../../realtime/notify.ts";
-import { moderateMessage } from "../../ai/moderation.ts";
+import { filterChat, hasLink } from "../../moderation/filter.ts";
+import { addStrike, checkRepeat, recordSend } from "../../moderation/strikes.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
 
 const MAX_BODY = 1000;
@@ -24,6 +25,14 @@ const toMessage = (m: Row): ChatMessage => ({
   readAt: m.readAt?.toISOString() ?? null,
   ...(m.moderation === "removed" ? { removed: true, body: "" } : {}),
 });
+
+async function areFriends(a: number, b: number) {
+  const row = await prisma.friendship.findFirst({
+    where: { status: "ACCEPTED", OR: [{ requesterId: a, addresseeId: b }, { requesterId: b, addresseeId: a }] },
+    select: { id: true },
+  });
+  return row !== null;
+}
 
 async function peer(username: string) {
   if (isDeletedHandle(username.toLowerCase())) return null;
@@ -151,13 +160,13 @@ export default async function chatRoutes(app: FastifyInstance) {
       // Same answer as an unknown player, so a block isn't revealed
       if (await blockedEitherWay(me, other.id)) return notFound(reply);
 
-      // per-sender flood limit (also bounds moderation calls): 20 messages a minute
+      // per-sender flood limit: 20 messages a minute
       const now = Date.now();
       const recent = (sendTimes.get(me) ?? []).filter((t) => now - t < 60_000);
       if (recent.length >= SENDS_PER_MINUTE) return reply.code(429).send({ error: "You're sending messages too fast.", code: "SLOW_DOWN" });
       recent.push(now);
       sendTimes.set(me, recent);
-      // muted after repeated moderation removals
+      // muted after repeated strikes (slurs, repeated spam)
       const mute = await prisma.user.findUnique({ where: { id: me }, select: { chatMutedUntil: true } });
       if (mute?.chatMutedUntil && mute.chatMutedUntil > new Date()) {
         return reply.code(403).send({ error: "You can't send messages for a while.", code: "MUTED", until: mute.chatMutedUntil.toISOString() });
@@ -167,20 +176,39 @@ export default async function chatRoutes(app: FastifyInstance) {
       if (!invite && !text) return reply.code(400).send({ error: "Write a message first." });
       if (invite && !ROOM_CODE.test(invite.toLowerCase())) return reply.code(400).send({ error: "Invalid room code." });
 
+      let stored = text;
+      let moderation: string | null = null;
+      if (!invite) {
+        // links only between friends (a stranger's link is the usual scam/phishing vector)
+        if (hasLink(text) && !(await areFriends(me, other.id))) {
+          return reply.code(400).send({ error: "You can only send links to friends.", code: "LINK_NOT_ALLOWED" });
+        }
+        const repeat = checkRepeat(me, other.id, text);
+        if (repeat !== "ok") {
+          if (repeat === "refuse-and-strike") void addStrike(me, "spam", req.log);
+          return reply.code(429).send({ error: "You've sent that message several times already.", code: "REPEATED" });
+        }
+        // offline filter: profanity and slurs are masked before storing; a slur is a strike
+        const filtered = filterChat(text);
+        stored = filtered.text;
+        if (filtered.masked) moderation = filtered.slur ? "masked:hate" : "masked";
+        if (filtered.slur) void addStrike(me, "hate", req.log);
+      }
+
       const row = await prisma.message.create({
         data: {
           senderId: me,
           recipientId: other.id,
           kind: invite ? "invite" : "text",
-          body: invite ? "" : text,
+          body: invite ? "" : stored,
           inviteCode: invite ? invite.toLowerCase() : null,
+          moderation,
         },
       });
+      if (!invite) recordSend(me, other.id, text);
       const message = toMessage(row);
       const sender = await prisma.user.findUnique({ where: { id: me }, select: PUBLIC_USER_SELECT });
       notify([other.id, me], { type: "chat:message", message, from: toPublicUser(sender!) });
-      // AI moderation runs after delivery (never delays sending); no-op without an API key
-      if (row.kind === "text") moderateMessage(row.id, me, other.id, row.body, req.log).catch(() => {});
       return reply.code(201).send(message);
     }
   );

@@ -1,5 +1,5 @@
 import { gameEnded } from '../presence.ts';
-import { matchesFinished, tickDuration } from '../metrics.ts';
+import { applyRatings } from "./ranked.ts";
 import { toSerializablePlayer, type GameEndMessage } from "shared/index.ts";
 import type { RoomManager } from "../game/roomManager.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
@@ -25,9 +25,7 @@ export default class TickSystem {
 
             this.lastTime = currentTime;
 
-            const endTimer = tickDuration.startTimer();
             this.tick(deltaTime);
-            endTimer();
         }, this.TICK_INTERVAL);
     }
 
@@ -50,7 +48,6 @@ export default class TickSystem {
 
                 if (room.mode === 'tournament') {
                     // the bracket decides what comes next (TournamentService)
-                    matchesFinished.inc({ mode: 'tournament' });
                     this.tournamentService.onGameOver(room, roundWinner === 0 ? 0 : 1);
                     continue;
                 }
@@ -87,7 +84,7 @@ export default class TickSystem {
                             played_at: new Date(room.createdAt).toISOString(),
                             end_at: new Date().toISOString()
                         };
-                        reportMatchResult(matchResult);
+                        reportMatchResult({ ...matchResult, ranked: !!room.ranked }, (ratings) => applyRatings(this.roomManager, room.id, ratings));
                     }
                 }
             }

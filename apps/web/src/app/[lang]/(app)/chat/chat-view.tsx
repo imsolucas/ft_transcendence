@@ -82,7 +82,7 @@ function ConversationList({ active }: { active: string | null }) {
                 aria-current={active === c.user.username ? "page" : undefined}
                 className={cn("list-row no-underline text-fg", active === c.user.username && "is-selected")}
               >
-                <Avatar name={c.user.displayName} src={c.user.avatar} presence={c.user.presence} presenceLabel={t(`presence.${c.user.presence}`)} />
+                <Avatar name={c.user.displayName} src={c.user.avatar} look={c.user.look} presence={c.user.presence} presenceLabel={t(`presence.${c.user.presence}`)} />
                 <div className="grow min-w-0">
                   <div className="row between">
                     <span className="t-strong truncate">{c.user.displayName}</span>
@@ -193,6 +193,12 @@ function Thread({ username }: { username: string }) {
       if (err instanceof ApiError && err.status === 404) setUnavailable(true);
       if (err instanceof ApiError && err.code === "MUTED") toast.error(t("chat.muted"));
       if (err instanceof ApiError && err.code === "SLOW_DOWN") toast.error(t("chat.slowDown"));
+      // refused by the chat rules: retrying would be refused again, so drop the bubble
+      if (err instanceof ApiError && (err.code === "LINK_NOT_ALLOWED" || err.code === "REPEATED")) {
+        toast.error(t(err.code === "REPEATED" ? "chat.repeated" : "chat.linkNotAllowed"));
+        setPending((p) => p.filter((x) => x.tempId !== tempId));
+        return;
+      }
       setPending((p) => p.map((x) => (x.tempId === tempId ? { ...x, failed: true } : x)));
     }
   }
@@ -249,7 +255,7 @@ function Thread({ username }: { username: string }) {
           </Link>
           {other ? (
             <>
-              <Avatar name={other.displayName} src={other.avatar} presence={other.presence} presenceLabel={t(`presence.${other.presence}`)} />
+              <Avatar name={other.displayName} src={other.avatar} look={other.look} presence={other.presence} presenceLabel={t(`presence.${other.presence}`)} />
               <div className="min-w-0">
                 <Link href={href(`/profile/${other.username}`)} className="t-strong truncate text-fg no-underline hover:underline">
                   {other.displayName}

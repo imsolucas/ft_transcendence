@@ -7,7 +7,7 @@ export const privacy: LegalDoc = {
       id: "summary",
       title: "Summary",
       body: [
-        "ft_transcendence is a hobby project: an online Pong game with accounts, friends, chat and tournaments. We collect only what the game needs to work, we never sell it, and you can delete your account at any time.",
+        "VOLLEY.EXE is a hobby project: an online Pong game with accounts, friends, chat and tournaments. We collect only what the game needs to work, we never sell it, and you can delete your account at any time.",
       ],
     },
     {
@@ -16,13 +16,11 @@ export const privacy: LegalDoc = {
       body: ["When you use the app we store:"],
       list: [
         "Account details: your username, email address and a salted hash of your password (never the password itself).",
-        "If you sign in with Google: your Google account ID, name, email and profile picture, as shared by Google.",
         "Your avatar, if you upload one (PNG, JPEG or WebP, up to 2 MB).",
         "Game data: matches you play (opponent, scores, date, duration), tournaments, wins and losses.",
         "Social data: friend requests, friends and the players you block.",
         "Session data: for each signed-in device, the IP address and browser name, so you can see and revoke your sessions.",
         "Two-factor data, if you turn it on: an encrypted authenticator secret and hashed backup codes.",
-        "API keys you create: only a hash of each key and its first characters.",
       ],
     },
     {
@@ -39,14 +37,21 @@ export const privacy: LegalDoc = {
       id: "visible",
       title: "What other players can see",
       body: [
-        "Other signed-in players can see your username, avatar, presence, stats and match history. Your email address, sessions, API keys and blocked players are never shown to anyone else.",
+        "Other signed-in players can see your username, avatar, presence, stats and match history. Your email address, sessions and blocked players are never shown to anyone else.",
+      ],
+    },
+    {
+      id: "security",
+      title: "Account security",
+      body: [
+        "When you choose a password, we check it against known data breaches using Have I Been Pwned's k-anonymity service: only the first 5 characters of the password's SHA-1 hash leave our server, never the password. Unless this server runs without email, sign-in waits until your email address is confirmed. We email you when someone signs in to your account from a browser it hasn't used before, and when someone tries to register with your address. If the operator turns it on, sign-up, sign-in and password reset include Cloudflare Turnstile, a bot check that runs in your browser and is processed by Cloudflare.",
       ],
     },
     {
       id: "ai",
-      title: "AI features",
+      title: "Coach and chat filter",
       body: [
-        "When the server operator turns them on, two features use Claude, an AI model provided by Anthropic: the Coach (your questions and its answers are sent to Anthropic to generate the reply; they are not stored by us) and chat moderation (each chat message you send is sent to Anthropic once to check it for harassment, hate, threats, sexual content or spam). Flagged messages are hidden from both people and the reason is stored; three removals within 24 hours pause your chat for an hour. Nothing else about your account is sent.",
+        "The Coach uses an AI model that runs on our own server: your questions and its answers stay on this service and are not stored. (If the operator ever switches the Coach to an external AI provider, your questions are sent to that provider to generate the reply, and this page will say so.) Chat messages are checked by an automatic word filter on our server: swear words and slurs are masked (for example \"f***\") before the message is stored. Links can only be sent to friends. Slurs and sending the same message over and over count as warnings; three warnings within 24 hours pause your chat for an hour. No chat content is sent to any third party.",
       ],
     },
     {
@@ -63,14 +68,14 @@ export const privacy: LegalDoc = {
       id: "retention",
       title: "How long we keep it",
       body: [
-        "Your data stays while your account exists. Sessions expire after 7 days without use. Deleting your account removes your profile, email, friends, blocks, messages, sessions, sign-in methods, two-factor setup, API keys and avatar immediately; finished matches remain in your opponents' history as \"Deleted player\".",
+        "Your data stays while your account exists. Sessions expire after 7 days without use. Deleting your account removes your profile, email, friends, blocks, messages, sessions, sign-in methods, two-factor setup and avatar immediately; finished matches remain in your opponents' history as \"Deleted player\".",
       ],
     },
     {
       id: "rights",
       title: "Your rights",
       body: [
-        "You can view and change your profile in Settings, revoke sessions and API keys, and, under Settings → Your data, download a copy of everything we store about you or delete your account yourself. Anything else: ask us, and we answer within 30 days. We email you only to confirm your address, reset your password, and confirm a data download or an account deletion.",
+        "You can view and change your profile in Settings, revoke sessions, and, under Settings → Your data, download a copy of everything we store about you or delete your account yourself. Anything else: ask us, and we answer within 30 days. We email you only to confirm your address, reset your password, and confirm a data download or an account deletion.",
       ],
     },
     {
@@ -78,6 +83,9 @@ export const privacy: LegalDoc = {
       title: "Security",
       body: [
         "All traffic uses HTTPS. Passwords are hashed, sessions can be revoked at any time, and two-factor authentication is available. No system is perfectly secure, so please use a unique password.",
+        "Passkeys, if you add one: the public key and a name (the private key never leaves your device).",
+        "Sign-in devices: a label such as \"Firefox on Windows\" for each browser you've signed in from, so we can email you when a new one is used.",
+        "Your avatar look: the pixel-avatar parts, frame and paddle skin you picked.",
       ],
     },
     {
@@ -95,7 +103,7 @@ export const terms: LegalDoc = {
       id: "agreement",
       title: "Agreement",
       body: [
-        "By creating an account or playing, you agree to these terms. If you don't agree, don't use the service. ft_transcendence is a free, non-commercial project provided as is.",
+        "By creating an account or playing, you agree to these terms. If you don't agree, don't use the service. VOLLEY.EXE is a free, non-commercial project provided as is.",
       ],
     },
     {
@@ -103,7 +111,7 @@ export const terms: LegalDoc = {
       title: "Your account",
       list: [
         "You must be at least 13 years old.",
-        "Keep your password and API keys secret; you're responsible for activity on your account.",
+        "Keep your password secret; you're responsible for activity on your account.",
         "One person, one account. Usernames that impersonate others or are offensive may be changed or removed.",
       ],
     },
@@ -121,13 +129,6 @@ export const terms: LegalDoc = {
       title: "Content you upload",
       body: [
         "You keep the rights to your avatar and messages. You give us permission to store and display them to run the service. Don't upload anything illegal or that you don't have the right to share.",
-      ],
-    },
-    {
-      id: "api",
-      title: "Public API",
-      body: [
-        "API keys give read access to public game data. Respect the rate limits; keys used abusively may be revoked.",
       ],
     },
     {

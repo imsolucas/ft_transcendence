@@ -5,32 +5,26 @@
       "name": "stack",
       "runtimeExecutable": "make",
       "runtimeArgs": ["up"],
-      "port": 443,
+      "port": 47443,
       "autoPort": false
     },
     {
       "name": "users",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd services/users && npm run dev"],
-      "port": 4000
+      "runtimeArgs": ["-c", "cd services/users && PORT=47400 GAME_INTERNAL_URL=http://localhost:47301 npm run dev"],
+      "port": 47400
     },
     {
       "name": "game",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd services/game && npm run dev"],
-      "port": 3001
-    },
-    {
-      "name": "frontend_legacy",
-      "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd services/frontend && npm run dev"],
-      "port": 3000
+      "runtimeArgs": ["-c", "cd services/game && PORT=47301 USERS_API_URL=http://localhost:47400 npm run dev"],
+      "port": 47301
     },
     {
       "name": "web",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd apps/web && npm run dev"],
-      "port": 3000
+      "runtimeArgs": ["-c", "cd apps/web && npm run dev -- -p 47300"],
+      "port": 47300
     }
   ]
 }

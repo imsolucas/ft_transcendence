@@ -5,10 +5,18 @@ import { ArrowRight, Gamepad2, Keyboard, Trophy, Users } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { Button } from "@/components/ui/button";
 import { Horizon } from "@/components/layout/crt";
-import { Footer, Wordmark } from "@/components/layout/shell";
+import { BrandMark, Footer, Wordmark } from "@/components/layout/shell";
 import { Avatar } from "@/components/ui/primitives";
 import useSWR from "swr";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/primitives";
 import { fetcher } from "@/lib/api";
+
+// the court runs the game engine in the browser: loaded after the page, client only
+const AttractCourt = dynamic(() => import("@/components/game/attract").then((m) => m.AttractCourt), {
+  ssr: false,
+  loading: () => <Skeleton className="aspect-[16/10] !h-auto w-full" />,
+});
 
 const FEATURES = [
   { key: "online", icon: Gamepad2 },
@@ -65,24 +73,31 @@ export function Landing() {
       </header>
 
       <main id="main" className="flex-1">
-        <section className="power-on relative flex min-h-[620px] flex-col items-center justify-start gap-6 overflow-hidden px-4 pb-64 pt-16 text-center">
+        <section className="power-on relative overflow-hidden px-4 pb-24 pt-10 md:px-8 md:pt-16">
           <Horizon />
-          <div className="relative z-10 flex flex-col items-center gap-6">
-            <p className="pix pix-sm c-amber">{t("landing.insertCoin")}</p>
-            <h1 className="pix text-[22px] leading-[34px] sm:text-[32px] sm:leading-[44px]">
-              <span className="normal-case">ft_transcendence</span>
-            </h1>
-            <p className="max-w-[520px] text-[17px] leading-[26px] text-fg-muted">
-              {me ? t("landing.welcomeBack", { name: me.displayName }) : t("landing.tagline")}
-            </p>
-            <Button asChild variant="primary" size="xl" glow="md">
-              <Link href={playHref} className="no-underline">
-                {t("landing.play")}
-              </Link>
-            </Button>
-            <Link href={href("/local")} className="t-label">
-              {t("landing.localLink")}
-            </Link>
+          <div className="relative z-10 mx-auto grid max-w-[1200px] items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            <div className="flex flex-col items-center gap-5 text-center lg:items-start lg:text-left">
+              <p className="pix pix-sm c-amber">{t("landing.insertCoin")}</p>
+              <h1 className="text-[26px] leading-[38px] sm:text-[36px] sm:leading-[48px]">
+                <BrandMark />
+              </h1>
+              <p className="max-w-[460px] text-[17px] leading-[26px] text-fg-muted">
+                {me ? t("landing.welcomeBack", { name: me.displayName }) : t("landing.tagline")}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                <Button asChild variant="primary" size="xl" glow="md">
+                  <Link href={playHref} className="no-underline">
+                    {t("landing.play")}
+                  </Link>
+                </Button>
+                <Link href={href("/local")} className="t-label">
+                  {t("landing.localLink")}
+                </Link>
+              </div>
+            </div>
+            <div className="w-full">
+              <AttractCourt signedIn={!!me} playHref={playHref} />
+            </div>
           </div>
         </section>
 

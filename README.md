@@ -1,11 +1,13 @@
-# ft_transcendence
+# VOLLEY.EXE
 
-*This project has been created as part of the 42 curriculum by djin, tjun-yu, amaligno, ghwa.*
+Retro arcade Pong in the browser, with a CRT / synthwave look. You can play the bots right on
+the landing page, invite a friend with a link, play online 1v1, private rooms, bracket
+tournaments, 3–4 player parties and local games, and there's a computer opponent. It also has
+friends and direct messages, a leaderboard, achievements and levels, and a free local AI Coach.
 
-Real-time Pong in the browser: accounts, friends, direct messages, online 1v1, private rooms,
-bracket tournaments, local two-player games, a computer opponent, a leaderboard and
-achievements, and a retro CRT / synthwave look. Originally the 42 Common
-Core final project; since rebuilt as a personal project (2026) on a modern stack.
+*Repository `ft_transcendence`: originally the 42 Common Core final project by djin, tjun-yu,
+amaligno and ghwa. Since 2026 it has been rebuilt as a personal project that no longer follows
+the subject.*
 
 ---
 
@@ -17,7 +19,7 @@ Requirements: Docker with Compose v2, `make`, `openssl`.
 make            # first run creates infra/.env with generated secrets, then builds and starts
 ```
 
-Open **https://localhost:8443**. Caddy serves a certificate from its own local CA, so the browser
+Open **https://localhost:47443**. Caddy serves a certificate from its own local CA, so the browser
 shows a warning the first time. Accept it, or trust Caddy's root certificate:
 `docker compose -f infra/docker-compose.yml cp caddy:/data/caddy/pki/authorities/local/root.crt .`
 and import `root.crt` into your OS or browser trust store.
@@ -39,22 +41,27 @@ the database), `make ps`.
 
 Sign-up verification, password reset ("Forgot password?") and GDPR confirmations are sent
 over SMTP. `make env` points it at a local **Mailpit** (compose profile `mail`): open
-**http://localhost:8025** to read every email the app sends. On a real domain, set `SMTP_HOST`,
+**http://localhost:47025** to read every email the app sends. On a real domain, set `SMTP_HOST`,
 `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `infra/.env` and clear
-`COMPOSE_PROFILES`. Without `SMTP_HOST` the app still works; emails are skipped and logged.
+`COMPOSE_PROFILES`. Locally, without `SMTP_HOST` emails are skipped and logged (and sign-in can't
+verify new accounts); on a public domain a real `SMTP_HOST` is required.
 
-### AI features (optional)
+### Coach and chat filter
 
-Set `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`, default `claude-opus-5-5`) in
-`infra/.env` and run `make re`. Without a key both features are off: the Coach page says so and
-chat messages aren't moderated.
-- **Coach** (`/coach`): a chat about Pong tactics and the site, streamed from Claude over
-  Server-Sent Events; 20 questions per user per hour, at most 20 turns of history.
-- **Chat moderation**: every text message is classified after delivery (structured JSON
-  output, low effort). Harassment, hate, threats, sexual content and spam are removed for both
-  people, the sender is warned, and 3 removals in 24 hours mute them for an hour.
-- Requests use server-side refusal fallbacks and prompt caching. API usage is billed to the
-  key's account.
+- **Coach** (`/coach`): a chat about Pong tactics and the site. By default a small local model
+  (Ollama, `qwen2.5:1.5b`, about 1 GB) runs in the compose profile `ai`, which `make env` turns on
+  (`COMPOSE_PROFILES=mail,ai`, `AI_BASE_URL=http://ollama:11434/v1`). It's free and private: it
+  runs on this machine's CPU and nothing leaves the server. `ollama-pull` downloads `AI_MODEL`
+  once. The client speaks the OpenAI-compatible API, so a remote provider (OpenRouter, Groq,
+  Ollama cloud with credits) works by changing `AI_BASE_URL`, `AI_MODEL` and `AI_API_KEY` (see
+  `infra/.env.example`). Answers stream over Server-Sent Events; 20 questions per user per hour,
+  at most 3 answers at once, the latest 8 turns of history. A provider error shows "the coach
+  can't be reached" and doesn't use up a question.
+- **Chat filter** (`services/users/src/moderation/`): an offline word filter (EN via `obscenity`,
+  plus ES/FR lists; accent- and leetspeak-aware). Swearing and slurs are masked (`f***`) before a
+  message is stored; links can only be sent to friends; the same message is refused after 2
+  sends to one person or 4 in total within 2 minutes. Only slurs and refused repeats count as
+  strikes; 3 strikes in 24 hours mute chat for an hour.
 
 ### Install as an app
 
@@ -62,33 +69,27 @@ The site is a Progressive Web App. In Chrome or Edge, use the install icon in th
 (or *Add to Home Screen* on Android and iOS Safari). The installed app opens in its own window,
 shows a localized offline page when there is no network, and keeps local two-player games
 playable offline. The service worker only registers in production builds, and only over a
-certificate the browser trusts. On `https://localhost:8443` it is opt-in (an untrusted local
+certificate the browser trusts. On `https://localhost:47443` it is opt-in (an untrusted local
 CA would otherwise put a certificate error in the console): import Caddy's root certificate
 (see above), then open the site once with `?pwa=1` (`?pwa=0` turns it off again). On a real
 domain it always registers.
 Icons are generated by `node apps/web/scripts/generate-icons.mjs`.
 
-### Google sign-in (optional)
-
-Create an OAuth client in Google Cloud Console with the redirect URI
-`https://localhost:8443/api/auth/callback/google`, then set `GOOGLE_CLIENT_ID` and
-`GOOGLE_CLIENT_SECRET` in `infra/.env` and run `make re`.
-
 ### Deploying on a real domain
 
-Set in `infra/.env` (the comments in `infra/.env.example` list them too):
-`SITE_ADDRESS=pong.example.com`, `PUBLIC_ORIGIN=https://pong.example.com`,
-`TLS_MODE=you@example.com` (Caddy then gets a Let's Encrypt certificate for that address),
-`CADDY_HTTPS_PORT=443`, `HTTPS_PORT=443`, `HTTP_PORT=80` and `SEED_DEV_DATA=false`. Once the
-domain works, enable HSTS with
-`HSTS_HEADER='Strict-Transport-Security "max-age=31536000; includeSubDomains"'`.
-
----
+Step by step in **[docs/DEPLOY.md](docs/DEPLOY.md)**: server and DNS, `infra/.env` for production,
+`make deploy-check` (validates the domain, TLS, secrets, SMTP, profiles, ports and DNS), then
+`make prod` (production overrides in `infra/docker-compose.prod.yml`: rotated logs, HTTP/3, a
+memory cap for the Coach model). On a public origin the users service refuses to start with dev
+seeding on or without real SMTP.
+No domain yet: run behind a **Cloudflare Tunnel** (free `*.trycloudflare.com` quick tunnel, or a
+named tunnel): add `quick-tunnel` / `tunnel` to `COMPOSE_PROFILES`, `make prod`, then
+`make tunnel-origin` or `make set-origin ORIGIN=https://…` to set the public address.
 
 ## Architecture
 
 ```
-browser ── https://localhost:8443 ──► Caddy (automatic HTTPS, security headers)
+browser ── https://localhost:47443 ──► Caddy (automatic HTTPS, security headers)
                                         ├─ /api/*  ► users  (Fastify, Better Auth, Prisma) ──► Postgres
                                         ├─ /ws     ► game   (Fastify, Socket.IO, game engine) ──► users /internal/*
                                         └─ /*      ► web    (Next.js)
@@ -96,20 +97,40 @@ browser ── https://localhost:8443 ──► Caddy (automatic HTTPS, security
 
 | Path | Role | Stack |
 |---|---|---|
-| `apps/web` | Frontend: landing, sign-in/up (2FA, Google), lobby, online/local/tournament/vs-AI play, profile with achievements, friends, chat, leaderboard, settings (incl. data export and account deletion), status, legal pages; EN/ES/FR | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4, Radix UI, SWR, Motion, Socket.IO client |
-| `services/users` | Accounts and data. Better Auth at `/api/auth/*`, our API at `/api/*`, the public API at `/api/public/*` (API keys), internal routes for the game | Fastify 5, Better Auth 1.7, Prisma 6, Postgres 17, Node 24 (runs TypeScript natively) |
+| `apps/web` | Frontend: landing with a playable attract-mode court, sign-in/up (passkeys, 2FA), invite links, avatar builder, lobby, online/local/tournament/vs-AI play, profile with achievements, friends, chat, leaderboard, settings (incl. data export and account deletion), status, legal pages; EN/ES/FR | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4, Radix UI, SWR, Motion, Socket.IO client |
+| `services/users` | Accounts and data. Better Auth at `/api/auth/*`, our API at `/api/*`, internal routes for the game | Fastify 5, Better Auth 1.7, Prisma 6, Postgres 17, Node 24 (runs TypeScript natively) |
 | `services/game` | Authoritative Pong server: matchmaking, rooms, tournaments, 60 Hz simulation, result reporting | Fastify 5, Socket.IO 4 |
 | `services/shared` | Game engine, WebSocket protocol types and the HTTP API contract, imported by web and game | TypeScript |
-| `infra` | `docker-compose.yml`, `caddy/Caddyfile`, `backup/` scripts, `monitoring/` (Prometheus, alert rules, Grafana provisioning), `.env.example` | Docker Compose, Caddy 2.11 |
+| `infra` | `docker-compose.yml`, `caddy/Caddyfile`, `backup/` scripts, `.env.example` | Docker Compose, Caddy 2.11 |
 
-**One origin.** The browser only ever talks to `https://localhost:8443`, so there is no CORS
+**One origin.** The browser only ever talks to `https://localhost:47443`, so there is no CORS
 configuration. Every state-changing request and the game's socket handshake must carry that
 origin.
 
-**Authentication.** Better Auth owns sign-up, sign-in (username or email), Google OAuth, TOTP
+**Authentication.** Better Auth owns sign-up, sign-in (username or email, or a passkey), TOTP
 two-factor with backup codes, sessions and their httpOnly cookie. Session tokens never appear
 in JSON responses. The game service resolves a socket's session through the users service at
 handshake and re-checks it every minute, so revoking a session also ends its game connection.
+
+**Account security** (all in `services/users/src/auth/`):
+- Sign-in waits for a verified email address. Sign-up answers the same way whether or not the
+  email is taken, and the owner of an existing address gets a "someone tried to sign up" email
+  instead.
+- Passwords that appear in known breaches are refused (Have I Been Pwned, k-anonymity: only 5
+  hex characters of the SHA-1 hash leave the server).
+- Passkeys (WebAuthn) for passwordless, phishing-resistant sign-in. Adding or removing one
+  needs a sign-in from the last 10 minutes, and so does deleting the account.
+- A password change, or turning 2FA on or off, signs out every other session, enforced on the
+  server.
+- A sign-in from a browser and OS the account hasn't used before triggers a "new sign-in" email
+  with a link to the sessions list. Devices are stored as labels like "Firefox on Windows",
+  never the IP.
+- Optional Cloudflare Turnstile bot check on sign-up, sign-in and password reset: set
+  `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`. It's off without them.
+- Plus the existing rate limits on every auth route, origin checks on writes and on the socket
+  handshake, and secure httpOnly cookies.
+- Caddy sends a Content-Security-Policy (own origin only, plus Turnstile when enabled),
+  `frame-ancestors 'none'`, nosniff, a strict referrer policy and HSTS on a real domain.
 
 **Game.** Clients send inputs only. The server runs the simulation and streams state. Match
 results are posted to the users service with a service token and an idempotency key, so a
@@ -127,31 +148,23 @@ Postgres via Prisma (`services/users/src/db/prisma/schema.prisma`, migrations al
 - `Friendships` (pending/accepted, one row per pair), `Blocks`
 - `Matches` (players, display names, scores, winner, timestamps, `externalId` idempotency key),
   `Tournaments`, `TournamentPlayers`
-- `ApiKeys` — prefix plus SHA-256 hash; the key itself is shown once
 - `Messages` — direct messages (text, game invite, or a server-posted match/tournament notice), read receipts
 - `UserAchievements` — achievements, stored the first time they unlock; `Users.xp` / `level`
-- `Tournaments.chain*` — the on-chain record of a finished tournament (tx hash, block, contract,
-  result hash); `ChainDeployments` — contracts the users service deployed itself
 
 ### HTTP API
 
 The contract between web and users is `services/shared/types/api.types.ts`:
 `/api/me` (profile, avatar upload, `/export`, `/delete`), `/api/users/:username` (profile, stats,
 achievements), `/api/users/:username/matches` (paginated), `/api/users/search`, `/api/friends…`,
-`/api/blocks`, `/api/chat…`, `/api/leaderboard`, `/api/api-keys`, `/api/sessions`, `/api/status`,
-`/api/users/:username/tournaments` (paginated), `/api/tournaments/:id/chain` (blockchain verification).
+`/api/blocks`, `/api/chat…`, `/api/leaderboard`, `/api/sessions`, `/api/status`,
+`/api/users/:username/tournaments` (paginated).
 
-**Public API.** Create a key in Settings → API keys and send it as `X-API-Key`. Documentation:
-`https://localhost:8443/api/public/docs`. Read endpoints (users, matches, tournaments,
-leaderboard, stats) plus endpoints that act as the key's owner: `GET`/`PUT /api/public/me`,
-`GET`/`POST /api/public/friends`, `DELETE /api/public/friends/:username`. Limit: 120 requests
-per minute per key.
 
 ---
 
 ## Operations
 
-**Status page.** `https://localhost:8443/en/status` shows the API, database and game server
+**Status page.** `https://localhost:47443/en/status` shows the API, database and game server
 state and latency (from `GET /api/status`, cached for 5 seconds). The users container's health
 check also fails when the database is unreachable, so `make ps` reflects real health.
 
@@ -184,119 +197,6 @@ Restore drills on 2026-11-18: a deleted match row came back (10 → 9 → 10 row
 before the achievements migration restored cleanly (the migration was re-applied on start),
 then the latest dump brought the current data back (18 matches, 8 achievements).
 
-### Monitoring
-
-Prometheus, Grafana and a Postgres exporter run under the compose profile `monitoring`, so a
-plain `make` / `docker compose up` doesn't start them.
-
-```bash
-COMPOSE_PROFILES=monitoring make up      # or: docker compose -f infra/docker-compose.yml --profile monitoring up -d
-                                         # with mail too: COMPOSE_PROFILES=mail,monitoring
-```
-
-- **Grafana:** `http://localhost:3002` (`GRAFANA_PORT`). It is bound to `127.0.0.1` only (on a
-  server, reach it through an SSH tunnel). Log in as `admin` (`GRAFANA_ADMIN_USER`) with
-  `GRAFANA_ADMIN_PASSWORD` from `infra/.env`. Anonymous access, sign-up and org creation are off,
-  and the container refuses to start without a password. `make env` generates the password for a
-  new `.env`. With an existing `.env`, add it yourself:
-  `echo "GRAFANA_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> infra/.env`. The password only takes
-  effect when the `grafana_data` volume is created (see `.env.example` for how to reset it).
-- **Prometheus:** `http://localhost:9090` (`PROMETHEUS_PORT`, also `127.0.0.1` only). It scrapes
-  every 15 s, keeps 15 days of data (`PROMETHEUS_RETENTION`, capped at 2 GB) and reads its
-  config and rules from `infra/monitoring/`.
-- **Metrics:** `users:4000/metrics` and `game:3001/metrics` (prom-client) are reachable only on
-  the internal Docker network. Caddy never routes `/metrics`, and both services refuse requests
-  that carry `X-Forwarded-For`.
-  - users: Node process metrics, `http_requests_total` and `http_request_duration_seconds` by
-    route pattern and status, `users_signups_total`, `users_game_results_recorded_total`.
-  - game: `game_connected_sockets`, `game_rooms{status,mode}`, `game_queue_players{mode}`,
-    `game_matches_finished_total{mode}`, `game_result_reports_failed_total`,
-    `game_tick_duration_seconds`.
-  - Postgres: `postgres-exporter` (`pg_up`, connections, transactions, database size).
-- **Dashboard:** *ft_transcendence overview* is provisioned as the home dashboard. It shows:
-  - up/down for each service and for Postgres, the number of firing alerts, and sign-ups
-  - memory and event-loop lag
-  - users request rate by status, p50/p95/p99 latency, 5xx ratio, and the busiest and slowest
-    routes
-  - game sockets, rooms by status, queue size, matches finished, stored and failed results, and
-    tick time against the 16.7 ms budget
-  - Postgres connections against `max_connections`, transactions per second, and database size
-- **Alerts** (`infra/monitoring/alerts.yml`, evaluated by Prometheus):
-  - `ServiceDown`: users, game or the exporter is not scraped for 1 min
-  - `PostgresDown`: `pg_up == 0`
-  - `UsersHigh5xxRate`: more than 5 % 5xx for 5 min
-  - `UsersSlowRequests`: p95 above 1 s
-  - `GameTickTooSlow`: p99 above 10 ms
-  - `GameResultsDropped`
-  - `PostgresTooManyConnections`: above 80 % of `max_connections`
-
-  They appear at `http://localhost:9090/alerts`, in Grafana under *Alerting → Alert rules*
-  (data source-managed), and as the *Firing alerts* tile. There is no Alertmanager, so nothing
-  is sent by e-mail or chat.
-
-### Blockchain (tournament scores)
-
-Every finished tournament is written to an EVM chain by the `TournamentScores` Solidity contract
-(`contracts/TournamentScores.sol`). The target is Avalanche: the same contract and code run on the
-Fuji testnet's C-Chain, and locally on anvil, an Avalanche-compatible test chain in compose.
-
-**What is stored.** One write-once record per tournament: a keccak256 hash of its canonical result
-(the tournament key, winner, sorted player ids, and every match's player ids, scores, winner and
-timestamps; built by `services/users/src/chain/canonical.ts`), plus the winner id, player count,
-match count, end time and the block number. Names, emails and avatars are never stored on chain,
-and display names are left out of the hash, so a GDPR account deletion (which renames the player
-"Deleted player") doesn't break verification. The on-chain id is derived from the game's tournament
-UUID, not the database id, so a reset database can't collide with older records.
-
-**Why it can be trusted.** The contract refuses a second record for the same id
-(`AlreadyRecorded`), and no function edits or deletes a record. Only the owner key (the users
-service) can write. If a score or winner changes in the database later, the recomputed hash no
-longer matches the chain. The chain proves the result hasn't changed since it was recorded; it
-doesn't prove the result was correct when it was written.
-
-**Flow.** `POST /internal/game/tournament-result` stores the tournament and answers right away. The
-chain write runs afterwards, in the background, through one queue (one signer, so nonces never
-collide), with retries after 2, 10 and 30 seconds. Every attempt reads the chain first, and an
-`AlreadyRecorded` revert with an equal hash counts as success: the record is adopted and its
-transaction found from the stored block number. A sweep at startup and every 2 minutes records
-whatever is still pending (chain down, users restarted mid-way, anvil reset). A chain outage never
-fails or delays a tournament. Without `CHAIN_CONTRACT_ADDRESS`, users deploys the contract once and
-stores its address in `ChainDeployments`.
-
-**Verification.** `GET /api/tournaments/:id/chain` recomputes the hash from the database, reads the
-on-chain record and answers `verified`, `mismatch`, `pending`, `disabled` (no chain configured)
-or `unavailable` (the RPC couldn't be read just now). The profile's **Tournaments** tab shows the
-result for each tournament: "Verified on chain", the shortened tx hash with a copy button, and a
-block explorer link when `CHAIN_EXPLORER_URL` is set.
-
-**Local chain.** Off by default: it pulls an extra image, and anvil is a throwaway dev chain. To
-turn it on, uncomment the local block in `infra/.env` (copy it from `infra/.env.example`):
-
-```bash
-COMPOSE_PROFILES=chain
-CHAIN_RPC_URL=http://anvil:8545
-CHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  # anvil dev key #0, LOCAL ONLY
-CHAIN_ID=43112
-```
-
-then `make re`. anvil runs on the internal network only (no published port) with chain id 43112,
-and keeps its state in the `anvil_data` volume. If that state is lost, users notices the contract is
-gone, deploys a new one and records every tournament again. The well-known anvil keys are refused on
-any chain other than a local one.
-
-**Avalanche Fuji.** Create your own key (`cast wallet new`), get test AVAX from the faucet
-(https://core.app/tools/testnet-faucet/), and set
-`CHAIN_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc`, `CHAIN_PRIVATE_KEY=<your key>`,
-`CHAIN_ID=43113` and `CHAIN_EXPLORER_URL=https://testnet.snowtrace.io`. Don't set
-`COMPOSE_PROFILES`. After the first deployment, copy the logged address into
-`CHAIN_CONTRACT_ADDRESS`. Never commit a funded key.
-
-**Contract development.** `cd services/users && npm run chain:compile` compiles the contract with
-solcjs 0.8.38 (`evmVersion: paris`, so it runs on any EVM chain) into the committed
-`src/chain/artifact.ts`. `npm run chain:test` checks the artifact is up to date, then tests the
-contract in an in-process EVM (`@ethereumjs/evm`): owner-only writes, duplicate revert, getters,
-`verify`, enumeration, ownership transfer, and the canonical hash.
-
 ---
 
 ## Development
@@ -304,17 +204,19 @@ contract in an in-process EVM (`@ethereumjs/evm`): owner-only writes, duplicate 
 ```bash
 # backing services only, then run the apps on the host with hot reload
 docker compose -f infra/docker-compose.yml up -d postgres
-cd services/users && npm ci && DATABASE_URL=... PUBLIC_ORIGIN=https://localhost:8443 \
-  BETTER_AUTH_SECRET=... INTERNAL_SERVICE_TOKEN=... npm run dev
-cd services/game  && npm ci && PUBLIC_ORIGIN=... INTERNAL_SERVICE_TOKEN=... USERS_API_URL=http://localhost:4000 npm run dev
-cd apps/web       && npm ci && npm run dev
+cd services/users && npm ci && DATABASE_URL=... PUBLIC_ORIGIN=https://localhost:47443 \
+  BETTER_AUTH_SECRET=... INTERNAL_SERVICE_TOKEN=... PORT=47400 GAME_INTERNAL_URL=http://localhost:47301 npm run dev
+cd services/game  && npm ci && PUBLIC_ORIGIN=... INTERNAL_SERVICE_TOKEN=... PORT=47301 USERS_API_URL=http://localhost:47400 npm run dev
+cd apps/web       && npm ci && npm run dev -- -p 47300
 ```
 
 Point a Caddy at the host services with `WEB_UPSTREAM`, `USERS_UPSTREAM` and `GAME_UPSTREAM`
-(see `infra/caddy/Caddyfile`).
+(see `infra/caddy/Caddyfile`). Every port this project uses on the host is in the 47xxx range
+(47443 HTTPS, 47080 HTTP, 47025 Mailpit, 47300/47400/47301 dev servers) so it doesn't collide
+with other local projects.
 
 Checks: `cd apps/web && npm run lint && npx tsc --noEmit`, `cd services/users && npm run typecheck`,
-`cd services/game && npm run typecheck`. `./test.sh` exercises the public API (`API_KEY=ft_… ./test.sh`).
+`cd services/game && npm run typecheck`.
 
 ### Browser support
 
@@ -333,31 +235,32 @@ warned about unused preloads.
 | 1 + 2 | Better Auth, Postgres, Caddy, Socket.IO, the Next.js app and all core screens | Done |
 | 3 | Direct messages (typing, read receipts, game invites, blocks), reconnection with a held slot, forfeit, rematch, ready-check deadline | Done |
 | 4 | Status page, database-aware health checks, scheduled backups, restore and disaster recovery | Done |
-| 5 | Modules of the 42 subject (see below) | In progress |
+| 5 | Modules of the 42 subject (see below) | Done (as far as the product needs them) |
+| 6 | VOLLEY.EXE: beyond the subject: identity, free AI (local Coach, offline chat filter), pixel avatars and cosmetics, playable landing, invite links, game feel, account security | Done |
+| 7 | Ranked seasons (Glicko-2: monthly seasons, divisions, rating-aware queue, anti-farming), shareable clips (the deciding point as an MP4/WebM, recorded in the browser), new favicon | Done |
+| 8 | Deploy prep: production compose, `make deploy-check`, `make prod`, CSP, deploy guide | Done (going live needs a domain) |
 
-Known limitations: the court stays
-landscape on phones; chat has no docked panel yet (full page only); email verification is sent but
-not required to play.
+Known limitations: the court stays landscape on phones; chat has no docked panel yet (full
+page only); a look saved mid-session reaches the game at the next connect; the Ollama image is
+large (about 8.5 GB, mostly GPU libraries the CPU setup doesn't use).
 
-### Subject modules (v21, chapter IV)
+### Subject modules (v21, chapter IV; historical)
 
 | Module | Type | State |
 |---|---|---|
 | Framework for frontend and backend (Next.js + Fastify) | Major | Done |
 | Real-time features (Socket.IO: game, chat, presence, notifications) | Major | Done |
 | User interaction (chat, profiles, friends) | Major | Done |
-| Public API (API key, rate limit, docs, GET/POST/PUT/DELETE) | Major | Done |
 | Standard user management and authentication | Major | Done |
 | Web-based game (Pong) | Major | Done |
 | Remote players (reconnection, latency display) | Major | Done |
 | AI opponent (easy/normal/hard, human-like, uses the game settings) | Major | Done |
 | ORM (Prisma) · SSR · design system · 3 languages · 2FA | Minor ×5 | Done |
-| OAuth 2.0 (Google) | Minor | Implemented; not tested end to end until `GOOGLE_CLIENT_SECRET` is set |
+| OAuth 2.0 (Google) | Minor | Removed (2026-11-18): passkeys cover passwordless sign-in |
 | Game statistics and match history (with leaderboard and achievements) | Minor | Done |
 | Gamification (stored achievements, XP and levels, leaderboard; progress bars, unlock and level-up toasts; rules shown on the profile) | Minor | Done |
 | Advanced chat (blocks, invites, game and tournament notifications, profile links, history, typing, read receipts) | Minor | Done |
 | Health check, status page, backups and disaster recovery | Minor | Done |
-| Monitoring with Prometheus and Grafana (exporters, custom dashboard, alert rules, login-only Grafana on localhost) | Major | Done |
 | GDPR (export, deletion with confirmation, confirmation emails) | Minor | Done |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
 | Multiplayer game (3–4 players, party mode: square court, one side each, 3 lives, last one standing; queue or private code, ready check, reconnect grace, spectators; results stored per placement) | Major | Done (engine + flow checks: `npm run party:check`, `npm run party:flow` in services/game; a 4-browser game verified on the Docker stack) |
@@ -365,10 +268,9 @@ not required to play.
 | Game customization (power-ups, speeds, points, 4 court themes, defaults; the AI plays with all of them) | Minor | Done |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
 | Spectator mode (live public matches, read-only view, live spectator count) | Minor | Done |
-| LLM system interface: the Coach (Claude, streamed over SSE, per-user limits, error handling) | Major | Done; needs `ANTHROPIC_API_KEY` |
-| Content moderation AI (auto-removal, warnings, temporary mute) | Minor | Done; needs `ANTHROPIC_API_KEY` |
+| LLM system interface: the Coach (local Ollama by default, any OpenAI-compatible API; streamed over SSE, per-user limits, error handling) | Major | Done; compose profile `ai` |
+| Content moderation (offline masking filter, link and repeat rules, strikes, temporary mute) | Minor | Done |
 | PWA (installable, service worker, offline page in 3 languages, local 2-player game works offline) | Minor | Done |
-| Tournament scores on the blockchain (Solidity contract on an Avalanche-compatible chain: anvil locally, Fuji testnet by config; verification on the profile) | Major | Done (verified on the local anvil chain; Fuji needs a funded test key) |
 
 Not started; each needs a decision first: ICP blockchain backend (conflicts with SSR), RAG,
 recommendations and other AI-service modules, ELK, WAF + Vault, a second game, 3D,

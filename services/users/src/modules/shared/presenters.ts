@@ -1,5 +1,6 @@
 import type { FriendshipState, PublicUser } from "../../../../shared/types/api.types.ts";
 import { prisma } from "../../db/client.ts";
+import { lookFor } from "../../../../shared/cosmetics/look.ts";
 
 /** Columns needed to present a user; use with `select` so wide rows are never loaded. */
 export const PUBLIC_USER_SELECT = {
@@ -9,6 +10,7 @@ export const PUBLIC_USER_SELECT = {
   name: true,
   avatar: true,
   status: true,
+  look: true,
 } as const;
 
 type PublicUserRow = {
@@ -18,6 +20,7 @@ type PublicUserRow = {
   name: string;
   avatar: string | null;
   status: "ONLINE" | "INGAME" | "OFFLINE";
+  look: unknown;
 };
 
 export function toPublicUser(u: PublicUserRow): PublicUser {
@@ -27,6 +30,7 @@ export function toPublicUser(u: PublicUserRow): PublicUser {
     displayName: u.displayUsername || u.name || u.username,
     avatar: u.avatar,
     presence: u.status,
+    look: lookFor(u.id, u.look),
   };
 }
 

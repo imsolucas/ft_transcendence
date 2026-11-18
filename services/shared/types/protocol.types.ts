@@ -39,7 +39,8 @@ export type GameMessage =
 | PartyQueueMessage
 | PartyStartMessage
 | PartyStateMessage
-| PartyEndMessage;
+| PartyEndMessage
+| RatingUpdateMessage;
 
 export type GameErrorCodes =
 | 'ALREADY_IN_ROOM'
@@ -312,6 +313,12 @@ export interface RematchReadyMessage extends BaseMessage {
 }
 
 /** server → room: not everyone readied up in time; the room is closed */
+/** After a ranked match: this player's new season rating (sent to each player separately). */
+export interface RatingUpdateMessage extends BaseMessage {
+	type: 'ratingUpdate';
+	data: { rating: number; delta: number; games: number; division: import("../ranked/ranked.ts").Division | null };
+}
+
 export interface ReadyTimeoutMessage extends BaseMessage {
 	type: 'readyTimeout';
 	data: { roomId: string };

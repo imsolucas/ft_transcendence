@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { config } from '../config.ts';
-import { matchesFinished, resultReportsFailed } from '../metrics.ts';
+import type { Division } from 'shared/index.ts';
 
 const REQUEST_TIMEOUT_MS = 5_000;
 const RETRY_DELAYS_MS = [1_000, 4_000, 15_000];
@@ -22,7 +22,7 @@ function sleep(ms: number) {
  * Retries on network errors and 5xx; the body carries an idempotency key, so a retry
  * after a lost response cannot record the result twice. Never awaited from the tick.
  */
-async function postWithRetry(path: string, body: unknown, label: string, kind: 'match' | 'tournament'): Promise<void> {
+async function postWithRetry(path: string, body: unknown, label: string): Promise<unknown> {
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
       const response = await fetch(`${config.usersApiUrl}${path}`, {
@@ -34,12 +34,11 @@ async function postWithRetry(path: string, body: unknown, label: string, kind: '
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
-      if (response.ok) return;
+      if (response.ok) return await response.json().catch(() => null);
       if (response.status < 500) {
         // A 4xx will not succeed on retry; log status only (no body, no payload).
         log.error({ status: response.status }, `${label} rejected by users service`);
-        resultReportsFailed.inc({ kind });
-        return;
+        return null;
       }
       log.error({ status: response.status, attempt: attempt + 1 }, `${label} failed`);
     } catch (err) {
@@ -50,7 +49,7 @@ async function postWithRetry(path: string, body: unknown, label: string, kind: '
     await sleep(delay);
   }
   log.error({ attempts: RETRY_DELAYS_MS.length + 1 }, `${label} dropped`);
-  resultReportsFailed.inc({ kind });
+  return null;
 }
 
 // The users service caps display names at 50 characters; never lose a result over a long name
@@ -62,21 +61,26 @@ function clipNames<T extends Record<string, unknown>>(obj: T): T {
   return out as T;
 }
 
-export function reportMatchResult(result: Record<string, unknown>): void {
+export interface RatingChange { rating: number; delta: number; games: number; division: Division | null }
+
+/** `onRatings` gets each player's new rating after a ranked match (keyed by user id). */
+export function reportMatchResult(result: Record<string, unknown>, onRatings?: (ratings: Record<string, RatingChange>) => void): void {
   const body = { matchId: crypto.randomUUID(), ...clipNames(result) };
-  matchesFinished.inc({ mode: 'standard' });
-  void postWithRetry('/internal/game/match-result', body, 'match result', 'match');
+  void postWithRetry('/internal/game/match-result', body, 'match result').then((res) => {
+    const ratings = (res as { ratings?: Record<string, RatingChange> } | null)?.ratings;
+    if (ratings && onRatings) onRatings(ratings);
+  });
 }
 
 /** A finished party (3–4 players): one row with every player's placement. */
 export function reportPartyResult(result: { matchId: string; players: { displayName: string }[] } & Record<string, unknown>): void {
   const body = { ...result, players: result.players.map((p) => ({ ...p, displayName: p.displayName.slice(0, 50) })) };
-  void postWithRetry('/internal/game/party-result', body, 'party result', 'match');
+  void postWithRetry('/internal/game/party-result', body, 'party result');
 }
 
 export function reportTournamentResult(result: Record<string, unknown>): void {
   // The tournament id is the idempotency key on the users side.
   const clipped = clipNames(result);
   if (Array.isArray(clipped.matches)) clipped.matches = clipped.matches.map((m: Record<string, unknown>) => clipNames(m));
-  void postWithRetry('/internal/game/tournament-result', clipped, 'tournament result', 'tournament');
+  void postWithRetry('/internal/game/tournament-result', clipped, 'tournament result');
 }

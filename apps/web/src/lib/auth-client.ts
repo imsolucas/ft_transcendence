@@ -2,6 +2,7 @@
 
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient, usernameClient } from "better-auth/client/plugins";
+import { passkeyClient } from "@better-auth/passkey/client";
 
 /**
  * Better Auth client. The auth server is on the same origin (Caddy routes /api/auth/*
@@ -16,5 +17,6 @@ export const authClient = createAuthClient({
         // Handled by the login form, which shows the code step in place.
       },
     }),
+    passkeyClient(),
   ],
 });

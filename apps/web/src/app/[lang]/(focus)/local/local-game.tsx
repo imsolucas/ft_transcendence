@@ -7,6 +7,7 @@ import type { GameConfig, GameState, PlayerInputs } from "shared";
 import { GameEngine } from "shared/game-engine/GameEngine";
 import { baseGameConfig } from "@/lib/game/config";
 import { PongAi, type AiLevel } from "@/lib/game/ai";
+import { HitStop, type ReplayFrame } from "@/lib/game/fx";
 import { CourtThemePicker } from "@/components/game/court-theme-picker";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { FormField, Input } from "@/components/ui/form";
 import { Kbd, Panel, Segmented } from "@/components/ui/primitives";
 import { Court } from "@/components/game/court";
+import { Replay } from "@/components/game/replay";
 import { ControlsCard, CountdownOverlay, GameMenu, MatchEnd, ScoreBoard } from "@/components/game/hud";
 
 type Speed = "slow" | "normal" | "fast";
@@ -221,18 +223,26 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
   const [seconds, setSeconds] = useState(0);
   const [menu, setMenu] = useState(false);
   const [showControls, setShowControls] = useState(!prefs.seenControls);
+  const [lastPoint, setLastPoint] = useState<ReplayFrame[]>([]);
 
   // Simulation loop (paused while the menu is open)
   useEffect(() => {
     if (phase !== "playing" || menu) return;
     let raf = 0;
     let last = performance.now();
+    const hitStop = new HitStop();
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      // a paddle hit freezes the simulation for a few frames (the court keeps drawing)
+      if (hitStop.frozen(now)) {
+        raf = requestAnimationFrame(step);
+        return;
+      }
       if (ai) engine.input(p1Inputs.current ?? undefined, ai.decide(engine.getGameState(), now));
       engine.tick(dt);
       const s = engine.getGameState();
+      hitStop.check(s, now);
       state.current = s;
       setScores((prev) => (prev[0] === s.scores[0] && prev[1] === s.scores[1] ? prev : [s.scores[0], s.scores[1]]));
       if (s.name === "GameOverState") {
@@ -281,6 +291,7 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
         won={null}
         title={t("game.winner", { name: p1Won ? setup.p1 : setup.p2 })}
         scores={scores}
+        replay={<Replay frames={lastPoint} config={config} youSide={null} caption={{ left: setup.p1, right: setup.p2, scores }} />}
         leftName={setup.p1}
         rightName={setup.p2}
         primary={
@@ -313,7 +324,7 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
         onMenu={() => setMenu(true)}
       />
       <div className="relative flex-1 p-4">
-        <Court config={config} getState={getState} youSide={null} controls={setup.ai ? "online" : "local"} onInputs={onInputs} paused={phase !== "playing" || menu} onFirstMove={onFirstMove} />
+        <Court config={config} getState={getState} youSide={null} controls={setup.ai ? "online" : "local"} onInputs={onInputs} paused={phase !== "playing" || menu} onFirstMove={onFirstMove} onPoint={setLastPoint} />
         {phase === "countdown" && <CountdownOverlay onDone={startPlaying} />}
         {phase === "playing" && showControls && <ControlsCard local={!setup.ai} onClose={onFirstMove} />}
       </div>

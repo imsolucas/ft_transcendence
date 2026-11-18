@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import useSWR from "swr";
+import { fetcher } from "@/lib/api";
+import type { PublicConfig } from "@/lib/types";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, MailCheck } from "lucide-react";
+import { safeNext } from "@/lib/invite";
+import { useCaptcha } from "@/components/auth/captcha";
 import { useI18n } from "@/i18n/I18nProvider";
 import { authClient } from "@/lib/auth-client";
 import { Button, IconButton } from "@/components/ui/button";
 import { Callout, FormField, Input } from "@/components/ui/form";
-import { AuthCard, GoogleButton, OrRule } from "../auth-card";
+import { AuthCard } from "../auth-card";
 import { StrengthMeter } from "@/components/auth/strength-meter";
 
 const USERNAME = /^[A-Za-z0-9_.]{3,30}$/;
@@ -16,16 +21,17 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function SignupForm() {
   const { t, href } = useI18n();
-  const router = useRouter();
   const params = useSearchParams();
+  const destination = safeNext(params.get("next"), href("/lobby"));
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [show, setShow] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<"username" | "email" | "password" | "form", string>>>(() =>
-    // Google redirects back with ?error=… when sign-in is cancelled or fails
-    params.get("error") ? { form: t("auth.googleFailed") } : {}
-  );
+  const captcha = useCaptcha();
+  const router = useRouter();
+  const { data: config } = useSWR<PublicConfig>("/api/config", fetcher, { revalidateOnFocus: false });
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [resent, setResent] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [errors, setErrors] = useState<Partial<Record<"username" | "email" | "password" | "form", string>>>({});
   const [busy, setBusy] = useState(false);
-  const [googleBusy, setGoogleBusy] = useState(false);
 
   function validate(field?: keyof typeof form) {
     const next: typeof errors = { ...errors };
@@ -43,7 +49,7 @@ export function SignupForm() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || captcha.pending) return;
     setBusy(true);
     const { error } = await authClient.signUp.email({
       email: form.email.trim().toLowerCase(),
@@ -51,26 +57,38 @@ export function SignupForm() {
       name: form.username,
       username: form.username,
       displayUsername: form.username,
+      // the verification link signs them in and brings them back here (e.g. an invite link)
+      callbackURL: destination,
+      fetchOptions: captcha.fetchOptions,
     });
     setBusy(false);
+    captcha.reset();
     if (error) {
       const code = error.code ?? "";
-      if (code.includes("USERNAME")) setErrors({ username: code.includes("TAKEN") ? t("auth.errors.usernameTaken") : t("auth.errors.invalidUsername") });
+      if (code === "PASSWORD_COMPROMISED") setErrors({ password: t("auth.errors.passwordBreached") });
+      else if (code.includes("CAPTCHA")) setErrors({ form: t("auth.errors.captcha") });
+      else if (code.includes("USERNAME")) setErrors({ username: code.includes("TAKEN") ? t("auth.errors.usernameTaken") : t("auth.errors.invalidUsername") });
       else if (code.includes("EXIST") || code.includes("EMAIL")) setErrors({ email: t("auth.errors.emailTaken") });
       else if (error.status === 429) setErrors({ form: t("auth.errors.tooManyAttempts") });
       else setErrors({ form: t("common.error") });
       return;
     }
-    router.replace(href("/lobby"));
+    if (config && !config.emailVerification) {
+      // no email on this server: log in now (same next step whether or not the email was new)
+      router.replace(`${href("/login")}?created=1${params.get("next") ? `&next=${encodeURIComponent(destination)}` : ""}`);
+      return;
+    }
+    // sign-in waits for a verified address: same screen whether or not the email was new
+    setSentTo(form.email.trim().toLowerCase());
   }
 
-  async function google() {
-    setGoogleBusy(true);
-    const { error } = await authClient.signIn.social({ provider: "google", callbackURL: href("/lobby"), errorCallbackURL: href("/signup") });
-    if (error) {
-      setGoogleBusy(false);
-      setErrors({ form: t("auth.errors.googleUnavailable") });
-    }
+  async function resend() {
+    if (!sentTo) return;
+    if (captcha.pending) return;
+    setResent("sending");
+    const { error } = await authClient.sendVerificationEmail({ email: sentTo, callbackURL: destination, fetchOptions: captcha.fetchOptions });
+    captcha.reset();
+    setResent(error ? "error" : "sent");
   }
 
   const field = (key: keyof typeof form) => ({
@@ -80,13 +98,31 @@ export function SignupForm() {
     disabled: busy,
   });
 
+  if (sentTo) {
+    return (
+      <AuthCard title={t("auth.checkInboxTitle")}>
+        <div className="stack stack-4 items-center text-center" role="status">
+          <MailCheck className="ico !h-10 !w-10 c-cyan" aria-hidden />
+          <p>{t("auth.checkInboxBody", { email: sentTo })}</p>
+          <p className="t-caption subtle">{t("auth.checkInboxHint")}</p>
+          {resent !== "sent" && captcha.widget}
+          <Button type="button" variant="secondary" onClick={resend} loading={resent === "sending"} disabled={resent === "sent" || captcha.pending}>
+            {resent === "sent" ? t("auth.verificationResent") : t("auth.resendVerification")}
+          </Button>
+          {resent === "error" && <Callout tone="error">{t("common.error")}</Callout>}
+          <Link href={`${href("/login")}${params.get("next") ? `?next=${encodeURIComponent(destination)}` : ""}`}>{t("auth.backToLogin")}</Link>
+        </div>
+      </AuthCard>
+    );
+  }
+
   return (
     <AuthCard
       title={t("auth.signupTitle")}
       subtitle={t("auth.signupSubtitle")}
       footer={
         <p className="muted">
-          {t("auth.haveAccount")} <Link href={href("/login")}>{t("auth.loginInstead")}</Link>
+          {t("auth.haveAccount")} <Link href={params.get("next") ? `${href("/login")}?next=${encodeURIComponent(destination)}` : href("/login")}>{t("auth.loginInstead")}</Link>
         </p>
       }
     >
@@ -138,12 +174,11 @@ export function SignupForm() {
               )
             )}
         </p>
-        <Button type="submit" variant="primary" glow="sm" block loading={busy}>
+        {captcha.widget}
+        <Button type="submit" variant="primary" glow="sm" block loading={busy} disabled={captcha.pending}>
           {busy ? t("auth.signingUp") : t("auth.signup")}
         </Button>
       </form>
-      <OrRule label={t("common.or")} />
-      <GoogleButton onClick={google} loading={googleBusy} label={t("auth.google")} />
     </AuthCard>
   );
 }

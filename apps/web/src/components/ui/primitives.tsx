@@ -1,6 +1,8 @@
 "use client";
 
 import { Dialog as DialogPrimitive, Switch as SwitchPrimitive, Tabs as TabsPrimitive, Tooltip as TooltipPrimitive, DropdownMenu as MenuPrimitive } from "radix-ui";
+import type { PlayerLook } from "shared";
+import { PixelAvatar } from "./pixel-avatar";
 import { Inbox } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -92,6 +94,7 @@ export function initials(name: string) {
 export function Avatar({
   name,
   src,
+  look,
   size = "md",
   ring,
   presence,
@@ -100,17 +103,22 @@ export function Avatar({
 }: {
   name: string;
   src?: string | null;
+  /** pixel avatar + frame; the uploaded photo (src) wins over the pixel avatar */
+  look?: PlayerLook | null;
   size?: "sm" | "md" | "lg" | "xl";
   ring?: "you" | "opp";
   presence?: Presence;
   presenceLabel?: string;
   className?: string;
 }) {
+  const frame = look?.frame && look.frame !== "none" ? `frame-${look.frame}` : null;
   return (
-    <span className={cn("avatar", size !== "md" && `avatar-${size}`, ring, className)}>
+    <span className={cn("avatar", size !== "md" && `avatar-${size}`, ring, frame, className)}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element -- avatars come from many hosts and our /api
         <img src={src} alt="" className="h-full w-full rounded-full object-cover" referrerPolicy="no-referrer" />
+      ) : look ? (
+        <PixelAvatar spec={look.pixel} className="h-full w-full rounded-full" />
       ) : (
         <span aria-hidden>{initials(name)}</span>
       )}

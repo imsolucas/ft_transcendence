@@ -1,0 +1,17 @@
+# Gateway behind a Cloudflare Tunnel (no domain or open ports needed; see docs/DEPLOY.md).
+# Cloudflare terminates HTTPS and forwards to cloudflared, which connects to this plain-HTTP site
+# on the internal network. Same routes and headers as the normal Caddyfile (routes.caddy).
+{
+	admin off
+	# cloudflared (on the private Docker network) is the only trusted proxy: the visitor's address
+	# is Cloudflare's CF-Connecting-IP, so rate limits apply per player, not to the tunnel.
+	servers {
+		trusted_proxies static private_ranges
+		client_ip_headers CF-Connecting-IP
+	}
+	auto_https off
+}
+
+:80 {
+	import routes.caddy
+}

@@ -6,14 +6,111 @@ import { Trophy } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { fetcher } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import type { Leaderboard, LeaderboardRow } from "@/lib/types";
-import { EmptyState, Panel, Skeleton } from "@/components/ui/primitives";
+import type { Leaderboard, LeaderboardRow, RankedLeaderboard, RankedRow } from "@/lib/types";
+import { EmptyState, Panel, Segmented, Skeleton } from "@/components/ui/primitives";
+import { DivisionBadge, useSeasonLabel } from "@/components/game/ranked";
 import { Pager, PlayerChip } from "@/components/game/cards";
 import { LoadError } from "../profile/[username]/profile-view";
 
 const PODIUM = ["c-amber", "c-cyan", "c-magenta"];
 
+/** Season (ranked rating) or all-time (XP and wins) */
 export function LeaderboardView() {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<"season" | "all">("season");
+  return (
+    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-4 md:gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="pix pix-md uppercase">{t("leaderboard.title")}</h1>
+          <p className="muted mt-1">{tab === "season" ? t("ranked.leaderboardSubtitle") : t("leaderboard.subtitle")}</p>
+        </div>
+        <Segmented
+          label={t("leaderboard.title")}
+          value={tab}
+          onChange={(v) => setTab(v as "season" | "all")}
+          options={[
+            { value: "season", label: t("ranked.seasonTab") },
+            { value: "all", label: t("ranked.allTimeTab") },
+          ]}
+        />
+      </div>
+      {tab === "season" ? <SeasonBoard /> : <AllTimeBoard />}
+    </div>
+  );
+}
+
+function SeasonBoard() {
+  const { t } = useI18n();
+  const [page, setPage] = useState(1);
+  const { data, error, isLoading, mutate } = useSWR<RankedLeaderboard>(`/api/ranked/leaderboard?page=${page}`, fetcher, { keepPreviousData: true });
+  const seasonLabel = useSeasonLabel(data?.season);
+
+  const row = (r: RankedRow, you = false) => (
+    <tr key={`${you ? "you-" : ""}${r.user.id}`} className={cn("border-t border-border", you && "bg-surface-2")} aria-current={you ? "true" : undefined}>
+      <td className={cn("num w-10 text-center", r.rank <= 3 && PODIUM[r.rank - 1])}>
+        {r.rank <= 3 ? (
+          <span className="inline-flex items-center gap-1">
+            <Trophy className="ico" aria-hidden />
+            {r.rank}
+          </span>
+        ) : (
+          r.rank
+        )}
+      </td>
+      <td className="min-w-0 max-w-[44vw]">
+        <PlayerChip user={r.user} meta={you ? t("leaderboard.you") : undefined} ring={you ? "you" : undefined} />
+      </td>
+      <td className="max-sm:hidden">
+        <DivisionBadge division={r.division} />
+      </td>
+      <td className="num text-right">{r.rating}</td>
+      <td className="num text-right max-sm:hidden">{t("ranked.record", { w: r.wins, l: r.games - r.wins })}</td>
+    </tr>
+  );
+
+  return (
+    <>
+      {seasonLabel && <p className="t-caption subtle -mt-2">{seasonLabel}</p>}
+      <Panel className="overflow-x-auto !p-0">
+        {error && !data ? (
+          <div className="p-6">
+            <LoadError title={t("leaderboard.loadError")} error={error} onRetry={() => mutate()} />
+          </div>
+        ) : isLoading && !data ? (
+          <div className="stack stack-3 p-6">
+            {Array.from({ length: 6 }, (_, i) => (
+              <Skeleton key={i} style={{ height: 40 }} />
+            ))}
+          </div>
+        ) : !data?.items.length ? (
+          <EmptyState icon={<Trophy className="ico" aria-hidden />} title={t("ranked.emptyTitle")} body={t("ranked.emptyBody")} />
+        ) : (
+          <table className="w-full border-collapse text-[14px] [&_td]:px-2 [&_td]:py-3 [&_th]:px-2 [&_th]:py-3 md:[&_td]:px-4 md:[&_th]:px-4">
+            <caption className="sr-only">{t("ranked.seasonTab")}</caption>
+            <thead>
+              <tr className="font-mono text-[12px] uppercase tracking-[.06em] text-fg-subtle [&_th]:font-medium">
+                <th scope="col" className="text-center">#</th>
+                <th scope="col" className="text-left">{t("leaderboard.player")}</th>
+                <th scope="col" className="text-left max-sm:hidden">{t("ranked.divisionCol")}</th>
+                <th scope="col" className="text-right">{t("ranked.rating")}</th>
+                <th scope="col" className="text-right max-sm:hidden">{t("ranked.recordCol")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.map((r) => row(r, r.user.id === data.you?.user.id))}
+              {data.you && !data.items.some((r) => r.user.id === data.you!.user.id) && row(data.you, true)}
+            </tbody>
+          </table>
+        )}
+      </Panel>
+      {data && data.total > data.pageSize && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
+      {data && !data.you && <p className="t-caption subtle">{t("ranked.notPlaced")}</p>}
+    </>
+  );
+}
+
+function AllTimeBoard() {
   const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
   const { data, error, isLoading, mutate } = useSWR<Leaderboard>(`/api/leaderboard?page=${page}`, fetcher, { keepPreviousData: true });
@@ -42,11 +139,7 @@ export function LeaderboardView() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-4 md:gap-6">
-      <div>
-        <h1 className="pix pix-md uppercase">{t("leaderboard.title")}</h1>
-        <p className="muted mt-1">{t("leaderboard.subtitle")}</p>
-      </div>
+    <>
       <Panel className="overflow-x-auto !p-0">
         {error && !data ? (
           <div className="p-6">
@@ -92,6 +185,6 @@ export function LeaderboardView() {
       </Panel>
       {data && data.total > data.pageSize && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
       {data && !data.you && <p className="t-caption subtle">{t("leaderboard.unranked")}</p>}
-    </div>
+    </>
   );
 }

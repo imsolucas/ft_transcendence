@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { GameConfig, GameState, PlayerInputs } from "shared";
+import type { GameConfig, GameState, PaddleSkinId, PlayerInputs } from "shared";
 import { drawFrame, readCourtColors } from "@/lib/game/renderer";
+import { CourtFx, type ReplayFrame } from "@/lib/game/fx";
+import { playSfx, unlockAudio } from "@/lib/game/sfx";
 import { usePrefs, useReducedMotion } from "@/lib/prefs";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -25,14 +27,23 @@ export function Court({
   onInputs,
   paused = false,
   onFirstMove,
+  skins,
+  sound = true,
+  onPoint,
 }: {
   config: GameConfig;
   getState: () => GameState | null;
   youSide: 0 | 1 | null;
-  controls: "local" | "online" | "none";
+  controls: "local" | "online" | "none" | "attract";
   onInputs?: (p1: PlayerInputs, p2: PlayerInputs) => void;
   paused?: boolean;
   onFirstMove?: () => void;
+  /** paddle skins by paddle index (0 = left), from each player's look */
+  skins?: readonly [PaddleSkinId, PaddleSkinId];
+  /** sound effects (also needs the user's sound preference); off for the landing demo */
+  sound?: boolean;
+  /** each finished point's frames, for the slow-motion replay on the end screen */
+  onPoint?: (frames: ReplayFrame[]) => void;
 }) {
   const { t } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -40,7 +51,7 @@ export function Court({
   const inputs = useRef<[PlayerInputs, PlayerInputs]>([idle(), idle()]);
   const moved = useRef(false);
   const reduced = useReducedMotion();
-  const { courtTheme } = usePrefs().prefs;
+  const { courtTheme, sound: soundPref } = usePrefs().prefs;
   const [vertical, setVertical] = useState(false);
 
   // Size the canvas to the container (device-pixel aware) and pick orientation
@@ -73,6 +84,21 @@ export function Court({
     return () => ro.disconnect();
   }, []);
 
+  // read by the render loop on every frame (no restart when a skin arrives)
+  const skinsRef = useRef(skins);
+  const soundRef = useRef(sound && soundPref);
+  const onPointRef = useRef(onPoint);
+  useEffect(() => {
+    skinsRef.current = skins;
+    soundRef.current = sound && soundPref;
+    onPointRef.current = onPoint;
+  }, [skins, sound, soundPref, onPoint]);
+
+  // Effects (particles, shake, flash, sounds, replay recording); one per court, made in the loop
+  const fxRef = useRef<CourtFx | null>(null);
+  // the point still in progress is handed over when the court goes away (match over)
+  useEffect(() => () => fxRef.current?.flush(), []);
+
   // Render loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -81,9 +107,28 @@ export function Court({
     if (!ctx) return;
     const colors = readCourtColors(canvas);
     let raf = 0;
-    const loop = () => {
+    const fx = (fxRef.current ??= new CourtFx({
+      onSound: (kind) => {
+        if (soundRef.current) playSfx(kind);
+      },
+      onPoint: (frames) => onPointRef.current?.(frames),
+    }));
+    fx.reduced = reduced;
+    fx.youSide = youSide;
+    const loop = (now: number) => {
       const state = getState();
-      if (state) drawFrame(ctx, state, config, colors, { youSide, vertical, glow: !reduced });
+      if (state) {
+        fx.update(state, now, colors);
+        drawFrame(ctx, state, config, colors, {
+          youSide,
+          vertical,
+          glow: !reduced,
+          skins: skinsRef.current,
+          overlay: (c, sx, sy, w, h) => fx.draw(c, sx, sy, now, w, h),
+        });
+        const o = fx.shakeOffset(now);
+        canvas.style.transform = o.x || o.y ? `translate(${o.x.toFixed(1)}px, ${o.y.toFixed(1)}px)` : "";
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -97,6 +142,8 @@ export function Court({
     const emit = () => onInputs?.({ ...inputs.current[0] }, { ...inputs.current[1] });
     const set = (e: KeyboardEvent, down: boolean) => {
       if (paused) return;
+      // shortcuts (Ctrl+S, Cmd+W, …) belong to the browser, not the paddle
+      if (down && (e.ctrlKey || e.metaKey || e.altKey)) return;
       const [p1, p2] = inputs.current;
       const k = e.key.toLowerCase();
       let handled = true;
@@ -106,6 +153,17 @@ export function Court({
         else if (e.key === "ArrowUp") p2.up = down;
         else if (e.key === "ArrowDown") p2.down = down;
         else handled = false;
+      } else if (controls === "attract") {
+        // landing page: W/S take over at once; the arrows only once playing, so before
+        // that they still scroll the page. Never while typing in a field.
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+        // only while the court is on screen (the listener is on the whole page)
+        if (!moved.current && !visibleRef.current) return;
+        const arrows = moved.current;
+        if (k === "w" || (arrows && e.key === "ArrowUp")) p1.up = down;
+        else if (k === "s" || (arrows && e.key === "ArrowDown")) p1.down = down;
+        else handled = false;
       } else {
         if (k === "w" || e.key === "ArrowUp") p1.up = down;
         else if (k === "s" || e.key === "ArrowDown") p1.down = down;
@@ -113,6 +171,7 @@ export function Court({
       }
       if (!handled) return;
       e.preventDefault();
+      if (down && soundRef.current) unlockAudio();
       if (down && !moved.current) {
         moved.current = true;
         onFirstMove?.();
@@ -136,8 +195,26 @@ export function Court({
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", release);
       document.removeEventListener("visibilitychange", onVisibility);
+      // a key held while the controls change would never get its keyup here
+      inputs.current = [idle(), idle()];
     };
   }, [controls, onInputs, paused, onFirstMove]);
+
+  // attract: is the court on screen? (keys only take over while it is)
+  const visibleRef = useRef(false);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (controls !== "attract" || !canvas || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => {
+      visibleRef.current = !!entry?.isIntersecting && entry.intersectionRatio >= 0.5;
+    }, { threshold: [0, 0.5, 1] });
+    io.observe(canvas);
+    return () => io.disconnect();
+  }, [controls]);
+
+  // attract on touch: a tap starts playing; a swipe keeps scrolling the page
+  const tapRef = useRef<{ x: number; y: number } | null>(null);
+  const [touchPlaying, setTouchPlaying] = useState(false);
 
   // Release everything when pausing so no paddle keeps moving
   useEffect(() => {
@@ -150,6 +227,7 @@ export function Court({
   const hold = (dir: "up" | "down", pressed: boolean, who: 0 | 1 = 0) => {
     if (paused) return;
     inputs.current[who][dir] = pressed;
+    if (pressed && soundRef.current) unlockAudio();
     if (pressed && !moved.current) {
       moved.current = true;
       onFirstMove?.();
@@ -166,11 +244,47 @@ export function Court({
           aria-label={t("game.courtLabel")}
           data-court-theme={courtTheme}
           className="rounded-lg border border-[color:var(--court-border)]"
-          style={{ touchAction: "none" }}
+          // attract: a vertical swipe still scrolls the page; a press on the court plays
+          style={{ touchAction: controls === "attract" && !touchPlaying ? "pan-y" : "none" }}
+          {...(controls === "attract"
+            ? {
+                onPointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+                  // first touch: wait for pointerup to tell a tap from a scroll
+                  if (e.pointerType === "touch" && !moved.current) {
+                    tapRef.current = { x: e.clientX, y: e.clientY };
+                    return;
+                  }
+                  const r = e.currentTarget.getBoundingClientRect();
+                  hold(e.clientY < r.top + r.height / 2 ? "up" : "down", true);
+                },
+                onPointerUp: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+                  const tap = tapRef.current;
+                  tapRef.current = null;
+                  if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 10) {
+                    // a tap: start playing (from now on the court takes the touch)
+                    moved.current = true;
+                    setTouchPlaying(true);
+                    onFirstMove?.();
+                    return;
+                  }
+                  hold("up", false);
+                  hold("down", false);
+                },
+                onPointerCancel: () => {
+                  tapRef.current = null;
+                  hold("up", false);
+                  hold("down", false);
+                },
+                onPointerLeave: () => {
+                  hold("up", false);
+                  hold("down", false);
+                },
+              }
+            : {})}
         />
       </div>
       {/* Touch: 88px hold buttons; locally each player gets a pair (left: P1, right: P2) */}
-      {controls !== "none" && (
+      {controls !== "none" && controls !== "attract" && (
       <div className="flex w-full justify-between gap-4 md:hidden">
         {(controls === "local" ? ([0, 1] as const) : ([0] as const)).map((who) => (
           <div key={who} className={controls === "local" ? "flex gap-2" : "mx-auto flex gap-4"}>

@@ -2,21 +2,18 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { safeNext } from "@/lib/invite";
+import { useCaptcha } from "@/components/auth/captcha";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { authClient } from "@/lib/auth-client";
 import { Button, IconButton } from "@/components/ui/button";
 import { Callout, FormField, Input } from "@/components/ui/form";
 import { OtpInput } from "@/components/ui/otp-input";
-import { AuthCard, GoogleButton, OrRule } from "../auth-card";
+import { AuthCard, OrRule } from "../auth-card";
 
 type BAError = { status?: number; code?: string; message?: string } | null | undefined;
-
-/** Only same-site, locale-prefixed paths are allowed as a post-login destination. */
-function safeNext(next: string | null, fallback: string) {
-  return next && /^\/(en|es|fr)(\/|$)/.test(next) && !next.startsWith("//") ? next : fallback;
-}
 
 export function LoginForm() {
   const { t, href } = useI18n();
@@ -30,16 +27,16 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [trustDevice, setTrustDevice] = useState(false);
-  const [errors, setErrors] = useState<{ identifier?: string; password?: string; form?: string; code?: string }>(() =>
-    // Google redirects back with ?error=… when sign-in is cancelled or fails
-    params.get("error") ? { form: t("auth.googleFailed") } : {}
-  );
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string; form?: string; code?: string }>({});
   const [busy, setBusy] = useState(false);
-  const [googleBusy, setGoogleBusy] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const captcha = useCaptcha();
 
   function messageFor(error: BAError, fallback = t("common.error")) {
     if (!error) return fallback;
     if (error.status === 429) return t("auth.errors.tooManyAttempts");
+    if (error.code === "EMAIL_NOT_VERIFIED") return t("auth.errors.verifyFirst");
+    if (error.code?.includes("CAPTCHA")) return t("auth.errors.captcha");
     if (error.code?.includes("INVALID")) return t("auth.errors.invalidCredentials");
     if (error.status === 0) return t("common.networkError");
     return fallback;
@@ -51,14 +48,16 @@ export function LoginForm() {
     if (!identifier.trim()) next.identifier = t("common.required");
     if (!password) next.password = t("common.required");
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length || captcha.pending) return;
 
     setBusy(true);
     const id = identifier.trim();
+    // an unverified account is sent a fresh link; it lands back on `destination`
     const { data, error } = id.includes("@")
-      ? await authClient.signIn.email({ email: id, password })
-      : await authClient.signIn.username({ username: id, password });
+      ? await authClient.signIn.email({ email: id, password, callbackURL: destination, fetchOptions: captcha.fetchOptions })
+      : await authClient.signIn.username({ username: id, password, callbackURL: destination, fetchOptions: captcha.fetchOptions });
     setBusy(false);
+    captcha.reset();
 
     if (error) {
       setErrors({ form: messageFor(error) });
@@ -89,17 +88,19 @@ export function LoginForm() {
     router.replace(destination);
   }
 
-  async function google() {
-    setGoogleBusy(true);
-    const { error } = await authClient.signIn.social({
-      provider: "google",
-      callbackURL: destination,
-      errorCallbackURL: href("/login"),
-    });
-    if (error) {
-      setGoogleBusy(false);
-      setErrors({ form: error.status === 404 || error.code?.includes("PROVIDER") ? t("auth.errors.googleUnavailable") : messageFor(error) });
+  async function signInWithPasskey() {
+    setPasskeyBusy(true);
+    setErrors({});
+    const result = await authClient.signIn.passkey();
+    setPasskeyBusy(false);
+    if (result?.error) {
+      // the browser dialog was dismissed: not an error worth showing
+      const err = result.error as { code?: string; message?: string };
+      const cancelled = /cancel|abort|not ?allowed/i.test(`${err.code ?? ""} ${err.message ?? ""}`);
+      if (!cancelled) setErrors({ form: t("auth.errors.passkeyFailed") });
+      return;
     }
+    router.replace(destination);
   }
 
   if (step !== "password") {
@@ -161,11 +162,12 @@ export function LoginForm() {
       subtitle={t("auth.loginSubtitle")}
       footer={
         <p className="muted">
-          {t("auth.noAccount")} <Link href={href("/signup")}>{t("auth.createOne")}</Link>
+          {t("auth.noAccount")} <Link href={params.get("next") ? `${href("/signup")}?next=${encodeURIComponent(destination)}` : href("/signup")}>{t("auth.createOne")}</Link>
         </p>
       }
     >
       <form onSubmit={submitPassword} className="stack stack-4" noValidate>
+        {params.get("created") && !errors.form && <Callout tone="info">{t("auth.accountCreated")}</Callout>}
         {errors.form && <Callout tone="error">{errors.form}</Callout>}
         <FormField label={t("auth.identifier")} error={errors.identifier}>
           {({ id, describedBy, invalid }) => (
@@ -205,12 +207,16 @@ export function LoginForm() {
         <p className="-mt-2 text-right t-caption">
           <Link href={href("/forgot-password")}>{t("auth.forgotLink")}</Link>
         </p>
-        <Button type="submit" variant="primary" glow="sm" block loading={busy}>
+        {captcha.widget}
+        <Button type="submit" variant="primary" glow="sm" block loading={busy} disabled={captcha.pending}>
           {busy ? t("auth.loggingIn") : t("auth.login")}
         </Button>
       </form>
       <OrRule label={t("common.or")} />
-      <GoogleButton onClick={google} loading={googleBusy} label={t("auth.google")} />
+      <Button type="button" variant="secondary" block onClick={signInWithPasskey} loading={passkeyBusy}>
+        <KeyRound className="ico" aria-hidden />
+        {t("auth.passkeySignIn")}
+      </Button>
     </AuthCard>
   );
 }

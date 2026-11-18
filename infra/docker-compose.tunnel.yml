@@ -1,0 +1,8 @@
+# Behind a Cloudflare Tunnel: Caddy serves plain HTTP inside Docker and publishes NO port, so the
+# app is only reachable through Cloudflare (nothing to open on the firewall).
+#   make tunnel        (quick tunnel: free *.trycloudflare.com, then `make tunnel-origin`)
+#   make tunnel TUNNEL=named   (named tunnel with CLOUDFLARE_TUNNEL_TOKEN, stable hostname)
+services:
+  caddy:
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.tunnel", "--adapter", "caddyfile"]
+    ports: !reset []

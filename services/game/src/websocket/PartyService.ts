@@ -5,7 +5,6 @@ import type { RoomManager } from "../game/roomManager.ts";
 import type { Room } from "../types/room.types.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
 import { gameEnded, gameStarted } from "../presence.ts";
-import { matchesFinished } from "../metrics.ts";
 import { reportPartyResult } from "../utils/reportResults.ts";
 
 export const PARTY_MIN = 3;
@@ -38,10 +37,6 @@ export default class PartyService {
     ) {}
 
     // ---------------------------------------------------------------- queue
-
-    queueLength(): number {
-        return this.queue.length;
-    }
 
     isQueued(playerId: string): boolean {
         return this.queue.some((q) => q.player.id === playerId);
@@ -154,7 +149,7 @@ export default class PartyService {
         }
         const seats: PartyPlayer[] = order.map((p, seat) => {
             p.position = seat + 1;
-            return { id: p.id, name: p.name, ...(p.picture ? { picture: p.picture } : {}), seat };
+            return { id: p.id, name: p.name, ...(p.picture ? { picture: p.picture } : {}), ...(p.look ? { look: p.look } : {}), seat };
         });
         room.party = {
             key: crypto.randomUUID(),
@@ -243,7 +238,6 @@ export default class PartyService {
         this.broadcaster.broadcastToRoom(room.id, end);
         // everyone still in the room (leavers were ended when they left)
         gameEnded(room.playerIds);
-        matchesFinished.inc({ mode: "party" });
         for (const p of this.roomManager.getPlayersInRoom(room.id)) p.isReady = false;
 
         reportPartyResult({

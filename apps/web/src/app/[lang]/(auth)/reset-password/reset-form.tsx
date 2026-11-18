@@ -35,6 +35,7 @@ export function ResetForm() {
     setBusy(true);
     const { error } = await authClient.resetPassword({ newPassword: password, token });
     setBusy(false);
+    if (error?.code === "PASSWORD_COMPROMISED") return setErrors({ password: t("auth.errors.passwordBreached") });
     if (error) return setErrors({ form: error.status === 429 ? t("auth.errors.tooManyAttempts") : t("auth.resetLinkInvalid") });
     setDone(true);
   }

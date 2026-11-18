@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "ft_transcendence",
-    "description": "Pong en temps réel avec des amis, des tournois et un chat."
+    "title": "VOLLEY.EXE",
+    "description": "Pong arcade rétro dans votre navigateur. Jouez en un clic, invitez un ami avec un lien, remportez le tournoi."
   },
   "common": {
     "play": "Jouer",
@@ -52,7 +52,7 @@
     "privacy": "Politique de confidentialité",
     "terms": "Conditions d'utilisation",
     "language": "Langue",
-    "rights": "Un projet de l'école 42, reconstruit.",
+    "rights": "VOLLEY.EXE · Pong rétro, né d’un projet de l’école 42.",
     "status": "État"
   },
   "landing": {
@@ -98,7 +98,6 @@
     "loggingIn": "Connexion…",
     "signup": "Créer un compte",
     "signingUp": "Création du compte…",
-    "google": "Continuer avec Google",
     "noAccount": "Nouveau ici ?",
     "createOne": "Créer un compte",
     "haveAccount": "Vous avez déjà un compte ?",
@@ -120,9 +119,13 @@
       "invalidEmail": "Saisissez une adresse e-mail valide.",
       "passwordTooShort": "Utilisez au moins 8 caractères.",
       "tooManyAttempts": "Trop de tentatives. Attendez une minute, puis réessayez.",
-      "googleUnavailable": "La connexion avec Google n'est pas encore configurée sur ce serveur.",
       "passwordTooLong": "128 caractères maximum.",
-      "passwordsDontMatch": "Les mots de passe ne correspondent pas."
+      "passwordsDontMatch": "Les mots de passe ne correspondent pas.",
+      "passwordBreached": "Ce mot de passe figure dans une fuite de données. Choisissez-en un autre.",
+      "verifyFirst": "Vérifiez d'abord votre adresse e-mail. Nous venons de vous envoyer un nouveau lien.",
+      "captcha": "La vérification anti-robot a échoué. Réessayez.",
+      "passkeyFailed": "La connexion par clé d'accès n'a pas fonctionné. Réessayez ou utilisez votre mot de passe.",
+      "captchaLoad": "La vérification anti-robot n'a pas pu se charger. Vérifiez votre connexion ou votre bloqueur de publicité, puis réessayez."
     },
     "twoFactorTitle": "Code à deux facteurs",
     "twoFactorSubtitle": "Saisissez le code à 6 chiffres de votre application d'authentification.",
@@ -138,7 +141,6 @@
     "sessionExpiredTitle": "Session expirée",
     "sessionExpiredBody": "Vous avez été déconnecté. Connectez-vous de nouveau pour reprendre où vous en étiez.",
     "loginAgain": "Se reconnecter",
-    "googleFailed": "La connexion Google n'a pas abouti. Réessayez, ou utilisez votre nom d'utilisateur et votre mot de passe.",
     "forgotLink": "Mot de passe oublié ?",
     "forgotTitle": "Mot de passe oublié",
     "forgotSubtitle": "Saisissez l'e-mail de votre compte et nous vous enverrons un lien pour choisir un nouveau mot de passe.",
@@ -151,14 +153,21 @@
     "requestNewLink": "Demander un nouveau lien",
     "resetDone": "Votre mot de passe a été modifié. Connectez-vous avec le nouveau.",
     "confirmPassword": "Confirmer le nouveau mot de passe",
-    "setPassword": "Enregistrer le mot de passe"
+    "setPassword": "Enregistrer le mot de passe",
+    "checkInboxTitle": "Vérifiez votre boîte mail",
+    "checkInboxBody": "Si {email} peut servir à un nouveau compte, nous y avons envoyé un lien de confirmation. Ouvrez-le pour terminer l'inscription.",
+    "checkInboxHint": "Pas d'e-mail après quelques minutes ? Regardez dans les spams ou renvoyez-le.",
+    "resendVerification": "Renvoyer le lien",
+    "verificationResent": "Lien envoyé",
+    "passkeySignIn": "Se connecter avec une clé d'accès",
+    "accountCreated": "Compte créé. Connectez-vous pour jouer."
   },
   "lobby": {
     "title": "LOBBY",
     "greeting": "Prêt, {name} ?",
     "playTitle": "Jouer",
-    "quickMatch": "Partie rapide",
-    "quickMatchBody": "Trouvez un adversaire en ligne.",
+    "quickMatch": "Match classé",
+    "quickMatchBody": "Vous jouez contre quelqu'un de votre niveau. Chaque match rapide compte pour la saison.",
     "findMatch": "Chercher un match",
     "privateRoom": "Salon privé",
     "privateRoomBody": "Jouez contre un ami avec un code de salon.",
@@ -474,9 +483,8 @@
     "resultPreview": "Résultat {score}",
     "tournamentPreview": "Résultat du tournoi",
     "removed": "Message supprimé par la modération",
-    "removedWarning": "Votre message a été supprimé ({category}).",
     "mutedUntil": "Vous ne pouvez plus envoyer de messages avant {time}.",
-    "muted": "Vous ne pouvez plus envoyer de messages pendant un moment après plusieurs messages supprimés.",
+    "muted": "Vous ne pouvez plus envoyer de messages pendant un moment après plusieurs avertissements.",
     "category": {
       "harassment": "harcèlement",
       "hate": "haine",
@@ -485,16 +493,19 @@
       "spam": "spam",
       "other": "contraire aux règles"
     },
-    "slowDown": "Vous envoyez des messages trop vite. Patientez un instant."
+    "slowDown": "Vous envoyez des messages trop vite. Patientez un instant.",
+    "strikeWarning": "Avertissement : votre message enfreint les règles du chat ({category}).",
+    "linkNotAllowed": "Vous ne pouvez envoyer des liens qu'à vos amis.",
+    "repeated": "Vous avez déjà envoyé ce message plusieurs fois."
   },
   "settings": {
     "title": "PARAMÈTRES",
     "sections": {
       "profile": "Profil",
       "security": "Sécurité",
-      "apiKeys": "Clés d'API",
       "preferences": "Préférences",
-      "data": "Vos données"
+      "data": "Vos données",
+      "avatar": "Avatar"
     },
     "avatar": "Avatar",
     "uploadAvatar": "Téléverser une image",
@@ -534,12 +545,6 @@
     "sessionRevoked": "Session révoquée.",
     "lastActive": "Connecté {when}",
     "unknownDevice": "Appareil inconnu",
-    "apiKeysBody": "Les clés permettent à vos propres programmes (bots, scripts) d'utiliser l'API publique en votre nom : lire les profils, les matchs et le classement, et gérer votre nom affiché et vos amis. Elles ne peuvent pas toucher votre mot de passe, votre e-mail, vos messages ni votre compte. Traitez-les comme des mots de passe.",
-    "keyName": "Nom de la clé",
-    "createKey": "Créer une clé",
-    "newKeyWarning": "Copiez cette clé maintenant. Vous ne la reverrez plus.",
-    "noKeys": "Aucune clé d'API pour l'instant.",
-    "revokeKeyConfirm": "Révoquer {name} ? Les applications qui l'utilisent cesseront de fonctionner immédiatement.",
     "lastUsed": "Dernière utilisation {when}",
     "neverUsed": "Jamais utilisée",
     "language": "Langue",
@@ -568,19 +573,22 @@
     "revokeOthersBody": "Tous les autres appareils seront déconnectés. Cet appareil reste connecté.",
     "othersRevoked": "Déconnecté de toutes les autres sessions.",
     "revoking": "Révocation…",
-    "createKeyTitle": "Créer une clé d'API",
-    "yourKeys": "Vos clés",
-    "keyNamePlaceholder": "p. ex. stats-bot",
     "creating": "Création…",
-    "tooManyKeys": "Vous pouvez avoir jusqu'à 10 clés. Révoquez-en une d'abord.",
-    "keyRevoked": "Clé révoquée.",
-    "revokeKeyTitle": "Révoquer la clé d'API ?",
-    "colKey": "Clé",
     "colCreated": "Créée",
     "colLastUsed": "Dernière utilisation",
-    "noKeysBody": "Créez-en une ci-dessus pour utiliser l'API publique.",
     "languageBody": "S'applique à toute l'application.",
-    "apiDocs": "Lire la documentation de l'API."
+    "otherDevicesSignedOut": "Tous les autres appareils ont été déconnectés.",
+    "passkeys": "Clés d'accès",
+    "passkeysBody": "Connectez-vous avec Face ID, une empreinte ou une clé de sécurité au lieu d'un mot de passe. Les clés d'accès ne peuvent pas être hameçonnées.",
+    "addPasskey": "Ajouter une clé d'accès",
+    "passkeyAdded": "Clé d'accès ajoutée.",
+    "passkeyRemoved": "Clé d'accès supprimée.",
+    "noPasskeys": "Aucune clé d'accès pour l'instant",
+    "passkey": "Clé d'accès",
+    "passkeyAddedOn": "Ajoutée le {date}",
+    "removePasskey": "Supprimer la clé d'accès",
+    "passkeyReauth": "Par sécurité, reconnectez-vous avant de modifier vos clés d'accès.",
+    "signInAgain": "Se reconnecter"
   },
   "legal": {
     "contents": "Sommaire",
@@ -600,7 +608,7 @@
   },
   "status": {
     "title": "ÉTAT",
-    "subtitle": "État en direct de ft_transcendence.",
+    "subtitle": "État en direct de VOLLEY.EXE.",
     "overall": {
       "up": "Tous les systèmes fonctionnent",
       "degraded": "Certains systèmes sont lents",
@@ -708,7 +716,7 @@
   },
   "coach": {
     "title": "Coach",
-    "subtitle": "Posez vos questions sur la tactique au Pong ou le fonctionnement du site. Les réponses viennent de Claude, une IA : elles peuvent être fausses.",
+    "subtitle": "Posez vos questions sur la tactique au Pong ou le fonctionnement du site. Les réponses viennent d'un modèle d'IA : elles peuvent être fausses.",
     "intro": "Bonjour ! Je peux vous aider pour la tactique, l'entraînement et le fonctionnement du site. Essayez :",
     "suggestAngles": "Comment viser mes coups ?",
     "suggestAi": "Comment battre l'ordinateur en difficile ?",
@@ -720,11 +728,12 @@
     "newChat": "Nouvelle conversation",
     "remaining": "Il vous reste {n} questions sur {limit} cette heure-ci.",
     "disabled": "Le coach est désactivé",
-    "disabledBody": "Ce serveur n'a pas de clé d'API Claude, le coach n'est donc pas disponible. Un administrateur peut ajouter ANTHROPIC_API_KEY pour l'activer.",
+    "disabledBody": "Le coach n'est pas configuré sur ce serveur. Un administrateur peut l'activer avec AI_BASE_URL, AI_MODEL et AI_API_KEY.",
     "errLimit": "Vous avez atteint la limite de cette heure. Réessayez plus tard.",
     "errBusy": "Le coach est occupé. Réessayez dans un instant.",
     "errUnavailable": "Le coach est injoignable pour le moment.",
-    "refused": "Je ne peux pas vous aider sur ce point."
+    "refused": "Je ne peux pas vous aider sur ce point.",
+    "errWarming": "Le coach télécharge encore son modèle. Réessayez dans quelques minutes."
   },
   "offline": {
     "metaTitle": "Hors ligne",
@@ -734,23 +743,13 @@
     "playLocal": "Jouer en local",
     "hint": "Cette page se recharge toute seule quand la connexion revient."
   },
-  "chain": {
-    "explainer": "Les tournois terminés sont enregistrés sur une blockchain : une empreinte de chaque score y est stockée et ne peut pas être modifiée, chacun peut donc vérifier que ces résultats n'ont pas été retouchés.",
+  "tournamentHistory": {
     "none": "Aucun tournoi pour l'instant.",
     "noneBody": "Les tournois auxquels ce joueur participe apparaissent ici.",
     "loadError": "Impossible de charger les tournois",
     "champion": "Champion",
     "winner": "Vainqueur",
-    "meta": "{players} joueurs · {matches} matchs",
-    "verified": "Vérifié sur la blockchain",
-    "mismatch": "Ne correspond pas à la blockchain",
-    "mismatchBody": "Ces résultats diffèrent de ceux enregistrés sur la blockchain.",
-    "pending": "En attente",
-    "disabled": "Non configuré",
-    "unavailable": "Blockchain injoignable",
-    "tx": "Transaction",
-    "copyTx": "Copier le hash de la transaction",
-    "explorer": "Ouvrir dans l'explorateur de blocs (nouvel onglet)"
+    "meta": "{players} joueurs · {matches} matchs"
   },
   "party": {
     "title": "Partie à plusieurs",
@@ -796,5 +795,154 @@
     "sideLeft": "Côté gauche",
     "sideTop": "En haut",
     "sideRight": "Côté droit"
+  },
+  "look": {
+    "title": "Avatar",
+    "body": "Créez votre avatar en pixels et choisissez un cadre et un style de raquette. D'autres options se débloquent en montant de niveau et en gagnant des succès.",
+    "level": "Niveau {n}",
+    "randomize": "Aléatoire",
+    "reset": "Annuler les changements",
+    "save": "Enregistrer le look",
+    "saved": "Look enregistré.",
+    "errLocked": "Vous n'avez pas encore débloqué l'une de ces options.",
+    "photoNote": "Vous avez envoyé une photo : elle s'affiche à la place de votre avatar en pixels. Supprimez-la dans Profil pour afficher celui-ci. Le cadre et la raquette s'appliquent dans les deux cas.",
+    "unlockLevel": "se débloque au niveau {n}",
+    "unlockAchievement": "se débloque avec « {name} »",
+    "frame": "Cadre",
+    "paddle": "Style de raquette",
+    "slot": {
+      "skin": "Peau",
+      "hair": "Cheveux",
+      "hairColor": "Couleur des cheveux",
+      "eyes": "Yeux",
+      "mouth": "Bouche",
+      "shirt": "T-shirt",
+      "bg": "Fond",
+      "item": "Accessoire"
+    },
+    "frames": {
+      "none": "Aucun",
+      "neon": "Néon",
+      "duo": "Duo",
+      "gold": "Or",
+      "glitch": "Glitch"
+    },
+    "paddles": {
+      "classic": "Classique",
+      "hollow": "Creuse",
+      "striped": "Rayée",
+      "pixel": "Pixel",
+      "gold": "Or",
+      "prism": "Prisme"
+    },
+    "part": {
+      "skin": {
+        "porcelain": "Porcelaine",
+        "sand": "Sable",
+        "copper": "Cuivre",
+        "umber": "Terre d'ombre",
+        "ebony": "Ébène",
+        "synth": "Synth (menthe)"
+      },
+      "hair": {
+        "short": "Courts",
+        "spiky": "En pointes",
+        "long": "Longs",
+        "afro": "Afro",
+        "bald": "Chauve",
+        "mohawk": "Crête",
+        "bun": "Chignon"
+      },
+      "eyes": {
+        "dots": "Points",
+        "wide": "Grands ouverts",
+        "sleepy": "Endormis",
+        "wink": "Clin d'œil"
+      },
+      "mouth": {
+        "smile": "Sourire",
+        "flat": "Neutre",
+        "open": "Ouverte",
+        "grin": "Dents"
+      },
+      "item": {
+        "none": "Aucun",
+        "headband": "Bandeau",
+        "shades": "Lunettes de soleil",
+        "visor": "Visière",
+        "headphones": "Casque",
+        "horns": "Cornes",
+        "crown": "Couronne",
+        "halo": "Auréole"
+      },
+      "colour": "{slot} {n}"
+    }
+  },
+  "attract": {
+    "you": "Vous",
+    "cpu": "CPU",
+    "hintKeys": "Prenez la main :",
+    "hintTouch": "Touchez le terrain pour jouer",
+    "play": "Jouer contre le bot",
+    "won": "Vous gagnez !",
+    "lost": "Le CPU gagne",
+    "next": "Inscrivez-vous pour jouer en ligne contre de vrais joueurs, en tournoi et entre amis.",
+    "nextSignedIn": "Prêt pour un vrai adversaire ?",
+    "signup": "Inscription gratuite",
+    "again": "Rejouer"
+  },
+  "invite": {
+    "title": "Rejoindre un match",
+    "joining": "Connexion à la salle…",
+    "invalid": "Ce lien d'invitation n'est pas valide",
+    "invalidBody": "Vérifiez le lien ou demandez-en un nouveau à votre ami.",
+    "copyLink": "Copier le lien d'invitation",
+    "linkCopied": "Lien d'invitation copié.",
+    "codeCopied": "Code de salle copié.",
+    "share": "Partager",
+    "shareTitle": "Invitation VOLLEY.EXE",
+    "shareText": "Joue au Pong avec moi sur VOLLEY.EXE"
+  },
+  "replay": {
+    "label": "Ralenti du dernier point",
+    "badge": "Ralenti",
+    "skip": "Fermer le ralenti"
+  },
+  "ranked": {
+    "placement": "Placement · encore {n}",
+    "unranked": "Non classé",
+    "division": {
+      "bronze": "Bronze",
+      "silver": "Argent",
+      "gold": "Or",
+      "platinum": "Platine",
+      "diamond": "Diamant",
+      "master": "Maître"
+    },
+    "record": "{w}V · {l}D",
+    "season": "Saison {n}",
+    "endsIn": "se termine dans {n} jours",
+    "endsSoon": "se termine aujourd'hui",
+    "rating": "Classement",
+    "seasonTab": "Saison",
+    "allTimeTab": "Tout temps",
+    "leaderboardSubtitle": "Le classement compétitif de la saison : matchs rapides uniquement. Les divisions apparaissent après 5 matchs de placement.",
+    "emptyTitle": "Personne n'est encore classé",
+    "emptyBody": "Jouez 5 matchs rapides classés pour apparaître dans le classement de cette saison.",
+    "notPlaced": "Jouez 5 matchs rapides classés cette saison pour obtenir une division et apparaître ici.",
+    "divisionCol": "Division",
+    "recordCol": "Bilan"
+  },
+  "clip": {
+    "save": "Enregistrer le clip",
+    "recording": "Enregistrement… {n} %",
+    "saved": "Clip téléchargé.",
+    "failed": "Impossible d'enregistrer le clip. Réessayez.",
+    "shareTitle": "Clip VOLLEY.EXE",
+    "shareText": "Regarde ce point sur VOLLEY.EXE",
+    "share": "Partager le clip",
+    "download": "Télécharger le clip",
+    "ready": "Clip prêt à partager ou télécharger.",
+    "interrupted": "L'enregistrement s'est arrêté car l'onglet était masqué. Gardez cet onglet ouvert et réessayez."
   }
 }

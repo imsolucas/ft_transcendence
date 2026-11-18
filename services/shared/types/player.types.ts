@@ -1,4 +1,5 @@
 import { omitKeys } from "../utils/type.utils.ts";
+import type { PlayerLook } from "../cosmetics/look.ts";
 
 export interface Player {
 	id: string;
@@ -9,6 +10,12 @@ export interface Player {
 	isReady: boolean;
 	socket: WebSocket;
 	picture: string;
+	/** pixel avatar, frame and paddle skin, from the users service at connect */
+	look?: PlayerLook;
+	/** current-season ranked rating at connect (updated after each ranked match); for matchmaking */
+	rating?: number;
+	/** ranked games counted for `rating` (to ignore a late, older update) */
+	ratedGames?: number;
 }
 
 

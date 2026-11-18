@@ -4,7 +4,7 @@ import { Check, Trophy } from "lucide-react";
 import type { BracketMatch, TournamentPlayer, TournamentState } from "shared";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui/primitives";
+import { Avatar, Badge } from "@/components/ui/primitives";
 
 type T = ReturnType<typeof useI18n>["t"];
 
@@ -102,10 +102,13 @@ function Side({ match, side, player, myId, t }: { match: BracketMatch; side: 0 |
   const score = match.scores ? match.scores[side] : null;
   return (
     <div className={cn("bk-p", won && "won", lost && "out")}>
-      <span className="min-w-0 truncate">
+      <span className="flex min-w-0 items-center gap-2">
+        <Avatar name={player.name} src={player.picture} look={player.look} size="sm" />
+        <span className="min-w-0 truncate">
         <span className="bk-name">{player.name}</span>
         {id === myId && <span className="subtle"> ({t("common.you")})</span>}
         {player.withdrawn && !won && <span className="subtle"> · {t("tournament.left")}</span>}
+        </span>
       </span>
       <span className="row shrink-0 !gap-1">
         {lost && match.result === "forfeit" && <span className="t-caption">{t("tournament.forfeit")}</span>}
@@ -128,7 +131,7 @@ export function ChampionBanner({ state, myId }: { state: TournamentState; myId: 
   const champ = state.players.find((p) => p.id === state.championId);
   return (
     <div className="stack items-center text-center" role="status">
-      <Trophy className="ico !h-10 !w-10 c-amber" aria-hidden />
+      {champ ? <Avatar name={champ.name} src={champ.picture} look={champ.look} size="xl" /> : <Trophy className="ico !h-10 !w-10 c-amber" aria-hidden />}
       <p className="pix pix-md c-amber glow-text-amber">{t("tournament.champion")}</p>
       <h1 className="t-title">{!champ ? t("tournament.noChampion") : champ.id === myId ? t("tournament.championYou") : t("tournament.championName", { name: champ.name })}</h1>
     </div>

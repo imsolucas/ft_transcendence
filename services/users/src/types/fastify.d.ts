@@ -9,8 +9,5 @@ declare module "fastify" {
   interface FastifyRequest {
     // Set by requireUser from the Better Auth session (never from the request body)
     user?: { id: number; username: string };
-    // Set by apiKeyAuth for /api/public/* routes
-    apiUser?: { id: number; username: string; avatar: string | null; status: string };
-    apiKeyId?: number;
   }
 }

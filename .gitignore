@@ -36,3 +36,6 @@ server.key
 
 # Database / avatar backups (infra/backup)
 backups/
+
+# 42 subject PDF (reference only, not part of the project)
+ft_transcendence.pdf

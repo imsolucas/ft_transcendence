@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RankedStandingLine } from "@/components/game/ranked";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import useSWR from "swr";
@@ -133,7 +134,7 @@ function ProfileScreen({ username }: { username: string }) {
     <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6 max-sm:gap-4">
       <Panel>
         <div className="flex flex-wrap items-center gap-6 max-sm:gap-3">
-          <Avatar name={profile.displayName} src={profile.avatar} size="xl" className="max-sm:!h-16 max-sm:!w-16 max-sm:!text-[20px]" />
+          <Avatar name={profile.displayName} src={profile.avatar} look={profile.look} size="xl" className="max-sm:!h-16 max-sm:!w-16 max-sm:!text-[20px]" />
           <div className="stack min-w-0 flex-1 basis-48 !gap-1">
             <h1 className="pix pix-md !normal-case break-words">{profile.displayName}</h1>
             <span className="t-label muted">@{profile.username}</span>
@@ -145,6 +146,7 @@ function ProfileScreen({ username }: { username: string }) {
                 {t("profile.record", { wins: stats.wins, losses: stats.losses })} · {pct}
               </span>
             </span>
+            <RankedStandingLine path={`/api/users/${encodeURIComponent(profile.username)}/ranked`} />
             <LevelBar progress={profile.progress} />
             <span className="t-caption subtle">{t("profile.memberSince", { date: since })}</span>
           </div>

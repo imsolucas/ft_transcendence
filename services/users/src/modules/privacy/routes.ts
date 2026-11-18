@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../../auth/auth.ts";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../db/client.ts";
 import { config } from "../../config.ts";
 import { requireUser } from "../../auth/guards.ts";
@@ -13,7 +14,7 @@ import { localeFrom, mail } from "../../email/mailer.ts";
 export const DELETED_PREFIX = "deleted-";
 export const isDeletedHandle = (username: string) => username.startsWith(DELETED_PREFIX);
 
-/** Deleting needs a sign-in from the last 10 minutes (works for password and Google users). */
+/** Deleting needs a sign-in from the last 10 minutes (password and passkey users alike). */
 const FRESH_MS = 10 * 60 * 1000;
 const EXPORT_LIMIT = 10_000;
 const lastExportMail = new Map<number, number>();
@@ -25,10 +26,10 @@ export default async function privacyRoutes(app: FastifyInstance) {
   app.get("/me/export", { preHandler: requireUser }, async (req, reply) => {
     const id = req.user!.id;
     const involves = { OR: [{ player1Id: id }, { player2Id: id }] };
-    const [user, accounts, sessions, friendships, blocks, matches, tournaments, messages, apiKeys, achievements, parties] = await Promise.all([
+    const [user, accounts, sessions, friendships, blocks, matches, tournaments, messages, achievements, passkeys, devices, ratings, parties] = await Promise.all([
       prisma.user.findUnique({
         where: { id },
-        select: { id: true, username: true, displayUsername: true, email: true, emailVerified: true, avatar: true, twoFactorEnabled: true, created_at: true, last_updated: true },
+        select: { id: true, username: true, displayUsername: true, email: true, emailVerified: true, avatar: true, look: true, twoFactorEnabled: true, created_at: true, last_updated: true },
       }),
       prisma.account.findMany({ where: { userId: id }, select: { providerId: true, createdAt: true } }),
       prisma.session.findMany({ where: { userId: id }, select: { createdAt: true, expiresAt: true, ipAddress: true, userAgent: true }, orderBy: { id: "desc" }, take: EXPORT_LIMIT }),
@@ -52,8 +53,10 @@ export default async function privacyRoutes(app: FastifyInstance) {
         orderBy: { id: "asc" },
         take: EXPORT_LIMIT,
       }),
-      prisma.apiKey.findMany({ where: { userId: id }, select: { name: true, prefix: true, isActive: true, createdAt: true, lastUsedAt: true }, orderBy: { id: "asc" } }),
       prisma.userAchievement.findMany({ where: { userId: id }, select: { achievement: true, unlockedAt: true }, orderBy: { id: "asc" } }),
+      prisma.passkey.findMany({ where: { userId: id }, select: { name: true, deviceType: true, createdAt: true }, orderBy: { id: "asc" } }),
+      prisma.knownDevice.findMany({ where: { userId: id }, select: { label: true, firstSeen: true, lastSeen: true }, orderBy: { id: "asc" } }),
+      prisma.rating.findMany({ where: { userId: id }, select: { season: { select: { number: true } }, rating: true, games: true, wins: true, peak: true }, orderBy: { seasonId: "asc" } }),
       prisma.partyMatchPlayer.findMany({
         where: { userId: id },
         select: { placement: true, livesLeft: true, partyMatch: { select: { played_at: true, end_at: true, players: { select: { displayName: true, placement: true }, orderBy: { placement: "asc" } } } } },
@@ -65,7 +68,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
 
     const data = {
       exportedAt: new Date().toISOString(),
-      about: "Everything ft_transcendence stores about your account. Passwords and two-factor secrets are stored only as hashes/encrypted values and are not included.",
+      about: "Everything VOLLEY.EXE stores about your account. Passwords and two-factor secrets are stored only as hashes/encrypted values and are not included.",
       profile: user,
       signInMethods: accounts.map((a) => ({ provider: a.providerId, linkedAt: a.createdAt })),
       sessions,
@@ -97,8 +100,10 @@ export default async function privacyRoutes(app: FastifyInstance) {
       })),
       tournaments: tournaments.map((t) => ({ ...t.tournament, winnerId: undefined, won: t.tournament.winnerId === id })),
       messages: messages.map((m) => ({ from: m.sender.username, to: m.recipient.username, kind: m.kind, body: m.body, inviteCode: m.inviteCode, sentAt: m.createdAt, readAt: m.readAt })),
-      apiKeys,
       achievements,
+      passkeys,
+      signInDevices: devices,
+      rankedSeasons: ratings.map((r) => ({ season: r.season.number, rating: Math.round(r.rating), games: r.games, wins: r.wins, peak: Math.round(r.peak) })),
     };
     // GDPR: confirm the data operation by email (so an unexpected export is noticed)
     // at most one confirmation per user per hour (repeated downloads must not flood the inbox)
@@ -107,7 +112,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
       void mail.exported(user.email, localeFrom(req), req.log);
     }
     reply.header("Content-Type", "application/json; charset=utf-8");
-    reply.header("Content-Disposition", `attachment; filename="ft_transcendence-${user.username}-${new Date().toISOString().slice(0, 10)}.json"`);
+    reply.header("Content-Disposition", `attachment; filename="volley-exe-${user.username}-${new Date().toISOString().slice(0, 10)}.json"`);
     reply.header("Cache-Control", "no-store");
     return reply.send(JSON.stringify(data, null, 2));
   });
@@ -141,9 +146,11 @@ export default async function privacyRoutes(app: FastifyInstance) {
         prisma.message.deleteMany({ where: { OR: [{ senderId: id }, { recipientId: id }] } }),
         prisma.friendship.deleteMany({ where: { OR: [{ requesterId: id }, { addresseeId: id }] } }),
         prisma.block.deleteMany({ where: { OR: [{ blockerId: id }, { blockedId: id }] } }),
-        prisma.apiKey.deleteMany({ where: { userId: id } }),
         prisma.userAchievement.deleteMany({ where: { userId: id } }),
         prisma.twoFactor.deleteMany({ where: { userId: id } }),
+        prisma.passkey.deleteMany({ where: { userId: id } }),
+        prisma.knownDevice.deleteMany({ where: { userId: id } }),
+        prisma.rating.deleteMany({ where: { userId: id } }),
         prisma.account.deleteMany({ where: { userId: id } }),
         prisma.session.deleteMany({ where: { userId: id } }),
         prisma.match.updateMany({ where: { player1Id: id }, data: { player1DisplayName: "Deleted player" } }),
@@ -159,6 +166,7 @@ export default async function privacyRoutes(app: FastifyInstance) {
             email: `${anon}-${crypto.randomBytes(8).toString("hex")}@deleted.invalid`,
             emailVerified: false,
             avatar: null,
+            look: Prisma.DbNull,
             twoFactorEnabled: false,
             status: "OFFLINE",
           },

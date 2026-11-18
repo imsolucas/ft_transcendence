@@ -12,7 +12,6 @@ import NewMessageHandler from './websocket/MessageHandler.ts';
 import TickSytem from './websocket/TickSystem.ts';
 import { setReportLogger } from './utils/reportResults.ts';
 import crypto from 'node:crypto';
-import { registerGameGauges, registry } from './metrics.ts';
 
 function safeEqual(a: string, b: string) {
   const ha = crypto.createHash('sha256').update(a).digest();
@@ -81,13 +80,6 @@ function announceSpectators(roomId: string) {
 }
 
 server.get('/health', async () => ({ status: 'healthy', service: 'game', timestamp: new Date().toISOString() }));
-
-// Prometheus scrape target. Internal port only: Caddy routes just /ws* to this service, and a
-// request carrying X-Forwarded-For came through a proxy, so it is refused as well.
-server.get('/metrics', async (req, reply) => {
-  if (req.headers['x-forwarded-for']) return reply.code(404).send({ error: 'Not found' });
-  return reply.header('content-type', registry.contentType).send(await registry.metrics());
-});
 
 // Users service → browsers: push a realtime event to every socket of the given users.
 // Service token only; Caddy never routes /internal/*.
@@ -294,12 +286,6 @@ io.on('connection', (socket) => {
 
     socketClosed(user.id);
   });
-});
-
-registerGameGauges({
-  connectedSockets: () => io.of('/').sockets.size,
-  rooms: () => roomManager.getAllRooms(),
-  queueLengths: () => messageHandler.queueLengths(),
 });
 
 tickSystem.startTickSystem();

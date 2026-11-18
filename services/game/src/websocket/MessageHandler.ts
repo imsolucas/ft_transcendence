@@ -56,11 +56,6 @@ export default class NewMessageHandler {
         this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p), this.tournamentService, this.partyService);
     }
 
-    /** Matchmaking queue sizes per mode (read by /metrics). */
-    queueLengths(): { standard: number; tournament: number; party: number } {
-        return { ...this.roomService.queueLengths(), party: this.partyService.queueLength() };
-    }
-
     /** The socket behind `player` closed: hold a match/bracket player for a reconnect, otherwise drop them. */
     handleSocketClosed(player: Player): void {
         if (!this.lifecycle.onSocketClosed(player)) this.handleDisconnection(player);
@@ -98,7 +93,9 @@ export default class NewMessageHandler {
             position: 0,
             connectedAt: Date.now(),
             isReady: false,
-            picture: user.avatar ?? ''
+            picture: user.avatar ?? '',
+            ...(user.look ? { look: user.look } : {}),
+            ...(user.rating !== null ? { rating: user.rating } : {}),
         };
 
         const response = {

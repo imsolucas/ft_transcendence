@@ -25,7 +25,6 @@ model User {
   matchesWon        Match[]            @relation("Match_winner")
   tournamentPlayers TournamentPlayer[] @relation("TournamentPlayers")
   tournamentsWon    Tournament[]       @relation("Tournament_winner")
-  apiKeys           ApiKey[]           @relation("UserApiKeys")
   blocksMade        Block[]            @relation("Blocker")
   messagesSent      Message[]          @relation("MessagesSent")
   messagesReceived  Message[]          @relation("MessagesReceived")
@@ -35,8 +34,10 @@ model User {
   // gamification: XP from matches, wins, titles and achievements; level derives from it
   xp                Int                @default(0)
   level             Int                @default(1)
-  // content moderation: sending chat is blocked until this time (repeated removals)
+  // chat moderation: sending is blocked until this time (repeated strikes: slurs, repeated spam)
   chatMutedUntil    DateTime?
+  // pixel avatar, frame and paddle skin (services/shared/cosmetics/look.ts); null = generated default
+  look              Json?
   blockedBy         Block[]            @relation("Blocked")
 
   name             String
@@ -46,6 +47,9 @@ model User {
   sessions         Session[]
   accounts         Account[]
   twofactors       TwoFactor[]
+  passkeys         Passkey[]
+  knownDevices     KnownDevice[]
+  ratings          Rating[]
 
   @@map("Users")
 }
@@ -84,6 +88,11 @@ model Match {
   winner             User?    @relation("Match_winner", fields: [winnerId], references: [id])
   played_at          DateTime @default(now())
   end_at             DateTime
+  // ranked (queue) match: the season it counted for and each player's rating change
+  ranked             Boolean  @default(false)
+  seasonId           Int?
+  player1RatingDelta Int?
+  player2RatingDelta Int?
 
   tournament Tournament? @relation("TournamentMatches", fields: [tournamentId], references: [id])
 
@@ -105,32 +114,7 @@ model Tournament {
   start_at   DateTime           @default(now())
   end_at     DateTime?
 
-  // Blockchain record (src/chain). chainContract = the contract this row was processed
-  // against; a row whose chainContract differs from the current contract is still pending.
-  chainContract   String?
-  chainTxHash     String?
-  chainBlock      Int?
-  chainResultHash String?
-  chainRecordedAt DateTime?
-  // "conflict" = the chain already holds a different hash for this tournament's key
-  chainError      String?
-
-  @@index([chainContract])
   @@map("Tournaments")
-}
-
-// Contracts the users service deployed itself (when CHAIN_CONTRACT_ADDRESS is not set)
-model ChainDeployment {
-  id          Int      @id @default(autoincrement())
-  chainId     Int
-  address     String
-  owner       String
-  txHash      String
-  blockNumber Int
-  created_at  DateTime @default(now())
-
-  @@index([chainId, owner, id])
-  @@map("ChainDeployments")
 }
 
 // Party mode (3–4 players): one row per party, one PartyMatchPlayer per seat. Kept apart from
@@ -188,23 +172,6 @@ enum FriendshipStatus {
   PENDING
   ACCEPTED
   REJECTED
-}
-
-// Public API keys look like `ft_<prefix>_<secret>`. Lookup by prefix, then constant-time
-// compare of SHA-256(full key) with keyHash.
-
-model ApiKey {
-  id         Int       @id @default(autoincrement())
-  userId     Int
-  prefix     String    @unique
-  keyHash    String    @unique
-  name       String
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  lastUsedAt DateTime?
-  user       User      @relation("UserApiKeys", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("ApiKeys")
 }
 
 model Session {
@@ -294,7 +261,7 @@ model Message {
   inviteCode  String?
   createdAt   DateTime  @default(now())
   readAt      DateTime?
-  // content moderation: "removed" when the AI flagged it (body is then blanked)
+  // chat moderation: "masked" / "masked:hate" (body stored masked); "removed" = legacy AI removal (body blanked)
   moderation  String?
   moderationReason String?
   sender      User      @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
@@ -316,4 +283,71 @@ model UserAchievement {
 
   @@unique([userId, achievement])
   @@map("UserAchievements")
+}
+
+// WebAuthn passkeys (Better Auth passkey plugin)
+model Passkey {
+  id           Int       @id @default(autoincrement())
+  name         String?
+  publicKey    String
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
+}
+
+// Browsers/OSes an account has signed in from; a new one triggers a "new sign-in" email.
+// hash = SHA-256 of the user id + browser family + OS (no IP: it changes too often)
+model KnownDevice {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  hash       String
+  label      String
+  firstSeen  DateTime @default(now())
+  lastSeen   DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hash])
+  @@map("KnownDevices")
+}
+
+// Ranked seasons: one per calendar month (UTC), created when first needed
+model Season {
+  id       Int      @id @default(autoincrement())
+  number   Int      @unique
+  startsAt DateTime
+  endsAt   DateTime
+  ratings  Rating[]
+
+  @@index([startsAt])
+  @@map("Seasons")
+}
+
+// A player's Glicko-2 rating in one season (services/shared/ranked/ranked.ts)
+model Rating {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  seasonId  Int
+  rating    Float
+  rd        Float
+  vol       Float
+  games     Int      @default(0)
+  wins      Int      @default(0)
+  peak      Float
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, seasonId])
+  @@index([seasonId, rating])
+  @@map("Ratings")
 }

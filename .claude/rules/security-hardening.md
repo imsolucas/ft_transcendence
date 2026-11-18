@@ -17,7 +17,7 @@ paths:
 - Secrets (`JWT_SECRET`, `COOKIE_SECRET`, `INTERNAL_SERVICE_TOKEN`) are read once in
   `src/config.ts`, and the process **refuses to boot** if one is missing or shorter than
   32 bytes. Required non-secret config (`DATABASE_URL`, `ALLOWED_ORIGINS`) also fails fast.
-  `GOOGLE_CLIENT_ID` is optional: Google sign-in answers 503 without it. No fallback
+  No social sign-in is configured (Google was removed 2026-11-18). No fallback
   values in code, ever.
 - New secret → add it to `infra/.env.example` with a placeholder and a generation hint
   (`openssl rand -base64 48`). Never put a real value in code, tests, docs or the README.
@@ -52,11 +52,11 @@ paths:
   `trustProxy: 1` behind nginx. Don't remove it, and don't add a second proxy hop
   without raising it.
 
-## 3) API keys (public API)
+## 3) API keys
 
-- Format `ft_<prefix>_<secret>`. Store `prefix` (indexed) + SHA-256 of the full key. Look up by
-  prefix, compare hashes in constant time. Show the key once, on creation.
-- Rate limits per key and per IP. `lastUsedAt` updates are throttled (not on every request).
+- The public API and API keys were removed (2026-11-18). If any key-style credential comes
+  back: store a prefix (indexed) + SHA-256 of the full key, compare hashes in constant time,
+  show the key once, rate limit per key and per IP.
 
 ## 4) Service-to-service
 
@@ -123,9 +123,10 @@ paths:
 11. `POST /auth/logout` used unverified `jwt.decode` to pick whose status to set OFFLINE.
 12. Controllers returned `error.message` from exceptions to the client.
 
-Still open: the single dev-mode compose is the only deploy path (moved to Phase 4, with
-the production Dockerfiles for `apps/web`). A Content-Security-Policy arrives with
-`apps/web`. HSTS waits for a real domain.
+Done (2026-11-18): production overrides (`infra/docker-compose.prod.yml`, `make prod`,
+`make deploy-check`), a CSP in the Caddyfile, and fail-fast config on public origins. HSTS is
+set per deployment (`HSTS_HEADER`, see docs/DEPLOY.md). Keep the CSP in sync when adding a
+third-party script, frame or connection.
 
 ## Before a security change ships
 

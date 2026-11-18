@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCaptcha } from "@/components/auth/captcha";
 import { useState, type FormEvent } from "react";
 import { MailCheck } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -18,13 +19,16 @@ export function ForgotForm() {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const captcha = useCaptcha();
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!EMAIL.test(email.trim())) return setError(t("auth.errors.invalidEmail"));
+    if (captcha.pending) return;
     setBusy(true);
     setError(undefined);
-    const { error: err } = await authClient.requestPasswordReset({ email: email.trim(), redirectTo: href("/reset-password") });
+    const { error: err } = await authClient.requestPasswordReset({ email: email.trim(), redirectTo: href("/reset-password"), fetchOptions: captcha.fetchOptions });
+    captcha.reset();
     setBusy(false);
     // 429 is the only answer worth showing; anything else would reveal whether the account exists
     if (err?.status === 429) return setError(t("auth.errors.tooManyAttempts"));
@@ -62,7 +66,8 @@ export function ForgotForm() {
               />
             )}
           </FormField>
-          <Button type="submit" variant="primary" glow="sm" block loading={busy}>
+          {captcha.widget}
+          <Button type="submit" variant="primary" glow="sm" block loading={busy} disabled={captcha.pending}>
             {t("auth.sendResetLink")}
           </Button>
         </form>

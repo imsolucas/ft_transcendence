@@ -2,7 +2,9 @@ import type { FastifyInstance } from "fastify";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import type { Me } from "../../../../shared/types/api.types.ts";
+import type { Me, MyLook } from "../../../../shared/types/api.types.ts";
+import { firstLocked, lookFor, parseLook, unlockedKeys, type Progress } from "../../../../shared/cosmetics/look.ts";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../db/client.ts";
 import { config } from "../../config.ts";
 import { requireUser } from "../../auth/guards.ts";
@@ -111,6 +113,50 @@ export default async function meRoutes(app: FastifyInstance) {
     await removeStoredAvatar(req.user!.id, previous?.avatar ?? null);
     return loadMe(req.user!.id);
   });
+
+  // Pixel avatar, frame and paddle skin. Unlocks come from the stored level and achievements.
+  async function progressOf(userId: number): Promise<(Progress & { stored: unknown }) | null> {
+    const [user, rows] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { level: true, look: true } }),
+      prisma.userAchievement.findMany({ where: { userId }, select: { achievement: true } }),
+    ]);
+    if (!user) return null;
+    return { level: user.level, achievements: rows.map((r) => r.achievement), stored: user.look };
+  }
+
+  app.get("/me/look", { preHandler: requireUser }, async (req, reply): Promise<MyLook | void> => {
+    const id = req.user!.id;
+    const p = await progressOf(id);
+    if (!p) return reply.code(404).send({ error: "User not found" });
+    return { look: lookFor(id, p.stored), level: p.level, unlocked: unlockedKeys(p) };
+  });
+
+  app.put(
+    "/me/look",
+    {
+      preHandler: requireUser,
+      // shape only; parseLook checks every value against the catalog
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: false,
+          required: ["look"],
+          properties: { look: { type: "object", maxProperties: 3 } },
+        },
+      },
+    },
+    async (req, reply): Promise<MyLook | void> => {
+      const id = req.user!.id;
+      const look = parseLook((req.body as { look: unknown }).look);
+      if (!look) return reply.code(400).send({ error: "That look isn't valid.", code: "INVALID_LOOK" });
+      const p = await progressOf(id);
+      if (!p) return reply.code(404).send({ error: "User not found" });
+      const locked = firstLocked(look, p);
+      if (locked) return reply.code(403).send({ error: "You haven't unlocked that yet.", code: "LOCKED", item: locked });
+      await prisma.user.update({ where: { id }, data: { look: JSON.parse(JSON.stringify(look)) as Prisma.InputJsonObject } });
+      return { look, level: p.level, unlocked: unlockedKeys(p) };
+    }
+  );
 
   // Public avatar files (names are random; no directory listing)
   app.get("/avatars/:file", async (req, reply) => {

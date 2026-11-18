@@ -58,7 +58,7 @@ export function PlayerChip({
   );
   return (
     <div className={cn("pchip", right && "right")}>
-      <Avatar name={user.displayName} src={user.avatar} ring={ring} presence={showPresence ? user.presence : undefined} />
+      <Avatar name={user.displayName} src={user.avatar} look={user.look} ring={ring} presence={showPresence ? user.presence : undefined} />
       <div className="min-w-0">
         {name}
         {meta !== undefined ? (

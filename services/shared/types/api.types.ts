@@ -1,3 +1,5 @@
+import type { PlayerLook } from "../cosmetics/look.ts";
+import type { Division } from "../ranked/ranked.ts";
 // HTTP API contract between apps/web and services/users (Phase 1+2).
 // All browser routes live under /api on the one origin (Caddy). Auth is the Better Auth
 // session cookie; every route below needs a signed-in user unless marked otherwise.
@@ -10,8 +12,30 @@ export interface PublicUser {
   id: number;
   username: string;
   displayName: string;
+  /** uploaded photo; when null the pixel avatar in `look` is shown */
   avatar: string | null;
   presence: Presence;
+  /** pixel avatar, frame and paddle skin (stored, or the generated default) */
+  look: PlayerLook;
+}
+
+/** GET /api/config (public): optional sign-up protections the browser must set up */
+export interface PublicConfig {
+  /** Cloudflare Turnstile site key; null = no captcha on this deployment */
+  turnstileSiteKey: string | null;
+  /** sign-in waits for a verified email (false: no email provider; sign-up signs straight in) */
+  emailVerification: boolean;
+}
+
+/**
+ * GET /api/me/look → MyLook. PUT /api/me/look { look } → MyLook
+ * (400 INVALID_LOOK for a malformed look, 403 LOCKED { item } for a choice not unlocked yet)
+ */
+export interface MyLook {
+  look: PlayerLook;
+  level: number;
+  /** locked catalog options this player has unlocked: "hair:mohawk", "frame:neon", "paddle:gold", … */
+  unlocked: string[];
 }
 
 /** GET /api/me */
@@ -96,23 +120,6 @@ export interface FriendRequest {
  * DELETE /api/blocks/:username                  → 204
  */
 
-export interface ApiKeySummary {
-  id: number;
-  name: string;
-  prefix: string;
-  createdAt: string;
-  lastUsedAt: string | null;
-}
-
-/**
- * GET    /api/api-keys            → ApiKeySummary[]
- * POST   /api/api-keys { name }   → ApiKeySummary & { key: string } (shown once)
- * DELETE /api/api-keys/:id        → 204
- */
-export interface CreatedApiKey extends ApiKeySummary {
-  key: string;
-}
-
 /**
  * GET    /api/sessions        → SessionInfo[] (this user's active sessions)
  * DELETE /api/sessions/:id    → 204
@@ -148,7 +155,7 @@ export interface ChatMessage {
   inviteCode: string | null;
   createdAt: string;
   readAt: string | null;
-  /** removed by content moderation (body is then empty) */
+  /** legacy: removed by the old AI moderation (body is then empty); new messages are masked instead */
   removed?: boolean;
 }
 
@@ -181,9 +188,9 @@ export type RealtimeEvent =
   | { type: "presence"; userId: number; presence: Presence }
   | { type: "achievement"; id: AchievementId }
   | { type: "levelUp"; level: number }
-  /** a chat message was removed by moderation (both people in the thread get it) */
+  /** legacy: a chat message was removed by moderation (both people in the thread get it) */
   | { type: "chat:removed"; messageId: number }
-  /** to the sender of a removed message; mutedUntil is set after repeated removals */
+  /** to the sender after a strike (slur or repeated spam); mutedUntil is set after repeated strikes */
   | { type: "moderation:warning"; category: ModerationCategory; mutedUntil: string | null };
 
 export type ModerationCategory = "harassment" | "hate" | "threat" | "sexual" | "spam" | "other";
@@ -253,29 +260,43 @@ export interface LeaderboardRow {
 /** GET /api/leaderboard?page= → Page<LeaderboardRow> & { you: LeaderboardRow | null } */
 export type Leaderboard = Page<LeaderboardRow> & { you: LeaderboardRow | null };
 
-// ---- Tournament results on chain (services/users/src/chain) ----
-
-/**
- * verified: the on-chain hash equals the hash recomputed from the database.
- * mismatch: a record exists but its hash differs (the database or the record changed).
- * pending: not recorded yet (chain down, still confirming, or the tournament isn't finished).
- * disabled: this deployment has no chain configured. unavailable: the chain couldn't be read now.
- */
-export type ChainStatus = "verified" | "mismatch" | "pending" | "disabled" | "unavailable";
-
-/** GET /api/tournaments/:id/chain */
-export interface ChainVerification {
-  status: ChainStatus;
-  txHash: string | null;
-  blockNumber: number | null;
-  contract: string | null;
-  chainId: number | null;
-  /** keccak256 of the canonical result, recomputed from the database now */
-  resultHash: string;
-  onChainHash: string | null;
-  /** block explorer link to the transaction, when CHAIN_EXPLORER_URL is set */
-  explorerUrl: string | null;
+// ---------------------------------------------------------------- Ranked seasons
+/** A monthly ranked season (UTC calendar month) */
+export interface SeasonInfo {
+  number: number;
+  startsAt: string;
+  endsAt: string;
 }
+
+export interface RankedStanding {
+  rating: number;
+  games: number;
+  wins: number;
+  losses: number;
+  /** best rating this season */
+  peak: number;
+  /** null during placement */
+  division: Division | null;
+  /** ranked games still needed before a division shows */
+  placementLeft: number;
+}
+
+/** GET /api/ranked/me → { season, standing }. GET /api/users/:username/ranked → the same for that player */
+export interface RankedMe {
+  season: SeasonInfo;
+  standing: RankedStanding;
+}
+
+export interface RankedRow {
+  rank: number;
+  user: PublicUser;
+  rating: number;
+  division: Division | null;
+  games: number;
+  wins: number;
+}
+/** GET /api/ranked/leaderboard?page= → this season, placed players only (rating desc) */
+export type RankedLeaderboard = Page<RankedRow> & { you: RankedRow | null; season: SeasonInfo };
 
 export interface TournamentSummary {
   id: number;
@@ -287,8 +308,6 @@ export interface TournamentSummary {
   winner: PublicUser | null;
   /** the requested player won it */
   won: boolean;
-  /** stored state only (no chain call); the UI asks /chain for the verified status */
-  chain: { enabled: boolean; txHash: string | null; explorerUrl: string | null };
 }
 
 /** GET /api/users/:username/tournaments?page=&pageSize=10 → Page<TournamentSummary> (newest first) */

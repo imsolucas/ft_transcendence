@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
     name: en.meta.title,
-    short_name: "ft_pong",
+    short_name: "VOLLEY.EXE",
     description: en.meta.description,
     start_url: "/",
     scope: "/",

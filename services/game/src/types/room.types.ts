@@ -60,4 +60,6 @@ export interface Room {
 	createdAt: number;
 	config: GameConfig;
 	gameServer?: GameServer
+	/** made by the matchmaking queue: the result counts for the season's ratings */
+	ranked?: boolean;
 }

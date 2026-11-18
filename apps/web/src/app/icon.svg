@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- VOLLEY.EXE favicon (same design as favicon.ico from scripts/generate-icons.mjs) -->
+  <rect width="64" height="64" rx="14" fill="#0b0614"/>
+  <rect x="10.24" y="12.8" width="10.24" height="28.16" fill="#ff2e97"/>
+  <rect x="43.52" y="23.04" width="10.24" height="28.16" fill="#2de2e6"/>
+  <rect x="27.52" y="26.88" width="8.96" height="8.96" fill="#f3eeff"/>
+</svg>

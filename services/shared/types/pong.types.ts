@@ -33,6 +33,7 @@ export interface TournamentPlayer {
     id: string;
     name: string;
     picture?: string;
+    look?: import("../cosmetics/look.ts").PlayerLook;
     /** left the room or forfeited out: their later matches are walkovers */
     withdrawn: boolean;
 }

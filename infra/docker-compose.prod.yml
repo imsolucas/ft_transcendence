@@ -1,0 +1,34 @@
+# Production overrides, layered on docker-compose.yml:
+#   make prod   (= make deploy-check, then docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build)
+# Everything else (domain, TLS, ports, secrets, SMTP) comes from infra/.env; see docs/DEPLOY.md.
+
+# Rotated logs for every service, so a busy server can't fill its disk
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    logging: *logging
+  users:
+    logging: *logging
+  game:
+    logging: *logging
+  web:
+    logging: *logging
+  backup:
+    logging: *logging
+  caddy:
+    logging: *logging
+    ports:
+      # HTTP/3 (QUIC) next to the HTTPS/HTTP ports from docker-compose.yml
+      - "443:443/udp"
+  ollama:
+    logging: *logging
+    # the Coach model must not starve the game server of memory (swap included)
+    mem_limit: 3g
+    memswap_limit: 3g
+  ollama-pull:
+    logging: *logging

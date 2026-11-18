@@ -2,7 +2,7 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 
 /**
  * Rate Limiting Middleware
- * Implements per-IP and per-API-key rate limiting using in-memory store
+ * Implements per-IP rate limiting using an in-memory store
  * Note: For production, consider using Redis for distributed rate limiting
  */
 
@@ -86,33 +86,4 @@ export const ipRateLimiter = createRateLimiter({
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     return `rate-limit:ip:${ip}`;
   },
-});
-
-/**
- * Per-API-key rate limiter (120 requests per minute, documented in /api/public/docs)
- */
-export const apiKeyRateLimiter = createRateLimiter({
-  max: 120,
-  windowMs: 60 * 1000, // 1 minute
-  keyGenerator: (req: FastifyRequest) => {
-    // Use API key ID if available (set by apiKeyAuth middleware)
-    const apiKeyId = req.apiKeyId;
-    if (apiKeyId) {
-      return `rate-limit:apikey:${apiKeyId}`;
-    }
-    // Fallback to IP if no API key
-    const ip = req.ip || req.socket.remoteAddress || "unknown";
-    return `rate-limit:ip:${ip}`;
-  },
-});
-
-
-/**
- * Per-IP limit in front of the public API (checked before the API key, so bad keys are
- * limited too). Above the per-key limit, so one client with a valid key hits that first.
- */
-export const publicIpRateLimiter = createRateLimiter({
-  max: 300,
-  windowMs: 60 * 1000,
-  keyGenerator: (req: FastifyRequest) => `rate-limit:public-ip:${req.ip || "unknown"}`,
 });

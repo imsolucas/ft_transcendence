@@ -1,20 +1,26 @@
 import crypto from "node:crypto";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { twoFactor, username } from "better-auth/plugins";
+import { captcha, twoFactor, username } from "better-auth/plugins";
+import { isBreachedPassword } from "./breached.ts";
+import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
+import { passkey } from "@better-auth/passkey";
+import { noteSignIn } from "./devices.ts";
 import { config } from "../config.ts";
 import { localeFrom, mail } from "../email/mailer.ts";
 import { log } from "../log.ts";
 import { prisma } from "../db/client.ts";
-import { signUps } from "../metrics.ts";
+
+/** Sessions older than this must sign in again for sensitive actions (10 minutes). */
+export const FRESH_AGE_S = 10 * 60;
 
 /**
- * Better Auth owns sign-up, sign-in (username or email + password, Google), sessions,
+ * Better Auth owns sign-up, sign-in (username or email + password, passkeys), sessions,
  * cookies, CSRF/origin checks, auth rate limits and TOTP two-factor.
  * Served at /api/auth/* (see routes/authRoutes.ts). Docs: https://www.better-auth.com/docs
  */
 export const auth = betterAuth({
-  appName: "ft_transcendence",
+  appName: "VOLLEY.EXE",
   baseURL: config.publicOrigin,
   basePath: "/api/auth",
   secret: config.authSecret,
@@ -37,6 +43,16 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    // Sign-in waits for a verified address (REQUIRE_EMAIL_VERIFICATION=false turns that off when
+    // there is no email provider). Sign-up never signs in by itself (autoSignIn: false), which in
+    // Better Auth 1.7 also makes it answer the same whether or not the email is taken, with or
+    // without verification (no account enumeration); the owner gets an email when one can be sent.
+    requireEmailVerification: config.requireEmailVerification,
+    autoSignIn: false,
+    onExistingUserSignUp: async ({ user }, request) => {
+      const locale = localeFrom(request);
+      void mail.existing(user.email, `${config.publicOrigin}/${locale}/login`, locale, log);
+    },
     minPasswordLength: 8,
     maxPasswordLength: 128,
     // "Forgot password?": the link lands on /<lang>/reset-password?token=…
@@ -48,9 +64,11 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
   },
 
-  // Verify addresses after sign-up (not required to play: dev accounts and Google work as before)
+  // Sign-in waits for a verified address (see emailAndPassword.requireEmailVerification)
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: config.requireEmailVerification,
+    // an unverified account that tries to sign in gets a fresh link
+    sendOnSignIn: config.requireEmailVerification,
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60,
     sendVerificationEmail: async ({ user, url }, request) => {
@@ -58,30 +76,51 @@ export const auth = betterAuth({
     },
   },
 
-  socialProviders: config.google
-    ? {
-        google: {
-          clientId: config.google.clientId,
-          clientSecret: config.google.clientSecret,
-          // Google accounts always come with a verified email
-          prompt: "select_account",
-        },
-      }
-    : {},
-
+  // No social sign-in for now (Google was removed 2026-11-18). If a provider comes back, keep
+  // account linking limited to trusted providers + verified local emails.
   account: {
-    accountLinking: {
-      // Only link Google to an existing account when the provider is trusted AND the
-      // existing account's email is verified; otherwise a Google sign-in for someone
-      // else's unverified email could take over that account.
-      enabled: true,
-      trustedProviders: ["google"],
-    },
+    accountLinking: { enabled: false },
   },
 
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // extend at most once a day
+    // sensitive actions (passkeys, account deletion) need a sign-in this recent
+    freshAge: FRESH_AGE_S,
+  },
+
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      // refuse passwords from known breaches (fails open if the check service is down)
+      const body = (ctx.body ?? {}) as { password?: unknown; newPassword?: unknown };
+      const candidate = ctx.path === "/sign-up/email" ? body.password : ctx.path === "/change-password" || ctx.path === "/reset-password" ? body.newPassword : undefined;
+      if (typeof candidate === "string" && candidate.length >= 8 && (await isBreachedPassword(candidate))) {
+        throw new APIError("BAD_REQUEST", { message: "This password has appeared in a data breach. Choose another one.", code: "PASSWORD_COMPROMISED" });
+      }
+      // a password change always signs every other device out (whoever had the old one)
+      if (ctx.path === "/change-password" && ctx.body && typeof ctx.body === "object") {
+        return { context: { ...ctx, body: { ...(ctx.body as object), revokeOtherSessions: true } } };
+      }
+      // adding or removing a passkey needs a recent sign-in (a stolen session cookie alone isn't enough)
+      if (ctx.path === "/passkey/generate-register-options" || ctx.path === "/passkey/delete-passkey") {
+        const session = ctx.context.session ?? (await getSessionFromCtx(ctx));
+        if (session && Date.now() - new Date(session.session.createdAt).getTime() > FRESH_AGE_S * 1000) {
+          throw new APIError("FORBIDDEN", { message: "Sign in again to change your passkeys.", code: "REAUTH" });
+        }
+      }
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      // turning two-factor on or off signs every other device out
+      if ((ctx.path === "/two-factor/enable" || ctx.path === "/two-factor/disable") && !(ctx.context.returned instanceof Error)) {
+        const current = ctx.context.newSession ?? ctx.context.session;
+        if (current) {
+          // the 2FA change itself succeeded: a failure here is logged, never turned into a 500
+          await prisma.session
+            .deleteMany({ where: { userId: Number(current.user.id), NOT: { token: current.session.token } } })
+            .catch((err: Error) => log.error({ err: err.message }, "could not revoke other sessions after a 2FA change"));
+        }
+      }
+    }),
   },
 
   // Profile changes go through our /api/me (validated handle, avatar upload pipeline);
@@ -89,9 +128,17 @@ export const auth = betterAuth({
   disabledPaths: ["/update-user", "/change-email", "/delete-user"],
 
   databaseHooks: {
+    session: {
+      create: {
+        // a sign-in from a browser/OS this account hasn't used before → email the owner
+        after: async (session, context) => {
+          void noteSignIn(Number(session.userId), session.userAgent, localeFrom(context?.request));
+        },
+      },
+    },
     user: {
       create: {
-        // Google sign-ups (and any sign-up without a username) get a unique handle
+        // any sign-up without a username gets a unique handle
         before: async (user) => {
           const data = user as typeof user & { username?: string; displayUsername?: string };
           // reserved for erased accounts (.invalid can never be a real mailbox)
@@ -100,16 +147,17 @@ export const auth = betterAuth({
           const handle = await uniqueHandle(data.name || data.email.split("@")[0]);
           return { data: { ...user, username: handle, displayUsername: handle, name: handle } };
         },
-        after: async () => {
-          signUps.inc();
-        },
       },
     },
   },
 
   plugins: [
     username({ minUsernameLength: 3, maxUsernameLength: 30 }),
-    twoFactor({ issuer: "ft_transcendence" }),
+    twoFactor({ issuer: "VOLLEY.EXE" }),
+    passkey({ rpID: new URL(config.publicOrigin).hostname, rpName: "VOLLEY.EXE", origin: config.publicOrigin }),
+    ...(config.turnstile
+      ? [captcha({ provider: "cloudflare-turnstile", secretKey: config.turnstile.secretKey, endpoints: ["/sign-up/email", "/sign-in/email", "/sign-in/username", "/request-password-reset", "/send-verification-email"] })]
+      : []),
   ],
 
   rateLimit: {

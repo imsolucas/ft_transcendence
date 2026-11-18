@@ -15,10 +15,10 @@ Privacy Policy + Terms pages, EN/ES/FR i18n, validation on both client and serve
 | Path | What | Stack | Port (internal) |
 |---|---|---|---|
 | `apps/web` | The frontend: landing, auth, lobby, play (online/local/tournament), profile, friends, chat (placeholder), settings, legal, 404 | Next.js 16 (App Router, cacheComponents, `/[lang]` en/es/fr), React 19, Tailwind 4, radix-ui + cva, motion, swr, Better Auth client, socket.io-client | 3000 |
-| `services/users` | Accounts and data: Better Auth (`/api/auth/*`), our API (`/api/*`), public API (`/api/public/*`, API keys), internal routes for the game (`/internal/*`) | Fastify 5, Better Auth 1.7, Prisma 6 on Postgres 17, Node 24 runs TS natively | 4000 |
+| `services/users` | Accounts and data: Better Auth (`/api/auth/*`), our API (`/api/*`), internal routes for the game (`/internal/*`) | Fastify 5, Better Auth 1.7, Prisma 6 on Postgres 17, Node 24 runs TS natively | 4000 |
 | `services/game` | Authoritative Pong server: rooms, matchmaking, tournaments, tick loop; results → users | Fastify 5 + Socket.IO 4 (`/ws`), tsx | 3001 |
 | `services/shared` | Imported by web and game: game engine (`game-engine/`), WS protocol + pong types, the HTTP API contract (`types/api.types.ts`) | plain TS with explicit `.ts` imports | — |
-| `infra/` | `docker-compose.yml` (postgres, users, game, web, caddy), `caddy/Caddyfile`, `.env.example` | Docker Compose, Caddy 2.11 | 8443 → host |
+| `infra/` | `docker-compose.yml` (postgres, users, game, web, caddy), `caddy/Caddyfile`, `.env.example` | Docker Compose, Caddy 2.11 | 47443 → host |
 
 Routing (Caddy): `/api/*` → users · `/ws*` → game · everything else → web. `/internal/*` and
 `/docs` are answered 404 at the gateway; only the game service calls `/internal/*` (service
@@ -32,7 +32,7 @@ API contract: `services/shared/types/api.types.ts` (source of truth for web ↔ 
   refresh in httpOnly cookies, WS identity from the server, service-to-service auth,
   hash-lookup for API keys/blacklist, remove debug logging, prod/dev compose split.
 - **Phase 1 — auth + `apps/web`**: first move authentication to **Better Auth** inside the
-  `users` service (Prisma adapter; email+password, Google, `twoFactor` plugin). It
+  `users` service (Prisma adapter; email+password, `twoFactor` plugin). It
   replaces the hand-written Phase 0 session code in `services/users/src/auth/tokens.ts`;
   the internal service token, WS hardening and idempotency stay. Then Next.js (App
   Router) + Tailwind + shadcn/ui + Framer Motion with the design system (retro CRT /
@@ -41,9 +41,9 @@ API contract: `services/shared/types/api.types.ts` (source of truth for web ↔ 
   - **Cutover:** Phases 1 and 2 ship together. nginx keeps `/` on the legacy app until
     `apps/web` has caught up with it (auth, lobby, profile, friends, game), then switches
     in one commit. Keep `main` playable the whole time.
-  - **Local origin:** `https://localhost:8443` (`BETTER_AUTH_URL`, `ALLOWED_ORIGINS`).
-  - **Google:** server-side OAuth with `GOOGLE_CLIENT_SECRET`; redirect URI
-    `https://localhost:8443/api/auth/callback/google`.
+  - **Local origin:** `https://localhost:47443` (`BETTER_AUTH_URL`, `ALLOWED_ORIGINS`).
+  - **Google:** removed by the user (2026-11-18, "not necessarily needed for now"). No social
+    sign-in; passkeys cover passwordless. Re-adding it is a new decision.
   - **Database:** Postgres container (Prisma migrate), dev data reseeded.
   - **Better Auth setup:** `generateId: "serial"` keeps integer user ids; `username` and
     `twoFactor` plugins; mounted at `/api/auth/*`.
@@ -61,13 +61,28 @@ API contract: `services/shared/types/api.types.ts` (source of truth for web ↔ 
     `project/components/bundle.css`, 13 screens); read its `project/README.md` first.
 - **Phase 2** — port pages · **Phase 3** — realtime (real chat, reconnection, heartbeat) ·
   **Phase 4** — infra, health/status page, README.
-- **Phase 5 — every subject module** (after the revamp is finished): the user wants all
-  modules from `ft_transcendence.pdf` (subject v21.2, chapter IV) implemented. Known
-  conflict: the subject says the ICP-blockchain-backend minor is incompatible with SSR, and
-  `apps/web` uses Next.js SSR, so that minor needs its own decision before Phase 5 starts.
-  Design earlier phases so the modules fit later. For example, keep the game engine
-  pluggable for a 2nd game, 3+ players and an AI opponent; keep logs structured for ELK
-  and metrics; keep the schema ready for roles and organizations.
+- **Phase 5 — beyond the subject (user, 2026-11-18):** the user no longer wants to follow
+  the subject PDF. The product is rebranded **VOLLEY.EXE** (repo name stays). Removed on
+  purpose, don't bring back: blockchain scores, public API + API keys, Prometheus/Grafana.
+  The AI must cost nothing (user, 2026-11-18): the Coach uses local Ollama (profile `ai`,
+  `AI_BASE_URL=http://ollama:11434/v1`) through an OpenAI-compatible client, so a remote
+  provider is a config change (`AI_BASE_URL`/`AI_MODEL`/`AI_API_KEY`); Ollama cloud needs paid
+  credits. Chat moderation is
+  an offline filter that masks words (only slurs and repeated spam count toward a mute).
+  Every host port is in the 47xxx range so it doesn't clash with the user's other projects.
+  Done (2026-11-18): M2 free AI, M3 identity, M4 pixel avatars + builder + cosmetics
+  (`services/shared/cosmetics/look.ts`, `PUT /api/me/look`, unlocks checked server-side),
+  M5 playable attract-mode landing, M6 invite links (`/join/<code>`), M7 game feel
+  (`apps/web/src/lib/game/fx.ts`, `sfx.ts`, slow-mo replay), and account security: required
+  email verification (enumeration-safe sign-up), haveIBeenPwned, passkeys, re-auth (10 min)
+  for passkeys/deletion, other sessions revoked on password/2FA change, new-device emails,
+  optional Turnstile (`TURNSTILE_*`). Then (same day): Google sign-in removed, ranked seasons
+  (`services/shared/ranked/ranked.ts`, `services/users/src/modules/ranked/`), shareable clips
+  (`apps/web/src/lib/game/clip.ts`, recorded in the browser), favicon (`scripts/generate-icons.mjs`).
+  Deploy prep done: docs/DEPLOY.md, `make deploy-check`, `make prod`, CSP in the Caddyfile.
+  Going live waits for the user's domain + server.
+  Gotcha: the users service runs TS with Node type stripping (`erasableSyntaxOnly` is on):
+  no parameter properties or enums there. Its Dockerfile copies all of `services/shared`.
 - Fastify stays as the auth authority and the game server; Next.js never re-implements auth.
 
 ## Commands

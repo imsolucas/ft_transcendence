@@ -7,7 +7,8 @@ WORKDIR /app/services/users
 COPY services/users/package.json services/users/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY services/users/ ./
-COPY services/shared/types/api.types.ts /app/services/shared/types/api.types.ts
+# pure TS shared with web and game (API contract, avatar catalog, ranked rules)
+COPY services/shared/ /app/services/shared/
 RUN npx prisma generate && mkdir -p /usr/src/app/uploads && chown -R node:node /usr/src/app/uploads
 USER node
 ENV NODE_ENV=production PORT=4000 UPLOAD_DIR=/usr/src/app/uploads

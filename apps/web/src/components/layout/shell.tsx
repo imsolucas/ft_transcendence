@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/cn";
+import { BRAND } from "@/lib/brand";
 import { Avatar, Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger, Skeleton } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "./language-switcher";
@@ -15,10 +16,23 @@ import useSWR from "swr";
 import { RealtimeProvider } from "@/lib/realtime";
 import { CountBadge } from "@/components/ui/primitives";
 
+/** "VOLLEY" + a magenta ".EXE": the product's logo (also used, bigger, in the landing hero). */
+export function BrandMark({ className }: { className?: string }) {
+  return (
+    <span className={cn("pix whitespace-nowrap", className)}>
+      <span className="sr-only">{BRAND}</span>
+      <span aria-hidden>VOLLEY</span>
+      <span aria-hidden className="c-magenta">
+        .EXE
+      </span>
+    </span>
+  );
+}
+
 export function Wordmark({ href, className }: { href: string; className?: string }) {
   return (
-    <Link href={href} className={cn("pix pix-sm min-w-0 truncate no-underline text-fg hover:text-fg max-[400px]:text-[11px]", className)} aria-label="ft_transcendence">
-      <span className="normal-case">ft_transcendence</span>
+    <Link href={href} className={cn("pix-sm min-w-0 truncate no-underline text-fg hover:text-fg max-[400px]:text-[11px]", className)}>
+      <BrandMark />
     </Link>
   );
 }
@@ -99,7 +113,7 @@ function Shell({ children, playPrimary = false }: { children: ReactNode; playPri
               <Menu>
                 <MenuTrigger asChild>
                   <button type="button" className="rounded-full" aria-label={t("nav.menu")}>
-                    <Avatar name={me.displayName} src={me.avatar} size="sm" />
+                    <Avatar name={me.displayName} src={me.avatar} look={me.look} size="sm" />
                   </button>
                 </MenuTrigger>
                 <MenuContent>

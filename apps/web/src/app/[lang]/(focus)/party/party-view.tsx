@@ -326,7 +326,7 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
             <li key={p.id}>
               <Panel>
                 <div className="row row-3">
-                  <Avatar name={p.name} src={p.picture} size="lg" ring={p.id === myId ? "you" : "opp"} />
+                  <Avatar name={p.name} src={p.picture} look={p.look} size="lg" ring={p.id === myId ? "you" : "opp"} />
                   <div className="min-w-0">
                     <p className="t-heading truncate">{p.name}</p>
                     {p.id === myId && <p className="t-caption subtle">{t("common.you")}</p>}

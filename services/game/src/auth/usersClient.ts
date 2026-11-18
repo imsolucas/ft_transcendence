@@ -1,10 +1,13 @@
 import { config } from "../config.ts";
+import { parseLook, type PlayerLook } from "shared/index.ts";
 
 export interface AuthenticatedUser {
   id: number;
   username: string;
   displayName: string;
   avatar: string | null;
+  look: PlayerLook | null;
+  rating: number | null;
 }
 
 const TIMEOUT_MS = 3_000;
@@ -30,13 +33,16 @@ export async function resolveSession(cookieHeader: string | undefined): Promise<
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { user?: { id: number; username: string; displayName: string; avatar: string | null } };
+    const data = (await res.json()) as { user?: { id: number; username: string; displayName: string; avatar: string | null; look?: unknown }; rating?: unknown };
     if (!data.user || !Number.isInteger(data.user.id)) return null;
     return {
       id: data.user.id,
       username: data.user.username,
       displayName: data.user.displayName,
       avatar: data.user.avatar,
+      // checked again here: the game only forwards a look it can parse
+      look: parseLook(data.user.look),
+      rating: typeof data.rating === 'number' && Number.isFinite(data.rating) ? data.rating : null,
     };
   } catch {
     return null;

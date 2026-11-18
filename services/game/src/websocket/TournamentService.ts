@@ -141,7 +141,7 @@ export default class TournamentService {
         const t = room.tournament;
         if (t.phase !== "registration") return;
         if (!t.players.some((p) => p.id === player.id)) {
-            t.players.push({ id: player.id, name: player.name, ...(player.picture ? { picture: player.picture } : {}), withdrawn: false });
+            t.players.push({ id: player.id, name: player.name, ...(player.picture ? { picture: player.picture } : {}), ...(player.look ? { look: player.look } : {}), withdrawn: false });
         }
         player.position = 0;
         if (room.playerIds.length >= t.size) this.start(room);

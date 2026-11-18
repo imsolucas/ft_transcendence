@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  // ?error= from a failed Google sign-in needs useSearchParams (behind a boundary)
+  // ?next= (after an invite link) needs useSearchParams (behind a boundary)
   return (
     <Suspense>
       <SignupForm />

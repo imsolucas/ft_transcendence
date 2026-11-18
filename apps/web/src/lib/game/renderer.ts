@@ -1,4 +1,4 @@
-import type { GameConfig, GameState } from "shared";
+import type { GameConfig, GameState, PaddleSkinId } from "shared";
 
 export interface CourtColors {
   bg: string;
@@ -36,7 +36,14 @@ export function drawFrame(
   state: GameState,
   config: GameConfig,
   colors: CourtColors,
-  opts: { youSide: 0 | 1 | null; vertical: boolean; glow: boolean }
+  opts: {
+    youSide: 0 | 1 | null;
+    vertical: boolean;
+    glow: boolean;
+    skins?: readonly [PaddleSkinId, PaddleSkinId];
+    /** drawn last, inside the court transform (effects: particles, flash) */
+    overlay?: (ctx: CanvasRenderingContext2D, sx: number, sy: number, w: number, h: number) => void;
+  }
 ) {
   const { width, height } = ctx.canvas;
   const court = config.courtSize ?? { x: 160, y: 100 };
@@ -89,9 +96,7 @@ export function drawFrame(
     }
     const x = p.x * sx - pw / 2;
     const y = p.y * sy - ph / 2;
-    ctx.beginPath();
-    ctx.roundRect(x, y, pw, ph, Math.min(pw, ph) / 3);
-    ctx.fill();
+    drawPaddle(ctx, opts.skins?.[i] ?? "classic", x, y, pw, ph, colour, colors);
     ctx.shadowBlur = 0;
   });
 
@@ -138,5 +143,66 @@ export function drawFrame(
   ctx.beginPath();
   ctx.arc(state.ball.x * sx, state.ball.y * sy, r, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
+  opts.overlay?.(ctx, sx, sy, w, h);
   ctx.restore();
+}
+
+/** One paddle in its cosmetic skin (fill colour = the side's colour unless the skin has its own). */
+function drawPaddle(ctx: CanvasRenderingContext2D, skin: PaddleSkinId, x: number, y: number, w: number, h: number, colour: string, colors: CourtColors) {
+  const r = Math.min(w, h) / 3;
+  ctx.beginPath();
+  switch (skin) {
+    case "hollow": {
+      const lw = Math.max(1.5, w * 0.3);
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = lw;
+      ctx.roundRect(x + lw / 2, y + lw / 2, w - lw, h - lw, r);
+      ctx.stroke();
+      return;
+    }
+    case "pixel": {
+      // stacked blocks with small gaps
+      const block = w;
+      const gap = Math.max(1, w * 0.25);
+      for (let yy = y; yy < y + h - 0.5; yy += block + gap) ctx.rect(x, yy, w, Math.min(block, y + h - yy));
+      ctx.fill();
+      return;
+    }
+    case "gold": {
+      ctx.fillStyle = colors.power.fast;
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = colors.ball;
+      ctx.globalAlpha = 0.7;
+      ctx.fillRect(x + w * 0.25, y + r, Math.max(1, w * 0.18), h - 2 * r);
+      ctx.globalAlpha = 1;
+      return;
+    }
+    case "prism": {
+      const g = ctx.createLinearGradient(0, y, 0, y + h);
+      g.addColorStop(0, colors.you);
+      g.addColorStop(0.5, colors.power.fast);
+      g.addColorStop(1, colors.opp);
+      ctx.fillStyle = g;
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+      return;
+    }
+    case "striped": {
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = colors.bg;
+      ctx.globalAlpha = 0.45;
+      const step = Math.max(3, w * 1.2);
+      for (let yy = y + step / 2; yy < y + h - 1; yy += step) ctx.fillRect(x, yy, w, Math.max(1, step * 0.35));
+      ctx.globalAlpha = 1;
+      return;
+    }
+    default:
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+  }
 }

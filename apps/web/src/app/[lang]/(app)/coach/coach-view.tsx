@@ -58,6 +58,7 @@ export function CoachView() {
       RATE_LIMITED: t("coach.errBusy"),
       OVERLOADED: t("coach.errBusy"),
       UNAVAILABLE: t("coach.errUnavailable"),
+      MODEL_LOADING: t("coach.errWarming"),
     })[code] ?? t("common.error");
 
   async function ask(text: string) {

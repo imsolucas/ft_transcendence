@@ -1,11 +1,14 @@
 import type { FastifyInstance } from "fastify";
+import { applyRankedResult, currentSeason, ratingOf, serializable } from "../ranked/service.ts";
+
+/** the same two players count for ranked at most this many times per window */
+const MAX_RANKED_PER_PAIR = 3;
+const PAIR_WINDOW_MS = 24 * 60 * 60 * 1000;
 import { auth } from "../../auth/auth.ts";
 import { requireInternalService } from "../../auth/guards.ts";
 import { syncAchievementsLater } from "../gamification/routes.ts";
 import { postGameNotice } from "../chat/routes.ts";
 import { DELETED_PREFIX } from "../privacy/routes.ts";
-import { resultsRecorded } from "../../metrics.ts";
-import { recordTournamentOnChainLater } from "../../chain/service.ts";
 
 /**
  * The game caches display names at connect time; a player who deleted their account during
@@ -49,7 +52,9 @@ export default async function internalRoutes(app: FastifyInstance) {
       if (!session) return reply.code(401).send({ error: "Unauthorized" });
       const user = await prisma.user.findUnique({ where: { id: Number(session.user.id) }, select: PUBLIC_USER_SELECT });
       if (!user) return reply.code(401).send({ error: "Unauthorized" });
-      return { user: toPublicUser(user), sessionExpiresAt: session.session.expiresAt };
+      // current-season rating, for rating-aware matchmaking
+      const { row } = await ratingOf(user.id);
+      return { user: toPublicUser(user), rating: Math.round(row.rating), sessionExpiresAt: session.session.expiresAt };
     }
   );
 
@@ -102,6 +107,8 @@ export default async function internalRoutes(app: FastifyInstance) {
             winnerId: { type: ["integer", "null"] },
             played_at: { type: "string", format: "date-time" },
             end_at: { type: "string", format: "date-time" },
+            // matchmaking-queue match: counts for the season's Glicko-2 ratings
+            ranked: { type: "boolean" },
           },
         },
       },
@@ -110,7 +117,7 @@ export default async function internalRoutes(app: FastifyInstance) {
       const b = req.body as {
         matchId: string; player1Id: number; player2Id: number; player1Score: number; player2Score: number;
         player1DisplayName: string; player2DisplayName: string; tournamentId?: number | null; winnerId?: number | null;
-        played_at: string; end_at: string;
+        played_at: string; end_at: string; ranked?: boolean;
       };
       // Idempotent: a retried report with the same matchId returns the stored row
       const existing = await prisma.match.findUnique({ where: { externalId: b.matchId }, select: { id: true } });
@@ -118,22 +125,54 @@ export default async function internalRoutes(app: FastifyInstance) {
       const gone = await deletedIds([b.player1Id, b.player2Id]);
       if (gone.has(b.player1Id)) b.player1DisplayName = DELETED_NAME;
       if (gone.has(b.player2Id)) b.player2DisplayName = DELETED_NAME;
-      try {
-        const created = await prisma.match.create({
-          data: {
-            externalId: b.matchId,
-            player1Id: b.player1Id,
-            player2Id: b.player2Id,
-            player1Score: b.player1Score,
-            player2Score: b.player2Score,
-            player1DisplayName: b.player1DisplayName,
-            player2DisplayName: b.player2DisplayName,
-            tournamentId: b.tournamentId ?? null,
-            winnerId: b.winnerId ?? null,
-            played_at: new Date(b.played_at),
-            end_at: new Date(b.end_at),
+      // ranked only with a winner, two different live accounts, no tournament, at least one point
+      // scored (a 0-0 forfeit proves nothing) and not the same pair over and over (rating farming)
+      let ranked =
+        b.ranked === true && b.tournamentId == null && b.winnerId != null && b.player1Id !== b.player2Id &&
+        (b.winnerId === b.player1Id || b.winnerId === b.player2Id) && !gone.has(b.player1Id) && !gone.has(b.player2Id) &&
+        b.player1Score + b.player2Score > 0;
+      if (ranked) {
+        const since = new Date(Date.now() - PAIR_WINDOW_MS);
+        const recent = await prisma.match.count({
+          where: {
+            ranked: true,
+            end_at: { gte: since },
+            OR: [
+              { player1Id: b.player1Id, player2Id: b.player2Id },
+              { player1Id: b.player2Id, player2Id: b.player1Id },
+            ],
           },
-          select: { id: true },
+        });
+        if (recent >= MAX_RANKED_PER_PAIR) ranked = false;
+      }
+      // outside the transaction: a concurrent season creation must not abort it
+      const rankedSeason = ranked ? await currentSeason() : null;
+      try {
+        // the match row and both ratings change together (or not at all)
+        const { created, ratings } = await serializable(async (tx) => {
+          const season = rankedSeason;
+          const ratings = season ? await applyRankedResult(tx, season.id, b.player1Id, b.player2Id, b.winnerId!) : null;
+          const created = await tx.match.create({
+            data: {
+              externalId: b.matchId,
+              player1Id: b.player1Id,
+              player2Id: b.player2Id,
+              player1Score: b.player1Score,
+              player2Score: b.player2Score,
+              player1DisplayName: b.player1DisplayName,
+              player2DisplayName: b.player2DisplayName,
+              tournamentId: b.tournamentId ?? null,
+              winnerId: b.winnerId ?? null,
+              played_at: new Date(b.played_at),
+              end_at: new Date(b.end_at),
+              ranked: !!season,
+              seasonId: season?.id ?? null,
+              player1RatingDelta: ratings?.[b.player1Id]?.delta ?? null,
+              player2RatingDelta: ratings?.[b.player2Id]?.delta ?? null,
+            },
+            select: { id: true },
+          });
+          return { created, ratings };
         });
         syncAchievementsLater([b.player1Id, b.player2Id], req.log);
         // 1v1 result into the players' chat thread (tournament games get one notice at the end)
@@ -142,8 +181,7 @@ export default async function internalRoutes(app: FastifyInstance) {
             req.log.error({ err }, "result notice failed"),
           );
         }
-        resultsRecorded.inc({ kind: "match" });
-        return reply.code(201).send({ id: created.id });
+        return reply.code(201).send({ id: created.id, ...(ratings ? { ratings } : {}) });
       } catch (err: any) {
         if (err?.code === "P2002") {
           const row = await prisma.match.findUnique({ where: { externalId: b.matchId }, select: { id: true } });
@@ -226,7 +264,6 @@ export default async function internalRoutes(app: FastifyInstance) {
         });
         // party games and wins count toward XP (see syncAchievements)
         syncAchievementsLater(ids, req.log);
-        resultsRecorded.inc({ kind: "party" });
         return reply.code(201).send({ id: created.id });
       } catch (err: any) {
         if (err?.code === "P2002") {
@@ -318,15 +355,12 @@ export default async function internalRoutes(app: FastifyInstance) {
           },
           select: { id: true },
         });
-        // fire and forget: a slow or unreachable chain never delays or fails this response
-        recordTournamentOnChainLater(t.id, req.log);
         syncAchievementsLater([b.winnerId, ...b.players.map((p) => p.userId), ...b.matches.flatMap((m) => [m.player1Id, m.player2Id])], req.log);
         for (const p of new Set(b.players.map((p) => p.userId))) {
           if (p !== b.winnerId) {
             postGameNotice(b.winnerId, p, "tournament", b.name ?? "Tournament").catch((err) => req.log.error({ err }, "tournament notice failed"));
           }
         }
-        resultsRecorded.inc({ kind: "tournament" });
         return reply.code(201).send({ id: t.id });
       } catch (err: any) {
         if (err?.code === "P2002") {

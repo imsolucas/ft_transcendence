@@ -161,7 +161,7 @@ function ProfileForm({ me }: { me: Me }) {
           {t("settings.avatar")}
         </h2>
         <div className="row row-4 wrap">
-          <Avatar name={me.displayName} src={preview ?? me.avatar} size="xl" />
+          <Avatar name={me.displayName} src={preview ?? me.avatar} look={me.look} size="xl" />
           <div className="stack stack-3">
             <input
               ref={fileRef}

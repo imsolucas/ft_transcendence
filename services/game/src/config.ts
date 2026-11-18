@@ -18,7 +18,7 @@ function requireOrigin(name: string): string {
   try {
     return new URL(raw).origin;
   } catch {
-    throw new Error(`[config] ${name} must be a bare origin like https://localhost:8443`);
+    throw new Error(`[config] ${name} must be a bare origin like https://localhost:47443`);
   }
 }
 

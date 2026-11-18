@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Copy, Eye, Trophy } from "lucide-react";
-import type { GameState, PlayerInputs, serializablePlayer, TournamentState } from "shared";
+import { AlertTriangle, Eye, Trophy } from "lucide-react";
+import { InviteShare } from "@/components/game/invite-share";
+import { Replay } from "@/components/game/replay";
+import { DivisionBadge } from "@/components/game/ranked";
+import type { ReplayFrame } from "@/lib/game/fx";
+import type { Division, GameState, PlayerInputs, serializablePlayer, TournamentState } from "shared";
+import { PLACEMENT_GAMES } from "shared";
+import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
 import { api } from "@/lib/api";
@@ -62,6 +68,10 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   const [menu, setMenu] = useState(false);
   const [showControls, setShowControls] = useState(!prefs.seenControls);
   const [ping, setPing] = useState<number | undefined>();
+  // frames of the latest finished point, replayed in slow motion on the end screen
+  const [lastPoint, setLastPoint] = useState<ReplayFrame[]>([]);
+  // ranked: this player's rating change after the match
+  const [ratingChange, setRatingChange] = useState<RatingChange | null>(null);
   const [tournament, setTournament] = useState<TournamentState | null>(null);
   // local-clock end of the bracket match's ready check (from the server's remaining time)
   const [readyEndsAt, setReadyEndsAt] = useState<number | null>(null);
@@ -265,12 +275,17 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         case "rematchRequested":
           setRematchFrom((msg.data as { playerName: string }).playerName);
           break;
+        case "ratingUpdate":
+          // ranked match: my new season rating (arrives a moment after gameEnd)
+          setRatingChange(msg.data as RatingChange);
+          break;
         case "rematchReady": {
           const d = msg.data as { roomId: string; playersInRoom: serializablePlayer[] };
           setPlayers(d.playersInRoom);
           setReadySent(false);
           setRematchAsked(false);
           setRematchFrom(null);
+          setRatingChange(null);
           setOpponentAway(null);
           setReadyDeadline(Date.now() + 30_000);
           setPhase({ k: "found", roomId: d.roomId, tournament: false });
@@ -369,10 +384,13 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   const person = (id: string | undefined) => {
     if (!id) return undefined;
     const p = players.find((x) => x.id === id) ?? tournament?.players.find((x) => x.id === id);
-    return p ? { id, name: p.name, picture: p.picture } : undefined;
+    return p ? { id, name: p.name, picture: p.picture, look: p.look } : undefined;
   };
   const left = person(leftId);
   const right = person(rightId);
+  const leftSkin = left?.look?.paddle ?? "classic";
+  const rightSkin = right?.look?.paddle ?? "classic";
+  const skins = useMemo(() => [leftSkin, rightSkin] as const, [leftSkin, rightSkin]);
   const youSide: 0 | 1 | null = myId === leftId ? 0 : myId === rightId ? 1 : null;
   const spectating = youSide === null;
 
@@ -444,7 +462,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         <div className="relative flex h-40 w-40 items-center justify-center" aria-hidden>
           <span className="pulse-ring absolute inset-0 rounded-full border border-neon-amber" />
           <span className="pulse-ring absolute inset-0 rounded-full border border-neon-amber [animation-delay:0.6s]" />
-          <Avatar name={me?.displayName ?? "?"} src={me?.avatar} size="lg" ring="you" />
+          <Avatar name={me?.displayName ?? "?"} src={me?.avatar} look={me?.look} size="lg" ring="you" />
         </div>
         <h1 className="t-title">{t("matchmaking.searching")}</h1>
         <p className="num num-lg c-amber glow-text-amber" role="timer" aria-live="off">
@@ -466,14 +484,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           <Panel className="w-full max-w-[520px] text-center">
             <h1 className="t-title mb-2">{isTournament ? t("tournament.lobbyTitle") : t("matchmaking.waitingRoom")}</h1>
             <p className="muted mb-3">{t("matchmaking.shareCode")}</p>
-            <div className="row justify-center">
-              <span className="num num-lg tracking-widest" aria-label={roomId.split("").join(" ")}>
-                {roomId.toUpperCase()}
-              </span>
-              <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(roomId.toUpperCase())}>
-                <Copy className="ico" aria-hidden /> {t("common.copy")}
-              </Button>
-            </div>
+            <InviteShare code={roomId} kind={isTournament ? "tournament" : "match"} />
             {isTournament && <p className="t-caption subtle mt-3">{t("tournament.players", { n: players.length, max: size })}</p>}
           </Panel>
         )}
@@ -484,7 +495,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
               {!isTournament && i === 1 && <span className="pix pix-md self-center subtle">{t("match.vs")}</span>}
               <Panel className="flex-1">
                 <div className="row row-3">
-                  <Avatar name={p.name} src={p.picture} size="lg" ring={p.id === myId ? "you" : "opp"} />
+                  <Avatar name={p.name} src={p.picture} look={p.look} size="lg" ring={p.id === myId ? "you" : "opp"} />
                   <div className="min-w-0">
                     <p className="t-heading truncate">{p.name}</p>
                     {p.id === myId && <p className="t-caption subtle">{t("common.you")}</p>}
@@ -525,6 +536,19 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         won={spectating ? null : won}
         title={spectating ? t("game.winner", { name: winner?.name ?? "?" }) : won ? t("game.youWin") : t("game.youLose")}
         scores={youSide === 1 ? [scores[1], scores[0]] : scores}
+        replay={
+          <Replay
+            frames={lastPoint}
+            config={config}
+            youSide={spectating ? null : youSide}
+            skins={skins}
+            caption={{
+              left: (youSide === 1 ? right?.name : left?.name) ?? "",
+              right: (youSide === 1 ? left?.name : right?.name) ?? "",
+              scores: youSide === 1 ? [scores[1], scores[0]] : scores,
+            }}
+          />
+        }
         leftName={youSide === 1 ? (right?.name ?? "") : (left?.name ?? "")}
         rightName={youSide === 1 ? (left?.name ?? "") : (right?.name ?? "")}
         primary={
@@ -555,13 +579,16 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           </Button>
         }
         note={
-          phase.reason === "left" ? (
+          <>
+            {ratingChange && !spectating && <RatingChangeLine change={ratingChange} />}
+            {phase.reason === "left" ? (
             <p className="muted">{t("game.opponentLeft")}</p>
           ) : rematchFrom && !rematchAsked ? (
             <p className="c-cyan" role="status">
               {t("game.rematchRequested", { name: rematchFrom })}
             </p>
-          ) : null
+          ) : null}
+          </>
         }
       />
     );
@@ -573,8 +600,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   return (
     <div className="flex h-dvh flex-col">
       <ScoreBoard
-        left={{ name: ordered[0]?.name ?? "…", avatar: ordered[0]?.picture }}
-        right={{ name: ordered[1]?.name ?? "…", avatar: ordered[1]?.picture }}
+        left={{ name: ordered[0]?.name ?? "…", avatar: ordered[0]?.picture, look: ordered[0]?.look }}
+        right={{ name: ordered[1]?.name ?? "…", avatar: ordered[1]?.picture, look: ordered[1]?.look }}
         scores={shownScores}
         seconds={seconds}
         leftIsYou={!spectating}
@@ -614,6 +641,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           onInputs={onInputs}
           paused={phase.k !== "playing" || spectating || !!opponentAway}
           onFirstMove={onFirstMove}
+          skins={skins}
+          onPoint={setLastPoint}
         />
         {phase.k === "countdown" && <CountdownOverlay onDone={afterCountdown} />}
         {phase.k === "playing" && showControls && !spectating && <ControlsCard local={false} onClose={onFirstMove} />}
@@ -710,14 +739,7 @@ function TournamentScreen({
         <Panel className="w-full max-w-[520px] text-center">
           <h1 className="t-title mb-2">{t("tournament.lobbyTitle")}</h1>
           <p className="muted mb-3">{t("matchmaking.shareCode")}</p>
-          <div className="row justify-center">
-            <span className="num num-lg tracking-widest" aria-label={state.roomId.split("").join(" ")}>
-              {state.roomId.toUpperCase()}
-            </span>
-            <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(state.roomId.toUpperCase())}>
-              <Copy className="ico" aria-hidden /> {t("common.copy")}
-            </Button>
-          </div>
+          <InviteShare code={state.roomId} kind="tournament" />
           <p className="t-caption subtle mt-3" aria-live="polite">
             {t("tournament.players", { n: state.players.length, max: state.size })}
           </p>
@@ -727,7 +749,7 @@ function TournamentScreen({
             <li key={p.id}>
               <Panel>
                 <div className="row row-3">
-                  <Avatar name={p.name} src={p.picture} size="md" ring={p.id === myId ? "you" : "opp"} />
+                  <Avatar name={p.name} src={p.picture} look={p.look} size="md" ring={p.id === myId ? "you" : "opp"} />
                   <div className="min-w-0">
                     <p className="t-heading truncate">{p.name}</p>
                     <p className="t-caption subtle">
@@ -850,5 +872,25 @@ function TournamentScreen({
       </div>
       {state.phase !== "finished" && !out && <p className="t-caption subtle">{t("tournament.leaveHint")}</p>}
     </Centered>
+  );
+}
+
+type RatingChange = { rating: number; delta: number; games: number; division: Division | null };
+
+/** "+14 · 1580 · Gold" after a ranked match (placement shows how many games are left) */
+function RatingChangeLine({ change }: { change: RatingChange }) {
+  const { t } = useI18n();
+  const up = change.delta >= 0;
+  return (
+    <p className="row wrap justify-center !gap-2" role="status">
+      <span className={cn("num num-md", up ? "c-green" : "c-red")}>
+        {up ? "+" : "−"}
+        {Math.abs(change.delta)}
+      </span>
+      <span className="muted">
+        {t("ranked.rating")} <span className="num">{change.rating}</span>
+      </span>
+      <DivisionBadge division={change.division} placementLeft={Math.max(0, PLACEMENT_GAMES - change.games)} />
+    </p>
   );
 }

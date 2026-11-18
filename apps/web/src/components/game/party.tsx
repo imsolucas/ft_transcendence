@@ -177,7 +177,7 @@ export function PartyRoster({ players, state, myId, viewSide }: { players: Party
         return (
           <li key={p.id} className={cn("panel panel-2 !p-2 row !gap-2 min-w-0", !alive && "opacity-60")} style={{ borderColor: `var(--party-seat-${p.seat})` }}>
             <span aria-hidden className="h-8 w-1.5 shrink-0 rounded-full" style={{ background: `var(--party-seat-${p.seat})` }} />
-            <Avatar name={p.name} src={p.picture} size="sm" ring={p.id === myId ? "you" : undefined} />
+            <Avatar name={p.name} src={p.picture} look={p.look} size="sm" ring={p.id === myId ? "you" : undefined} />
             <div className="min-w-0 grow">
               <p className="t-strong truncate text-sm">
                 {p.name}

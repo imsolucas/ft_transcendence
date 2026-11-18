@@ -1,11 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import authRoutes from "./authRoutes.ts";
 import registerHealthRoutes from "./healthRoutes.ts";
-import registerPublicRoutes from "./publicRoutes.ts";
 import meRoutes from "../modules/me/routes.ts";
 import usersRoutes from "../modules/users/routes.ts";
 import friendsRoutes from "../modules/friends/routes.ts";
-import apiKeyRoutes from "../modules/apiKeys/routes.ts";
 import sessionRoutes from "../modules/sessions/routes.ts";
 import chatRoutes from "../modules/chat/routes.ts";
 import statusRoutes from "../modules/status/routes.ts";
@@ -14,7 +12,10 @@ import gamificationRoutes from "../modules/gamification/routes.ts";
 import aiRoutes from "../modules/ai/routes.ts";
 import internalRoutes from "../modules/internal/routes.ts";
 import tournamentRoutes from "../modules/tournaments/routes.ts";
+import rankedRoutes from "../modules/ranked/routes.ts";
 import { apiRateLimiter } from "../middleware/rateLimiter.ts";
+import { config } from "../config.ts";
+import type { PublicConfig } from "../../../shared/types/api.types.ts";
 
 export default async function routes(app: FastifyInstance) {
   // Better Auth: /api/auth/*
@@ -27,7 +28,6 @@ export default async function routes(app: FastifyInstance) {
       await api.register(meRoutes);
       await api.register(usersRoutes);
       await api.register(friendsRoutes);
-      await api.register(apiKeyRoutes);
       await api.register(sessionRoutes);
       await api.register(chatRoutes);
       await api.register(statusRoutes);
@@ -35,8 +35,29 @@ export default async function routes(app: FastifyInstance) {
       await api.register(gamificationRoutes);
       await api.register(aiRoutes);
       await api.register(tournamentRoutes);
+      await api.register(rankedRoutes);
     },
     { prefix: "/api" }
+  );
+
+  // Public client config (no secrets): which optional sign-up protections are on
+  app.get(
+    "/api/config",
+    {
+      schema: {
+        response: {
+          200: {
+            type: "object",
+            properties: { turnstileSiteKey: { type: ["string", "null"] }, emailVerification: { type: "boolean" } },
+            required: ["turnstileSiteKey", "emailVerification"],
+          },
+        },
+      },
+    },
+    async (_req, reply): Promise<PublicConfig> => {
+    reply.header("Cache-Control", "public, max-age=300");
+    return { turnstileSiteKey: config.turnstile?.siteKey ?? null, emailVerification: config.requireEmailVerification };
+    }
   );
 
   // Expire the session cookies unconditionally (a revoked/stale cookie would otherwise keep the
@@ -47,9 +68,6 @@ export default async function routes(app: FastifyInstance) {
     }
     return reply.code(204).send();
   });
-
-  // Public API: /api/public/* (X-API-Key)
-  await registerPublicRoutes(app);
 
   // Game service only: /internal/* (service token; not proxied by Caddy)
   await app.register(internalRoutes);

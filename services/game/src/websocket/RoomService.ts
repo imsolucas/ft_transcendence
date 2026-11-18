@@ -88,10 +88,18 @@ export default class RoomService {
         const queue = this.standardQueue;
 
         if (queue.length > 0) {
-            const waitingPlayer = queue.shift()!;
+            // ranked: of everyone waiting, the closest rating (a small community must never
+            // leave someone stuck, so the queue always matches; it only picks the best fit)
+            const mine = player.rating ?? 1500;
+            let best = 0;
+            for (let i = 1; i < queue.length; i++) {
+                if (Math.abs((queue[i]!.rating ?? 1500) - mine) < Math.abs((queue[best]!.rating ?? 1500) - mine)) best = i;
+            }
+            const waitingPlayer = queue.splice(best, 1)[0]!;
 
             const config = { ...default_config.standardGame, mode: 'standard' as const };
             const room = this.roomManager.createRoom(config);
+            room.ranked = true;
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);
             this.roomManager.addPlayerToRoom(room.id, player.id);
@@ -172,11 +180,6 @@ export default class RoomService {
     getQueueLength(): number {
         // Return the total length of both queues (or could be split by mode if needed)
         return this.standardQueue.length + this.tournamentQueue.length;
-    }
-
-    /** Matchmaking queue sizes per mode (read by /metrics). */
-    queueLengths(): { standard: number; tournament: number } {
-        return { standard: this.standardQueue.length, tournament: this.tournamentQueue.length };
     }
 
     isInQueue(playerId: string): boolean {

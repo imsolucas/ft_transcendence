@@ -1,56 +1,23 @@
-# ft_transcendence gateway: one HTTPS origin, routed by path.
-#   /api/*  → users service (Better Auth at /api/auth/*, our API, public API)
+# VOLLEY.EXE gateway: one HTTPS origin, routed by path.
+#   /api/*  → users service (Better Auth at /api/auth/*, our API)
 #   /ws/*   → game service (Socket.IO)
 #   *       → Next.js web app
 # /internal/* and /docs are deliberately NOT routed: only the game service calls them.
 #
-# SITE_ADDRESS: "localhost:8443" locally, with TLS_MODE=internal (certificate from Caddy's local CA).
+# SITE_ADDRESS: "localhost:47443" locally, with TLS_MODE=internal (certificate from Caddy's local CA).
 # Real domain: SITE_ADDRESS=pong.example.com, TLS_MODE=<your e-mail> (Let's Encrypt via ACME),
 # CADDY_HTTPS_PORT=443, HTTPS_PORT=443, HTTP_PORT=80, and enable HSTS with
 # HSTS_HEADER='Strict-Transport-Security "max-age=31536000; includeSubDomains"'.
+# No domain? Caddyfile.tunnel serves the same routes behind a Cloudflare Tunnel (docs/DEPLOY.md).
+# Routes and headers live in routes.caddy.
 {
 	admin off
-	# Caddy is the edge: no upstream proxy is trusted, so a client-sent X-Forwarded-For is
-	# replaced, never forwarded (the services rate-limit on it).
+	# Caddy is the edge: no upstream proxy is trusted, so {client_ip} is the TCP peer and a
+	# client-sent X-Forwarded-For is replaced, never forwarded (the services rate-limit on it).
 }
 
-{$SITE_ADDRESS:localhost:8443} {
+{$SITE_ADDRESS:localhost:47443} {
 	tls {$TLS_MODE:internal}
 
-	encode zstd gzip
-
-	header {
-		# HSTS only makes sense on a real domain (on localhost it would affect every port)
-		{$HSTS_HEADER:-Strict-Transport-Security}
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		-Server
-	}
-
-	request_body {
-		max_size 4MB
-	}
-
-	@internal path /internal /internal/* /docs /docs/*
-	handle @internal {
-		respond 404
-	}
-
-	handle /api/* {
-		reverse_proxy {$USERS_UPSTREAM:users:4000}
-	}
-
-	handle /ws/* {
-		reverse_proxy {$GAME_UPSTREAM:game:3001}
-	}
-
-	handle /ws {
-		reverse_proxy {$GAME_UPSTREAM:game:3001}
-	}
-
-	handle {
-		reverse_proxy {$WEB_UPSTREAM:web:3000}
-	}
+	import routes.caddy
 }
