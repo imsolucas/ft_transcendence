@@ -4,6 +4,7 @@ import { requireInternalService } from "../../auth/guards.ts";
 import { syncAchievementsLater } from "../gamification/routes.ts";
 import { postGameNotice } from "../chat/routes.ts";
 import { DELETED_PREFIX } from "../privacy/routes.ts";
+import { recordTournamentOnChainLater } from "../../chain/service.ts";
 
 /**
  * The game caches display names at connect time; a player who deleted their account during
@@ -231,6 +232,8 @@ export default async function internalRoutes(app: FastifyInstance) {
           },
           select: { id: true },
         });
+        // fire and forget: a slow or unreachable chain never delays or fails this response
+        recordTournamentOnChainLater(t.id, req.log);
         syncAchievementsLater([b.winnerId, ...b.players.map((p) => p.userId), ...b.matches.flatMap((m) => [m.player1Id, m.player2Id])], req.log);
         for (const p of new Set(b.players.map((p) => p.userId))) {
           if (p !== b.winnerId) {

@@ -15,6 +15,7 @@ import { MatchCard, MatchCardSkeleton, Pager, PlayerChip } from "@/components/ga
 import { ProfileActions } from "./profile-actions";
 import { ProfileStats } from "./profile-stats";
 import { Achievements } from "./achievements";
+import { Tournaments } from "./tournaments";
 
 const PAGE_SIZE = 10;
 
@@ -169,6 +170,7 @@ function ProfileScreen({ username }: { username: string }) {
             {t("profile.tabs.history")}
             {matches.data && <span className="count">{matches.data.total}</span>}
           </Tab>
+          <Tab value="tournaments">{t("profile.tabs.tournaments")}</Tab>
           <Tab value="friends">
             {t("profile.tabs.friends")}
             {friends.data && <span className="count">{friends.data.length}</span>}
@@ -185,6 +187,10 @@ function ProfileScreen({ username }: { username: string }) {
 
         <TabPanel value="history" className="outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">
           <MatchHistory isOwn={isOwn} query={matches} page={page} onPage={setPage} />
+        </TabPanel>
+
+        <TabPanel value="tournaments" className="outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">
+          <Tournaments username={profile.username} />
         </TabPanel>
 
         <TabPanel value="friends" className="outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--focus)]">

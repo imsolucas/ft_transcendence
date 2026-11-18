@@ -97,13 +97,16 @@ Postgres via Prisma (`services/users/src/db/prisma/schema.prisma`, migrations al
 - `ApiKeys` — prefix plus SHA-256 hash; the key itself is shown once
 - `Messages` — direct messages (text, game invite, or a server-posted match/tournament notice), read receipts
 - `UserAchievements` — achievements, stored the first time they unlock; `Users.xp` / `level`
+- `Tournaments.chain*` — the on-chain record of a finished tournament (tx hash, block, contract,
+  result hash); `ChainDeployments` — contracts the users service deployed itself
 
 ### HTTP API
 
 The contract between web and users is `services/shared/types/api.types.ts`:
 `/api/me` (profile, avatar upload, `/export`, `/delete`), `/api/users/:username` (profile, stats,
 achievements), `/api/users/:username/matches` (paginated), `/api/users/search`, `/api/friends…`,
-`/api/blocks`, `/api/chat…`, `/api/leaderboard`, `/api/api-keys`, `/api/sessions`, `/api/status`.
+`/api/blocks`, `/api/chat…`, `/api/leaderboard`, `/api/api-keys`, `/api/sessions`, `/api/status`,
+`/api/users/:username/tournaments` (paginated), `/api/tournaments/:id/chain` (blockchain verification).
 
 **Public API.** Create a key in Settings → API keys and send it as `X-API-Key`. Documentation:
 `https://localhost:8443/api/public/docs`. Read endpoints (users, matches, tournaments,
@@ -147,6 +150,69 @@ make restore DB=db-<stamp>.dump UPLOADS=uploads-<stamp>.tar.gz
 Restore drills on 2026-11-18: a deleted match row came back (10 → 9 → 10 rows); a dump from
 before the achievements migration restored cleanly (the migration was re-applied on start),
 then the latest dump brought the current data back (18 matches, 8 achievements).
+
+### Blockchain (tournament scores)
+
+Every finished tournament is written to an EVM chain by the `TournamentScores` Solidity contract
+(`contracts/TournamentScores.sol`). The target is Avalanche: the same contract and code run on the
+Fuji testnet's C-Chain, and locally on anvil, an Avalanche-compatible test chain in compose.
+
+**What is stored.** One write-once record per tournament: a keccak256 hash of its canonical result
+(the tournament key, winner, sorted player ids, and every match's player ids, scores, winner and
+timestamps; built by `services/users/src/chain/canonical.ts`), plus the winner id, player count,
+match count, end time and the block number. Names, emails and avatars are never stored on chain,
+and display names are left out of the hash, so a GDPR account deletion (which renames the player
+"Deleted player") doesn't break verification. The on-chain id is derived from the game's tournament
+UUID, not the database id, so a reset database can't collide with older records.
+
+**Why it can be trusted.** The contract refuses a second record for the same id
+(`AlreadyRecorded`), and no function edits or deletes a record. Only the owner key (the users
+service) can write. If a score or winner changes in the database later, the recomputed hash no
+longer matches the chain. The chain proves the result hasn't changed since it was recorded; it
+doesn't prove the result was correct when it was written.
+
+**Flow.** `POST /internal/game/tournament-result` stores the tournament and answers right away. The
+chain write runs afterwards, in the background, through one queue (one signer, so nonces never
+collide), with retries after 2, 10 and 30 seconds. Every attempt reads the chain first, and an
+`AlreadyRecorded` revert with an equal hash counts as success: the record is adopted and its
+transaction found from the stored block number. A sweep at startup and every 2 minutes records
+whatever is still pending (chain down, users restarted mid-way, anvil reset). A chain outage never
+fails or delays a tournament. Without `CHAIN_CONTRACT_ADDRESS`, users deploys the contract once and
+stores its address in `ChainDeployments`.
+
+**Verification.** `GET /api/tournaments/:id/chain` recomputes the hash from the database, reads the
+on-chain record and answers `verified`, `mismatch`, `pending`, `disabled` (no chain configured)
+or `unavailable` (the RPC couldn't be read just now). The profile's **Tournaments** tab shows the
+result for each tournament: "Verified on chain", the shortened tx hash with a copy button, and a
+block explorer link when `CHAIN_EXPLORER_URL` is set.
+
+**Local chain.** Off by default: it pulls an extra image, and anvil is a throwaway dev chain. To
+turn it on, uncomment the local block in `infra/.env` (copy it from `infra/.env.example`):
+
+```bash
+COMPOSE_PROFILES=chain
+CHAIN_RPC_URL=http://anvil:8545
+CHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  # anvil dev key #0, LOCAL ONLY
+CHAIN_ID=43112
+```
+
+then `make re`. anvil runs on the internal network only (no published port) with chain id 43112,
+and keeps its state in the `anvil_data` volume. If that state is lost, users notices the contract is
+gone, deploys a new one and records every tournament again. The well-known anvil keys are refused on
+any chain other than a local one.
+
+**Avalanche Fuji.** Create your own key (`cast wallet new`), get test AVAX from the faucet
+(https://core.app/tools/testnet-faucet/), and set
+`CHAIN_RPC_URL=https://api.avax-test.network/ext/bc/C/rpc`, `CHAIN_PRIVATE_KEY=<your key>`,
+`CHAIN_ID=43113` and `CHAIN_EXPLORER_URL=https://testnet.snowtrace.io`. Don't set
+`COMPOSE_PROFILES`. After the first deployment, copy the logged address into
+`CHAIN_CONTRACT_ADDRESS`. Never commit a funded key.
+
+**Contract development.** `cd services/users && npm run chain:compile` compiles the contract with
+solcjs 0.8.38 (`evmVersion: paris`, so it runs on any EVM chain) into the committed
+`src/chain/artifact.ts`. `npm run chain:test` checks the artifact is up to date, then tests the
+contract in an in-process EVM (`@ethereumjs/evm`): owner-only writes, duplicate revert, getters,
+`verify`, enumeration, ownership transfer, and the canonical hash.
 
 ---
 
@@ -213,8 +279,9 @@ so data operations are confirmed on screen rather than by email.
 | Tournament system | Minor | Partial: king-of-the-hill, no bracket |
 | Game customization (speeds, points, 4 court themes, defaults) | Minor | Partial: no power-ups yet |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
+| Tournament scores on the blockchain (Solidity contract on an Avalanche-compatible chain: anvil locally, Fuji testnet by config; verification on the profile) | Major | Done |
 
-Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), LLM, RAG,
+Not started; each needs a decision first: ICP blockchain backend (conflicts with SSR), LLM, RAG,
 recommendations and other AI-service modules (need a provider and API spend), ELK, Prometheus +
 Grafana, WAF + Vault, a second game, 3+ players, 3D, organizations, a permissions system, RTL,
 full WCAG audit, analytics dashboards, spectator mode, PWA, file management,

@@ -30,6 +30,44 @@ function parseOrigin(name: string, raw: string): string {
   }
 }
 
+/**
+ * Optional blockchain recording of tournament results (src/chain). Off unless both
+ * CHAIN_RPC_URL and CHAIN_PRIVATE_KEY are set; a value that is set but malformed fails fast.
+ */
+function chainConfig() {
+  const rpcUrl = process.env.CHAIN_RPC_URL || "";
+  const privateKey = process.env.CHAIN_PRIVATE_KEY || "";
+  if (!rpcUrl && !privateKey) return null;
+  if (!rpcUrl || !privateKey) throw new Error("[config] set both CHAIN_RPC_URL and CHAIN_PRIVATE_KEY, or neither");
+  try {
+    const u = new URL(rpcUrl);
+    if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error();
+  } catch {
+    throw new Error("[config] CHAIN_RPC_URL must be an http(s) URL");
+  }
+  // never echo the key itself
+  if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) throw new Error("[config] CHAIN_PRIVATE_KEY must be 0x followed by 64 hex digits");
+  const contractAddress = process.env.CHAIN_CONTRACT_ADDRESS || null;
+  if (contractAddress && !/^0x[0-9a-fA-F]{40}$/.test(contractAddress)) {
+    throw new Error("[config] CHAIN_CONTRACT_ADDRESS must be a 0x-prefixed 20-byte address");
+  }
+  const chainIdRaw = process.env.CHAIN_ID || "";
+  const chainId = chainIdRaw ? Number(chainIdRaw) : null;
+  if (chainId !== null && (!Number.isSafeInteger(chainId) || chainId <= 0)) throw new Error("[config] CHAIN_ID must be a positive integer");
+  const explorerRaw = process.env.CHAIN_EXPLORER_URL || "";
+  let explorerUrl: string | null = null;
+  if (explorerRaw) {
+    try {
+      const u = new URL(explorerRaw);
+      if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error();
+      explorerUrl = u.href.replace(/\/+$/, "");
+    } catch {
+      throw new Error("[config] CHAIN_EXPLORER_URL must be an http(s) URL");
+    }
+  }
+  return { rpcUrl, privateKey, contractAddress, chainId, explorerUrl };
+}
+
 const publicOrigin = parseOrigin("PUBLIC_ORIGIN", requireValue("PUBLIC_ORIGIN"));
 const googleClientId = process.env.GOOGLE_CLIENT_ID || "";
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
@@ -47,4 +85,6 @@ export const config = Object.freeze({
   gameInternalUrl: process.env.GAME_INTERNAL_URL || "http://game:3001",
   // Avatar uploads live here (a Docker volume in compose)
   uploadDir: process.env.UPLOAD_DIR || "/usr/src/app/uploads",
+  // Tournament results on an EVM chain (Avalanche Fuji, or a local anvil); null = off
+  chain: chainConfig(),
 });

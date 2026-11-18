@@ -308,7 +308,8 @@
       "stats": "Stats",
       "history": "Match history",
       "friends": "Friends",
-      "achievements": "Achievements"
+      "achievements": "Achievements",
+      "tournaments": "Tournaments"
     },
     "addFriend": "Add friend",
     "requestSent": "Request sent",
@@ -625,5 +626,23 @@
     },
     "unlockedToast": "Achievement unlocked: {name}",
     "view": "View"
+  },
+  "chain": {
+    "explainer": "Finished tournaments are recorded on a blockchain: a fingerprint of every score is stored there and can't be changed, so anyone can check these results weren't edited.",
+    "none": "No tournaments yet.",
+    "noneBody": "Tournaments this player takes part in show up here.",
+    "loadError": "Couldn't load tournaments",
+    "champion": "Champion",
+    "winner": "Winner",
+    "meta": "{players} players · {matches} matches",
+    "verified": "Verified on chain",
+    "mismatch": "Doesn't match the chain",
+    "mismatchBody": "These results differ from the ones recorded on chain.",
+    "pending": "Pending",
+    "disabled": "Not configured",
+    "unavailable": "Chain unreachable",
+    "tx": "Transaction",
+    "copyTx": "Copy transaction hash",
+    "explorer": "Open in block explorer (new tab)"
   }
 }
