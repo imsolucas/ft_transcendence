@@ -121,6 +121,8 @@ export interface JoinRoomMessage extends BaseMessage {
 	type: 'joinRoom';
 	data: {
 		roomId: string;
+		/** the kind of room the code is for; a party code only joins with 'party' (and only a party code does) */
+		mode?: 'standard' | 'tournament' | 'party';
 	}
 }
 

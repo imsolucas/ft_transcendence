@@ -133,6 +133,8 @@ export default class NewMessageHandler {
         };
         this.broadcaster.broadcastToRoom(room.id, leaveMessage, player.id);
         if (room.mode === 'tournament') this.tournamentService.afterLeft(room);
+        // the last one who wasn't ready left: the rest may start now
+        if (room.mode === 'party' && this.roomManager.getRoom(room.id)) this.partyService.recheckReady(room);
         return room;
     }
 
@@ -234,10 +236,16 @@ export default class NewMessageHandler {
     }
 
     handleJoinRoom(message: JoinRoomMessage, player: Player) {
-        const roomId = message.data.roomId;
+        const roomId = message.data?.roomId;
 
-        if (!roomId) {
+        if (!roomId || typeof roomId !== 'string') {
             this.sendError("Room doesn't exist", 'ROOM_NOT_FOUND', player.socket);
+            return;
+        }
+        // a party code only joins from the party screen, and the party screen only joins parties
+        const target = this.roomManager.getRoom(roomId);
+        if (target && (target.mode === 'party') !== (message.data?.mode === 'party')) {
+            this.sendError("Failed to join", "JOIN_FAILED", player.socket);
             return;
         }
 

@@ -98,7 +98,7 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
             // the server builds the room config itself; only the mode is read
             socket.send({ type: "createRoom", data: { config: { mode: "party", isPrivate: true } } });
           } else {
-            socket.send({ type: "joinRoom", data: { roomId: code.trim().toLowerCase() } });
+            socket.send({ type: "joinRoom", data: { roomId: code.trim().toLowerCase(), mode: "party" } });
           }
           break;
         }

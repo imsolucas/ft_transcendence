@@ -258,6 +258,21 @@ try {
   });
   await sleep(300);
 
+  // ================================================================ C2: the unready one leaves
+  await test("3 ready + the 4th (not ready) disconnects: the party starts with 3", async () => {
+    const E = await Promise.all([41, 42, 43, 44].map(connect));
+    for (const c of E) c.send("joinQueue", { roomType: "party" });
+    await Promise.all(E.map((c) => c.wait("playerJoined", (m) => m.data.playersInRoom.length === 4)));
+    for (const c of E.slice(0, 3)) c.send("playerReady", { ready: true });
+    await sleep(200);
+    E[3]!.close();
+    const start = await E[0]!.wait("partyStart");
+    assert.equal(start.data.players.length, 3);
+    assert.ok(!start.data.players.some((p: any) => p.id === "44"));
+    for (const c of E) c.close();
+  });
+  await sleep(300);
+
   // ================================================================ D: private room by code
   await test("private party by code: 3 friends, no mid-game join, reconnect timeout knocks out", async () => {
     const [host, f1, f2, late] = await Promise.all([31, 32, 33, 34].map(connect));
@@ -265,8 +280,11 @@ try {
     host!.send("createRoom", { config: { mode: "party", isPrivate: false, ballConfig: { speed: 9999 }, seed: 1, numPlayers: 99 } });
     const created = await host!.wait("playerJoined");
     const code = created.data.roomId;
-    f1!.send("joinRoom", { roomId: code });
-    f2!.send("joinRoom", { roomId: code });
+    // a party code doesn't join from the 1v1 form (no mode)
+    late!.send("joinRoom", { roomId: code });
+    await late!.wait("Error", (m) => m.data.code === "JOIN_FAILED");
+    f1!.send("joinRoom", { roomId: code, mode: "party" });
+    f2!.send("joinRoom", { roomId: code, mode: "party" });
     await host!.wait("playerJoined", (m) => m.data.playersInRoom.length === 3);
     for (const c of [host!, f1!, f2!]) c.send("playerReady", { ready: true });
     const start = await host!.wait("partyStart");
@@ -277,8 +295,9 @@ try {
     const list = await late!.wait("liveMatchesList");
     assert.ok(!list.data.matches.some((m: any) => m.roomId === code));
     // a 4th can't take the free seat of a party in play
-    late!.send("joinRoom", { roomId: code });
-    await late!.wait("Error", (m) => m.data.code === "JOIN_FAILED");
+    const errMark = late!.log.length;
+    late!.send("joinRoom", { roomId: code, mode: "party" });
+    await late!.wait("Error", (m) => m.data.code === "JOIN_FAILED", 5000, errMark);
     // f2 drops and never comes back: knocked out after the 15 s grace
     const seatF2 = start.data.players.find((p: any) => p.id === "33").seat;
     f2!.close();

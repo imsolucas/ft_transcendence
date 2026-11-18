@@ -138,6 +138,13 @@ export default class PartyService {
         if (players.length >= PARTY_MIN && players.every((p) => p.isReady)) this.start(room, players);
     }
 
+    /** Someone left the lobby: the ones still there may all be ready now. */
+    recheckReady(room: Room): void {
+        if (room.mode !== "party" || room.status === "playing" || room.status === "finished") return;
+        const players = this.roomManager.getPlayersInRoom(room.id);
+        if (players.length >= PARTY_MIN && players.every((p) => p.isReady)) this.start(room, players);
+    }
+
     private start(room: Room, players: Player[]): void {
         // seats are drawn at random on the server (fair: nobody picks the wall side of a 3-player court)
         const order = [...players];
