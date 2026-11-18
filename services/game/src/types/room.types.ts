@@ -1,5 +1,5 @@
 import type { CyclesEngine, GameConfig, PartyEngine, PartyGame, PartyPlayer, TournamentPhase, TournamentPlayer } from "shared/index.ts";
-import { GameServer } from "../game/GameServer.ts";
+import { GameServer } from "../rooms/GameServer.ts";
 import type { Bracket } from "../tournament/bracket.ts";
 
 /** A bracket match that was actually played (or forfeited mid-game), for the report. */

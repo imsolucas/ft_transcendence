@@ -1,11 +1,11 @@
 import { gameEnded } from '../presence.ts';
 import { applyRatings } from "./ranked.ts";
 import { toSerializablePlayer, type GameEndMessage } from "shared/index.ts";
-import type { RoomManager } from "../game/roomManager.ts";
+import type { RoomManager } from "../rooms/roomManager.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
 import type TournamentService from "./TournamentService.ts";
 import type PartyService from "./PartyService.ts";
-import { reportMatchResult } from "../utils/reportResults.ts";
+import { reportMatchResult } from "../users-api/results.ts";
 
 export default class TickSystem {
     private lastTime = performance.now();

@@ -17,7 +17,7 @@ export const FRESH_AGE_S = 10 * 60;
 /**
  * Better Auth owns sign-up, sign-in (username or email + password, passkeys), sessions,
  * cookies, CSRF/origin checks, auth rate limits and TOTP two-factor.
- * Served at /api/auth/* (see routes/authRoutes.ts). Docs: https://www.better-auth.com/docs
+ * Served at /api/auth/* (see auth/routes.ts). Docs: https://www.better-auth.com/docs
  */
 export const auth = betterAuth({
   appName: "VOLLEY.EXE",

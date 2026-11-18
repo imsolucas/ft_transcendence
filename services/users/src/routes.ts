@@ -1,27 +1,27 @@
 import type { FastifyInstance } from "fastify";
-import authRoutes from "./authRoutes.ts";
-import registerHealthRoutes from "./healthRoutes.ts";
-import meRoutes from "../modules/me/routes.ts";
-import usersRoutes from "../modules/users/routes.ts";
-import friendsRoutes from "../modules/friends/routes.ts";
-import sessionRoutes from "../modules/sessions/routes.ts";
-import chatRoutes from "../modules/chat/routes.ts";
-import statusRoutes from "../modules/status/routes.ts";
-import privacyRoutes from "../modules/privacy/routes.ts";
-import gamificationRoutes from "../modules/gamification/routes.ts";
-import aiRoutes from "../modules/ai/routes.ts";
-import internalRoutes from "../modules/internal/routes.ts";
-import tournamentRoutes from "../modules/tournaments/routes.ts";
-import rankedRoutes from "../modules/ranked/routes.ts";
-import dailyRoutes from "../modules/daily/routes.ts";
-import coinsRoutes from "../modules/coins/routes.ts";
-import { apiRateLimiter, createRateLimiter } from "../middleware/rateLimiter.ts";
-import { isBreachedHash } from "../auth/breached.ts";
+import authRoutes from "./auth/routes.ts";
+import registerHealthRoutes from "./modules/health/routes.ts";
+import meRoutes from "./modules/me/routes.ts";
+import usersRoutes from "./modules/users/routes.ts";
+import friendsRoutes from "./modules/friends/routes.ts";
+import sessionRoutes from "./modules/sessions/routes.ts";
+import chatRoutes from "./modules/chat/routes.ts";
+import statusRoutes from "./modules/status/routes.ts";
+import privacyRoutes from "./modules/privacy/routes.ts";
+import gamificationRoutes from "./modules/gamification/routes.ts";
+import aiRoutes from "./modules/ai/routes.ts";
+import internalRoutes from "./modules/internal/routes.ts";
+import tournamentRoutes from "./modules/tournaments/routes.ts";
+import rankedRoutes from "./modules/ranked/routes.ts";
+import dailyRoutes from "./modules/daily/routes.ts";
+import coinsRoutes from "./modules/coins/routes.ts";
+import { apiRateLimiter, createRateLimiter } from "./middleware/rateLimiter.ts";
+import { isBreachedHash } from "./auth/breached.ts";
 
 /** the strength meter asks while someone types (debounced): generous, but bounded per IP */
 const passwordCheckLimiter = createRateLimiter({ max: 30, windowMs: 60_000, keyGenerator: (req) => `rate-limit:pwcheck:${req.ip}` });
-import { config } from "../config.ts";
-import type { PublicConfig } from "../../../shared/types/api.types.ts";
+import { config } from "./config.ts";
+import type { PublicConfig } from "../../shared/types/api.types.ts";
 
 export default async function routes(app: FastifyInstance) {
   // Better Auth: /api/auth/*

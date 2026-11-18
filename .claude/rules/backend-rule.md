@@ -12,11 +12,13 @@ paths:
 
 - Fastify 5, ESM (`"type": "module"`), TypeScript, Node LTS. Imports use the `.ts`
   extension today (`ts-node-esm` / `tsx`); keep the style of the file you edit.
-- `services/users/src`: `routes/` (schema + wiring only) → `controllers/` (request handling)
-  → Prisma. `schemas/index.ts` holds shared JSON schemas registered with `app.addSchema`.
-  `middleware/` holds hooks (`rateLimiter.ts`).
+- `services/users/src`: `routes.ts` registers everything; each feature is
+  `modules/<feature>/routes.ts` (schema + handlers, plus `service.ts` when logic is shared) → Prisma.
+  Better Auth is mounted by `auth/routes.ts` (next to `auth.ts`). `schemas/index.ts` holds shared
+  JSON schemas registered with `app.addSchema`. `middleware/` holds hooks (`rateLimiter.ts`).
 - `services/game/src`: `websocket/` (MessageHandler, RoomService, GameService,
-  TournamentService, TickSystem, Broadcaster), `game/` (RoomManager), `utils/reportResults.ts`.
+  TournamentService, TickSystem, Broadcaster), `rooms/` (roomManager, GameServer), `users-api/`
+  (every call to the users service: `client.ts` session/profile lookups, `results.ts` match results).
 - Logic that both browser and server run (physics, protocol types) lives in
   `services/shared` and must stay free of Node-only and DOM-only APIs.
 

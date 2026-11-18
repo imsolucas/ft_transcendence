@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import { CyclesEngine, PartyEngine, default_config } from "shared/index.ts";
 import type { CyclesTickMessage, GameConfig, PartyEndMessage, PartyGame, PartyPlayer, PartyQueueMessage, PartyStanding, PartyStartMessage, PartyStateMessage, Player, PlayerInputs, PlayerReadyMessage } from "shared/index.ts";
-import type { RoomManager } from "../game/roomManager.ts";
+import type { RoomManager } from "../rooms/roomManager.ts";
 import type { Room } from "../types/room.types.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
 import { gameEnded, gameStarted } from "../presence.ts";
-import { reportPartyResult } from "../utils/reportResults.ts";
+import { reportPartyResult } from "../users-api/results.ts";
 
 export const PARTY_MIN = 3;
 export const PARTY_MAX = 4;

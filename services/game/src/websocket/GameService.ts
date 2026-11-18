@@ -1,8 +1,8 @@
 import type { PlayerInputMessage, PlayerReadyMessage } from "shared/index.ts";
 import type { Player } from "shared"
-import type { RoomManager } from "../game/roomManager.ts";
+import type { RoomManager } from "../rooms/roomManager.ts";
 import type { Room } from "../types/room.types.ts";
-import { GameServer } from "../game/GameServer.ts";
+import { GameServer } from "../rooms/GameServer.ts";
 import { MessageBroadcaster } from "./Broadcaster.ts";
 
 export default class GameService {

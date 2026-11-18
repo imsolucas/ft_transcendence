@@ -1,6 +1,6 @@
 import type { RatingUpdateMessage } from "shared/index.ts";
-import type { RoomManager } from "../game/roomManager.ts";
-import type { RatingChange } from "../utils/reportResults.ts";
+import type { RoomManager } from "../rooms/roomManager.ts";
+import type { RatingChange } from "../users-api/results.ts";
 
 /**
  * After a ranked match the users service answers with both players' new ratings: keep them on

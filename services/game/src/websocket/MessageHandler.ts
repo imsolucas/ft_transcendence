@@ -16,13 +16,13 @@ export function roomConfigFrom(input: unknown): GameConfig {
     const numPlayers = mode === "tournament" && [4, 6, 8].includes(c.numPlayers as number) ? (c.numPlayers as number) : undefined;
     return { ...base, isPrivate: c.isPrivate === true, mode, pointsToWin, ...(numPlayers ? { numPlayers } : {}) };
 }
-import type { RoomManager } from "../game/roomManager.ts";
+import type { RoomManager } from "../rooms/roomManager.ts";
 import { MessageBroadcaster } from "./Broadcaster.ts";
 import GameService from "./GameService.ts";
 import RoomService from "./RoomService.ts";
 import TournamentService from "./TournamentService.ts";
 import type { ConnectionErrorMessage } from "shared/index.ts";
-import type { AuthenticatedUser } from "../auth/usersClient.ts";
+import type { AuthenticatedUser } from "../users-api/client.ts";
 import { gameStarted } from "../presence.ts";
 import { MatchLifecycle } from "./MatchLifecycle.ts";
 import PartyService, { partyConfig } from "./PartyService.ts";

@@ -38,7 +38,7 @@ server.key
 backups/
 
 # 42 subject PDF (reference only, not part of the project)
-ft_transcendence.pdf
+docs/ft_transcendence.pdf
 
 # other env files (e.g. infra/.env.prod for a local production copy); the example stays tracked
 infra/.env.*

@@ -4,6 +4,6 @@
 **/.env
 **/*.log
 .git
-ft_transcendence.pdf
+docs/ft_transcendence.pdf
 services/frontend
 services/api-gateway

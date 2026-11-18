@@ -1,11 +1,11 @@
 import { randomInt, randomUUID } from "node:crypto";
 import type { GameStartMessage, Player, TournamentEndMessage, TournamentRoundEndMessage, TournamentState, TournamentStateMessage } from "shared/index.ts";
-import type { RoomManager } from "../game/roomManager.ts";
+import type { RoomManager } from "../rooms/roomManager.ts";
 import type { Room, TournamentRuntime } from "../types/room.types.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
 import { createBracket, findMatch, MAX_BRACKET_PLAYERS, nextMatch, outcome, recordResult, withdraw } from "../tournament/bracket.ts";
 import { gameEnded, gameStarted } from "../presence.ts";
-import { reportTournamentResult } from "../utils/reportResults.ts";
+import { reportTournamentResult } from "../users-api/results.ts";
 
 export const MIN_TOURNAMENT_PLAYERS = 3;
 /** the two players of a match must both press ready within this, or the absent one forfeits */

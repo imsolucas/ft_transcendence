@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import type { FastifyInstance } from "fastify";
 import { InternalServerError } from "./schemas/index.ts";
 import dbPlugin from "./db/plugin.ts";
-import routes from "./routes/routes.ts";
+import routes from "./routes.ts";
 import { setLogger } from "./log.ts";
 
 /** Strips one-time tokens from a URL before it is logged. */

@@ -9,7 +9,7 @@ import type {
 	HallWelcomeMessage,
 } from 'shared';
 import { HALL_CAPACITY, HALL_EMOTES, HALL_SIM_HZ, HALL_SNAPSHOT_HZ, moveInHall, spawnPoint, type HallEmote } from 'shared/hall/hall.ts';
-import type { AuthenticatedUser } from '../auth/usersClient.ts';
+import type { AuthenticatedUser } from '../users-api/client.ts';
 
 /** one emote per player per this long */
 const EMOTE_COOLDOWN_MS = 1500;

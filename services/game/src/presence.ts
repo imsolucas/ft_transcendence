@@ -1,5 +1,5 @@
 import { config } from './config.ts';
-import { setPresence, type Presence } from './auth/usersClient.ts';
+import { setPresence, type Presence } from './users-api/client.ts';
 
 /**
  * Presence is derived from live sockets and games, and written to the users service.

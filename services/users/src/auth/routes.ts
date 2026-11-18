@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../auth/auth.ts";
+import { auth } from "./auth.ts";
 import { config } from "../config.ts";
 
 /**

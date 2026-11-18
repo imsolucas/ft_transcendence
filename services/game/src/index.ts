@@ -3,14 +3,14 @@ import { Server, type Socket } from 'socket.io';
 import type { GameMessage } from 'shared';
 import type { LiveMatch, LiveMatchesMessage, Player, SpectateStartedMessage, SpectatorCountMessage } from 'shared';
 import { config } from './config.ts';
-import { resolveSession, type AuthenticatedUser } from './auth/usersClient.ts';
+import { resolveSession, type AuthenticatedUser } from './users-api/client.ts';
 import { resetAllPresence, socketClosed, socketCount, socketOpened } from './presence.ts';
 import { InMemoryPlayerStorage } from './storage/playerStorage.ts';
 import { MessageBroadcaster } from './websocket/Broadcaster.ts';
-import { RoomManager } from './game/roomManager.ts';
+import { RoomManager } from './rooms/roomManager.ts';
 import NewMessageHandler from './websocket/MessageHandler.ts';
 import TickSytem from './websocket/TickSystem.ts';
-import { setReportLogger } from './utils/reportResults.ts';
+import { setReportLogger } from './users-api/results.ts';
 import crypto from 'node:crypto';
 import { HallService } from './hall/HallService.ts';
 

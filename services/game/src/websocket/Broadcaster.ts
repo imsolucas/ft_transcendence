@@ -1,5 +1,5 @@
 import type { GameMessage } from 'shared/index.ts';
-import type { RoomManager } from '../game/roomManager.ts';
+import type { RoomManager } from '../rooms/roomManager.ts';
 
 export class MessageBroadcaster {
   /** Spectators: every room broadcast is mirrored to the room's watchers (set in index.ts). */

@@ -1,7 +1,7 @@
 # VOLLEY.EXE (repo ft_transcendence) — one command: `make up` (docker compose -f infra/docker-compose.yml up -d --build)
 # Browser origin: https://localhost:47443 (Caddy, automatic HTTPS). Only Caddy publishes a public
 # port; the optional "mail" profile binds Mailpit to 127.0.0.1 only. Host ports are all 47xxx.
-name: ft_transcendence
+name: volley
 
 services:
   postgres:
