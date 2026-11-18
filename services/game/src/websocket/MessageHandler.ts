@@ -157,6 +157,7 @@ export default class NewMessageHandler {
     }
 
     handleCreateRoom(message: CreateRoomMessage, player: Player) {
+        this.roomService.leaveQueue(player); // never queued and seated at the same time
         const config = roomConfigFrom(message.data?.config);
         const room = this.roomService.createRoom(player, config);
         if (!room) {
@@ -208,6 +209,7 @@ export default class NewMessageHandler {
     }
 
     handleJoinRoom(message: JoinRoomMessage, player: Player) {
+        this.roomService.leaveQueue(player);
         const roomId = message.data.roomId;
 
         if (!roomId) {

@@ -9,9 +9,28 @@ import { setLogger } from "./log.ts";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import { registerHttpMetrics } from "./metrics.ts";
 
+/** Strips one-time tokens from a URL before it is logged. */
+export function redactTokens(url: string): string {
+  return url
+    .replace(/(\/reset-password\/)[^/?#]+/, "$1[redacted]")
+    .replace(/([?&](?:token|code)=)[^&#]*/g, "$1[redacted]");
+}
+
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: { level: process.env.LOG_LEVEL || "info" },
+    logger: {
+      level: process.env.LOG_LEVEL || "info",
+      serializers: {
+        // never log one-time tokens: the reset link carries one in the path, email
+        // verification in the query (anyone reading logs could otherwise redeem them)
+        req: (req) => ({
+          method: req.method,
+          url: redactTokens(req.url),
+          host: req.host,
+          remoteAddress: req.ip,
+        }),
+      },
+    },
     // Exactly one proxy (Caddy) sits in front: req.ip is the address Caddy saw,
     // not a client-supplied X-Forwarded-For value.
     trustProxy: 1,

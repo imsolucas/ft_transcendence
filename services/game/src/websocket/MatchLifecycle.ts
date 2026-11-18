@@ -7,7 +7,9 @@ import { reportMatchResult } from "../utils/reportResults.ts";
 import { gameEnded } from "../presence.ts";
 import type TournamentService from "./TournamentService.ts";
 
-export const RECONNECT_GRACE_MS = 15_000;
+export /** all reconnect pauses of one player in one room together, at most */
+const PAUSE_BUDGET_MS = 30_000;
+const RECONNECT_GRACE_MS = 15_000;
 export const READY_DEADLINE_MS = 30_000;
 
 const WS_OPEN = 1;
@@ -20,7 +22,9 @@ const WS_OPEN = 1;
  */
 export class MatchLifecycle {
   /** loud: the room was told (and paused); a silently held tournament watcher is not */
-  private pending = new Map<string, { roomId: string; timer: ReturnType<typeof setTimeout>; loud: boolean }>();
+  private pending = new Map<string, { roomId: string; timer: ReturnType<typeof setTimeout>; loud: boolean; since: number }>();
+  /** total time each player has spent away per room (room:player → ms) */
+  private pauseUsed = new Map<string, number>();
   private rematchVotes = new Map<string, Set<string>>();
   private readyTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -41,7 +45,20 @@ export class MatchLifecycle {
     const tournament = room.mode === "tournament";
     if (tournament ? !this.tournaments.holdsSlot(room, player.id) : room.mode !== "standard" || room.status !== "playing") return false;
 
-    const deadline = Date.now() + RECONNECT_GRACE_MS;
+    // a player can't freeze a match forever by reconnecting just in time: all their pauses in
+    // this room share one budget; once it is spent, leaving forfeits at once
+    // (only pauses count: a tournament player who is just watching freezes nothing)
+    const pauses = !tournament || this.tournaments.isLivePlayer(room, player.id);
+    for (const key of this.pauseUsed.keys()) if (!this.roomManager.getRoom(key.split(":")[0]!)) this.pauseUsed.delete(key);
+    const budgetKey = `${room.id}:${player.id}`;
+    const left = pauses ? PAUSE_BUDGET_MS - (this.pauseUsed.get(budgetKey) ?? 0) : RECONNECT_GRACE_MS;
+    const grace = Math.min(RECONNECT_GRACE_MS, left);
+    if (grace <= 0) {
+      this.forfeit(player);
+      this.dropPlayer(player);
+      return true;
+    }
+    const deadline = Date.now() + grace;
     // gone during their ready check: no longer ready (the game must not start without them)
     if (tournament) this.tournaments.unready(room, player.id);
     // a tournament player who is only watching right now is held silently
@@ -61,8 +78,8 @@ export class MatchLifecycle {
       // never came back: the other player wins
       this.forfeit(player);
       this.dropPlayer(player);
-    }, RECONNECT_GRACE_MS);
-    this.pending.set(player.id, { roomId: room.id, timer, loud });
+    }, grace);
+    this.pending.set(player.id, { roomId: room.id, timer, loud, since: Date.now() });
     return true;
   }
 
@@ -74,6 +91,8 @@ export class MatchLifecycle {
     const room = this.roomManager.getRoom(hold.roomId);
     clearTimeout(hold.timer);
     this.pending.delete(playerId);
+    const budgetKey = `${hold.roomId}:${playerId}`;
+    if (hold.loud) this.pauseUsed.set(budgetKey, (this.pauseUsed.get(budgetKey) ?? 0) + (Date.now() - hold.since));
     if (!room) return null;
     const tournament = room.mode === "tournament";
     if (tournament ? !room.playerIds.includes(playerId) : room.status !== "playing") return null;

@@ -534,7 +534,7 @@
     "sessionRevoked": "Session révoquée.",
     "lastActive": "Connecté {when}",
     "unknownDevice": "Appareil inconnu",
-    "apiKeysBody": "Les clés donnent un accès en lecture à l'API publique. Traitez-les comme des mots de passe.",
+    "apiKeysBody": "Les clés permettent à vos propres programmes (bots, scripts) d'utiliser l'API publique en votre nom : lire les profils, les matchs et le classement, et gérer votre nom affiché et vos amis. Elles ne peuvent pas toucher votre mot de passe, votre e-mail, vos messages ni votre compte. Traitez-les comme des mots de passe.",
     "keyName": "Nom de la clé",
     "createKey": "Créer une clé",
     "newKeyWarning": "Copiez cette clé maintenant. Vous ne la reverrez plus.",

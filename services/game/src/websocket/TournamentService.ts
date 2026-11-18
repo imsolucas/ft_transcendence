@@ -32,6 +32,10 @@ function shuffle<T>(items: T[]): T[] {
  * a late timer, a leave and a disconnect can't decide the same match twice. The bracket
  * state is broadcast to the room (and its watchers) after every change.
  */
+function logTimerError(what: string, roomId: string, err: unknown) {
+    process.stderr.write(JSON.stringify({ level: 50, msg: `tournament ${what} failed`, roomId, err: String((err as Error)?.message ?? err) }) + "\n");
+}
+
 export default class TournamentService {
     constructor(
         private roomManager: RoomManager,
@@ -191,7 +195,12 @@ export default class TournamentService {
         t.timer = setTimeout(() => {
             t.timer = null;
             if (!this.alive(room) || t.phase !== "ready" || t.currentMatchId !== matchId) return;
-            this.onReadyTimeout(room);
+            // a timer throwing would crash the whole game service (no caller to catch it)
+            try {
+                this.onReadyTimeout(room);
+            } catch (err) {
+                logTimerError("ready deadline", room.id, err);
+            }
         }, TOURNAMENT_READY_MS);
         this.broadcastState(room);
     }
@@ -327,7 +336,11 @@ export default class TournamentService {
         t.timer = setTimeout(() => {
             t.timer = null;
             if (!this.alive(room) || t.phase !== "between") return;
-            this.advance(room);
+            try {
+                this.advance(room);
+            } catch (err) {
+                logTimerError("next match", room.id, err);
+            }
         }, BETWEEN_MATCHES_MS);
     }
 

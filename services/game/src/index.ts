@@ -40,6 +40,8 @@ class SocketAdapter {
 
 const server = fastify({ logger: { level: process.env.LOG_LEVEL || 'info' }, trustProxy: 1 });
 setReportLogger(server.log);
+// A stray rejected promise must be logged, not take every live match down with the process
+process.on('unhandledRejection', (err) => server.log.error({ err }, 'unhandled rejection'));
 
 const playerStorage = new InMemoryPlayerStorage();
 const roomManager = new RoomManager(playerStorage);

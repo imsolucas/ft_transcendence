@@ -109,6 +109,8 @@ export class RoomManager {
     // Fetch player and assign position/room
     const player = this.getPlayer(playerId);
     if (!player) return false;
+    // one room at a time: a player already seated elsewhere can't be added (ghost seats)
+    if (player.roomId && player.roomId !== roomId) return false;
     const position = this.getPlayerPosition(roomId);
     player.roomId = roomId;
     player.position = position;
@@ -150,8 +152,10 @@ export class RoomManager {
     if (!room) return [];
     const playersInRoom: Player[] = []
   
-    for (const id of room.playerIds)
-      playersInRoom.push(this.playerStorage.get(id)!);
+    for (const id of room.playerIds) {
+      const p = this.playerStorage.get(id);
+      if (p) playersInRoom.push(p); // a removed player must never become an undefined entry
+    }
   
     return playersInRoom
   }

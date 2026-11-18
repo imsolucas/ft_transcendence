@@ -534,7 +534,7 @@
     "sessionRevoked": "Session revoked.",
     "lastActive": "Signed in {when}",
     "unknownDevice": "Unknown device",
-    "apiKeysBody": "Keys give read access to the public API. Treat them like passwords.",
+    "apiKeysBody": "Keys let your own programs (bots, scripts) use the public API as you: read profiles, matches and the leaderboard, and manage your display name and friends. They can't touch your password, email, messages or account. Treat them like passwords.",
     "keyName": "Key name",
     "createKey": "Create key",
     "newKeyWarning": "Copy this key now. You won't see it again.",

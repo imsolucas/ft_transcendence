@@ -534,7 +534,7 @@
     "sessionRevoked": "Sesión revocada.",
     "lastActive": "Sesión iniciada {when}",
     "unknownDevice": "Dispositivo desconocido",
-    "apiKeysBody": "Las claves dan acceso de lectura a la API pública. Trátalas como contraseñas.",
+    "apiKeysBody": "Las claves permiten que tus propios programas (bots, scripts) usen la API pública en tu nombre: leer perfiles, partidas y la clasificación, y gestionar tu nombre visible y tus amigos. No pueden tocar tu contraseña, correo, mensajes ni tu cuenta. Trátalas como contraseñas.",
     "keyName": "Nombre de la clave",
     "createKey": "Crear clave",
     "newKeyWarning": "Copia esta clave ahora. No volverás a verla.",

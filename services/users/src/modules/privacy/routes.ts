@@ -16,6 +16,7 @@ export const isDeletedHandle = (username: string) => username.startsWith(DELETED
 /** Deleting needs a sign-in from the last 10 minutes (works for password and Google users). */
 const FRESH_MS = 10 * 60 * 1000;
 const EXPORT_LIMIT = 10_000;
+const lastExportMail = new Map<number, number>();
 
 const COOKIE_NAMES = ["__Secure-ft.session_token", "__Secure-ft.session_data", "__Secure-ft.dont_remember"];
 
@@ -87,7 +88,11 @@ export default async function privacyRoutes(app: FastifyInstance) {
       achievements,
     };
     // GDPR: confirm the data operation by email (so an unexpected export is noticed)
-    void mail.exported(user.email, localeFrom(req), req.log);
+    // at most one confirmation per user per hour (repeated downloads must not flood the inbox)
+    if (Date.now() - (lastExportMail.get(id) ?? 0) > 60 * 60 * 1000) {
+      lastExportMail.set(id, Date.now());
+      void mail.exported(user.email, localeFrom(req), req.log);
+    }
     reply.header("Content-Type", "application/json; charset=utf-8");
     reply.header("Content-Disposition", `attachment; filename="ft_transcendence-${user.username}-${new Date().toISOString().slice(0, 10)}.json"`);
     reply.header("Cache-Control", "no-store");

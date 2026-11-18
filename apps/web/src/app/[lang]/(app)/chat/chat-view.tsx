@@ -192,6 +192,7 @@ function Thread({ username }: { username: string }) {
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) setUnavailable(true);
       if (err instanceof ApiError && err.code === "MUTED") toast.error(t("chat.muted"));
+      if (err instanceof ApiError && err.code === "SLOW_DOWN") toast.error(t("chat.slowDown"));
       setPending((p) => p.map((x) => (x.tempId === tempId ? { ...x, failed: true } : x)));
     }
   }

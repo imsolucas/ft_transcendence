@@ -8,6 +8,8 @@ import { moderateMessage } from "../../ai/moderation.ts";
 import { PUBLIC_USER_SELECT, toPublicUser } from "../shared/presenters.ts";
 
 const MAX_BODY = 1000;
+const SENDS_PER_MINUTE = 20;
+const sendTimes = new Map<number, number[]>();
 const ROOM_CODE = /^[0-9a-f]{8}$/;
 
 type Row = { id: number; senderId: number; recipientId: number; kind: string; body: string; inviteCode: string | null; createdAt: Date; readAt: Date | null; moderation?: string | null };
@@ -149,6 +151,12 @@ export default async function chatRoutes(app: FastifyInstance) {
       // Same answer as an unknown player, so a block isn't revealed
       if (await blockedEitherWay(me, other.id)) return notFound(reply);
 
+      // per-sender flood limit (also bounds moderation calls): 20 messages a minute
+      const now = Date.now();
+      const recent = (sendTimes.get(me) ?? []).filter((t) => now - t < 60_000);
+      if (recent.length >= SENDS_PER_MINUTE) return reply.code(429).send({ error: "You're sending messages too fast.", code: "SLOW_DOWN" });
+      recent.push(now);
+      sendTimes.set(me, recent);
       // muted after repeated moderation removals
       const mute = await prisma.user.findUnique({ where: { id: me }, select: { chatMutedUntil: true } });
       if (mute?.chatMutedUntil && mute.chatMutedUntil > new Date()) {
@@ -172,7 +180,7 @@ export default async function chatRoutes(app: FastifyInstance) {
       const sender = await prisma.user.findUnique({ where: { id: me }, select: PUBLIC_USER_SELECT });
       notify([other.id, me], { type: "chat:message", message, from: toPublicUser(sender!) });
       // AI moderation runs after delivery (never delays sending); no-op without an API key
-      if (row.kind === "text") void moderateMessage(row.id, me, other.id, row.body, req.log);
+      if (row.kind === "text") moderateMessage(row.id, me, other.id, row.body, req.log).catch(() => {});
       return reply.code(201).send(message);
     }
   );

@@ -7,7 +7,7 @@
 // Never blocks the tournament write: callers fire and forget, and a periodic sweep picks up
 // whatever failed (chain down at the time, users restarted mid-way, anvil reset).
 import type { FastifyBaseLogger } from "fastify";
-import { Contract, ContractFactory, FetchRequest, JsonRpcProvider, Network, NonceManager, Wallet, getAddress } from "ethers";
+import { Contract, ContractFactory, FetchRequest, HDNodeWallet, JsonRpcProvider, Network, NonceManager, Wallet, getAddress } from "ethers";
 import { config } from "../config.ts";
 import { prisma } from "../db/client.ts";
 import { TOURNAMENT_SCORES_ABI, TOURNAMENT_SCORES_BYTECODE } from "./artifact.ts";
@@ -23,11 +23,16 @@ const VERIFY_CACHE_MS = 15_000;
 
 // Publicly known anvil/hardhat dev keys: anyone can sign with them, so they are only allowed
 // on a local dev chain (otherwise anyone could write "official" tournament records).
-const PUBLIC_DEV_KEYS = new Set([
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-  "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
-]);
+// All 20 default accounts of the well-known test mnemonic (anvil/hardhat ship 10–20 of them).
+const TEST_MNEMONIC = "test test test test test test test test test test test junk";
+let publicDevKeys: Set<string> | null = null;
+function isPublicDevKey(key: string): boolean {
+  if (!publicDevKeys) {
+    const root = HDNodeWallet.fromPhrase(TEST_MNEMONIC, undefined, "m/44'/60'/0'/0");
+    publicDevKeys = new Set(Array.from({ length: 20 }, (_, i) => root.deriveChild(i).privateKey.toLowerCase()));
+  }
+  return publicDevKeys.has(key.toLowerCase());
+}
 // anvil/hardhat default, and the local Avalanche-style id used in compose
 const LOCAL_CHAIN_IDS = new Set([31337, 1337, 43112]);
 
@@ -70,7 +75,7 @@ async function getBase(): Promise<Base> {
   if (c.chainId !== null && c.chainId !== chainId) {
     throw new ChainRefused(`CHAIN_ID is ${c.chainId} but the RPC serves chain ${chainId}`);
   }
-  if (!LOCAL_CHAIN_IDS.has(chainId) && PUBLIC_DEV_KEYS.has(c.privateKey.toLowerCase())) {
+  if (!LOCAL_CHAIN_IDS.has(chainId) && isPublicDevKey(c.privateKey)) {
     throw new ChainRefused(`refusing a public anvil dev key on chain ${chainId}; use your own funded test key`);
   }
   const req = new FetchRequest(c.rpcUrl);
@@ -129,12 +134,17 @@ async function getConn(allowDeploy: boolean, log: FastifyBaseLogger): Promise<Co
   const factory = new ContractFactory(TOURNAMENT_SCORES_ABI, TOURNAMENT_SCORES_BYTECODE, b.signer);
   const deployed = await factory.deploy();
   const tx = deployed.deploymentTransaction();
-  const receipt = tx ? await tx.wait(1, RECEIPT_TIMEOUT_MS) : null;
-  if (!tx || !receipt || receipt.status !== 1) throw new Error("contract deployment failed");
+  if (!tx) throw new Error("contract deployment failed");
   const address = await deployed.getAddress();
-  await prisma.chainDeployment.create({
-    data: { chainId: b.chainId, address, owner, txHash: tx.hash, blockNumber: receipt.blockNumber },
+  // Record it as soon as it's sent (block 0 = not mined yet): if the receipt is slow or the
+  // process restarts, the lookup above adopts this address once it has code, instead of
+  // deploying (and paying for) another contract on every sweep.
+  const row = await prisma.chainDeployment.create({
+    data: { chainId: b.chainId, address, owner, txHash: tx.hash, blockNumber: 0 },
   });
+  const receipt = await tx.wait(1, RECEIPT_TIMEOUT_MS);
+  if (!receipt || receipt.status !== 1) throw new Error("contract deployment failed");
+  await prisma.chainDeployment.update({ where: { id: row.id }, data: { blockNumber: receipt.blockNumber } });
   log.info({ chainId: b.chainId, contract: address, txHash: tx.hash }, "[chain] TournamentScores deployed (set CHAIN_CONTRACT_ADDRESS to pin it)");
   // A reset dev chain hands the same deployer the same address again (nonce 0), but the new
   // contract is empty: records stored against that address are void, so the sweep redoes them.

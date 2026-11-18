@@ -43,6 +43,8 @@ export default class RoomService {
         if (player.roomId) {
             return null;
         }
+        // searching again (or for another mode) replaces any earlier queue entry
+        this.leaveQueue(player);
 
         var availableRooms: Room[] = []
         this.roomManager.getAvailableRooms().forEach((val) => {
