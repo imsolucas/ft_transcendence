@@ -640,5 +640,22 @@
     },
     "unlockedToast": "Achievement unlocked: {name}",
     "view": "View"
+  },
+  "watch": {
+    "title": "Watch",
+    "subtitle": "Live public matches. Private rooms aren't shown.",
+    "watch": "Watch",
+    "watching": "Watching",
+    "spectators": "{n} watching",
+    "empty": "No public matches right now",
+    "emptyBody": "Matches appear here while they're being played.",
+    "tournament": "tournament",
+    "stop": "Stop watching",
+    "backToList": "Back to live matches",
+    "winner": "{name} wins!",
+    "notFound": "This match isn't live any more, or it's private.",
+    "ownMatch": "You're playing in this match.",
+    "inLobby": "Watch live matches",
+    "watchFriend": "Watch"
   }
 }

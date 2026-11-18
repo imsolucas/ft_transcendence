@@ -27,7 +27,13 @@ export type GameMessage =
 | RejoinedMessage
 | RematchRequestedMessage
 | RematchReadyMessage
-| ReadyTimeoutMessage;
+| ReadyTimeoutMessage
+| SpectateMessage
+| StopSpectatingMessage
+| LiveMatchesRequestMessage
+| LiveMatchesMessage
+| SpectateStartedMessage
+| SpectatorCountMessage;
 
 export type GameErrorCodes =
 | 'ALREADY_IN_ROOM'
@@ -36,7 +42,9 @@ export type GameErrorCodes =
 | 'ROOM_FULL'
 | 'INVALID_REQUEST'
 | 'UNAUTHORIZED'
-| 'INTERNAL_ERROR';
+| 'INTERNAL_ERROR'
+| 'SPECTATE_NOT_FOUND'
+| 'SPECTATE_OWN_MATCH';
 
 export interface BaseMessage {
 	type: string;
@@ -256,4 +264,53 @@ export interface RematchReadyMessage extends BaseMessage {
 export interface ReadyTimeoutMessage extends BaseMessage {
 	type: 'readyTimeout';
 	data: { roomId: string };
+}
+
+// ---------------------------------------------------------------- Spectator mode
+// Spectators join a Socket.IO room "watch:<roomId>" that mirrors every room broadcast
+// (state, start, end, lifecycle). They are never in room.playerIds, so they can't send input.
+
+/** One live, public match (private rooms are never listed or watchable). */
+export interface LiveMatch {
+	roomId: string;
+	mode: 'standard' | 'tournament';
+	players: { id: string; name: string }[];
+	scores: number[];
+	spectators: number;
+}
+
+/** client → server: watch a room, or the match a player is in */
+export interface SpectateMessage extends BaseMessage {
+	type: 'spectate';
+	data: { roomId?: string; userId?: number };
+}
+
+/** client → server */
+export interface StopSpectatingMessage extends BaseMessage {
+	type: 'stopSpectating';
+	data: Record<string, never>;
+}
+
+/** client → server: ask for the live public matches */
+export interface LiveMatchesRequestMessage extends BaseMessage {
+	type: 'liveMatches';
+	data: Record<string, never>;
+}
+
+/** server → client */
+export interface LiveMatchesMessage extends BaseMessage {
+	type: 'liveMatchesList';
+	data: { matches: LiveMatch[] };
+}
+
+/** server → spectator: what you are watching, with the current state */
+export interface SpectateStartedMessage extends BaseMessage {
+	type: 'spectateStarted';
+	data: { match: LiveMatch; config: GameConfig; gameState: GameState | null };
+}
+
+/** server → players and spectators of a room */
+export interface SpectatorCountMessage extends BaseMessage {
+	type: 'spectatorCount';
+	data: { roomId: string; count: number };
 }

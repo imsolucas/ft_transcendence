@@ -640,5 +640,22 @@
     },
     "unlockedToast": "Succès débloqué : {name}",
     "view": "Voir"
+  },
+  "watch": {
+    "title": "Regarder",
+    "subtitle": "Matchs publics en direct. Les salons privés ne sont pas affichés.",
+    "watch": "Regarder",
+    "watching": "En spectateur",
+    "spectators": "{n} spectateurs",
+    "empty": "Aucun match public en ce moment",
+    "emptyBody": "Les matchs apparaissent ici pendant qu'ils sont joués.",
+    "tournament": "tournoi",
+    "stop": "Arrêter de regarder",
+    "backToList": "Retour aux matchs en direct",
+    "winner": "{name} gagne !",
+    "notFound": "Ce match n'est plus en direct, ou il est privé.",
+    "ownMatch": "Vous jouez dans ce match.",
+    "inLobby": "Regarder les matchs en direct",
+    "watchFriend": "Regarder"
   }
 }

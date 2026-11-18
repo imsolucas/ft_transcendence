@@ -33,8 +33,9 @@ export default class NewMessageHandler {
     private broadcaster: MessageBroadcaster
     readonly lifecycle: MatchLifecycle
 
-    constructor ( private roomManager: RoomManager ) {
-        this.broadcaster = new MessageBroadcaster(roomManager);
+    // one shared broadcaster: index.ts attaches the spectator mirror to it
+    constructor ( private roomManager: RoomManager, broadcaster?: MessageBroadcaster ) {
+        this.broadcaster = broadcaster ?? new MessageBroadcaster(roomManager);
         this.tournamentService = new TournamentService(roomManager, this.broadcaster);
         this.gameService = new GameService(roomManager, this.broadcaster);
         this.roomService = new RoomService(roomManager);

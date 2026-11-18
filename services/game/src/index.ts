@@ -1,7 +1,7 @@
 import fastify from 'fastify';
 import { Server, type Socket } from 'socket.io';
 import type { GameMessage } from 'shared';
-import type { Player } from 'shared';
+import type { LiveMatch, LiveMatchesMessage, Player, SpectateStartedMessage, SpectatorCountMessage } from 'shared';
 import { config } from './config.ts';
 import { resolveSession, type AuthenticatedUser } from './auth/usersClient.ts';
 import { resetAllPresence, socketClosed, socketCount, socketOpened } from './presence.ts';
@@ -45,8 +45,29 @@ const playerStorage = new InMemoryPlayerStorage();
 const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
 const tournamentService = new TournamentService(roomManager, broadcaster);
-const messageHandler = new NewMessageHandler(roomManager);
+const messageHandler = new NewMessageHandler(roomManager, broadcaster);
 const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
+
+// ---- Spectator mode: watchers of room X join the Socket.IO room "watch:X"
+const watchRoom = (roomId: string) => `watch:${roomId}`;
+const spectatorCount = (roomId: string) => io.sockets.adapter.rooms.get(watchRoom(roomId))?.size ?? 0;
+
+/** A match can be watched while it is being played, unless the room is private. */
+function liveMatch(roomId: string): LiveMatch | null {
+  const room = roomManager.getRoom(roomId);
+  if (!room || room.config.isPrivate || room.status !== 'playing') return null;
+  const ids = room.mode === 'tournament' ? [room.kingId, room.challengerId] : room.playerIds.slice(0, 2);
+  const players = ids
+    .map((id) => (id ? roomManager.getPlayer(id) : undefined))
+    .filter((p): p is Player => !!p)
+    .map((p) => ({ id: p.id, name: p.name }));
+  return { roomId: room.id, mode: room.mode, players, scores: room.gameServer?.getGameState().scores ?? [0, 0], spectators: spectatorCount(room.id) };
+}
+
+function announceSpectators(roomId: string) {
+  const msg: SpectatorCountMessage = { type: 'spectatorCount', data: { roomId, count: spectatorCount(roomId) }, timestamp: Date.now() };
+  broadcaster.broadcastToRoom(roomId, msg);
+}
 
 server.get('/health', async () => ({ status: 'healthy', service: 'game', timestamp: new Date().toISOString() }));
 
@@ -98,6 +119,8 @@ function clientIp(socket: Socket) {
   return last || socket.handshake.address;
 }
 
+broadcaster.setSpectatorMirror((roomId, json) => io.to(watchRoom(roomId)).emit('message', json));
+
 // Authenticate every socket from its session cookie before it is accepted
 io.use(async (socket, next) => {
   const ip = clientIp(socket);
@@ -118,6 +141,14 @@ io.on('connection', (socket) => {
   const log = server.log.child({ userId: user.id, socketId: socket.id });
   const adapter = new SocketAdapter(socket);
   let currentPlayer: Player | null = null;
+  let watching: string | null = null;
+  const leaveWatch = () => {
+    if (!watching) return;
+    const was = watching;
+    watching = null;
+    void socket.leave(watchRoom(was));
+    announceSpectators(was);
+  };
 
   socketOpened(user.id);
   // Every socket of a user shares a room so the users service can push events to them
@@ -175,6 +206,45 @@ io.on('connection', (socket) => {
     }
     if (!data || typeof data !== 'object' || typeof (data as { type?: unknown }).type !== 'string') return;
 
+    // ---- spectator mode (handled here: it needs this socket's Socket.IO rooms)
+    if (data.type === 'liveMatches') {
+      const matches = roomManager
+        .getActiveRooms()
+        .map((r) => liveMatch(r.id))
+        .filter((m): m is LiveMatch => m !== null)
+        .slice(0, 50);
+      const reply: LiveMatchesMessage = { type: 'liveMatchesList', data: { matches }, timestamp: Date.now() };
+      adapter.send(JSON.stringify(reply));
+      return;
+    }
+    if (data.type === 'spectate') {
+      const req = (data.data ?? {}) as { roomId?: unknown; userId?: unknown };
+      const roomId =
+        typeof req.roomId === 'string' ? req.roomId : Number.isInteger(req.userId) ? roomManager.getPlayer(String(req.userId))?.roomId : undefined;
+      const match = roomId ? liveMatch(roomId) : null;
+      const sendError = (code: string, message: string) => adapter.send(JSON.stringify({ type: 'Error', data: { message, code }, timestamp: Date.now() }));
+      if (!match) return sendError('SPECTATE_NOT_FOUND', 'No public match to watch.');
+      if (match.players.some((p) => p.id === String(user.id))) return sendError('SPECTATE_OWN_MATCH', 'You are playing in this match.');
+      if (watching && watching !== match.roomId) leaveWatch();
+      watching = match.roomId;
+      void socket.join(watchRoom(match.roomId));
+      announceSpectators(match.roomId);
+      const room = roomManager.getRoom(match.roomId)!;
+      const started: SpectateStartedMessage = {
+        type: 'spectateStarted',
+        data: { match: { ...match, spectators: spectatorCount(match.roomId) }, config: room.config, gameState: room.gameServer?.getGameState() ?? null },
+        timestamp: Date.now(),
+      };
+      adapter.send(JSON.stringify(started));
+      return;
+    }
+    if (data.type === 'stopSpectating') {
+      leaveWatch();
+      return;
+    }
+    // playing yourself ends watching
+    if (watching && (data.type === 'joinQueue' || data.type === 'createRoom' || data.type === 'joinRoom')) leaveWatch();
+
     if (data.type === 'connection') {
       if (currentPlayer) return;
       currentPlayer = messageHandler.handleConnection(data, adapter, user);
@@ -191,6 +261,8 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     clearInterval(recheck);
+    // Socket.IO already removed this socket from its rooms: just update the count
+    if (watching) announceSpectators(watching);
     // Compare with this connection's adapter: after a rejoin the player has a newer socket
     if (currentPlayer && (roomManager.getPlayer(currentPlayer.id)?.socket as unknown) === adapter) {
       messageHandler.handleSocketClosed(currentPlayer);

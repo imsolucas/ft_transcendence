@@ -15,6 +15,7 @@ const idle = (): PlayerInputs => ({ up: false, down: false, left: false, right: 
  * touch input.
  * - `controls="local"`: W/S drive player 1, ↑/↓ player 2 (two people, one keyboard).
  * - `controls="online"`: W/S and ↑/↓ both drive your own paddle.
+ * - `controls="none"`: watching only (spectators): no keys, no touch buttons.
  */
 export function Court({
   config,
@@ -28,8 +29,8 @@ export function Court({
   config: GameConfig;
   getState: () => GameState | null;
   youSide: 0 | 1 | null;
-  controls: "local" | "online";
-  onInputs: (p1: PlayerInputs, p2: PlayerInputs) => void;
+  controls: "local" | "online" | "none";
+  onInputs?: (p1: PlayerInputs, p2: PlayerInputs) => void;
   paused?: boolean;
   onFirstMove?: () => void;
 }) {
@@ -92,7 +93,8 @@ export function Court({
 
   // Keyboard
   useEffect(() => {
-    const emit = () => onInputs({ ...inputs.current[0] }, { ...inputs.current[1] });
+    if (controls === "none") return;
+    const emit = () => onInputs?.({ ...inputs.current[0] }, { ...inputs.current[1] });
     const set = (e: KeyboardEvent, down: boolean) => {
       if (paused) return;
       const [p1, p2] = inputs.current;
@@ -141,7 +143,7 @@ export function Court({
   useEffect(() => {
     if (paused) {
       inputs.current = [idle(), idle()];
-      onInputs(idle(), idle());
+      onInputs?.(idle(), idle());
     }
   }, [paused, onInputs]);
 
@@ -152,7 +154,7 @@ export function Court({
       moved.current = true;
       onFirstMove?.();
     }
-    onInputs({ ...inputs.current[0] }, { ...inputs.current[1] });
+    onInputs?.({ ...inputs.current[0] }, { ...inputs.current[1] });
   };
 
   return (
@@ -168,6 +170,7 @@ export function Court({
         />
       </div>
       {/* Touch: 88px hold buttons; locally each player gets a pair (left: P1, right: P2) */}
+      {controls !== "none" && (
       <div className="flex w-full justify-between gap-4 md:hidden">
         {(controls === "local" ? ([0, 1] as const) : ([0] as const)).map((who) => (
           <div key={who} className={controls === "local" ? "flex gap-2" : "mx-auto flex gap-4"}>
@@ -191,6 +194,7 @@ export function Court({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

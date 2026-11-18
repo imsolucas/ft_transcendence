@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import useSWR from "swr";
-import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus } from "lucide-react";
+import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus, Eye } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
 import type { FriendRequest, MatchSummary, Page, Profile, PublicUser } from "@/lib/types";
@@ -168,10 +168,16 @@ function PlayPanel() {
           </div>
         </Link>
       </div>
-      <Link href={href("/leaderboard")} className="row mt-4 t-label">
-        <Trophy className="ico c-amber" aria-hidden />
-        {t("leaderboard.lobbyLink")}
-      </Link>
+      <div className="row wrap mt-4 !gap-x-6">
+        <Link href={href("/leaderboard")} className="row t-label">
+          <Trophy className="ico c-amber" aria-hidden />
+          {t("leaderboard.lobbyLink")}
+        </Link>
+        <Link href={href("/watch")} className="row t-label">
+          <Eye className="ico c-cyan" aria-hidden />
+          {t("watch.inLobby")}
+        </Link>
+      </div>
     </Panel>
   );
 }

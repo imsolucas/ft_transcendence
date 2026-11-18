@@ -640,5 +640,22 @@
     },
     "unlockedToast": "Logro desbloqueado: {name}",
     "view": "Ver"
+  },
+  "watch": {
+    "title": "Ver",
+    "subtitle": "Partidas públicas en directo. Las salas privadas no aparecen.",
+    "watch": "Ver",
+    "watching": "Viendo",
+    "spectators": "{n} viendo",
+    "empty": "Ahora no hay partidas públicas",
+    "emptyBody": "Las partidas aparecen aquí mientras se juegan.",
+    "tournament": "torneo",
+    "stop": "Dejar de ver",
+    "backToList": "Volver a las partidas en directo",
+    "winner": "¡Gana {name}!",
+    "notFound": "Esta partida ya no está en directo o es privada.",
+    "ownMatch": "Estás jugando esta partida.",
+    "inLobby": "Ver partidas en directo",
+    "watchFriend": "Ver"
   }
 }

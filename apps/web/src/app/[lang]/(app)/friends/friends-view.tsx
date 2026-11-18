@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { toast } from "sonner";
-import { Ban, Check, Ellipsis, MessageSquare, Search, Swords, User, UserMinus, UserPlus, Users, ChevronDown } from "lucide-react";
+import { Ban, Check, Ellipsis, MessageSquare, Search, Swords, User, UserMinus, UserPlus, Users, ChevronDown, Eye } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { api, ApiError, fetcher } from "@/lib/api";
 import type { FriendRequest, FriendshipState, Page, PublicUser, SearchResult, SearchSort } from "@/lib/types";
@@ -476,6 +476,14 @@ function FriendsPanel({ swr, actions, onFindPlayers }: { swr: Swr<PublicUser[]>;
                 <Link href={`${href("/play")}?mode=create&invite=${encodeURIComponent(friend.username)}`}>
                   <Swords className="ico" aria-hidden />
                   <span className="max-sm:sr-only">{t("lobby.invite")}</span>
+                </Link>
+              </Button>
+            )}
+            {friend.presence === "INGAME" && (
+              <Button asChild size="sm" className="max-sm:!px-2">
+                <Link href={`${href("/watch")}?user=${friend.id}`}>
+                  <Eye className="ico" aria-hidden />
+                  <span className="max-sm:sr-only">{t("watch.watchFriend")}</span>
                 </Link>
               </Button>
             )}

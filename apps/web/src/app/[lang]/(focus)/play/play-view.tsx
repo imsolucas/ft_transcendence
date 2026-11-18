@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Copy, Crown, Users } from "lucide-react";
+import { AlertTriangle, Copy, Crown, Users, Eye } from "lucide-react";
 import type { GameState, PlayerInputs, serializablePlayer, TournamentState } from "shared";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
@@ -53,6 +53,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   const [phase, setPhase] = useState<Phase>({ k: "connecting" });
   const [players, setPlayers] = useState<serializablePlayer[]>([]);
   const [readySent, setReadySent] = useState(false);
+  const [watchers, setWatchers] = useState(0);
   const [scores, setScores] = useState<[number, number]>([0, 0]);
   const [seconds, setSeconds] = useState(0);
   const [menu, setMenu] = useState(false);
@@ -177,6 +178,9 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setPhase({ k: "countdown" });
           break;
         }
+        case "spectatorCount":
+          setWatchers(msg.data.count);
+          break;
         case "gameState": {
           const gs = (msg.data as { gameState: GameState }).gameState;
           stateRef.current = gs;
@@ -522,7 +526,15 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
               {tournament.queue.length}
             </span>
           ) : (
-            t("lobby.quickMatch")
+            <span className="row !gap-2">
+              {t("lobby.quickMatch")}
+              {watchers > 0 && (
+                <span className="row !gap-1" aria-label={t("watch.spectators", { n: watchers })}>
+                  <Eye className="ico !h-4 !w-4" aria-hidden />
+                  {watchers}
+                </span>
+              )}
+            </span>
           )
         }
         connection={<ConnectionQuality ms={ping} offline={status !== "connected"} />}

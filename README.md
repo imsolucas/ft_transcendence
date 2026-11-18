@@ -221,11 +221,12 @@ not required to play.
 | Tournament system | Minor | Partial: king-of-the-hill, no bracket |
 | Game customization (speeds, points, 4 court themes, defaults) | Minor | Partial: no power-ups yet |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
+| Spectator mode (live public matches, read-only view, live spectator count) | Minor | Done |
 
 Not started; each needs a decision first: blockchain / ICP (ICP conflicts with SSR), LLM, RAG,
 recommendations and other AI-service modules (need a provider and API spend), ELK, Prometheus +
 Grafana, WAF + Vault, a second game, 3+ players, 3D, organizations, a permissions system, RTL,
-full WCAG audit, analytics dashboards, spectator mode, PWA, file management,
+full WCAG audit, analytics dashboards, PWA, file management,
 data import, a notification centre, collaborative features.
 
 ---
