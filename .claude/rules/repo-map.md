@@ -81,6 +81,14 @@ API contract: `services/shared/types/api.types.ts` (source of truth for web ↔ 
   (`apps/web/src/lib/game/clip.ts`, recorded in the browser), favicon (`scripts/generate-icons.mjs`).
   Deploy prep done: docs/DEPLOY.md, `make deploy-check`, `make prod`, CSP in the Caddyfile.
   Going live waits for the user's domain + server.
+  Arcade milestones (2026-11-19): **Daily Challenge** (`services/shared/daily/daily.ts`: browser runs a
+  fixed-1/60 s `DailyRun`, `services/users/src/modules/daily/` replays the input log for the score;
+  the engine must stay deterministic and type-strippable, no Math.hypot/random on that path),
+  **arcade hall** (`services/shared/hall/hall.ts`, `services/game/src/hall/HallService.ts`, `/arcade`),
+  **Light Cycles** (`services/shared/game-engine/cycles/`, a party game: `GameConfig.partyGame`,
+  `cyclesTick` deltas), **coins/quests/shop** (`services/shared/quests/quests.ts`,
+  `services/users/src/modules/coins/`; balance is derived, only real games count; shop items are
+  `{ coins }` unlocks appended to `cosmetics/look.ts`).
   Gotcha: `docker compose up -d <one service>` that recreates it (rebuild, changed ports/env)
   also removes the services depending on it (Compose v5) and doesn't start them again: follow
   any partial `up` with a full `docker compose -f infra/docker-compose.yml up -d`.

@@ -46,7 +46,8 @@
     "login": "Log in",
     "signup": "Sign up",
     "leaderboard": "Leaderboard",
-    "coach": "Coach"
+    "coach": "Coach",
+    "arcade": "Arcade"
   },
   "footer": {
     "privacy": "Privacy Policy",
@@ -395,7 +396,7 @@
     "friendsPrivateBody": "Only {name} can see who they're friends with.",
     "level": "Level {n}",
     "xpToNext": "{xp} XP to the next level",
-    "xpRules": "XP: 10 per match (party games too), +20 per win, +100 per tournament title, +25 per achievement",
+    "xpRules": "XP: 10 per match (party games too), +20 per win, +100 per tournament title, +25 per achievement, plus Daily Challenge XP (10 + 2 per point of each day's best)",
     "levelUp": "Level up! You reached level {n}."
   },
   "friends": {
@@ -697,7 +698,11 @@
       "body": "Have 5 friends."
     },
     "unlockedToast": "Achievement unlocked: {name}",
-    "view": "View"
+    "view": "View",
+    "daily_7": {
+      "title": "Daily regular",
+      "body": "Play the Daily Challenge 7 days in a row."
+    }
   },
   "watch": {
     "title": "Watch",
@@ -845,7 +850,8 @@
         "copper": "Copper",
         "umber": "Umber",
         "ebony": "Ebony",
-        "synth": "Synth (mint)"
+        "synth": "Synth (mint)",
+        "chrome": "Chrome"
       },
       "hair": {
         "short": "Short",
@@ -854,7 +860,8 @@
         "afro": "Afro",
         "bald": "Bald",
         "mohawk": "Mohawk",
-        "bun": "Bun"
+        "bun": "Bun",
+        "flame": "Flame"
       },
       "eyes": {
         "dots": "Dots",
@@ -876,10 +883,20 @@
         "headphones": "Headphones",
         "horns": "Horns",
         "crown": "Crown",
-        "halo": "Halo"
+        "halo": "Halo",
+        "cap": "Cap",
+        "catears": "Cat ears",
+        "antenna": "BIT antenna"
       },
       "colour": "{slot} {n}"
-    }
+    },
+    "unlockCoins": "{n} coins in the shop",
+    "balance": "{n} coins",
+    "buyTitle": "Buy {name}?",
+    "buyBody": "It costs {n} coins. You have {have}.",
+    "buy": "Buy for {n}",
+    "bought": "{name} is yours.",
+    "errCoins": "Not enough coins yet."
   },
   "attract": {
     "you": "You",
@@ -947,5 +964,159 @@
     "download": "Download clip",
     "ready": "Clip ready to share or download.",
     "interrupted": "Recording stopped because the tab was hidden. Keep this tab open and try again."
+  },
+  "daily": {
+    "title": "DAILY CHALLENGE",
+    "subtitle": "One twist a day. You have 3 lives against BIT; your score is the points you take off it.",
+    "todaysTwist": "Today's twist",
+    "resetsIn": "New challenge in {time}",
+    "tries": "Tries left",
+    "triesLeft": "{n}/{total}",
+    "best": "Your best",
+    "streak": "Day streak",
+    "insertCoin": "Insert coin",
+    "insertCoinTry": "Insert coin · try {n} of {total}",
+    "practice": "Practice run",
+    "practiceNote": "You've used today's 3 tries. Practice runs are just for fun and don't count.",
+    "rules": "3 tries a day; your best one counts. Every point makes the ball faster. A try you start counts even if you leave.",
+    "guestPrompt": "Sign up to play the Daily Challenge and get your initials on the board.",
+    "signUp": "Sign up",
+    "logIn": "Log in",
+    "board": "Today's board",
+    "boardEmpty": "No scores yet today.",
+    "boardEmptyBody": "Be the first on the board.",
+    "points": "{n} pts",
+    "livesLeft": "Lives {n}",
+    "endRun": "End run",
+    "endRunTitle": "End this run?",
+    "endRunBody": "What you've scored so far counts, and the try is used.",
+    "endRunPracticeBody": "This practice run ends here.",
+    "gameOver": "GAME OVER",
+    "yourScore": "Score",
+    "newBest": "NEW BEST",
+    "rankToday": "#{n} today",
+    "xpGained": "+{n} XP",
+    "streakDays": "{n}-day streak",
+    "practiceResult": "Practice run · not counted",
+    "initialsTitle": "ENTER YOUR INITIALS",
+    "initialsLabel": "Initials",
+    "initialsHint": "Three letters, A to Z. They go on the daily board.",
+    "initialsInvalid": "Use 3 letters, A to Z.",
+    "saveScore": "Save score",
+    "saving": "Checking your run…",
+    "errNoTries": "No tries left today.",
+    "errUnverified": "We couldn't verify this run, so it counts as 0.",
+    "errTimedOut": "This try timed out.",
+    "errGeneric": "Couldn't save your run. Try again.",
+    "lobbyTile": "Daily challenge",
+    "lobbyTileBody": "One twist a day, 3 tries. Get on the board.",
+    "twist": {
+      "classic": {
+        "title": "Classic",
+        "body": "Straight Pong against BIT. Nothing to hide behind."
+      },
+      "turbo": {
+        "title": "Turbo",
+        "body": "The ball starts fast and only gets faster."
+      },
+      "powerUps": {
+        "title": "Power-ups",
+        "body": "Items appear mid-court: + grows your paddle, − shrinks BIT's, » speeds up the ball."
+      },
+      "bitHard": {
+        "title": "BIT on hard",
+        "body": "BIT reads the ball almost perfectly today. Every point is earned."
+      },
+      "heavyPaddle": {
+        "title": "Heavy paddle",
+        "body": "Your paddle is slow, but so is the ball, and BIT takes it easy."
+      },
+      "rally": {
+        "title": "Rally",
+        "body": "The ball starts slow and speeds up a lot with every point you score."
+      },
+      "chaos": {
+        "title": "Chaos",
+        "body": "A fast ball and power-ups at the same time."
+      }
+    },
+    "errAlreadyOver": "This try is already over.",
+    "errBusy": "Too many requests. Wait a moment and try again.",
+    "initialsRefused": "Those initials aren't allowed. Pick others."
+  },
+  "arcade": {
+    "title": "ARCADE HALL",
+    "subtitle": "Walk around, say hi, and step up to a cabinet to play.",
+    "occupancy": "Hall {n} · {count}/{capacity} here",
+    "connecting": "Connecting…",
+    "offline": "Can't reach the arcade",
+    "offlineBody": "The game server isn't answering. Check your connection and try again.",
+    "hint": "Walk with WASD or the arrow keys, or tap the floor. 1–6 send an emote.",
+    "prompt": "Press E (or tap the cabinet) to play: {name}",
+    "emotes": "Emotes",
+    "quickPlay": "Quick play",
+    "cab": {
+      "ranked": "Ranked match",
+      "party": "Party (3–4)",
+      "daily": "Daily challenge",
+      "watch": "Watch live",
+      "local": "Local 2-player",
+      "board": "Leaderboard",
+      "cycles": "Light Cycles"
+    },
+    "screen": {
+      "ranked": "RANKED\n1P",
+      "party": "PARTY\n3-4P",
+      "daily": "DAILY",
+      "watch": "LIVE\n{n}",
+      "local": "2P\nLOCAL",
+      "hiScore": "HI-SCORE",
+      "noScores": "BE FIRST",
+      "cycles": "CYCLES\n2-4P"
+    },
+    "emote": {
+      "hi": "HI!",
+      "gg": "GG",
+      "play": "PLAY?",
+      "nice": "NICE",
+      "wow": "WOW",
+      "heart": "<3"
+    },
+    "lobbyBanner": "Enter the arcade hall",
+    "lobbyBannerBody": "Walk around with other players and step up to a cabinet.",
+    "enter": "Enter",
+    "hallLabel": "Arcade hall. Use WASD or the arrow keys to walk, E to use a cabinet, 1 to 6 for emotes."
+  },
+  "cycles": {
+    "title": "Light Cycles",
+    "searchingBody": "A race starts with 4 riders, or with 2–3 after a short wait. Press Esc to cancel.",
+    "lobbyTitle": "Light Cycles room",
+    "shareCode": "Share this code with 1 to 3 friends:",
+    "keys": "Turn with A / D or ← / →. Don't hit a wall or any trail. Esc opens the menu.",
+    "noWinner": "Everyone crashed: no winner.",
+    "arena": "Light Cycles arena",
+    "turnLeft": "Turn left",
+    "turnRight": "Turn right",
+    "riding": "Riding",
+    "crashed": "Crashed",
+    "getReady": "GET READY",
+    "ridingCount": "{n} riding",
+    "quick": "Find riders"
+  },
+  "quests": {
+    "title": "Daily quests",
+    "balance": "{n} coins",
+    "collected": "+{n} coins collected",
+    "done": "Collected",
+    "hint": "New quests every day at midnight UTC. Coins also come from every game you play; spend them on avatar items in Settings → Avatar.",
+    "q": {
+      "play_matches": "Play {n} 1v1 matches",
+      "win_match": "Win a 1v1 match",
+      "party_game": "Play a party Pong game",
+      "cycles_race": "Ride a Light Cycles race",
+      "daily_run": "Play the Daily Challenge",
+      "daily_score": "Score {n} in the Daily Challenge"
+    },
+    "already": "Already collected."
   }
 }

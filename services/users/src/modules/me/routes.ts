@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import type { Me, MyLook } from "../../../../shared/types/api.types.ts";
 import { firstLocked, lookFor, parseLook, unlockedKeys, type Progress } from "../../../../shared/cosmetics/look.ts";
+import { ownedItems } from "../coins/service.ts";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../db/client.ts";
 import { config } from "../../config.ts";
@@ -116,12 +117,13 @@ export default async function meRoutes(app: FastifyInstance) {
 
   // Pixel avatar, frame and paddle skin. Unlocks come from the stored level and achievements.
   async function progressOf(userId: number): Promise<(Progress & { stored: unknown }) | null> {
-    const [user, rows] = await Promise.all([
+    const [user, rows, owned] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId }, select: { level: true, look: true } }),
       prisma.userAchievement.findMany({ where: { userId }, select: { achievement: true } }),
+      ownedItems(userId),
     ]);
     if (!user) return null;
-    return { level: user.level, achievements: rows.map((r) => r.achievement), stored: user.look };
+    return { level: user.level, achievements: rows.map((r) => r.achievement), owned, stored: user.look };
   }
 
   app.get("/me/look", { preHandler: requireUser }, async (req, reply): Promise<MyLook | void> => {

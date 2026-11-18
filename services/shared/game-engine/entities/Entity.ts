@@ -5,14 +5,22 @@ import type { Vector } from "../components/Vector.ts";
 
 export default abstract class Entity {
 
-    constructor (
-        protected pos: Vector,
-        protected color: string,
-        protected config: GameConfig,
-        protected velocity: Vector = {x:0, y:0},
-        protected hitbox?: Hitbox,
-        protected sprite?: Sprite,
-    ) {}
+    // plain fields (no parameter properties): Node's type stripping runs the engine (users service)
+    protected pos: Vector;
+    protected color: string;
+    protected config: GameConfig;
+    protected velocity: Vector;
+    protected hitbox?: Hitbox | undefined;
+    protected sprite?: Sprite | undefined;
+
+    constructor (pos: Vector, color: string, config: GameConfig, velocity: Vector = {x:0, y:0}, hitbox?: Hitbox, sprite?: Sprite) {
+        this.pos = pos;
+        this.color = color;
+        this.config = config;
+        this.velocity = velocity;
+        this.hitbox = hitbox;
+        this.sprite = sprite;
+    }
 
     public setVelocity(velocity: Vector): void {
         this.velocity = velocity;

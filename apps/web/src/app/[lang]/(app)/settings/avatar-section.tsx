@@ -3,7 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { Lock, Shuffle, Undo2 } from "lucide-react";
+import { Coins, Lock, Shuffle, Undo2 } from "lucide-react";
 import {
   AVATAR_PARTS,
   AVATAR_SLOTS,
@@ -20,9 +20,9 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { ApiError, api, fetcher } from "@/lib/api";
 import { useMe } from "@/lib/session";
-import type { MyLook } from "@/lib/types";
+import type { CoinsInfo, CoinsResult, MyLook } from "@/lib/types";
 import { cn } from "@/lib/cn";
-import { Avatar, Panel, Skeleton } from "@/components/ui/primitives";
+import { Avatar, Modal, Panel, Skeleton } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { PixelAvatar } from "@/components/ui/pixel-avatar";
 import { LoadError } from "./settings-ui";
@@ -37,6 +37,10 @@ export function AvatarSection() {
   const { data, error, mutate } = useSWR<MyLook>("/api/me/look", fetcher, { revalidateOnFocus: false });
   const [draft, setDraft] = useState<PlayerLook | null>(null);
   const [saving, setSaving] = useState(false);
+  const { data: coins, mutate: mutateCoins } = useSWR<CoinsInfo>("/api/me/coins", fetcher, { revalidateOnFocus: false });
+  /** a shop item the player clicked: confirm, then buy */
+  const [offer, setOffer] = useState<{ key: string; slot: AvatarSlot; index: number; name: string; cost: number } | null>(null);
+  const [buying, setBuying] = useState(false);
 
   if (error && !data) {
     return (
@@ -60,7 +64,37 @@ export function AvatarSection() {
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(data.look);
 
   const lockText = (unlock: Unlock) =>
-    !unlock ? "" : "level" in unlock ? t("look.unlockLevel", { n: unlock.level }) : t("look.unlockAchievement", { name: t(`achievements.${unlock.achievement}.title`) });
+    !unlock
+      ? ""
+      : "level" in unlock
+        ? t("look.unlockLevel", { n: unlock.level })
+        : "coins" in unlock
+          ? t("look.unlockCoins", { n: unlock.coins })
+          : t("look.unlockAchievement", { name: t(`achievements.${unlock.achievement}.title`) });
+
+  async function buy() {
+    if (!offer) return;
+    setBuying(true);
+    try {
+      const res = await api.post<CoinsResult>("/api/shop/buy", { item: offer.key });
+      await Promise.all([mutate(), mutateCoins(coins ? { ...coins, balance: res.balance } : undefined, { revalidate: false })]);
+      setSlot(offer.slot, offer.index);
+      toast.success(t("look.bought", { name: offer.name }));
+      setOffer(null);
+    } catch (err) {
+      const code = err instanceof ApiError ? err.code : undefined;
+      if (code === "OWNED") {
+        // bought in another tab: refresh, and wear it
+        await Promise.all([mutate(), mutateCoins()]);
+        setSlot(offer.slot, offer.index);
+        setOffer(null);
+        return;
+      }
+      toast.error(code === "NOT_ENOUGH_COINS" ? t("look.errCoins") : err instanceof ApiError && err.status === 0 ? t("common.networkError") : t("common.error"));
+    } finally {
+      setBuying(false);
+    }
+  }
 
   /** shapes have names; colours are numbered within their slot ("Shirt 2") */
   const COLOUR_SLOTS: AvatarSlot[] = ["hairColor", "shirt", "bg"];
@@ -98,6 +132,27 @@ export function AvatarSection() {
   return (
     <Panel title={t("look.title")}>
       <p className="muted mb-4">{t("look.body")}</p>
+      <p className="row t-label mb-4 !gap-2">
+        <Coins className="ico c-amber" aria-hidden />
+        {t("look.balance", { n: coins?.balance ?? 0 })}
+      </p>
+      <Modal
+        open={offer !== null}
+        onOpenChange={(o) => !o && setOffer(null)}
+        title={offer ? t("look.buyTitle", { name: offer.name }) : ""}
+        description={offer ? t("look.buyBody", { n: offer.cost, have: coins?.balance ?? 0 }) : undefined}
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => setOffer(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="primary" loading={buying} disabled={!offer || (coins?.balance ?? 0) < offer.cost} onClick={buy}>
+              <Coins className="ico" aria-hidden />
+              {t("look.buy", { n: offer?.cost ?? 0 })}
+            </Button>
+          </>
+        }
+      />
       <div className="flex flex-wrap items-center gap-6">
         <Avatar name={me.displayName} look={look} size="xl" className="!h-32 !w-32" />
         <div className="stack !gap-2">
@@ -121,14 +176,18 @@ export function AvatarSection() {
           <OptionRow key={slot} label={t(`look.slot.${slot}`)} name={`look-${slot}`}>
             {AVATAR_PARTS[slot].map((opt, i) => {
               const unlocked = open(`${slot}:${opt.id}`, opt.unlock);
+              // shop items stay clickable: clicking one offers to buy it
+              const price = !unlocked && opt.unlock && "coins" in opt.unlock ? opt.unlock.coins : null;
+              const name = partName(slot, opt.id, i);
               return (
                 <Choice
                   key={opt.id}
                   name={`look-${slot}`}
                   checked={look.pixel[slot] === i}
-                  disabled={!unlocked}
-                  label={unlocked ? partName(slot, opt.id, i) : `${partName(slot, opt.id, i)} · ${lockText(opt.unlock)}`}
-                  onSelect={() => setSlot(slot, i)}
+                  disabled={!unlocked && price === null}
+                  shop={price !== null}
+                  label={unlocked ? name : `${name} · ${lockText(opt.unlock)}`}
+                  onSelect={() => (price !== null ? setOffer({ key: `${slot}:${opt.id}`, slot, index: i, name, cost: price }) : setSlot(slot, i))}
                 >
                   <PixelAvatar spec={{ ...look.pixel, [slot]: i }} className="h-full w-full rounded-sm" />
                 </Choice>
@@ -212,23 +271,36 @@ function Choice({
   label,
   onSelect,
   wide,
+  shop,
   children,
 }: {
   name: string;
   checked: boolean;
   disabled: boolean;
+  /** for sale in the shop (shows a coin instead of a lock) */
+  shop?: boolean;
   label: string;
   onSelect: () => void;
   wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <label className={cn("look-choice", wide && "look-choice-wide", checked && "is-checked", disabled && "is-locked")} title={label}>
-      <input type="radio" name={name} className="sr-only" checked={checked} disabled={disabled} onChange={onSelect} aria-label={label} />
+    <label className={cn("look-choice", wide && "look-choice-wide", checked && "is-checked", (disabled || shop) && "is-locked", shop && "is-shop")} title={label}>
+      <input
+        type="radio"
+        name={name}
+        className="sr-only"
+        checked={checked}
+        disabled={disabled}
+        aria-label={label}
+        // shop items: arrow keys move past them; a click (or Space) offers the purchase
+        onChange={shop ? () => {} : onSelect}
+        onClick={shop ? onSelect : undefined}
+      />
       {children}
-      {disabled && (
+      {(disabled || shop) && (
         <span className="look-lock" aria-hidden>
-          <Lock className="ico" />
+          {shop ? <Coins className="ico c-amber" /> : <Lock className="ico" />}
         </span>
       )}
     </label>

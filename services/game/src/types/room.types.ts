@@ -1,4 +1,4 @@
-import type { GameConfig, PartyEngine, PartyPlayer, TournamentPhase, TournamentPlayer } from "shared/index.ts";
+import type { CyclesEngine, GameConfig, PartyEngine, PartyGame, PartyPlayer, TournamentPhase, TournamentPlayer } from "shared/index.ts";
 import { GameServer } from "../game/GameServer.ts";
 import type { Bracket } from "../tournament/bracket.ts";
 
@@ -41,7 +41,9 @@ export interface TournamentRuntime {
 export interface PartyRuntime {
 	/** idempotency key for the report */
 	key: string;
-	engine: PartyEngine;
+	game: PartyGame;
+	/** party Pong or Light Cycles (same lifecycle: input, tick, eliminate, standings) */
+	engine: PartyEngine | CyclesEngine;
 	/** seat i = seats[i]; a leaver keeps their seat (it becomes a wall) */
 	seats: PartyPlayer[];
 	startedAt: number;

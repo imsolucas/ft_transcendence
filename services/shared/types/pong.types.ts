@@ -114,6 +114,8 @@ export interface GameConfig {
     powerUps?: boolean;
     /** seed for power-up randomness (same seed + inputs = same game) */
     seed?: number;
+    /** party rooms: which game (default "pong"); Light Cycles takes 2–4 players */
+    partyGame?: import("./cycles.types.ts").PartyGame;
 }
 
 export type PowerUpKind = "grow" | "shrink" | "fast";

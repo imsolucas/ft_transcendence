@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Eye, Radio, Trophy } from "lucide-react";
-import type { GameConfig, GameState, LiveMatch, PartyPlayer, PartyState } from "shared";
+import type { CyclesState, GameConfig, GameState, LiveMatch, PartyPlayer, PartyState } from "shared";
+import { applyCyclesDelta } from "shared/game-engine/cycles/CyclesEngine";
 import { useI18n } from "@/i18n/I18nProvider";
 import { GameSocket, type ConnectionStatus } from "@/lib/game/socket";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { EmptyState, Panel, Skeleton } from "@/components/ui/primitives";
 import { Court } from "@/components/game/court";
 import { ConnectionQuality, ScoreBoard } from "@/components/game/hud";
 import { PartyCourt, PartyRoster } from "@/components/game/party";
+import { CyclesCourt, CyclesRoster } from "@/components/game/cycles";
 
 type View =
   | { k: "list" }
@@ -44,6 +46,8 @@ export function WatchView() {
   const partyRef = useRef<PartyState | null>(null);
   // re-rendered only when lives change
   const [partyRoster, setPartyRoster] = useState<PartyState | null>(null);
+  const cyclesRef = useRef<CyclesState | null>(null);
+  const [cyclesRoster, setCyclesRoster] = useState<CyclesState | null>(null);
   const viewRef = useRef(view);
   useEffect(() => {
     viewRef.current = view;
@@ -64,8 +68,18 @@ export function WatchView() {
           break;
         case "spectateStarted":
           if (msg.data.party) {
-            partyRef.current = msg.data.party.state;
-            setPartyRoster(msg.data.party.state);
+            const st = msg.data.party.state;
+            if (st.kind === "cycles") {
+              cyclesRef.current = st;
+              setCyclesRoster(st);
+              partyRef.current = null;
+              setPartyRoster(null);
+            } else {
+              cyclesRef.current = null;
+              setCyclesRoster(null);
+              partyRef.current = st;
+              setPartyRoster(st);
+            }
             setSpectators(msg.data.match.spectators);
             setStartedAt((s) => s || Date.now());
             setView({ k: "party", match: msg.data.match, players: msg.data.party.players });
@@ -89,6 +103,14 @@ export function WatchView() {
           partyRef.current = next;
           const key = (s: PartyState | null) => (s ? s.paddles.map((p) => `${p.lives}${p.alive ? 1 : 0}`).join(",") : "");
           if (key(prev) !== key(next)) setPartyRoster(next);
+          break;
+        }
+        case "cyclesTick": {
+          const prev = cyclesRef.current;
+          if (!prev) break;
+          const next = applyCyclesDelta(prev, msg.data.delta);
+          cyclesRef.current = next;
+          if (msg.data.delta.crashed.length > 0 || next.phase !== prev.phase) setCyclesRoster(next);
           break;
         }
         case "partyEnd": {
@@ -145,6 +167,7 @@ export function WatchView() {
 
   const getState = useCallback(() => stateRef.current, []);
   const getParty = useCallback(() => partyRef.current, []);
+  const getCycles = useCallback(() => cyclesRef.current, []);
   const back = () => router.push(href("/watch"));
 
   if (view.k === "error")
@@ -165,13 +188,13 @@ export function WatchView() {
           <span className="row !gap-2 t-label">
             <Eye className="ico" aria-hidden />
             <span className="sr-only">{t("watch.watching")}: </span>
-            {t("party.title")} · {t("watch.spectators", { n: spectators })}
+            {t(view.match.game === "cycles" ? "cycles.title" : "party.title")} · {t("watch.spectators", { n: spectators })}
           </span>
           <ConnectionQuality offline={status !== "connected"} ms={ping} />
         </div>
-        {view.k === "party" && <PartyRoster players={view.players} state={partyRoster} myId={null} viewSide={0} />}
+        {view.k === "party" && (cyclesRoster ? <CyclesRoster players={view.players} state={cyclesRoster} myId={null} /> : <PartyRoster players={view.players} state={partyRoster} myId={null} viewSide={0} />)}
         <div className="relative min-h-0 flex-1">
-          {view.k === "party" && <PartyCourt getState={getParty} viewSide={0} you={null} controls="none" />}
+          {view.k === "party" && (cyclesRoster ? <CyclesCourt getState={getCycles} you={null} controls="none" /> : <PartyCourt getState={getParty} viewSide={0} you={null} controls="none" />)}
           {view.k === "ended" && (
             <div className="grid h-full place-items-center">
               <Panel className="stack stack-4 items-center text-center">
@@ -271,10 +294,10 @@ export function WatchView() {
                   <p className="t-strong truncate">
                     {m.players.map((p) => p.name).join(m.mode === "party" ? " · " : " vs ")}
                     {m.mode === "tournament" && <span className="t-caption subtle"> · {t("watch.tournament")}</span>}
-                    {m.mode === "party" && <span className="t-caption subtle"> · {t("watch.party")}</span>}
+                    {m.mode === "party" && <span className="t-caption subtle"> · {t(m.game === "cycles" ? "cycles.title" : "watch.party")}</span>}
                   </p>
                   <p className="t-caption muted row !gap-2">
-                    <span className="num">{m.mode === "party" ? t("party.livesList", { list: m.scores.join(" · ") }) : m.scores.join(" – ")}</span>
+                    <span className="num">{m.mode === "party" ? (m.game === "cycles" ? t("cycles.ridingCount", { n: m.scores.filter((x) => x > 0).length }) : t("party.livesList", { list: m.scores.join(" · ") })) : m.scores.join(" – ")}</span>
                     <span aria-hidden>·</span>
                     <Eye className="ico !h-3.5 !w-3.5" aria-hidden />
                     {t("watch.spectators", { n: m.spectators })}

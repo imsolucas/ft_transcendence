@@ -9,8 +9,8 @@ import type { GameConfig } from "shared/index.ts";
 export function roomConfigFrom(input: unknown): GameConfig {
     const c = (input && typeof input === "object" ? input : {}) as Partial<GameConfig>;
     const base = structuredClone(default_config.standardGame);
-    // party: a private room by code for 3–4 players (the public ones come from the party queue)
-    if (c.mode === "party") return partyConfig(true);
+    // party: a private room by code (the public ones come from the party queues); Pong or Light Cycles
+    if (c.mode === "party") return partyConfig(true, c.partyGame === "cycles" ? "cycles" : "pong");
     const mode = c.mode === "tournament" ? "tournament" : "standard";
     const pointsToWin = [3, 5, 7, 11].includes(c.pointsToWin as number) ? (c.pointsToWin as number) : mode === "tournament" ? 3 : 5;
     const numPlayers = mode === "tournament" && [4, 6, 8].includes(c.numPlayers as number) ? (c.numPlayers as number) : undefined;
@@ -197,7 +197,8 @@ export default class NewMessageHandler {
     handleJoinQueue(message: JoinQueueMessage, player: Player) {
         if (message.data?.roomType === "party") {
             this.roomService.leaveQueue(player);
-            if (!this.partyService.joinQueue(player)) this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
+            const game = message.data?.game === "cycles" ? "cycles" : "pong";
+            if (!this.partyService.joinQueue(player, game)) this.sendError("Player already in room", 'ALREADY_IN_ROOM', player.socket);
             return;
         }
         // only the known modes; anything else is a standard match (never a custom mode)
@@ -375,7 +376,8 @@ export default class NewMessageHandler {
                 roomId: roomId,
                 position: player.position,
                 picture: player.picture,
-                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer)
+                playersInRoom: this.roomService.getPlayersInRoom(roomId).map(toSerializablePlayer),
+                ...(this.roomManager.getRoom(roomId)?.mode === 'party' ? { game: this.roomManager.getRoom(roomId)!.config.partyGame ?? 'pong' } : {}),
             },
             timestamp: Date.now()
         };

@@ -17,8 +17,8 @@ const PICKUP_RADIUS = 6;
 const ITEM_TTL_S = 8;
 const KINDS: PowerUpKind[] = ["grow", "shrink", "fast"];
 
-/** mulberry32: small, fast, deterministic */
-function rng(seed: number) {
+/** mulberry32: small, fast, deterministic (integer maths only) */
+export function rng(seed: number) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -37,11 +37,11 @@ export class PowerUpSystem {
   #itemExpires = 0;
   #effects: { side: 0 | 1; until: number }[] = [];
   #lastHitter: 0 | 1 | null = null;
+  // no parameter properties: Node's type stripping runs this file (users service)
+  private readonly court: { x: number; y: number };
 
-  constructor(
-    private readonly court: { x: number; y: number },
-    seed = 1,
-  ) {
+  constructor(court: { x: number; y: number }, seed = 1) {
+    this.court = court;
     this.#random = rng(seed);
   }
 
@@ -70,7 +70,10 @@ export class PowerUpSystem {
     const item = this.#item;
     if (item && this.#lastHitter !== null) {
       const p = ball.getPos();
-      if (Math.hypot(p.x - item.x, p.y - item.y) < PICKUP_RADIUS) {
+      // squared distance: exact in every JS engine (Math.hypot may differ), so a replay matches
+      const dx = p.x - item.x;
+      const dy = p.y - item.y;
+      if (dx * dx + dy * dy < PICKUP_RADIUS * PICKUP_RADIUS) {
         const side = this.#lastHitter;
         if (item.kind === "fast") ball.setVelocity({ x: v.x * 1.35, y: v.y * 1.35 });
         else {

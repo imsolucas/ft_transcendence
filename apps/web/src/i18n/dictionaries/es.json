@@ -46,7 +46,8 @@
     "login": "Iniciar sesión",
     "signup": "Registrarse",
     "leaderboard": "Clasificación",
-    "coach": "Coach"
+    "coach": "Coach",
+    "arcade": "Arcade"
   },
   "footer": {
     "privacy": "Política de privacidad",
@@ -395,7 +396,7 @@
     "friendsPrivateBody": "Solo {name} puede ver con quién tiene amistad.",
     "level": "Nivel {n}",
     "xpToNext": "Faltan {xp} XP para el siguiente nivel",
-    "xpRules": "XP: 10 por partida (también en fiesta), +20 por victoria, +100 por torneo ganado, +25 por logro",
+    "xpRules": "XP: 10 por partida (también en fiesta), +20 por victoria, +100 por torneo ganado, +25 por logro, más XP del Reto diario (10 + 2 por punto del mejor de cada día)",
     "levelUp": "¡Subes de nivel! Has alcanzado el nivel {n}."
   },
   "friends": {
@@ -697,7 +698,11 @@
       "body": "Ten 5 amigos."
     },
     "unlockedToast": "Logro desbloqueado: {name}",
-    "view": "Ver"
+    "view": "Ver",
+    "daily_7": {
+      "title": "Habitual diario",
+      "body": "Juega el Reto diario 7 días seguidos."
+    }
   },
   "watch": {
     "title": "Ver",
@@ -845,7 +850,8 @@
         "copper": "Cobre",
         "umber": "Sombra",
         "ebony": "Ébano",
-        "synth": "Synth (menta)"
+        "synth": "Synth (menta)",
+        "chrome": "Cromo"
       },
       "hair": {
         "short": "Corto",
@@ -854,7 +860,8 @@
         "afro": "Afro",
         "bald": "Calvo",
         "mohawk": "Cresta",
-        "bun": "Moño"
+        "bun": "Moño",
+        "flame": "Llamas"
       },
       "eyes": {
         "dots": "Puntos",
@@ -876,10 +883,20 @@
         "headphones": "Auriculares",
         "horns": "Cuernos",
         "crown": "Corona",
-        "halo": "Aureola"
+        "halo": "Aureola",
+        "cap": "Gorra",
+        "catears": "Orejas de gato",
+        "antenna": "Antena de BIT"
       },
       "colour": "{slot} {n}"
-    }
+    },
+    "unlockCoins": "{n} monedas en la tienda",
+    "balance": "{n} monedas",
+    "buyTitle": "¿Comprar {name}?",
+    "buyBody": "Cuesta {n} monedas. Tienes {have}.",
+    "buy": "Comprar por {n}",
+    "bought": "{name} ya es tuyo.",
+    "errCoins": "Aún no tienes monedas suficientes."
   },
   "attract": {
     "you": "Tú",
@@ -947,5 +964,159 @@
     "download": "Descargar clip",
     "ready": "Clip listo para compartir o descargar.",
     "interrupted": "La grabación se detuvo porque la pestaña quedó oculta. Mantén esta pestaña abierta e inténtalo de nuevo."
+  },
+  "daily": {
+    "title": "RETO DIARIO",
+    "subtitle": "Un giro cada día. Tienes 3 vidas contra BIT; tu puntuación son los puntos que le ganas.",
+    "todaysTwist": "El giro de hoy",
+    "resetsIn": "Nuevo reto en {time}",
+    "tries": "Intentos",
+    "triesLeft": "{n}/{total}",
+    "best": "Tu mejor",
+    "streak": "Racha de días",
+    "insertCoin": "Insertar moneda",
+    "insertCoinTry": "Insertar moneda · intento {n} de {total}",
+    "practice": "Partida de práctica",
+    "practiceNote": "Ya usaste los 3 intentos de hoy. Las partidas de práctica son por diversión y no cuentan.",
+    "rules": "3 intentos al día; cuenta el mejor. Cada punto acelera la bola. Un intento empezado cuenta aunque salgas.",
+    "guestPrompt": "Regístrate para jugar el Reto diario y poner tus iniciales en la tabla.",
+    "signUp": "Registrarse",
+    "logIn": "Iniciar sesión",
+    "board": "Tabla de hoy",
+    "boardEmpty": "Aún no hay puntuaciones hoy.",
+    "boardEmptyBody": "Sé el primero en la tabla.",
+    "points": "{n} pts",
+    "livesLeft": "Vidas {n}",
+    "endRun": "Terminar partida",
+    "endRunTitle": "¿Terminar esta partida?",
+    "endRunBody": "Lo que llevas cuenta y el intento queda usado.",
+    "endRunPracticeBody": "Esta partida de práctica termina aquí.",
+    "gameOver": "GAME OVER",
+    "yourScore": "Puntuación",
+    "newBest": "NUEVO RÉCORD",
+    "rankToday": "#{n} hoy",
+    "xpGained": "+{n} XP",
+    "streakDays": "Racha de {n} días",
+    "practiceResult": "Práctica · no cuenta",
+    "initialsTitle": "INTRODUCE TUS INICIALES",
+    "initialsLabel": "Iniciales",
+    "initialsHint": "Tres letras, de la A a la Z. Aparecen en la tabla diaria.",
+    "initialsInvalid": "Usa 3 letras, de la A a la Z.",
+    "saveScore": "Guardar puntuación",
+    "saving": "Comprobando tu partida…",
+    "errNoTries": "No te quedan intentos hoy.",
+    "errUnverified": "No pudimos verificar esta partida, así que cuenta como 0.",
+    "errTimedOut": "Este intento ha caducado.",
+    "errGeneric": "No se pudo guardar tu partida. Inténtalo de nuevo.",
+    "lobbyTile": "Reto diario",
+    "lobbyTileBody": "Un giro cada día, 3 intentos. Entra en la tabla.",
+    "twist": {
+      "classic": {
+        "title": "Clásico",
+        "body": "Pong puro contra BIT. Sin excusas."
+      },
+      "turbo": {
+        "title": "Turbo",
+        "body": "La bola empieza rápida y solo va a más."
+      },
+      "powerUps": {
+        "title": "Potenciadores",
+        "body": "Aparecen objetos en el centro: + agranda tu pala, − encoge la de BIT, » acelera la bola."
+      },
+      "bitHard": {
+        "title": "BIT en difícil",
+        "body": "Hoy BIT lee la bola casi a la perfección. Cada punto cuesta."
+      },
+      "heavyPaddle": {
+        "title": "Pala pesada",
+        "body": "Tu pala es lenta, pero la bola también, y BIT va con calma."
+      },
+      "rally": {
+        "title": "Peloteo",
+        "body": "La bola empieza lenta y se acelera mucho con cada punto que haces."
+      },
+      "chaos": {
+        "title": "Caos",
+        "body": "Bola rápida y potenciadores a la vez."
+      }
+    },
+    "errAlreadyOver": "Este intento ya terminó.",
+    "errBusy": "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+    "initialsRefused": "Esas iniciales no están permitidas. Elige otras."
+  },
+  "arcade": {
+    "title": "SALA ARCADE",
+    "subtitle": "Pasea, saluda y acércate a una máquina para jugar.",
+    "occupancy": "Sala {n} · {count}/{capacity} aquí",
+    "connecting": "Conectando…",
+    "offline": "No se puede conectar con la sala",
+    "offlineBody": "El servidor de juego no responde. Revisa tu conexión e inténtalo de nuevo.",
+    "hint": "Camina con WASD o las flechas, o toca el suelo. 1–6 envían un emote.",
+    "prompt": "Pulsa E (o toca la máquina) para jugar: {name}",
+    "emotes": "Emotes",
+    "quickPlay": "Juego rápido",
+    "cab": {
+      "ranked": "Partida clasificatoria",
+      "party": "Fiesta (3–4)",
+      "daily": "Reto diario",
+      "watch": "Ver en directo",
+      "local": "Local 2 jugadores",
+      "board": "Clasificación",
+      "cycles": "Motos de luz"
+    },
+    "screen": {
+      "ranked": "RANKED\n1P",
+      "party": "FIESTA\n3-4P",
+      "daily": "DIARIO",
+      "watch": "VIVO\n{n}",
+      "local": "2P\nLOCAL",
+      "hiScore": "RÉCORDS",
+      "noScores": "SÉ 1º",
+      "cycles": "MOTOS\n2-4P"
+    },
+    "emote": {
+      "hi": "¡HOLA!",
+      "gg": "GG",
+      "play": "¿JUGAMOS?",
+      "nice": "¡BIEN!",
+      "wow": "¡GUAU!",
+      "heart": "<3"
+    },
+    "lobbyBanner": "Entra en la sala arcade",
+    "lobbyBannerBody": "Pasea con otros jugadores y acércate a una máquina.",
+    "enter": "Entrar",
+    "hallLabel": "Sala arcade. Usa WASD o las flechas para caminar, E para usar una máquina y del 1 al 6 para los emotes."
+  },
+  "cycles": {
+    "title": "Motos de luz",
+    "searchingBody": "Una carrera empieza con 4 pilotos, o con 2–3 tras una breve espera. Pulsa Esc para cancelar.",
+    "lobbyTitle": "Sala de Motos de luz",
+    "shareCode": "Comparte este código con 1 a 3 amigos:",
+    "keys": "Gira con A / D o ← / →. No choques con una pared ni con ninguna estela. Esc abre el menú.",
+    "noWinner": "Todos chocaron: no hay ganador.",
+    "arena": "Arena de Motos de luz",
+    "turnLeft": "Girar a la izquierda",
+    "turnRight": "Girar a la derecha",
+    "riding": "En carrera",
+    "crashed": "Chocó",
+    "getReady": "PREPÁRATE",
+    "ridingCount": "{n} en carrera",
+    "quick": "Buscar pilotos"
+  },
+  "quests": {
+    "title": "Misiones diarias",
+    "balance": "{n} monedas",
+    "collected": "+{n} monedas recogidas",
+    "done": "Recogido",
+    "hint": "Nuevas misiones cada día a medianoche UTC. Cada partida también da monedas; gástalas en objetos de avatar en Ajustes → Avatar.",
+    "q": {
+      "play_matches": "Juega {n} partidas 1v1",
+      "win_match": "Gana una partida 1v1",
+      "party_game": "Juega una partida de Pong en fiesta",
+      "cycles_race": "Corre una carrera de Motos de luz",
+      "daily_run": "Juega el Reto diario",
+      "daily_score": "Consigue {n} en el Reto diario"
+    },
+    "already": "Ya recogido."
   }
 }

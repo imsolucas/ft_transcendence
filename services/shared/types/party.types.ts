@@ -24,6 +24,8 @@ export interface PartyPaddleView {
 }
 
 export interface PartyState {
+	/** party Pong (Light Cycles states are kind "cycles") */
+	kind?: "pong";
 	phase: PartyPhase;
 	/** court edge length (square) */
 	court: number;

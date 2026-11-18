@@ -1,6 +1,9 @@
 import type { Player, serializablePlayer } from "./player.types.ts";
 import type { GameConfig, GameState, PlayerInputs, TournamentState } from "./pong.types.ts";
 import type { PartyPlayer, PartyStanding, PartyState } from "./party.types.ts";
+import type { HallEmote } from "../hall/hall.ts";
+import type { CyclesDelta, CyclesState, PartyGame } from "./cycles.types.ts";
+import type { PlayerLook } from "../cosmetics/look.ts";
 
 export type GameMessage =
 | ConnectionMessage
@@ -40,7 +43,17 @@ export type GameMessage =
 | PartyStartMessage
 | PartyStateMessage
 | PartyEndMessage
-| RatingUpdateMessage;
+| CyclesTickMessage
+| RatingUpdateMessage
+| HallJoinMessage
+| HallInputMessage
+| HallEmoteMessage
+| HallLeaveMessage
+| HallWelcomeMessage
+| HallPlayerJoinedMessage
+| HallPlayerLeftMessage
+| HallSnapshotMessage
+| HallEmoteShownMessage;
 
 export type GameErrorCodes =
 | 'ALREADY_IN_ROOM'
@@ -87,6 +100,8 @@ export interface JoinQueueMessage extends BaseMessage {
 		config?: GameConfig;
 		/** 'party' = the 3–4 player queue */
 		roomType: 'standard' | 'tournament' | 'party';
+		/** party queue: which game (default pong) */
+		game?: PartyGame;
 	}
 }
 
@@ -166,6 +181,8 @@ export interface PlayerJoinedMessage extends BaseMessage {
 		position: number;
 		picture: string;
 		playersInRoom: serializablePlayer[]
+		/** party rooms: which game (someone joining by code learns it here) */
+		game?: PartyGame;
 	}
 }
 
@@ -279,13 +296,19 @@ export interface RejoinedMessage extends BaseMessage {
 /** server → queued party players: how many are waiting; startsAt (ms epoch) once 3 wait */
 export interface PartyQueueMessage extends BaseMessage {
 	type: 'partyQueue';
-	data: { waiting: number; needed: number; startsAt: number | null };
+	data: { waiting: number; needed: number; startsAt: number | null; game?: PartyGame };
 }
 
 /** server → room (and watchers): the party started (also re-sent to a player who rejoins) */
 export interface PartyStartMessage extends BaseMessage {
 	type: 'partyStart';
-	data: { roomId: string; players: PartyPlayer[]; state: PartyState };
+	data: { roomId: string; players: PartyPlayer[]; state: PartyState | CyclesState };
+}
+
+/** server → room (and watchers): one Light Cycles step (the full state came with partyStart) */
+export interface CyclesTickMessage extends BaseMessage {
+	type: 'cyclesTick';
+	data: { delta: CyclesDelta };
 }
 
 /** server → room (and watchers), every tick */
@@ -332,6 +355,8 @@ export interface ReadyTimeoutMessage extends BaseMessage {
 export interface LiveMatch {
 	roomId: string;
 	mode: 'standard' | 'tournament' | 'party';
+	/** party rooms: which game */
+	game?: PartyGame;
 	/** party: every seat, in seat order */
 	players: { id: string; name: string }[];
 	/** 1v1/tournament: points · party: lives left per seat */
@@ -366,11 +391,72 @@ export interface LiveMatchesMessage extends BaseMessage {
 /** server → spectator: what you are watching, with the current state */
 export interface SpectateStartedMessage extends BaseMessage {
 	type: 'spectateStarted';
-	data: { match: LiveMatch; config: GameConfig; gameState: GameState | null; party?: { players: PartyPlayer[]; state: PartyState } };
+	data: { match: LiveMatch; config: GameConfig; gameState: GameState | null; party?: { players: PartyPlayer[]; state: PartyState | CyclesState } };
 }
 
 /** server → players and spectators of a room */
 export interface SpectatorCountMessage extends BaseMessage {
 	type: 'spectatorCount';
 	data: { roomId: string; count: number };
+}
+
+// ---------------------------------------------------------------- Arcade hall (hall/hall.ts)
+// Client → server: join (the server picks the copy), input bits on change, an emote, leave.
+// Server → client: welcome (everyone there), joined/left, 10 Hz snapshots, emotes.
+
+export interface HallPlayerView {
+	id: string;
+	name: string;
+	avatar: string | null;
+	look: PlayerLook | null;
+	x: number;
+	y: number;
+	facing: 1 | -1;
+}
+
+export interface HallJoinMessage extends BaseMessage {
+	type: 'hallJoin';
+	data: Record<string, never>;
+}
+
+/** bits: HALL_UP | HALL_DOWN | HALL_LEFT | HALL_RIGHT (0–15) */
+export interface HallInputMessage extends BaseMessage {
+	type: 'hallInput';
+	data: { bits: number };
+}
+
+export interface HallEmoteMessage extends BaseMessage {
+	type: 'hallEmote';
+	data: { emote: HallEmote };
+}
+
+export interface HallLeaveMessage extends BaseMessage {
+	type: 'hallLeave';
+	data: Record<string, never>;
+}
+
+export interface HallWelcomeMessage extends BaseMessage {
+	type: 'hallWelcome';
+	data: { instance: number; you: string; players: HallPlayerView[]; capacity: number };
+}
+
+export interface HallPlayerJoinedMessage extends BaseMessage {
+	type: 'hallPlayerJoined';
+	data: { player: HallPlayerView };
+}
+
+export interface HallPlayerLeftMessage extends BaseMessage {
+	type: 'hallPlayerLeft';
+	data: { id: string };
+}
+
+/** p: [id, x, y, facing, moving (0/1)] per player, positions rounded to 0.1 */
+export interface HallSnapshotMessage extends BaseMessage {
+	type: 'hallSnapshot';
+	data: { p: [string, number, number, 1 | -1, 0 | 1][] };
+}
+
+export interface HallEmoteShownMessage extends BaseMessage {
+	type: 'hallEmoteShown';
+	data: { id: string; emote: HallEmote };
 }

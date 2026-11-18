@@ -46,7 +46,8 @@
     "login": "Se connecter",
     "signup": "S'inscrire",
     "leaderboard": "Classement",
-    "coach": "Coach"
+    "coach": "Coach",
+    "arcade": "Arcade"
   },
   "footer": {
     "privacy": "Politique de confidentialité",
@@ -395,7 +396,7 @@
     "friendsPrivateBody": "Seul {name} peut voir avec qui il est ami.",
     "level": "Niveau {n}",
     "xpToNext": "Encore {xp} XP pour le niveau suivant",
-    "xpRules": "XP : 10 par match (parties à plusieurs comprises), +20 par victoire, +100 par tournoi gagné, +25 par succès",
+    "xpRules": "XP : 10 par match (parties à plusieurs comprises), +20 par victoire, +100 par tournoi gagné, +25 par succès, plus l'XP du Défi du jour (10 + 2 par point du meilleur de chaque jour)",
     "levelUp": "Niveau supérieur ! Vous êtes niveau {n}."
   },
   "friends": {
@@ -697,7 +698,11 @@
       "body": "Ayez 5 amis."
     },
     "unlockedToast": "Succès débloqué : {name}",
-    "view": "Voir"
+    "view": "Voir",
+    "daily_7": {
+      "title": "Habitué du jour",
+      "body": "Jouez au Défi du jour 7 jours d'affilée."
+    }
   },
   "watch": {
     "title": "Regarder",
@@ -845,7 +850,8 @@
         "copper": "Cuivre",
         "umber": "Terre d'ombre",
         "ebony": "Ébène",
-        "synth": "Synth (menthe)"
+        "synth": "Synth (menthe)",
+        "chrome": "Chrome"
       },
       "hair": {
         "short": "Courts",
@@ -854,7 +860,8 @@
         "afro": "Afro",
         "bald": "Chauve",
         "mohawk": "Crête",
-        "bun": "Chignon"
+        "bun": "Chignon",
+        "flame": "Flammes"
       },
       "eyes": {
         "dots": "Points",
@@ -876,10 +883,20 @@
         "headphones": "Casque",
         "horns": "Cornes",
         "crown": "Couronne",
-        "halo": "Auréole"
+        "halo": "Auréole",
+        "cap": "Casquette",
+        "catears": "Oreilles de chat",
+        "antenna": "Antenne de BIT"
       },
       "colour": "{slot} {n}"
-    }
+    },
+    "unlockCoins": "{n} pièces dans la boutique",
+    "balance": "{n} pièces",
+    "buyTitle": "Acheter {name} ?",
+    "buyBody": "Ça coûte {n} pièces. Vous en avez {have}.",
+    "buy": "Acheter pour {n}",
+    "bought": "{name} est à vous.",
+    "errCoins": "Pas encore assez de pièces."
   },
   "attract": {
     "you": "Vous",
@@ -947,5 +964,159 @@
     "download": "Télécharger le clip",
     "ready": "Clip prêt à partager ou télécharger.",
     "interrupted": "L'enregistrement s'est arrêté car l'onglet était masqué. Gardez cet onglet ouvert et réessayez."
+  },
+  "daily": {
+    "title": "DÉFI DU JOUR",
+    "subtitle": "Une variante par jour. Vous avez 3 vies contre BIT ; votre score, ce sont les points que vous lui prenez.",
+    "todaysTwist": "La variante du jour",
+    "resetsIn": "Nouveau défi dans {time}",
+    "tries": "Essais restants",
+    "triesLeft": "{n}/{total}",
+    "best": "Votre record",
+    "streak": "Série de jours",
+    "insertCoin": "Insérer une pièce",
+    "insertCoinTry": "Insérer une pièce · essai {n} sur {total}",
+    "practice": "Partie d'entraînement",
+    "practiceNote": "Vous avez utilisé vos 3 essais du jour. Les parties d'entraînement sont pour le plaisir et ne comptent pas.",
+    "rules": "3 essais par jour ; le meilleur compte. Chaque point accélère la balle. Un essai commencé compte même si vous partez.",
+    "guestPrompt": "Inscrivez-vous pour jouer au Défi du jour et mettre vos initiales au tableau.",
+    "signUp": "S'inscrire",
+    "logIn": "Se connecter",
+    "board": "Tableau du jour",
+    "boardEmpty": "Aucun score aujourd'hui.",
+    "boardEmptyBody": "Soyez le premier au tableau.",
+    "points": "{n} pts",
+    "livesLeft": "Vies {n}",
+    "endRun": "Terminer la partie",
+    "endRunTitle": "Terminer cette partie ?",
+    "endRunBody": "Ce que vous avez marqué compte, et l'essai est utilisé.",
+    "endRunPracticeBody": "Cette partie d'entraînement s'arrête ici.",
+    "gameOver": "GAME OVER",
+    "yourScore": "Score",
+    "newBest": "NOUVEAU RECORD",
+    "rankToday": "#{n} aujourd'hui",
+    "xpGained": "+{n} XP",
+    "streakDays": "Série de {n} jours",
+    "practiceResult": "Entraînement · ne compte pas",
+    "initialsTitle": "ENTREZ VOS INITIALES",
+    "initialsLabel": "Initiales",
+    "initialsHint": "Trois lettres, de A à Z. Elles apparaissent au tableau du jour.",
+    "initialsInvalid": "Utilisez 3 lettres, de A à Z.",
+    "saveScore": "Enregistrer le score",
+    "saving": "Vérification de votre partie…",
+    "errNoTries": "Plus d'essais aujourd'hui.",
+    "errUnverified": "Impossible de vérifier cette partie, elle compte donc 0.",
+    "errTimedOut": "Cet essai a expiré.",
+    "errGeneric": "Impossible d'enregistrer votre partie. Réessayez.",
+    "lobbyTile": "Défi du jour",
+    "lobbyTileBody": "Une variante par jour, 3 essais. Entrez au tableau.",
+    "twist": {
+      "classic": {
+        "title": "Classique",
+        "body": "Du Pong pur contre BIT. Aucune excuse."
+      },
+      "turbo": {
+        "title": "Turbo",
+        "body": "La balle part vite et ne fait qu'accélérer."
+      },
+      "powerUps": {
+        "title": "Bonus",
+        "body": "Des objets apparaissent au centre : + agrandit votre raquette, − rétrécit celle de BIT, » accélère la balle."
+      },
+      "bitHard": {
+        "title": "BIT en difficile",
+        "body": "Aujourd'hui BIT lit la balle presque parfaitement. Chaque point se mérite."
+      },
+      "heavyPaddle": {
+        "title": "Raquette lourde",
+        "body": "Votre raquette est lente, mais la balle aussi, et BIT y va doucement."
+      },
+      "rally": {
+        "title": "Échange",
+        "body": "La balle part lentement et accélère beaucoup à chaque point que vous marquez."
+      },
+      "chaos": {
+        "title": "Chaos",
+        "body": "Une balle rapide et des bonus en même temps."
+      }
+    },
+    "errAlreadyOver": "Cet essai est déjà terminé.",
+    "errBusy": "Trop de requêtes. Attendez un instant et réessayez.",
+    "initialsRefused": "Ces initiales ne sont pas autorisées. Choisissez-en d'autres."
+  },
+  "arcade": {
+    "title": "SALLE D'ARCADE",
+    "subtitle": "Promenez-vous, dites bonjour et approchez-vous d'une borne pour jouer.",
+    "occupancy": "Salle {n} · {count}/{capacity} ici",
+    "connecting": "Connexion…",
+    "offline": "Impossible de joindre la salle",
+    "offlineBody": "Le serveur de jeu ne répond pas. Vérifiez votre connexion et réessayez.",
+    "hint": "Marchez avec ZQSD/WASD ou les flèches, ou touchez le sol. 1–6 envoient un emote.",
+    "prompt": "Appuyez sur E (ou touchez la borne) pour jouer : {name}",
+    "emotes": "Emotes",
+    "quickPlay": "Partie rapide",
+    "cab": {
+      "ranked": "Partie classée",
+      "party": "Fête (3–4)",
+      "daily": "Défi du jour",
+      "watch": "Regarder en direct",
+      "local": "Local 2 joueurs",
+      "board": "Classement",
+      "cycles": "Motos de lumière"
+    },
+    "screen": {
+      "ranked": "CLASSÉ\n1P",
+      "party": "FÊTE\n3-4P",
+      "daily": "DÉFI",
+      "watch": "DIRECT\n{n}",
+      "local": "2P\nLOCAL",
+      "hiScore": "RECORDS",
+      "noScores": "SOYEZ 1ER",
+      "cycles": "MOTOS\n2-4P"
+    },
+    "emote": {
+      "hi": "SALUT !",
+      "gg": "GG",
+      "play": "ON JOUE ?",
+      "nice": "BIEN !",
+      "wow": "WAOUH",
+      "heart": "<3"
+    },
+    "lobbyBanner": "Entrez dans la salle d'arcade",
+    "lobbyBannerBody": "Promenez-vous avec d'autres joueurs et approchez-vous d'une borne.",
+    "enter": "Entrer",
+    "hallLabel": "Salle d'arcade. WASD ou les flèches pour marcher, E pour utiliser une borne, 1 à 6 pour les emotes."
+  },
+  "cycles": {
+    "title": "Motos de lumière",
+    "searchingBody": "Une course démarre avec 4 pilotes, ou avec 2–3 après une courte attente. Échap pour annuler.",
+    "lobbyTitle": "Salle Motos de lumière",
+    "shareCode": "Partagez ce code avec 1 à 3 amis :",
+    "keys": "Tournez avec A / D ou ← / →. Évitez les murs et toutes les traînées. Échap ouvre le menu.",
+    "noWinner": "Tout le monde s'est écrasé : pas de gagnant.",
+    "arena": "Arène des Motos de lumière",
+    "turnLeft": "Tourner à gauche",
+    "turnRight": "Tourner à droite",
+    "riding": "En course",
+    "crashed": "Écrasé",
+    "getReady": "PRÊTS ?",
+    "ridingCount": "{n} en course",
+    "quick": "Trouver des pilotes"
+  },
+  "quests": {
+    "title": "Quêtes du jour",
+    "balance": "{n} pièces",
+    "collected": "+{n} pièces récupérées",
+    "done": "Récupéré",
+    "hint": "Nouvelles quêtes chaque jour à minuit UTC. Chaque partie rapporte aussi des pièces ; dépensez-les en objets d'avatar dans Paramètres → Avatar.",
+    "q": {
+      "play_matches": "Jouez {n} matchs 1v1",
+      "win_match": "Gagnez un match 1v1",
+      "party_game": "Jouez une partie de Pong en fête",
+      "cycles_race": "Faites une course de Motos de lumière",
+      "daily_run": "Jouez au Défi du jour",
+      "daily_score": "Marquez {n} au Défi du jour"
+    },
+    "already": "Déjà récupéré."
   }
 }

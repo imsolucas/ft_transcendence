@@ -204,12 +204,14 @@ export default async function internalRoutes(app: FastifyInstance) {
           additionalProperties: false,
           properties: {
             matchId: { type: "string", minLength: 8, maxLength: 64 },
+            // party Pong (3–4 players) or Light Cycles (2–4)
+            game: { type: "string", enum: ["pong", "cycles"] },
             winnerId: { type: ["integer", "null"], minimum: 1 },
             played_at: { type: "string", format: "date-time" },
             end_at: { type: "string", format: "date-time" },
             players: {
               type: "array",
-              minItems: 3,
+              minItems: 2,
               maxItems: 4,
               items: {
                 type: "object",
@@ -234,11 +236,12 @@ export default async function internalRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       const b = req.body as {
-        matchId: string; winnerId: number | null; played_at: string; end_at: string;
+        matchId: string; game?: "pong" | "cycles"; winnerId: number | null; played_at: string; end_at: string;
         players: { userId: number; displayName: string; placement: number; livesLeft: number }[];
       };
       const ids = b.players.map((p) => p.userId);
-      if (new Set(ids).size !== ids.length || (b.winnerId !== null && !ids.includes(b.winnerId))) {
+      const game = b.game ?? "pong";
+      if (new Set(ids).size !== ids.length || (b.winnerId !== null && !ids.includes(b.winnerId)) || (game === "pong" && ids.length < 3)) {
         return reply.code(400).send({ error: "Invalid party result" });
       }
       const existing = await prisma.partyMatch.findUnique({ where: { externalId: b.matchId }, select: { id: true } });
@@ -248,6 +251,7 @@ export default async function internalRoutes(app: FastifyInstance) {
         const created = await prisma.partyMatch.create({
           data: {
             externalId: b.matchId,
+            game,
             winnerId: b.winnerId,
             played_at: new Date(b.played_at),
             end_at: new Date(b.end_at),

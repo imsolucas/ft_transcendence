@@ -50,6 +50,12 @@ model User {
   passkeys         Passkey[]
   knownDevices     KnownDevice[]
   ratings          Rating[]
+  // Daily Challenge: initials on the daily board (3 letters A–Z) and every try
+  dailyInitials    String?     @db.VarChar(3)
+  dailyRuns        DailyRun[]
+  // coins: shop purchases and claimed quest rewards (the balance is derived, see modules/coins)
+  purchases        Purchase[]
+  questClaims      QuestClaim[]
 
   @@map("Users")
 }
@@ -123,6 +129,8 @@ model PartyMatch {
   id         Int                @id @default(autoincrement())
   // Idempotency key sent by the game service; a retried report is a no-op
   externalId String             @unique
+  // "pong" (party Pong, 3–4 players) or "cycles" (Light Cycles, 2–4)
+  game       String             @default("pong") @db.VarChar(16)
   winnerId   Int?
   winner     User?              @relation("PartyMatch_winner", fields: [winnerId], references: [id])
   players    PartyMatchPlayer[]
@@ -350,4 +358,56 @@ model Rating {
   @@unique([userId, seasonId])
   @@index([seasonId, rating])
   @@map("Ratings")
+}
+
+// One Daily Challenge try (services/shared/daily/daily.ts). Created at start (the try is used
+// up then, finished or not); the score is the server's replay of the input log, never the client's.
+model DailyRun {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  // UTC day of the challenge, YYYY-MM-DD
+  day        String    @db.VarChar(10)
+  // 1..3 (DAILY_ATTEMPTS)
+  attempt    Int
+  // this try's seed (server-random, revealed at start)
+  seed       Int
+  // null until finished (an abandoned try counts as used, with no score)
+  score      Int?
+  ticks      Int?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day, attempt])
+  @@index([day, score])
+  @@map("DailyRuns")
+}
+
+// A shop item a player bought with coins (services/shared/cosmetics/look.ts: unlock { coins })
+model Purchase {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  // "slot:id", e.g. "item:cap"
+  item      String   @db.VarChar(48)
+  cost      Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, item])
+  @@map("Purchases")
+}
+
+// A daily quest reward a player collected (services/shared/quests/quests.ts)
+model QuestClaim {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  // UTC day, YYYY-MM-DD
+  day       String   @db.VarChar(10)
+  quest     String   @db.VarChar(32)
+  reward    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day, quest])
+  @@map("QuestClaims")
 }

@@ -85,7 +85,8 @@ export class GameEngine {
                 {x: paddles[0]!.getPos().x, y: paddles[0]!.getPos().y},
                 {x: paddles[1]!.getPos().x, y: paddles[1]!.getPos().y}
             ],
-            scores: context.playerScore,
+            // a copy: callers compare snapshots (score effects, replays), so they mustn't share the live array
+            scores: [...context.playerScore],
             paddleHeights: [paddles[0]!.getHeight(), paddles[1]!.getHeight()],
             powerUp: context.powerUps?.item() ?? null,
             isPlaying: true,

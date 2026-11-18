@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Gamepad2, Home, LogOut, MessageSquare, Settings, User, Users, Trophy, Bot } from "lucide-react";
+import { Gamepad2, Home, Joystick, LogOut, MessageSquare, Settings, User, Users, Trophy, Bot } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
@@ -39,6 +39,7 @@ export function Wordmark({ href, className }: { href: string; className?: string
 
 const NAV = [
   { path: "/lobby", key: "nav.lobby", icon: Home },
+  { path: "/arcade", key: "nav.arcade", icon: Joystick },
   { path: "/friends", key: "nav.friends", icon: Users },
   { path: "/chat", key: "nav.chat", icon: MessageSquare },
   { path: "/leaderboard", key: "nav.leaderboard", icon: Trophy },
@@ -150,8 +151,8 @@ function Shell({ children, playPrimary = false }: { children: ReactNode; playPri
         aria-label={t("nav.mainNav")}
         className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-5 border-t border-border bg-surface-2 md:hidden"
       >
-        {/* five slots on phones: the leaderboard is reached from the lobby */}
-        {[...NAV.filter((n) => n.path !== "/leaderboard" && n.path !== "/coach"), { path: me ? `/profile/${me.username}` : "/lobby", key: "nav.profile", icon: User }, { path: "/settings", key: "nav.settings", icon: Settings }].map(
+        {/* five slots on phones: the leaderboard and the arcade hall are reached from the lobby */}
+        {[...NAV.filter((n) => n.path !== "/leaderboard" && n.path !== "/coach" && n.path !== "/arcade"), { path: me ? `/profile/${me.username}` : "/lobby", key: "nav.profile", icon: User }, { path: "/settings", key: "nav.settings", icon: Settings }].map(
           ({ path, key, icon: Icon }) => (
             <Link
               key={key}

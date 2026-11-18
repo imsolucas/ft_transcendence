@@ -106,3 +106,63 @@ html.arcade:not(.crt-off) .crt-mask {
   background: repeating-linear-gradient(90deg, #ff2a2a 0 1px, #2aff6a 1px 2px, #2a6aff 2px 3px);
 }
 html.arcade:not(.crt-off) .crt { box-shadow: inset 0 0 0 3px var(--ink-black), inset 0 0 90px rgba(0, 0, 0, .55); }
+
+/* ===================================================================== Arcade hall (/arcade)
+   Drawn at hall-pixel size (480×270) and scaled up as one layer; avatars are moved with
+   transforms from the frame loop. Static apart from the players and the "near" glow. */
+.hall-wrap { position: relative; overflow: hidden; border: 2px solid var(--border-strong); background: var(--bg); touch-action: none; user-select: none; }
+.hall { position: absolute; left: 0; top: 0; transform-origin: 0 0; cursor: crosshair;
+  /* floor: a dark checkerboard with a neon grid */
+  background:
+    linear-gradient(var(--border) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--border) 1px, transparent 1px) 0 0 / 24px 24px,
+    conic-gradient(var(--surface-1) 25%, var(--bg) 0 50%, var(--surface-1) 0 75%, var(--bg) 0) 0 0 / 48px 48px;
+  image-rendering: pixelated; }
+.hall-wall { position: absolute; left: 0; top: 0; right: 0; height: 84px; background: linear-gradient(var(--surface-2), var(--surface-1)); border-bottom: 2px solid var(--neon-magenta); box-shadow: 0 2px 0 var(--neon-magenta-soft); }
+.hall-hit { position: absolute; padding: 0; border: 0; background: none; cursor: pointer; }
+.hall-cab { position: absolute; left: 0; top: 0; }
+.hall-cab.hall-prop { pointer-events: none; }
+.hall-cab svg { display: block; }
+.hall-cab[data-near] { filter: drop-shadow(0 0 3px var(--neon-amber)); }
+.hall-screen { position: absolute; left: 5px; top: 9px; right: 5px; height: 20px; display: grid; place-items: center; text-align: center;
+  font: 400 5px/6px var(--font-display); letter-spacing: 0; white-space: pre-line; overflow: hidden; }
+.hall-board-text { position: absolute; inset: 4px 4px 12px; display: grid; align-content: start; gap: 2px; font: 400 5px/6px var(--font-display); color: var(--neon-amber); }
+.hall-board-title { color: var(--fg); margin-bottom: 1px; }
+.hall-player { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; pointer-events: none; }
+/* a little character: portrait on two pixel legs; the whole body bobs and the legs step while walking */
+.hall-body { position: absolute; left: -8px; top: -22px; width: 16px; height: 22px; }
+.hall-player .hall-avatar { position: absolute; left: 0; top: 0; width: 16px !important; height: 16px !important; min-width: 0; font-size: 5px; border-width: 1px; }
+.hall-legs { position: absolute; left: 3px; top: 16px; fill: var(--ink-black); }
+.hall-player[data-you] .hall-legs { fill: var(--neon-magenta); }
+.hall-legs .hall-step-b { visibility: hidden; }
+.hall-player[data-facing="l"] .hall-legs { transform: scaleX(-1); }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-body { animation: hall-bob 300ms steps(1, end) infinite; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-step-a { animation: hall-step 300ms steps(1, end) infinite; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-step-b { animation: hall-step 300ms steps(1, end) infinite reverse; }
+}
+@keyframes hall-bob { 0%, 49% { transform: translateY(0); } 50%, 100% { transform: translateY(-1px); } }
+@keyframes hall-step { 0%, 49% { visibility: visible; } 50%, 100% { visibility: hidden; } }
+.hall-player[data-facing="l"] .hall-avatar svg { transform: scaleX(-1); }
+.hall-player[data-you] .hall-avatar { outline: 1px solid var(--neon-magenta); outline-offset: 1px; }
+.hall-player::after { content: ""; position: absolute; left: -6px; top: -2px; width: 12px; height: 3px; background: color-mix(in srgb, var(--ink-black) 45%, transparent); }
+.hall-name { position: absolute; left: 50%; top: -29px; transform: translateX(-50%); padding: 0 2px; white-space: nowrap; font: 600 5px/6px var(--font-body); color: var(--fg); background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.hall-player[data-you] .hall-name { color: var(--neon-magenta); }
+.hall-bubble { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); padding: 1px 3px; white-space: nowrap; font: 400 5px/7px var(--font-display); color: var(--ink-black); background: var(--fg); }
+.hall-bubble::after { content: ""; position: absolute; left: 50%; bottom: -2px; width: 2px; height: 2px; margin-left: -1px; background: var(--fg); }
+@media (prefers-reduced-motion: no-preference) {
+  :root:not(.reduce-motion) .hall-bubble { animation: arcade-blink 900ms steps(1, end) 1 reverse; }
+}
+.hall-wrap:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hall-offline { position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center; }
+
+/* Light Cycles arena: drawn at 8 px per cell, scaled with hard pixel edges */
+.cycles-canvas { image-rendering: pixelated; border: 2px solid var(--border-strong); background: var(--court-bg, var(--bg)); }
+
+/* shop items in the avatar builder: for sale, so clickable (a coin instead of a lock) */
+.look-choice.is-locked.is-shop { cursor: pointer; opacity: .8; }
+.look-choice.is-locked.is-shop:hover { border-color: var(--neon-amber); }
+
+/* quest progress: a stepped pixel bar */
+.quest-bar { height: 6px; background: var(--surface-3); overflow: hidden; }
+.quest-bar > span { display: block; height: 100%; background: var(--neon-amber); }

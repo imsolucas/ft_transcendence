@@ -6,11 +6,12 @@ import { Bit } from "@/components/arcade/bit";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import useSWR from "swr";
-import { fetcher } from "@/lib/api";
-import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus, Eye, Users } from "lucide-react";
+import { ApiError, api, fetcher } from "@/lib/api";
+import { toast } from "sonner";
+import { Bot, Gamepad2, Keyboard, Lock, Swords, Trophy, UserPlus, Eye, Users, CalendarDays, Joystick, Coins } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
-import type { FriendRequest, MatchSummary, Page, Profile, PublicUser } from "@/lib/types";
+import type { CoinsInfo, CoinsResult, FriendRequest, MatchSummary, Page, Profile, PublicUser } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { CountBadge, EmptyState, Panel, Segmented, Skeleton } from "@/components/ui/primitives";
@@ -33,14 +34,103 @@ export function LobbyView() {
             {me && <p className="muted mt-1">{t("lobby.greeting", { name: me.displayName })}</p>}
           </div>
         </div>
+        <ArcadeBanner />
         <PlayPanel />
         <div className="grid gap-5 xl:grid-cols-2">
           <StatsPanel username={me?.username} />
           <RecentPanel username={me?.username} />
         </div>
       </div>
-      <FriendsSidebar />
+      <div className="stack stack-5 min-w-0">
+        <QuestsPanel />
+        <FriendsSidebar />
+      </div>
     </div>
+  );
+}
+
+/** today's 3 quests (the same for everyone): progress from play, collect the coins */
+function QuestsPanel() {
+  const { t } = useI18n();
+  const { data, error, mutate } = useSWR<CoinsInfo>("/api/me/coins", fetcher, { revalidateOnFocus: true });
+  const [claiming, setClaiming] = useState<string | null>(null);
+  const claim = async (id: string) => {
+    setClaiming(id);
+    try {
+      const res = await api.post<CoinsResult>(`/api/quests/${id}/claim`);
+      toast.success(t("quests.collected", { n: data?.quests.find((q) => q.id === id)?.reward ?? 0 }));
+      await mutate(data ? { ...data, balance: res.balance, quests: data.quests.map((q) => (q.id === id ? { ...q, claimed: true } : q)) } : undefined, { revalidate: true });
+    } catch (err) {
+      // collected already (another tab, a double click): just show the real state
+      if (err instanceof ApiError && err.status === 409) {
+        toast(t("quests.already"));
+        void mutate();
+      } else toast.error(err instanceof ApiError && err.status === 0 ? t("common.networkError") : t("common.error"));
+    } finally {
+      setClaiming(null);
+    }
+  };
+  return (
+    <Panel>
+      <div className="row between mb-3">
+        <h2 className="t-heading">{t("quests.title")}</h2>
+        <span className="row t-label !gap-1" aria-label={t("quests.balance", { n: data?.balance ?? 0 })}>
+          <Coins className="ico c-amber" aria-hidden />
+          <span className="num">{data?.balance ?? "—"}</span>
+        </span>
+      </div>
+      {!data ? (
+        error ? (
+          <Button size="sm" onClick={() => mutate()}>
+            {t("common.retry")}
+          </Button>
+        ) : (
+          <div className="stack !gap-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        )
+      ) : (
+        <ul className="stack !gap-3">
+          {data.quests.map((q) => (
+            <li key={q.id} className="stack !gap-1">
+              <div className="row between !gap-2">
+                <span className={q.claimed ? "t-caption subtle line-through" : "t-caption"}>{t(`quests.q.${q.id}`, { n: q.target })}</span>
+                {q.done && !q.claimed ? (
+                  <Button size="sm" variant="primary" loading={claiming === q.id} onClick={() => claim(q.id)}>
+                    <Coins className="ico" aria-hidden />+{q.reward}
+                  </Button>
+                ) : (
+                  <span className="t-caption subtle num">{q.claimed ? t("quests.done") : `+${q.reward}`}</span>
+                )}
+              </div>
+              <div className="quest-bar" role="progressbar" aria-valuemin={0} aria-valuemax={q.target} aria-valuenow={q.progress} aria-label={t(`quests.q.${q.id}`, { n: q.target })}>
+                <span style={{ width: `${(q.progress / q.target) * 100}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="t-caption subtle mt-3">{t("quests.hint")}</p>
+    </Panel>
+  );
+}
+
+/** the front door to the arcade hall (the lobby below stays the quick way to play) */
+function ArcadeBanner() {
+  const { t, href } = useI18n();
+  return (
+    <Link href={href("/arcade")} className="panel row between wrap !gap-4 no-underline text-fg hover:border-neon-magenta">
+      <span className="row !gap-3">
+        <Joystick className="ico c-magenta" aria-hidden />
+        <span>
+          <span className="t-heading block">{t("arcade.lobbyBanner")}</span>
+          <span className="muted t-caption">{t("arcade.lobbyBannerBody")}</span>
+        </span>
+      </span>
+      <span className="btn btn-primary btn-sm">{t("arcade.enter")}</span>
+    </Link>
   );
 }
 
@@ -185,6 +275,20 @@ function PlayPanel() {
               </Link>
             </Button>
           </div>
+          {/* Light Cycles: the same party rooms (a code joins either game), 2–4 riders */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="t-label c-cyan">{t("cycles.title")}</span>
+            <Button asChild size="sm">
+              <Link href={`${href("/party")}?game=cycles&mode=quick`} className="no-underline">
+                {t("cycles.quick")}
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link href={`${href("/party")}?game=cycles&mode=create`} className="no-underline">
+                {t("party.create")}
+              </Link>
+            </Button>
+          </div>
           <form className="stack" onSubmit={(e) => join(e, pCode, setPError, "join", "/party")} noValidate>
             <div className="flex flex-wrap gap-2 [&>.input]:min-w-0 [&>.input]:flex-1">
               <Input
@@ -213,6 +317,13 @@ function PlayPanel() {
 
         {/* Local + vs AI: stacked in the column next to Party, each at its own height */}
         <div className="grid content-start gap-4">
+        <Link href={href("/daily")} className="panel panel-2 row !gap-3 no-underline text-fg hover:border-border-strong">
+          <CalendarDays className="ico c-amber" aria-hidden />
+          <div>
+            <h3 className="t-heading">{t("daily.lobbyTile")}</h3>
+            <p className="muted t-caption">{t("daily.lobbyTileBody")}</p>
+          </div>
+        </Link>
         <Link href={href("/local")} className="panel panel-2 row !gap-3 no-underline text-fg hover:border-border-strong">
           <Keyboard className="ico c-cyan" aria-hidden />
           <div>

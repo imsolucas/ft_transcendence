@@ -131,7 +131,7 @@ services:
   cloudflared-quick:
     image: cloudflare/cloudflared:2025.8.1
     profiles: [quick-tunnel]
-    command: ["tunnel", "--no-autoupdate", "--url", "http://caddy:80"]
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--url", "http://caddy:80"]
     depends_on:
       - caddy
     networks: [internal]
@@ -140,7 +140,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:2025.8.1
     profiles: [tunnel]
-    command: ["tunnel", "--no-autoupdate", "run"]
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "run"]
     environment:
       # read from the environment, not the command line (which `docker inspect` / ps would show)
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}

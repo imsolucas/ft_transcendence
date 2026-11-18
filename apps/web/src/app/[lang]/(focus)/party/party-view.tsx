@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Copy, Crown, Eye, Users } from "lucide-react";
-import type { PartyPlayer, PartySide, PartyStanding, PartyState, serializablePlayer } from "shared";
+import type { CyclesState, PartyGame, PartyPlayer, PartySide, PartyStanding, PartyState, serializablePlayer } from "shared";
+import { applyCyclesDelta } from "shared/game-engine/cycles/CyclesEngine";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
 import { announceAchievement, announceLevelUp } from "@/lib/realtime";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, Badge, EmptyState, Panel, Spinner } from "@/components/ui/primitives";
 import { ConnectionQuality, GameMenu, ReconnectingOverlay } from "@/components/game/hud";
 import { PartyCourt, PartyRoster, type PartyDir } from "@/components/game/party";
+import { CyclesCourt, CyclesRoster } from "@/components/game/cycles";
 
 export type PartyMode = "quick" | "create" | "join";
 
@@ -33,12 +35,31 @@ export function PartyView() {
   const raw = params.get("mode");
   const mode: PartyMode = raw === "create" || raw === "join" ? raw : "quick";
   const code = params.get("code") ?? "";
+  // ?game=cycles: Light Cycles (2–4 riders) instead of party Pong
+  const game: PartyGame = params.get("game") === "cycles" ? "cycles" : "pong";
   const [attempt, setAttempt] = useState(0);
-  return <PartyMatch key={`${mode}-${code}-${attempt}`} mode={mode} code={code} onRestart={() => setAttempt((a) => a + 1)} />;
+  return <PartyMatch key={`${game}-${mode}-${code}-${attempt}`} game={game} mode={mode} code={code} onRestart={() => setAttempt((a) => a + 1)} />;
 }
 
-function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; onRestart: () => void }) {
-  const { t, href } = useI18n();
+/** copy that differs for Light Cycles (cycles.*); everything else is the party.* string */
+const CYCLES_COPY = new Set(["title", "searchingBody", "lobbyTitle", "shareCode", "keys", "noWinner"]);
+
+function PartyMatch({ game, mode, code, onRestart }: { game: PartyGame; mode: PartyMode; code: string; onRestart: () => void }) {
+  const { t: tr, href } = useI18n();
+  // the game actually being played (a room joined by code may be the other game)
+  const [playing, setPlaying] = useState<PartyGame>(game);
+  // read through a ref so `t` stays the same function: the socket effect depends on it
+  const playingRef = useRef(playing);
+  useEffect(() => {
+    playingRef.current = playing;
+  }, [playing]);
+  const t = useCallback<typeof tr>(
+    (key, vars) => {
+      const [ns, k] = key.split(".");
+      return ns === "party" && playingRef.current === "cycles" && k && CYCLES_COPY.has(k) ? tr(`cycles.${k}`, vars) : tr(key, vars);
+    },
+    [tr]
+  );
   const router = useRouter();
   const { me } = useMe();
   const myId = me ? String(me.id) : null;
@@ -57,6 +78,9 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
   // roster view of the state: re-rendered only when lives / alive / phase change
   const [roster, setRoster] = useState<PartyState | null>(null);
   const stateRef = useRef<PartyState | null>(null);
+  // Light Cycles: the full state from partyStart, then one delta per step
+  const cyclesRef = useRef<CyclesState | null>(null);
+  const [cyclesRoster, setCyclesRoster] = useState<CyclesState | null>(null);
   const [away, setAway] = useState<Record<string, { name: string; deadline: number }>>({});
   const [watchers, setWatchers] = useState(0);
   const [menu, setMenu] = useState(false);
@@ -92,11 +116,11 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
             break;
           }
           if (mode === "quick") {
-            socket.send({ type: "joinQueue", data: { roomType: "party" } });
+            socket.send({ type: "joinQueue", data: { roomType: "party", game } });
             if (k !== "searching") setPhase({ k: "searching", since: Date.now() });
           } else if (mode === "create") {
             // the server builds the room config itself; only the mode is read
-            socket.send({ type: "createRoom", data: { config: { mode: "party", isPrivate: true } } });
+            socket.send({ type: "createRoom", data: { config: { mode: "party", isPrivate: true, partyGame: game } } });
           } else {
             socket.send({ type: "joinRoom", data: { roomId: code.trim().toLowerCase(), mode: "party" } });
           }
@@ -110,6 +134,11 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
           break;
         case "playerJoined":
           setLobby(msg.data.playersInRoom);
+          if (msg.data.game) {
+            // set the ref now: this render already reads the copy through it
+            playingRef.current = msg.data.game;
+            setPlaying(msg.data.game);
+          }
           setPhase((p) => {
             if (p.k === "playing" || p.k === "ended") return p;
             // a matchmade party has a ready deadline (a private one waits for friends)
@@ -133,13 +162,33 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
           });
           break;
         }
-        case "partyStart":
+        case "partyStart": {
           setSeats(msg.data.players);
-          stateRef.current = msg.data.state;
-          setRoster(msg.data.state);
+          const st = msg.data.state;
+          if (st.kind === "cycles") {
+            cyclesRef.current = st;
+            setCyclesRoster(st);
+            playingRef.current = "cycles";
+            setPlaying("cycles");
+          } else {
+            stateRef.current = st;
+            setRoster(st);
+            playingRef.current = "pong";
+            setPlaying("pong");
+          }
           setReadyDeadline(null);
           setPhase({ k: "playing" });
           break;
+        }
+        case "cyclesTick": {
+          const prev = cyclesRef.current;
+          if (!prev) break;
+          const next = applyCyclesDelta(prev, msg.data.delta);
+          cyclesRef.current = next;
+          // the roster only changes when someone crashes or the round ends
+          if (msg.data.delta.crashed.length > 0 || next.phase !== prev.phase) setCyclesRoster(next);
+          break;
+        }
         case "partyState": {
           const prev = stateRef.current;
           stateRef.current = msg.data.state;
@@ -192,7 +241,7 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
       socket.close();
       socketRef.current = null;
     };
-  }, [mode, code, t]);
+  }, [game, mode, code, t]);
 
   // clock for the queue countdown, ready deadline, reconnect countdowns and search timeout
   const ticking = phase.k === "searching" || readyDeadline !== null || Object.keys(away).length > 0;
@@ -234,10 +283,11 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
     socketRef.current?.send({ type: "playerInput", data: { inputs: { ...idle, left: d.left, right: d.right } } });
   }, []);
   const getState = useCallback(() => stateRef.current, []);
+  const getCycles = useCallback(() => cyclesRef.current, []);
 
   const mySeat = seats.find((s) => s.id === myId)?.seat ?? null;
   const viewSide = (roster?.paddles[mySeat ?? 0]?.side ?? 0) as PartySide;
-  const meAlive = mySeat !== null && roster?.paddles[mySeat]?.alive === true;
+  const meAlive = mySeat !== null && (playing === "cycles" ? cyclesRoster?.cycles[mySeat]?.alive === true : roster?.paddles[mySeat]?.alive === true);
 
   // ---------------- render by phase ----------------
   if (phase.k === "error") {
@@ -297,7 +347,9 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
   }
 
   if (phase.k === "lobby") {
-    const enough = lobby.length >= 3;
+    // Light Cycles starts with 2 riders, party Pong needs 3 sides
+    const min = playing === "cycles" ? 2 : 3;
+    const enough = lobby.length >= min;
     const meReady = readySent || lobby.find((p) => p.id === myId)?.isReady;
     const open = Math.max(0, 4 - lobby.length);
     return (
@@ -351,7 +403,7 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
         )}
         {!enough ? (
           <p className="muted row">
-            <Spinner /> {t("party.needMore", { n: 3 })}
+            <Spinner /> {t("party.needMore", { n: min })}
           </p>
         ) : meReady ? (
           <p className="muted row">
@@ -398,7 +450,7 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
                   {s.name}
                   {s.id === myId && <span className="subtle"> · {t("common.you")}</span>}
                 </span>
-                {s.place === 1 ? <Badge tone="amber">{t("party.winnerBadge")}</Badge> : <span className="t-caption subtle">{t("party.out")}</span>}
+                {s.place === 1 && phase.winner ? <Badge tone="amber">{t("party.winnerBadge")}</Badge> : <span className="t-caption subtle">{t("party.out")}</span>}
               </li>
             ))}
           </ol>
@@ -440,9 +492,18 @@ function PartyMatch({ mode, code, onRestart }: { mode: PartyMode; code: string; 
           </Button>
         </span>
       </div>
-      <PartyRoster players={seats} state={roster} myId={myId} viewSide={viewSide} />
+      {playing === "cycles" ? <CyclesRoster players={seats} state={cyclesRoster} myId={myId} /> : <PartyRoster players={seats} state={roster} myId={myId} viewSide={viewSide} />}
       <div className="relative min-h-0 flex-1">
-        <PartyCourt getState={getState} viewSide={viewSide} you={mySeat} controls={meAlive ? "online" : "none"} onInputs={onInputs} paused={!meAlive || awayList.length > 0} />
+        {playing === "cycles" ? (
+          <CyclesCourt getState={getCycles} you={mySeat} controls={meAlive ? "online" : "none"} onInputs={onInputs} paused={!meAlive || awayList.length > 0} />
+        ) : (
+          <PartyCourt getState={getState} viewSide={viewSide} you={mySeat} controls={meAlive ? "online" : "none"} onInputs={onInputs} paused={!meAlive || awayList.length > 0} />
+        )}
+        {playing === "cycles" && cyclesRoster?.phase === "countdown" && awayList.length === 0 && (
+          <div className="pointer-events-none absolute inset-x-0 top-2 text-center" aria-live="polite">
+            <span className="pix pix-md c-amber">{t("cycles.getReady")}</span>
+          </div>
+        )}
         {serving && roster && roster.serveIn > 0 && awayList.length === 0 && (
           <div className="pointer-events-none absolute inset-x-0 top-2 text-center" aria-live="polite">
             <span className="pix pix-md c-amber">{Math.ceil(roster.serveIn)}</span>

@@ -231,7 +231,8 @@ export type AchievementId =
   | "streak_5"
   | "shutout"
   | "champion"
-  | "social";
+  | "social"
+  | "daily_7";
 /** Computed from match / tournament / friend data; `progress` counts towards `target`. */
 export interface Achievement {
   id: AchievementId;
@@ -311,3 +312,99 @@ export interface TournamentSummary {
 }
 
 /** GET /api/users/:username/tournaments?page=&pageSize=10 → Page<TournamentSummary> (newest first) */
+
+// ---------------------------------------------------------------- Daily Challenge
+// services/shared/daily/daily.ts runs the game; the users service replays the input log.
+export type { DailyChallenge, DailyTwist } from "../daily/daily.ts";
+
+/** one player's best run today on the daily board */
+export interface DailyBoardRow {
+  rank: number;
+  /** 3 letters A–Z (derived from the username until the player picks some) */
+  initials: string;
+  user: PublicUser;
+  score: number;
+}
+
+export interface DailyMe {
+  attemptsUsed: number;
+  attemptsLeft: number;
+  /** best score today, null before a finished try */
+  best: number | null;
+  rank: number | null;
+  /** days in a row with at least one try, up to today (or yesterday, if not played yet today) */
+  streak: number;
+  /** the player's chosen initials, null if never set */
+  initials: string | null;
+}
+
+/** GET /api/daily (guests too: `me` is null) */
+export interface DailyInfo {
+  day: string;
+  challenge: import("../daily/daily.ts").DailyChallenge;
+  /** next UTC midnight */
+  resetsAt: string;
+  attempts: number;
+  /** top 20, plus your row if you're further down */
+  board: DailyBoardRow[];
+  me: DailyMe | null;
+}
+
+/** POST /api/daily/start: uses up a try */
+export interface DailyStart {
+  runId: number;
+  seed: number;
+  attempt: number;
+  attemptsLeft: number;
+  challenge: import("../daily/daily.ts").DailyChallenge;
+}
+
+/** POST /api/daily/runs/:id/finish body: the run-length input log (DailyInputLog) */
+export interface DailyFinishBody {
+  log: number[];
+  /** 3 letters A–Z; saved as the player's board initials */
+  initials?: string;
+}
+
+/** POST /api/daily/runs/:id/finish: the score is the server's replay */
+export interface DailyFinish {
+  score: number;
+  best: number;
+  newBest: boolean;
+  rank: number | null;
+  streak: number;
+  attemptsLeft: number;
+  /** XP this run added (your best of the day is what earns XP) */
+  xpGained: number;
+}
+
+// ---------------------------------------------------------------- Coins, quests, shop (quests/quests.ts)
+export type { QuestId } from "../quests/quests.ts";
+
+export interface QuestView {
+  id: import("../quests/quests.ts").QuestId;
+  target: number;
+  progress: number;
+  reward: number;
+  done: boolean;
+  claimed: boolean;
+}
+
+/** GET /api/me/coins */
+export interface CoinsInfo {
+  balance: number;
+  day: string;
+  /** next UTC midnight: new quests */
+  resetsAt: string;
+  quests: QuestView[];
+}
+
+/** POST /api/quests/:id/claim and POST /api/shop/buy */
+export interface CoinsResult {
+  balance: number;
+}
+
+/** POST /api/shop/buy body: a shop item key, "slot:id" */
+export interface ShopBuyBody {
+  item: string;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Crown, Flame, Gamepad2, Medal, ShieldCheck, Trophy, Users, type LucideIcon } from "lucide-react";
+import { Award, CalendarCheck, Crown, Flame, Gamepad2, Medal, ShieldCheck, Trophy, Users, type LucideIcon } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { Achievement, AchievementId } from "@/lib/types";
 import { cn } from "@/lib/cn";
@@ -15,6 +15,7 @@ const ICONS: Record<AchievementId, LucideIcon> = {
   shutout: ShieldCheck,
   champion: Crown,
   social: Users,
+  daily_7: CalendarCheck,
 };
 
 /** Achievement grid: unlocked ones are lit (icon + "Unlocked"), locked ones show progress. */

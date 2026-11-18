@@ -8,9 +8,10 @@
  */
 
 /** Achievement ids (kept in sync with AchievementId in types/api.types.ts) */
-type AchievementRef = "first_win" | "ten_wins" | "fifty_wins" | "regular" | "streak_5" | "shutout" | "champion" | "social";
+type AchievementRef = "first_win" | "ten_wins" | "fifty_wins" | "regular" | "streak_5" | "shutout" | "champion" | "social" | "daily_7";
 
-export type Unlock = { level: number } | { achievement: AchievementRef } | null;
+/** how an option is earned: a level, an achievement, or bought in the shop for coins */
+export type Unlock = { level: number } | { achievement: AchievementRef } | { coins: number } | null;
 
 export interface AvatarSpec {
   v: 1;
@@ -51,6 +52,8 @@ const SKINS: { id: string; unlock: Unlock; base: string; shade: string }[] = [
   { id: "umber", unlock: null, base: "#a0663d", shade: "#7f4e2c" },
   { id: "ebony", unlock: null, base: "#6e4426", shade: "#52311a" },
   { id: "synth", unlock: { level: 10 }, base: "#7fe3c4", shade: "#4fb79a" },
+  // shop (coins); appended so stored indices never shift
+  { id: "chrome", unlock: { coins: 300 }, base: "#c9d3e8", shade: "#8e9bb8" },
 ];
 const HAIR_COLORS = ["#1b1424", "#4a2f1f", "#b5651d", "#f2d16b", "#e8e6f0", "#ff2e97", "#22e6ff", "#7cff6b"];
 const SHIRTS = ["#ff2e97", "#22e6ff", "#ffb02e", "#7cff6b", "#9b5cff", "#e8e6f0"];
@@ -66,6 +69,8 @@ const HAIRS: Part[] = [
   { id: "bald", unlock: null, rows: [] },
   { id: "mohawk", unlock: { level: 3 }, rows: [".....HH.....", ".....HH.....", "....HHHH...."] },
   { id: "bun", unlock: { level: 5 }, rows: [".....HH.....", "....HHHH....", "..HHHHHHHH..", "..H......H.."] },
+  // shop (coins)
+  { id: "flame", unlock: { coins: 200 }, rows: ["....H..H....", "...HH.HH.H..", "..HHHHHHHH..", "..H......H.."] },
 ];
 const EYES: Part[] = [
   { id: "dots", unlock: null, rows: ["", "", "", "", "", "....E..E...."] },
@@ -88,6 +93,10 @@ const ITEMS: (Part & { colors: { A: string; a: string } })[] = [
   { id: "horns", unlock: { achievement: "streak_5" }, rows: ["..A......A..", "..AA....AA.."], colors: { A: "#ff4d4d", a: "#ff4d4d" } },
   { id: "crown", unlock: { achievement: "champion" }, rows: ["...A..A..A..", "...AAAAAAA.."], colors: { A: "#ffb02e", a: "#ffb02e" } },
   { id: "halo", unlock: { level: 15 }, rows: ["...aaaaaa..."], colors: { A: "#fff3a0", a: "#fff3a0" } },
+  // shop (coins)
+  { id: "cap", unlock: { coins: 100 }, rows: ["", "...AAAAAA...", "..AAAAAAAAa.", "..........aa"], colors: { A: "#22e6ff", a: "#1b1424" } },
+  { id: "catears", unlock: { coins: 150 }, rows: ["..A......A..", "..AA....AA.."], colors: { A: "#1b1424", a: "#ff2e97" } },
+  { id: "antenna", unlock: { coins: 250 }, rows: ["......a.....", "......A.....", "......A....."], colors: { A: "#7c66ad", a: "#ffb000" } },
 ];
 const HEAD: Rows = ["", "", "...SSSSSS...", "..SSSSSSSS..", "..SSSSSSSS..", "..SSSSSSSS..", ".sSSSSSSSSs.", "..SSSSSSSS..", "..SSSSSSSS..", "...SSSSSS..."];
 const BODY: Rows = ["", "", "", "", "", "", "", "", "", "", "..CCCssCCC..", ".CCCCCCCCCC."];
@@ -127,22 +136,33 @@ export const AVATAR_SLOTS = Object.keys(AVATAR_PARTS) as AvatarSlot[];
 export interface Progress {
   level: number;
   achievements: readonly string[];
+  /** shop items bought ("slot:id" keys) */
+  owned?: readonly string[];
 }
 
-export function isUnlocked(unlock: Unlock, p: Progress): boolean {
+/** `key` ("slot:id") is needed for shop items: they're unlocked once owned */
+export function isUnlocked(unlock: Unlock, p: Progress, key?: string): boolean {
   if (!unlock) return true;
   if ("level" in unlock) return p.level >= unlock.level;
+  if ("coins" in unlock) return !!key && (p.owned ?? []).includes(key);
   return p.achievements.includes(unlock.achievement);
+}
+
+/** Everything sold in the shop: "slot:id" key and price. */
+export function shopItems(): { key: string; cost: number }[] {
+  const out: { key: string; cost: number }[] = [];
+  for (const slot of AVATAR_SLOTS) for (const o of AVATAR_PARTS[slot]) if (o.unlock && "coins" in o.unlock) out.push({ key: `${slot}:${o.id}`, cost: o.unlock.coins });
+  return out;
 }
 
 /** Every locked option the player has unlocked, as "slot:id" / "frame:id" / "paddle:id". */
 export function unlockedKeys(p: Progress): string[] {
   const keys: string[] = [];
   for (const slot of AVATAR_SLOTS) {
-    for (const opt of AVATAR_PARTS[slot]) if (opt.unlock && isUnlocked(opt.unlock, p)) keys.push(`${slot}:${opt.id}`);
+    for (const opt of AVATAR_PARTS[slot]) if (opt.unlock && isUnlocked(opt.unlock, p, `${slot}:${opt.id}`)) keys.push(`${slot}:${opt.id}`);
   }
-  for (const f of FRAMES) if (f.unlock && isUnlocked(f.unlock, p)) keys.push(`frame:${f.id}`);
-  for (const k of PADDLES) if (k.unlock && isUnlocked(k.unlock, p)) keys.push(`paddle:${k.id}`);
+  for (const f of FRAMES) if (f.unlock && isUnlocked(f.unlock, p, `frame:${f.id}`)) keys.push(`frame:${f.id}`);
+  for (const k of PADDLES) if (k.unlock && isUnlocked(k.unlock, p, `paddle:${k.id}`)) keys.push(`paddle:${k.id}`);
   return keys;
 }
 
@@ -166,12 +186,12 @@ export function parseLook(raw: unknown): PlayerLook | null {
 export function firstLocked(look: PlayerLook, p: Progress): string | null {
   for (const slot of AVATAR_SLOTS) {
     const opt = AVATAR_PARTS[slot][look.pixel[slot]]!;
-    if (!isUnlocked(opt.unlock, p)) return `${slot}:${opt.id}`;
+    if (!isUnlocked(opt.unlock, p, `${slot}:${opt.id}`)) return `${slot}:${opt.id}`;
   }
   const f = FRAMES.find((x) => x.id === look.frame)!;
-  if (!isUnlocked(f.unlock, p)) return `frame:${f.id}`;
+  if (!isUnlocked(f.unlock, p, `frame:${f.id}`)) return `frame:${f.id}`;
   const k = PADDLES.find((x) => x.id === look.paddle)!;
-  if (!isUnlocked(k.unlock, p)) return `paddle:${k.id}`;
+  if (!isUnlocked(k.unlock, p, `paddle:${k.id}`)) return `paddle:${k.id}`;
   return null;
 }
 

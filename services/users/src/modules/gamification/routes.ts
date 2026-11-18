@@ -6,6 +6,8 @@ import { notify } from "../../realtime/notify.ts";
 import { requireUser } from "../../auth/guards.ts";
 import { PUBLIC_USER_SELECT, parsePage, toPublicUser } from "../shared/presenters.ts";
 import { DELETED_PREFIX } from "../privacy/routes.ts";
+import { dailyStreaks, dailyXpTotal } from "../daily/service.ts";
+import { utcDay } from "../../../../shared/daily/daily.ts";
 
 /** Streaks are computed over the most recent matches only (bounded work per profile view). */
 const STREAK_WINDOW = 2000;
@@ -13,7 +15,7 @@ const SHUTOUT_MIN_POINTS = 3;
 
 export async function computeAchievements(userId: number, wins: number, played: number): Promise<Achievement[]> {
   const involves = { OR: [{ player1Id: userId }, { player2Id: userId }] };
-  const [recent, shutouts, titles, friends] = await Promise.all([
+  const [recent, shutouts, titles, friends, daily] = await Promise.all([
     // newest first, reversed below so the streak scan runs oldest → newest
     prisma.match.findMany({ where: involves, orderBy: [{ played_at: "desc" }, { id: "desc" }], take: STREAK_WINDOW, select: { winnerId: true } }),
     // a shutout needs real points scored (a 1-0 forfeit isn't one)
@@ -27,6 +29,7 @@ export async function computeAchievements(userId: number, wins: number, played: 
     }),
     prisma.tournament.count({ where: { winnerId: userId } }),
     prisma.friendship.count({ where: { status: "ACCEPTED", OR: [{ requesterId: userId }, { addresseeId: userId }] } }),
+    dailyStreaks(userId, utcDay()),
   ]);
   let best = 0;
   let run = 0;
@@ -50,11 +53,13 @@ export async function computeAchievements(userId: number, wins: number, played: 
     a("shutout", shutouts, 1),
     a("champion", titles, 1),
     a("social", friends, 5),
+    a("daily_7", daily.best, 7),
   ];
 }
 
 /**
- * XP rules (shown on the profile): 10 per match, +20 per win, +100 per title, +25 per achievement.
+ * XP rules (shown on the profile): 10 per match, +20 per win, +100 per title, +25 per achievement,
+ * and per Daily Challenge day 10 + 2 per point of that day's best run (daily/service.ts).
  * Party games (3–4 players) count as matches and a party won as a win, for XP only: 1v1 stats,
  * win rate and achievements still read the 1v1 Match table.
  */
@@ -79,7 +84,7 @@ type SyncMode = "read" | "store" | "announce";
  */
 export async function syncAchievements(userId: number, mode: SyncMode = "read"): Promise<{ achievements: Achievement[]; progress: Progress }> {
   const involves = { OR: [{ player1Id: userId }, { player2Id: userId }] };
-  const [wins, played, titles, stored, user, partyPlayed, partyWins] = await Promise.all([
+  const [wins, played, titles, stored, user, partyPlayed, partyWins, dailyXp] = await Promise.all([
     prisma.match.count({ where: { winnerId: userId } }),
     prisma.match.count({ where: involves }),
     prisma.tournament.count({ where: { winnerId: userId } }),
@@ -87,6 +92,7 @@ export async function syncAchievements(userId: number, mode: SyncMode = "read"):
     prisma.user.findUnique({ where: { id: userId }, select: { level: true, xp: true } }),
     prisma.partyMatchPlayer.count({ where: { userId } }),
     prisma.partyMatch.count({ where: { winnerId: userId } }),
+    dailyXpTotal(userId),
   ]);
   const computed = await computeAchievements(userId, wins, played);
   const known = new Map(stored.map((s) => [s.achievement, s.unlockedAt]));
@@ -105,7 +111,7 @@ export async function syncAchievements(userId: number, mode: SyncMode = "read"):
     const at = known.get(c.id);
     return at ? { ...c, unlocked: true, progress: c.target, unlockedAt: at.toISOString() } : c;
   });
-  const xp = (played + partyPlayed) * XP.match + (wins + partyWins) * XP.win + titles * XP.title + known.size * XP.achievement;
+  const xp = (played + partyPlayed) * XP.match + (wins + partyWins) * XP.win + titles * XP.title + known.size * XP.achievement + dailyXp;
   const progress = levelFor(xp);
   if (mode !== "read" && user && (user.xp !== xp || user.level !== progress.level)) {
     // conditional update: only the call that raises the stored level announces it

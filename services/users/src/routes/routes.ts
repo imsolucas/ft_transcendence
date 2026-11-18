@@ -13,6 +13,8 @@ import aiRoutes from "../modules/ai/routes.ts";
 import internalRoutes from "../modules/internal/routes.ts";
 import tournamentRoutes from "../modules/tournaments/routes.ts";
 import rankedRoutes from "../modules/ranked/routes.ts";
+import dailyRoutes from "../modules/daily/routes.ts";
+import coinsRoutes from "../modules/coins/routes.ts";
 import { apiRateLimiter, createRateLimiter } from "../middleware/rateLimiter.ts";
 import { isBreachedHash } from "../auth/breached.ts";
 
@@ -40,6 +42,8 @@ export default async function routes(app: FastifyInstance) {
       await api.register(aiRoutes);
       await api.register(tournamentRoutes);
       await api.register(rankedRoutes);
+      await api.register(dailyRoutes);
+      await api.register(coinsRoutes);
     },
     { prefix: "/api" }
   );

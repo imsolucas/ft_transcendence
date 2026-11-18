@@ -138,6 +138,15 @@ export class PartyEngine {
 		this.#knockOut(seat);
 	}
 
+	isAlive(seat: number): boolean {
+		return this.#seats[seat]?.alive === true;
+	}
+
+	/** lives left per seat */
+	livesBySeat(): number[] {
+		return this.#seats.map((s) => s.lives);
+	}
+
 	get over(): boolean {
 		return this.#phase === "over";
 	}
@@ -169,6 +178,7 @@ export class PartyEngine {
 	getState(): PartyState {
 		const paddles: PartyPaddleView[] = this.#seats.map((s, i) => ({ seat: i, side: s.side, pos: s.pos, lives: s.lives, alive: s.alive }));
 		return {
+			kind: "pong",
 			phase: this.#phase,
 			court: D.COURT,
 			paddleLength: D.PADDLE_LENGTH,

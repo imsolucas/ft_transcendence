@@ -22,7 +22,6 @@ export class StateManager {
 						console.warn(`State '${stateName}' is already registered. Overwriting.`);
 				}
 				this.states.set(stateName, StateClass);
-				console.log(`Registered state: ${stateName}`);
 		}
 
 		transitionTo(stateName: StateName, shouldEnter: boolean = true): void {
@@ -40,7 +39,6 @@ export class StateManager {
 						if (shouldEnter)
 							newState.enter();
 						this.currentState = newState;
-						console.log(`Transitioned to state: ${stateName}`);
 				} catch (error) {
 					console.error(`Failed to transition to state '${stateName}':`, error);
 					this.currentState = null; // Reset current state on failure
@@ -59,7 +57,6 @@ export class StateManager {
 			if (result?.shouldExit) {
 				this.currentState.exit();
 				this.currentState = null;
-				console.log("Exited current state");
 			}
 		}
 

@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { PartyEngine, default_config } from "shared/index.ts";
-import type { GameConfig, PartyEndMessage, PartyPlayer, PartyQueueMessage, PartyStanding, PartyStartMessage, PartyStateMessage, Player, PlayerInputs, PlayerReadyMessage } from "shared/index.ts";
+import { CyclesEngine, PartyEngine, default_config } from "shared/index.ts";
+import type { CyclesTickMessage, GameConfig, PartyEndMessage, PartyGame, PartyPlayer, PartyQueueMessage, PartyStanding, PartyStartMessage, PartyStateMessage, Player, PlayerInputs, PlayerReadyMessage } from "shared/index.ts";
 import type { RoomManager } from "../game/roomManager.ts";
 import type { Room } from "../types/room.types.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
@@ -9,12 +9,21 @@ import { reportPartyResult } from "../utils/reportResults.ts";
 
 export const PARTY_MIN = 3;
 export const PARTY_MAX = 4;
+/** fewest players a party game starts with: Pong needs 3 sides, Light Cycles 2 riders */
+export const partyMin = (game: PartyGame | undefined) => (game === "cycles" ? 2 : PARTY_MIN);
+const GAMES: PartyGame[] = ["pong", "cycles"];
+
+interface Queue {
+    list: { player: Player; since: number }[];
+    timer: ReturnType<typeof setTimeout> | null;
+    startsAt: number | null;
+}
 /** with 3 (but not 4) players queued, the party starts after this wait */
 export const PARTY_QUEUE_WAIT_MS = 15_000;
 
 /** The server's config for a party room; nothing physical comes from the client. */
-export function partyConfig(isPrivate: boolean): GameConfig {
-    return { ...structuredClone(default_config.standardGame), mode: "party", isPrivate, numPlayers: PARTY_MAX };
+export function partyConfig(isPrivate: boolean, game: PartyGame = "pong"): GameConfig {
+    return { ...structuredClone(default_config.standardGame), mode: "party", isPrivate, numPlayers: PARTY_MAX, partyGame: game };
 }
 
 /**
@@ -23,9 +32,8 @@ export function partyConfig(isPrivate: boolean): GameConfig {
  * Lobby messages (playerJoined, playerReady, playerLeft) are the 1v1 ones.
  */
 export default class PartyService {
-    private queue: { player: Player; since: number }[] = [];
-    private queueTimer: ReturnType<typeof setTimeout> | null = null;
-    private startsAt: number | null = null;
+    /** one matchmaking queue per party game */
+    private queues: Record<PartyGame, Queue> = { pong: { list: [], timer: null, startsAt: null }, cycles: { list: [], timer: null, startsAt: null } };
 
     constructor(
         private roomManager: RoomManager,
@@ -39,80 +47,94 @@ export default class PartyService {
     // ---------------------------------------------------------------- queue
 
     isQueued(playerId: string): boolean {
-        return this.queue.some((q) => q.player.id === playerId);
+        return GAMES.some((g) => this.queues[g].list.some((q) => q.player.id === playerId));
     }
 
     /** false when the player is already seated in a room */
-    joinQueue(player: Player): boolean {
+    joinQueue(player: Player, game: PartyGame = "pong"): boolean {
         if (player.roomId) return false;
-        if (!this.isQueued(player.id)) this.queue.push({ player, since: Date.now() });
-        this.evaluate();
+        // one search at a time: switching game leaves the other queue
+        for (const g of GAMES) if (g !== game) this.dropFrom(g, player.id);
+        const q = this.queues[game];
+        if (!q.list.some((e) => e.player.id === player.id)) q.list.push({ player, since: Date.now() });
+        this.evaluate(game);
         return true;
     }
 
     /** Idempotent. */
     leaveQueue(player: Player): boolean {
-        const before = this.queue.length;
-        this.queue = this.queue.filter((q) => q.player.id !== player.id);
-        if (this.queue.length === before) return false;
-        this.evaluate();
+        let left = false;
+        for (const g of GAMES) if (this.dropFrom(g, player.id)) left = true;
+        return left;
+    }
+
+    private dropFrom(game: PartyGame, playerId: string): boolean {
+        const q = this.queues[game];
+        const before = q.list.length;
+        q.list = q.list.filter((e) => e.player.id !== playerId);
+        if (q.list.length === before) return false;
+        this.evaluate(game);
         return true;
     }
 
-    /** 4 queued: start now · 3 queued: start after PARTY_QUEUE_WAIT_MS · fewer: wait. */
-    private evaluate(): void {
-        // drop anyone who went away or got seated elsewhere since queueing
-        this.queue = this.queue.filter((q) => {
-            const live = this.roomManager.getPlayer(q.player.id);
-            return live === q.player && !q.player.roomId && q.player.socket.readyState === 1;
-        });
-        while (this.queue.length >= PARTY_MAX) this.form(this.queue.splice(0, PARTY_MAX).map((q) => q.player));
+    private stillWaiting(e: { player: Player }): boolean {
+        return this.roomManager.getPlayer(e.player.id) === e.player && !e.player.roomId && e.player.socket.readyState === 1;
+    }
 
-        if (this.queue.length >= PARTY_MIN) {
-            if (!this.queueTimer) {
-                this.startsAt = Date.now() + PARTY_QUEUE_WAIT_MS;
-                this.queueTimer = setTimeout(() => {
-                    this.queueTimer = null;
-                    this.startsAt = null;
+    /** 4 queued: start now · enough (3 for Pong, 2 for Light Cycles): start after PARTY_QUEUE_WAIT_MS · fewer: wait. */
+    private evaluate(game: PartyGame): void {
+        const q = this.queues[game];
+        const min = partyMin(game);
+        // drop anyone who went away or got seated elsewhere since queueing
+        q.list = q.list.filter((e) => this.stillWaiting(e));
+        while (q.list.length >= PARTY_MAX) this.form(q.list.splice(0, PARTY_MAX).map((e) => e.player), game);
+
+        if (q.list.length >= min) {
+            if (!q.timer) {
+                q.startsAt = Date.now() + PARTY_QUEUE_WAIT_MS;
+                q.timer = setTimeout(() => {
+                    q.timer = null;
+                    q.startsAt = null;
                     try {
-                        // re-check who is still there; 3+ → a party of everyone waiting (max 4)
-                        this.queue = this.queue.filter((q) => this.roomManager.getPlayer(q.player.id) === q.player && !q.player.roomId && q.player.socket.readyState === 1);
-                        if (this.queue.length >= PARTY_MIN) this.form(this.queue.splice(0, PARTY_MAX).map((q) => q.player));
-                        this.evaluate();
+                        // re-check who is still there; enough → a party of everyone waiting (max 4)
+                        q.list = q.list.filter((e) => this.stillWaiting(e));
+                        if (q.list.length >= min) this.form(q.list.splice(0, PARTY_MAX).map((e) => e.player), game);
+                        this.evaluate(game);
                     } catch {
                         // a failed start must not take the process down; the queue is re-evaluated on the next join
                     }
                 }, PARTY_QUEUE_WAIT_MS);
             }
-        } else if (this.queueTimer) {
-            clearTimeout(this.queueTimer);
-            this.queueTimer = null;
-            this.startsAt = null;
+        } else if (q.timer) {
+            clearTimeout(q.timer);
+            q.timer = null;
+            q.startsAt = null;
         }
-        this.announceQueue();
+        this.announceQueue(game);
     }
 
-    private announceQueue(): void {
+    private announceQueue(game: PartyGame): void {
+        const q = this.queues[game];
         const msg: PartyQueueMessage = {
             type: "partyQueue",
-            data: { waiting: this.queue.length, needed: PARTY_MIN, startsAt: this.startsAt },
+            data: { waiting: q.list.length, needed: partyMin(game), startsAt: q.startsAt, game },
             timestamp: Date.now(),
         };
         const json = JSON.stringify(msg);
-        for (const q of this.queue) q.player.socket.send(json);
+        for (const e of q.list) e.player.socket.send(json);
     }
 
-    private form(players: Player[]): void {
-        const room = this.roomManager.createRoom(partyConfig(false));
+    private form(players: Player[], game: PartyGame): void {
+        const room = this.roomManager.createRoom(partyConfig(false, game));
         const seated: Player[] = [];
         for (const p of players) {
             if (this.roomManager.addPlayerToRoom(room.id, p.id)) seated.push(p);
         }
-        if (seated.length < PARTY_MIN) {
+        if (seated.length < partyMin(game)) {
             // could not seat enough (raced with something else): put them back in the queue
             for (const p of seated) this.roomManager.removePlayerFromRoom(room.id, p.id);
             this.roomManager.removeRoom(room.id);
-            for (const p of seated) if (!this.isQueued(p.id)) this.queue.unshift({ player: p, since: Date.now() });
+            for (const p of seated) if (!this.isQueued(p.id)) this.queues[game].list.unshift({ player: p, since: Date.now() });
             return;
         }
         this.onRoomFormed(room, seated);
@@ -130,14 +152,14 @@ export default class PartyService {
         };
         this.broadcaster.broadcastToRoom(room.id, msg);
         const players = this.roomManager.getPlayersInRoom(room.id);
-        if (players.length >= PARTY_MIN && players.every((p) => p.isReady)) this.start(room, players);
+        if (players.length >= partyMin(room.config.partyGame) && players.every((p) => p.isReady)) this.start(room, players);
     }
 
     /** Someone left the lobby: the ones still there may all be ready now. */
     recheckReady(room: Room): void {
         if (room.mode !== "party" || room.status === "playing" || room.status === "finished") return;
         const players = this.roomManager.getPlayersInRoom(room.id);
-        if (players.length >= PARTY_MIN && players.every((p) => p.isReady)) this.start(room, players);
+        if (players.length >= partyMin(room.config.partyGame) && players.every((p) => p.isReady)) this.start(room, players);
     }
 
     private start(room: Room, players: Player[]): void {
@@ -151,9 +173,11 @@ export default class PartyService {
             p.position = seat + 1;
             return { id: p.id, name: p.name, ...(p.picture ? { picture: p.picture } : {}), ...(p.look ? { look: p.look } : {}), seat };
         });
+        const game: PartyGame = room.config.partyGame === "cycles" ? "cycles" : "pong";
         room.party = {
             key: crypto.randomUUID(),
-            engine: new PartyEngine(seats.length, crypto.randomInt(2 ** 31)),
+            game,
+            engine: game === "cycles" ? new CyclesEngine(seats.length) : new PartyEngine(seats.length, crypto.randomInt(2 ** 31)),
             seats,
             startedAt: Date.now(),
             finished: false,
@@ -194,7 +218,7 @@ export default class PartyService {
     /** Is this player still in the running (holds a live seat)? */
     isAlive(room: Room, playerId: string): boolean {
         const seat = this.seatOf(room, playerId);
-        return seat >= 0 && room.status === "playing" && room.party?.engine.getState().paddles[seat]?.alive === true;
+        return seat >= 0 && room.status === "playing" && room.party?.engine.isAlive(seat) === true;
     }
 
     /** Knock a player out (forfeit, left the room, reconnect timeout): their side becomes a wall. */
@@ -202,7 +226,12 @@ export default class PartyService {
         if (!room.party || room.status !== "playing") return;
         const seat = this.seatOf(room, playerId);
         if (seat < 0) return;
-        room.party.engine.eliminate(seat);
+        const engine = room.party.engine;
+        if (engine instanceof CyclesEngine) {
+            // the crash (trail gone) reaches everyone as a normal step
+            const delta = engine.eliminate(seat);
+            if (delta) this.broadcastCycles(room, delta);
+        } else engine.eliminate(seat);
         // presence: they are not playing any more (they may queue for something else now)
         gameEnded([playerId]);
         // nobody left to tick for: finish now (e.g. the second-to-last player left)
@@ -212,10 +241,21 @@ export default class PartyService {
     /** One simulation tick (TickSystem, 60 Hz): broadcast the state, finish when one is left. */
     tick(room: Room, dt: number): void {
         if (!room.party || room.status !== "playing") return;
-        room.party.engine.tick(dt);
-        const msg: PartyStateMessage = { type: "partyState", data: { state: room.party.engine.getState() }, timestamp: Date.now() };
+        const engine = room.party.engine;
+        if (engine instanceof CyclesEngine) {
+            // a step is ~10–18 per second: send each one, nothing in between
+            for (const delta of engine.tick(dt)) this.broadcastCycles(room, delta);
+        } else {
+            engine.tick(dt);
+            const msg: PartyStateMessage = { type: "partyState", data: { state: engine.getState() }, timestamp: Date.now() };
+            this.broadcaster.broadcastToRoom(room.id, msg);
+        }
+        if (engine.over) this.finish(room);
+    }
+
+    private broadcastCycles(room: Room, delta: ReturnType<CyclesEngine["tick"]>[number]): void {
+        const msg: CyclesTickMessage = { type: "cyclesTick", data: { delta }, timestamp: Date.now() };
         this.broadcaster.broadcastToRoom(room.id, msg);
-        if (room.party.engine.over) this.finish(room);
     }
 
     private finish(room: Room): void {
@@ -240,8 +280,11 @@ export default class PartyService {
         gameEnded(room.playerIds);
         for (const p of this.roomManager.getPlayersInRoom(room.id)) p.isReady = false;
 
+        // a Light Cycles race over within ~3 s (an instant forfeit, two friends farming wins) isn't recorded
+        if (party.engine instanceof CyclesEngine && party.engine.steps < 30) return;
         reportPartyResult({
             matchId: party.key,
+            game: party.game,
             winnerId: winner ? parseInt(winner.id) : null,
             played_at: new Date(party.startedAt).toISOString(),
             end_at: new Date().toISOString(),

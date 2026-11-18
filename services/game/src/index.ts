@@ -12,6 +12,7 @@ import NewMessageHandler from './websocket/MessageHandler.ts';
 import TickSytem from './websocket/TickSystem.ts';
 import { setReportLogger } from './utils/reportResults.ts';
 import crypto from 'node:crypto';
+import { HallService } from './hall/HallService.ts';
 
 function safeEqual(a: string, b: string) {
   const ha = crypto.createHash('sha256').update(a).digest();
@@ -62,8 +63,8 @@ function liveMatch(roomId: string): LiveMatch | null {
     // every seat (knocked-out players stay listed); scores = lives left per seat
     const party = room.party;
     if (!party) return null;
-    const lives = party.engine.getState().paddles.map((p) => p.lives);
-    return { roomId: room.id, mode: 'party', players: party.seats.map((s) => ({ id: s.id, name: s.name })), scores: lives, spectators: spectatorCount(room.id) };
+    const lives = party.engine.livesBySeat();
+    return { roomId: room.id, mode: 'party', game: party.game, players: party.seats.map((s) => ({ id: s.id, name: s.name })), scores: lives, spectators: spectatorCount(room.id) };
   }
   // a tournament room plays one bracket match at a time: its two players
   const ids = room.mode === 'tournament' ? (tournamentService.currentPair(room) ?? []) : room.playerIds.slice(0, 2);
@@ -110,6 +111,9 @@ const io = new Server(server.server, {
     done(null, ok);
   },
 });
+
+// the arcade hall (walk-around room with the cabinets)
+const hall = new HallService(io, server.log);
 
 const MAX_SOCKETS_PER_USER = 5;
 const HANDSHAKES_PER_IP_PER_MINUTE = 30;
@@ -216,6 +220,12 @@ io.on('connection', (socket) => {
     }
     if (!data || typeof data !== 'object' || typeof (data as { type?: unknown }).type !== 'string') return;
 
+    // ---- arcade hall (handled here: it needs this socket's Socket.IO rooms)
+    if (data.type === 'hallJoin') return hall.join(socket, user);
+    if (data.type === 'hallInput') return hall.input(socket, user, (data.data as { bits?: unknown } | undefined)?.bits);
+    if (data.type === 'hallEmote') return hall.emote(socket, user, (data.data as { emote?: unknown } | undefined)?.emote);
+    if (data.type === 'hallLeave') return hall.leave(socket, user);
+
     // ---- spectator mode (handled here: it needs this socket's Socket.IO rooms)
     if (data.type === 'liveMatches') {
       const matches = roomManager
@@ -276,6 +286,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     clearInterval(recheck);
+    hall.leave(socket, user);
     // Socket.IO already removed this socket from its rooms: just update the count
     if (watching) announceSpectators(watching);
     // Compare with this connection's adapter: after a rejoin the player has a newer socket
