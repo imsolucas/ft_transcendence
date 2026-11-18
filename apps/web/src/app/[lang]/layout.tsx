@@ -4,6 +4,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { LOCALES } from "@/i18n/config";
 import { Providers } from "@/components/layout/providers";
 import { CRTFrame } from "@/components/layout/crt";
+import { APP_BACKGROUND, PWA_ICONS } from "@/lib/pwa";
 import "../globals.css";
 
 // Fonts are not preloaded: Firefox fetches a preloaded font a second time for @font-face and
@@ -22,11 +23,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: dict.meta.title, template: `%s · ${dict.meta.title}` },
     description: dict.meta.description,
+    icons: { apple: PWA_ICONS.apple },
+    appleWebApp: { capable: true, title: dict.meta.title, statusBarStyle: "black-translucent" },
   };
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0b0614",
+  themeColor: APP_BACKGROUND,
   colorScheme: "dark",
 };
 

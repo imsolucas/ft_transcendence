@@ -625,5 +625,13 @@
     },
     "unlockedToast": "Logro desbloqueado: {name}",
     "view": "Ver"
+  },
+  "offline": {
+    "metaTitle": "Sin conexión",
+    "title": "OFFLINE",
+    "line": "Señal perdida",
+    "body": "No tienes conexión. Las partidas online, el chat, los amigos y tu perfil necesitan la red. Una partida local en este dispositivo funciona sin ella.",
+    "playLocal": "Jugar en local",
+    "hint": "Esta página se recarga sola cuando vuelva la conexión."
   }
 }

@@ -625,5 +625,13 @@
     },
     "unlockedToast": "Achievement unlocked: {name}",
     "view": "View"
+  },
+  "offline": {
+    "metaTitle": "Offline",
+    "title": "OFFLINE",
+    "line": "Signal lost",
+    "body": "You're not connected. Online matches, chat, friends and your profile need the network. A local match on this device works without one.",
+    "playLocal": "Play local",
+    "hint": "This page reloads by itself when the connection comes back."
   }
 }
