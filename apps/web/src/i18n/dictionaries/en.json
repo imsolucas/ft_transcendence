@@ -77,7 +77,9 @@
         "title": "Local play",
         "body": "Two players, one keyboard. Pick the speed and the points to win."
       }
-    }
+    },
+    "goToLobby": "Go to lobby",
+    "welcomeBack": "Welcome back, {name}. Ready for a match?"
   },
   "auth": {
     "loginTitle": "Log in",
@@ -482,7 +484,8 @@
       "sexual": "sexual content",
       "spam": "spam",
       "other": "breaks the rules"
-    }
+    },
+    "slowDown": "You're sending messages too fast. Wait a moment."
   },
   "settings": {
     "title": "SETTINGS",

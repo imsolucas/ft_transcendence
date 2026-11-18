@@ -77,7 +77,9 @@
         "title": "Juego local",
         "body": "Dos jugadores, un teclado. Elige la velocidad y los puntos para ganar."
       }
-    }
+    },
+    "goToLobby": "Ir al vestíbulo",
+    "welcomeBack": "¡Hola de nuevo, {name}! ¿Listo para una partida?"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -482,7 +484,8 @@
       "sexual": "contenido sexual",
       "spam": "spam",
       "other": "incumple las normas"
-    }
+    },
+    "slowDown": "Estás enviando mensajes demasiado rápido. Espera un momento."
   },
   "settings": {
     "title": "AJUSTES",

@@ -77,7 +77,9 @@
         "title": "Jeu local",
         "body": "Deux joueurs, un clavier. Choisissez la vitesse et les points à atteindre."
       }
-    }
+    },
+    "goToLobby": "Aller au lobby",
+    "welcomeBack": "Bon retour, {name}. Prêt pour un match ?"
   },
   "auth": {
     "loginTitle": "Se connecter",
@@ -482,7 +484,8 @@
       "sexual": "contenu sexuel",
       "spam": "spam",
       "other": "contraire aux règles"
-    }
+    },
+    "slowDown": "Vous envoyez des messages trop vite. Patientez un instant."
   },
   "settings": {
     "title": "PARAMÈTRES",
