@@ -67,16 +67,28 @@ export default class RoomService {
             }
         }
 
-        const queue = mode === 'tournament' ? this.tournamentQueue : this.standardQueue;
+        // Tournament matchmaking: no open public tournament, so open one (4 players) with
+        // this player as host; the next tournament searchers join it until it fills
+        if (mode === 'tournament') {
+            const room = this.roomManager.createRoom({ ...structuredClone(default_config.standardGame), mode: 'tournament', isPrivate: false, pointsToWin: 3, numPlayers: 4 });
+            if (!this.roomManager.addPlayerToRoom(room.id, player.id)) {
+                this.roomManager.removeRoom(room.id);
+                return null;
+            }
+            const updated = this.roomManager.getPlayer(player.id);
+            if (updated) {
+                player.roomId = updated.roomId;
+                player.position = updated.position;
+            }
+            return { room, queued: false };
+        }
+
+        const queue = this.standardQueue;
 
         if (queue.length > 0) {
             const waitingPlayer = queue.shift()!;
 
-            const config = {
-                ...default_config.standardGame,
-                mode: mode,
-                pointsToWin: mode === 'tournament' ? 2 : default_config.standardGame.pointsToWin
-            };
+            const config = { ...default_config.standardGame, mode: 'standard' as const };
             const room = this.roomManager.createRoom(config);
 
             this.roomManager.addPlayerToRoom(room.id, waitingPlayer.id);
@@ -131,7 +143,8 @@ export default class RoomService {
         const success = this.roomManager.removePlayerFromRoom(player.roomId, player.id);
         if (!success) return null;
 
-        room.status = 'waiting';
+        // A started tournament keeps its own status (TournamentService); anything else reopens
+        if (room.mode !== 'tournament' || !room.tournament || room.tournament.phase === 'registration') room.status = 'waiting';
         return room;
     }
 

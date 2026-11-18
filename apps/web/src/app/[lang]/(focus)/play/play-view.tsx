@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Copy, Crown, Users, Eye } from "lucide-react";
+import { AlertTriangle, Copy, Eye, Trophy } from "lucide-react";
 import type { GameState, PlayerInputs, serializablePlayer, TournamentState } from "shared";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useMe } from "@/lib/session";
@@ -14,9 +14,10 @@ import { announceAchievement, announceLevelUp } from "@/lib/realtime";
 import { GameSocket, type ConnectionStatus, type ServerMessage } from "@/lib/game/socket";
 import { baseGameConfig } from "@/lib/game/config";
 import { Button } from "@/components/ui/button";
-import { Avatar, Badge, EmptyState, Panel, Spinner } from "@/components/ui/primitives";
+import { Avatar, Badge, EmptyState, Modal, Panel, Spinner } from "@/components/ui/primitives";
 import { Court } from "@/components/game/court";
 import { ConnectionQuality, ControlsCard, CountdownOverlay, GameMenu, MatchEnd, ReconnectingOverlay, ScoreBoard } from "@/components/game/hud";
+import { BracketView, ChampionBanner, currentMatch, isOut, nextMatchOf, roundName } from "@/components/game/bracket-view";
 
 export type PlayMode = "quick" | "create" | "join" | "tournament-create" | "tournament-join";
 
@@ -25,6 +26,8 @@ type Phase =
   | { k: "searching"; since: number }
   | { k: "waiting"; roomId: string; tournament: boolean }
   | { k: "found"; roomId: string; tournament: boolean }
+  /** tournament room between games: registration, ready check, results, champion (server phase) */
+  | { k: "tournament" }
   | { k: "countdown" }
   | { k: "playing" }
   | { k: "ended"; winnerId: string | null; reason?: "left" }
@@ -60,6 +63,10 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   const [showControls, setShowControls] = useState(!prefs.seenControls);
   const [ping, setPing] = useState<number | undefined>();
   const [tournament, setTournament] = useState<TournamentState | null>(null);
+  // local-clock end of the bracket match's ready check (from the server's remaining time)
+  const [readyEndsAt, setReadyEndsAt] = useState<number | null>(null);
+  const [roundWinner, setRoundWinner] = useState<string | null>(null);
+  const [bracketOpen, setBracketOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   // Opponent dropped mid-match: paused until this time (ms epoch)
   const [opponentAway, setOpponentAway] = useState<{ name: string; deadline: number } | null>(null);
@@ -112,7 +119,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
             setPhase({ k: "error", message: t("game.forfeitedOnDisconnect"), retry: true });
             break;
           }
-          if (current === "waiting" || current === "found") {
+          if (current === "waiting" || current === "found" || current === "tournament") {
             // The server dropped us from the room while we were away; don't silently make a new one
             setPhase({ k: "error", message: t("matchmaking.disconnected"), retry: true });
             break;
@@ -145,6 +152,11 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         case "playerJoined": {
           const data = msg.data as { roomId: string; playersInRoom: serializablePlayer[] };
           setPlayers(data.playersInRoom);
+          if (mode.startsWith("tournament")) {
+            // the bracket state that follows drives the screen
+            setPhase((p) => (p.k === "playing" || p.k === "countdown" ? p : { k: "tournament" }));
+            break;
+          }
           if (invite && mode === "create" && !invitedRef.current) {
             invitedRef.current = true;
             api
@@ -175,6 +187,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setReadyDeadline(null);
           setRematchAsked(false);
           setRematchFrom(null);
+          setRoundWinner(null);
+          setReadyEndsAt(null);
           setPhase({ k: "countdown" });
           break;
         }
@@ -185,16 +199,32 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           const gs = (msg.data as { gameState: GameState }).gameState;
           stateRef.current = gs;
           setScores((prev) => (prev[0] === gs.scores[0] && prev[1] === gs.scores[1] ? prev : [gs.scores[0] ?? 0, gs.scores[1] ?? 0]));
-          setPhase((p) => (p.k === "countdown" && gs.name === "PlayingState" ? { k: "playing" } : p));
+          setPhase((p) =>
+            (p.k === "countdown" && gs.name === "PlayingState") || (p.k === "tournament" && tournamentRef.current?.phase === "playing") ? { k: "playing" } : p,
+          );
           break;
         }
-        case "tournamentState":
-          setTournament((msg.data as { state: TournamentState }).state);
+        case "tournamentState": {
+          const st = msg.data.state;
+          setTournament(st);
+          setReadyEndsAt(st.readyDeadline ? Date.now() + Math.max(0, st.readyDeadline - msg.timestamp) : null);
+          if (st.phase !== "playing") setOpponentAway(null);
+          setPhase((p) => {
+            if (p.k === "error") return p;
+            // a live game: keep the court (players and watchers); a joiner mid-game waits for the first frame
+            if (st.phase === "playing") return p.k === "countdown" || p.k === "playing" ? p : stateRef.current ? { k: "playing" } : { k: "tournament" };
+            return { k: "tournament" };
+          });
           break;
+        }
         case "tournamentRoundEnd":
+          setRoundWinner(msg.data.winner.name);
           break;
-        case "gameEnd":
-        case "tournamentEnd": {
+        case "tournamentEnd":
+          // the final bracket state follows: the tournament screen shows the champion
+          setPhase((p) => (p.k === "error" ? p : { k: "tournament" }));
+          break;
+        case "gameEnd": {
           const winner = (msg.data as { winner?: serializablePlayer }).winner;
           setPhase({ k: "ended", winnerId: winner?.id ?? null });
           break;
@@ -202,12 +232,10 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         case "playerLeft": {
           const leaverId = (msg.data as { playerId?: string }).playerId;
           setPlayers((ps) => ps.filter((p) => p.id !== leaverId));
-          const t8 = tournamentRef.current;
-          const activePair = t8 ? [t8.kingId, t8.challengerId] : null;
+          // tournament: the server forfeits the leaver's match and sends the new bracket
+          if (mode.startsWith("tournament") || tournamentRef.current) break;
           setPhase((p) => {
             if (p.k === "playing" || p.k === "countdown") {
-              // A queued tournament spectator leaving doesn't end the current match
-              if (activePair && !activePair.includes(leaverId ?? "")) return p;
               return { k: "ended", winnerId: myIdRef.current, reason: "left" };
             }
             if (p.k === "found") {
@@ -230,7 +258,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           const d = msg.data as { playersInRoom: serializablePlayer[]; gameState: GameState | null };
           setPlayers(d.playersInRoom);
           if (d.gameState) stateRef.current = d.gameState;
-          setPhase({ k: "playing" });
+          // tournament between games: the bracket state that follows picks the screen
+          setPhase(d.gameState || !(mode.startsWith("tournament") || tournamentRef.current) ? { k: "playing" } : { k: "tournament" });
           break;
         }
         case "rematchRequested":
@@ -283,12 +312,12 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
     return () => clearInterval(id);
   }, [phase, t]);
 
-  // ---- 1s clock for the ready deadline and the reconnect countdown
+  // ---- 1s clock for the ready deadlines and the reconnect countdown
   useEffect(() => {
-    if (!readyDeadline && !opponentAway) return;
+    if (!readyDeadline && !opponentAway && !readyEndsAt) return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [readyDeadline, opponentAway]);
+  }, [readyDeadline, opponentAway, readyEndsAt]);
 
   // ---- match clock
   useEffect(() => {
@@ -319,6 +348,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
     socketRef.current?.send({ type: "playerReady", data: { ready: true } });
     setReadySent(true);
   };
+  const startTournament = () => socketRef.current?.send({ type: "startTournament", data: {} });
 
   const onInputs = useCallback((p1: PlayerInputs) => {
     socketRef.current?.send({ type: "playerInput", data: { inputs: p1 } });
@@ -330,13 +360,19 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   }, [setPref]);
   const afterCountdown = useCallback(() => setPhase((p) => (p.k === "countdown" ? { k: "playing" } : p)), []);
 
-  // Seat = server position (1-based): position 1 is the left paddle
+  // Seat = server position (1-based): position 1 is the left paddle. In a tournament the
+  // current bracket match says who plays (p1 left); names come from the bracket snapshot.
   const meP = players.find((p) => p.id === myId);
-  const tournamentPair = tournament ? [tournament.kingId, tournament.challengerId] : null;
-  const leftId = tournamentPair ? tournamentPair[0] : players.find((p) => p.position === 1)?.id;
-  const rightId = tournamentPair ? tournamentPair[1] : players.find((p) => p.position === 2)?.id;
-  const left = players.find((p) => p.id === leftId);
-  const right = players.find((p) => p.id === rightId);
+  const live = tournament ? currentMatch(tournament) : undefined;
+  const leftId = tournament ? (live?.p1 ?? undefined) : players.find((p) => p.position === 1)?.id;
+  const rightId = tournament ? (live?.p2 ?? undefined) : players.find((p) => p.position === 2)?.id;
+  const person = (id: string | undefined) => {
+    if (!id) return undefined;
+    const p = players.find((x) => x.id === id) ?? tournament?.players.find((x) => x.id === id);
+    return p ? { id, name: p.name, picture: p.picture } : undefined;
+  };
+  const left = person(leftId);
+  const right = person(rightId);
   const youSide: 0 | 1 | null = myId === leftId ? 0 : myId === rightId ? 1 : null;
   const spectating = youSide === null;
 
@@ -373,6 +409,31 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         <Spinner large label={t("matchmaking.connecting")} />
         <p className="muted">{t("matchmaking.connecting")}</p>
       </Centered>
+    );
+  }
+
+  if (phase.k === "tournament") {
+    if (!tournament) {
+      return (
+        <Centered>
+          <Spinner large label={t("matchmaking.connecting")} />
+          <Button variant="ghost" onClick={cancel}>
+            {t("common.cancel")}
+          </Button>
+        </Centered>
+      );
+    }
+    return (
+      <TournamentScreen
+        state={tournament}
+        myId={myId}
+        remaining={readyEndsAt ? Math.max(0, Math.ceil((readyEndsAt - now) / 1000)) : null}
+        roundWinner={roundWinner}
+        onReady={ready}
+        onStart={startTournament}
+        onLeave={cancel}
+        onNew={mode === "tournament-create" ? onRestart : undefined}
+      />
     );
   }
 
@@ -507,7 +568,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   }
 
   // countdown / playing
-  const ordered: [serializablePlayer | undefined, serializablePlayer | undefined] = youSide === 1 ? [right, left] : [left, right];
+  const ordered = youSide === 1 ? [right, left] : [left, right];
   const shownScores: [number, number] = youSide === 1 ? [scores[1], scores[0]] : scores;
   return (
     <div className="flex h-dvh flex-col">
@@ -519,11 +580,15 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         leftIsYou={!spectating}
         mode={
           tournament ? (
-            <span className="row">
-              <Crown className="ico !h-4 !w-4 c-amber" aria-hidden />
-              {t("tournament.title")}
-              <Users className="ico !h-4 !w-4" aria-hidden />
-              {tournament.queue.length}
+            <span className="row !gap-2">
+              <Trophy className="ico !h-4 !w-4 c-amber" aria-hidden />
+              {live ? roundName(t, live.round, tournament.rounds.length) : t("tournament.title")}
+              {watchers > 0 && (
+                <span className="row !gap-1" aria-label={t("watch.spectators", { n: watchers })}>
+                  <Eye className="ico !h-4 !w-4" aria-hidden />
+                  {watchers}
+                </span>
+              )}
             </span>
           ) : (
             <span className="row !gap-2">
@@ -567,6 +632,20 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           </div>
         )}
       </div>
+      {tournament && spectating && (
+        <>
+          <div className="fixed right-4 bottom-4 z-10">
+            <Button size="sm" onClick={() => setBracketOpen(true)}>
+              <Trophy className="ico" aria-hidden /> {t("tournament.bracket")}
+            </Button>
+          </div>
+          <Modal open={bracketOpen} onOpenChange={setBracketOpen} title={t("tournament.bracket")}>
+            <div className="mt-4 max-h-[70dvh] overflow-y-auto">
+              <BracketView state={tournament} myId={myId} />
+            </div>
+          </Modal>
+        </>
+      )}
       <GameMenu
         open={menu}
         onOpenChange={setMenu}
@@ -575,10 +654,14 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
           setMenu(false);
           setShowControls(true);
         }}
+        {...(tournament && spectating
+          ? { forfeitLabel: t("tournament.leave"), confirmTitle: t("tournament.leaveConfirm"), confirmBody: t("tournament.leaveHint") }
+          : {})}
         onForfeit={() => {
-          // the server records the loss and answers with gameEnd
-          socketRef.current?.send({ type: tournament ? "leaveRoom" : "forfeit", data: {} });
-          if (tournament) setPhase({ k: "ended", winnerId: null });
+          // a watcher leaves the tournament; a player loses this match and stays to watch
+          if (tournament && spectating) return cancel();
+          // the server records the loss and answers with gameEnd (1v1) or the new bracket
+          socketRef.current?.send({ type: "forfeit", data: {} });
         }}
       />
     </div>
@@ -587,4 +670,185 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
 
 function Centered({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return <div className={"flex min-h-dvh flex-col items-center justify-center gap-5 px-4 py-10 text-center " + (wide ? "" : "")}>{children}</div>;
+}
+
+function TournamentScreen({
+  state,
+  myId,
+  remaining,
+  roundWinner,
+  onReady,
+  onStart,
+  onLeave,
+  onNew,
+}: {
+  state: TournamentState;
+  myId: string | null;
+  remaining: number | null;
+  roundWinner: string | null;
+  onReady: () => void;
+  onStart: () => void;
+  onLeave: () => void;
+  /** only the creator can open a fresh tournament (a joiner has no new code to join) */
+  onNew?: (() => void) | undefined;
+}) {
+  const { t, href } = useI18n();
+  const nameOf = (id: string | null) => state.players.find((p) => p.id === id)?.name ?? "?";
+  const live = currentMatch(state);
+  const inLive = !!myId && !!live && (live.p1 === myId || live.p2 === myId);
+  const out = myId ? isOut(state, myId) : false;
+  const mine = myId ? nextMatchOf(state, myId) : undefined;
+  const opponent = mine ? (mine.p1 === myId ? mine.p2 : mine.p1) : null;
+  const isHost = state.hostId === myId;
+  const iAmReady = !!myId && state.readyIds.includes(myId);
+
+  if (state.phase === "registration") {
+    const enough = state.players.length >= 3;
+    const open = Math.max(0, state.size - state.players.length);
+    return (
+      <Centered wide>
+        <Panel className="w-full max-w-[520px] text-center">
+          <h1 className="t-title mb-2">{t("tournament.lobbyTitle")}</h1>
+          <p className="muted mb-3">{t("matchmaking.shareCode")}</p>
+          <div className="row justify-center">
+            <span className="num num-lg tracking-widest" aria-label={state.roomId.split("").join(" ")}>
+              {state.roomId.toUpperCase()}
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(state.roomId.toUpperCase())}>
+              <Copy className="ico" aria-hidden /> {t("common.copy")}
+            </Button>
+          </div>
+          <p className="t-caption subtle mt-3" aria-live="polite">
+            {t("tournament.players", { n: state.players.length, max: state.size })}
+          </p>
+        </Panel>
+        <ul className="grid w-full max-w-[720px] gap-3 sm:grid-cols-2" aria-label={t("tournament.registered")}>
+          {state.players.map((p) => (
+            <li key={p.id}>
+              <Panel>
+                <div className="row row-3">
+                  <Avatar name={p.name} src={p.picture} size="md" ring={p.id === myId ? "you" : "opp"} />
+                  <div className="min-w-0">
+                    <p className="t-heading truncate">{p.name}</p>
+                    <p className="t-caption subtle">
+                      {[p.id === myId ? t("common.you") : null, p.id === state.hostId ? t("tournament.host") : null].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                </div>
+              </Panel>
+            </li>
+          ))}
+          {Array.from({ length: open }, (_, i) => (
+            <li key={`open-${i}`}>
+              <Panel className="border-dashed">
+                <p className="muted">{t("tournament.openSlot")}</p>
+              </Panel>
+            </li>
+          ))}
+        </ul>
+        <section className="w-full max-w-[960px] text-left" aria-labelledby="bk-heading">
+          <h2 className="t-heading mb-2" id="bk-heading">
+            {t("tournament.bracket")}
+          </h2>
+          <p className="t-caption subtle mb-4">{t("tournament.seedingNote")}</p>
+          <BracketView state={state} myId={myId} preview />
+        </section>
+        {isHost ? (
+          <div className="stack items-center">
+            <Button variant="primary" glow="md" size="lg" disabled={!enough} onClick={onStart}>
+              {t("tournament.start")}
+            </Button>
+            <p className="t-caption subtle">{enough ? t("tournament.startHint", { max: state.size }) : t("tournament.needMore", { n: 3 })}</p>
+          </div>
+        ) : (
+          <p className="muted row">
+            <Spinner /> {t("tournament.waitingHost")}
+          </p>
+        )}
+        <Button variant="ghost" onClick={onLeave}>
+          {t("common.cancel")}
+        </Button>
+      </Centered>
+    );
+  }
+
+  // ---- bracket in progress or finished
+  let headline: React.ReactNode;
+  if (state.phase === "finished") {
+    headline = <ChampionBanner state={state} myId={myId} />;
+  } else {
+    const liveLabel = live ? `${roundName(t, live.round, state.rounds.length)} · ${nameOf(live.p1)} ${t("match.vs")} ${nameOf(live.p2)}` : null;
+    headline = (
+      <div className="stack items-center text-center" aria-live="polite">
+        {state.phase === "between" && roundWinner && <p className="t-heading c-green">{t("tournament.matchWon", { name: roundWinner })}</p>}
+        {out ? (
+          <>
+            <Badge tone="red">{t("tournament.eliminated")}</Badge>
+            <p className="muted">{t("tournament.eliminatedBody")}</p>
+          </>
+        ) : inLive ? (
+          <h1 className="t-title">{t("tournament.yourMatchVs", { name: nameOf(live!.p1 === myId ? live!.p2 : live!.p1) })}</h1>
+        ) : mine ? (
+          <h1 className="t-title">{opponent ? t("tournament.yourNextMatch", { name: nameOf(opponent) }) : t("tournament.yourNextMatchTbd")}</h1>
+        ) : null}
+        {state.phase === "ready" && liveLabel && !inLive && <p className="muted">{t("tournament.upNext", { match: liveLabel })}</p>}
+        {state.phase === "between" && <p className="muted row"><Spinner /> {t("tournament.nextSoon")}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <Centered wide>
+      {headline}
+      {state.phase === "ready" && live && (
+        <div className="stack items-center">
+          {inLive ? (
+            iAmReady ? (
+              <p className="muted row">
+                <Spinner /> {t("matchmaking.waitingFor", { name: nameOf(live.p1 === myId ? live.p2 : live.p1) })}
+              </p>
+            ) : (
+              <Button variant="primary" glow="md" size="lg" onClick={onReady}>
+                {t("matchmaking.ready")}
+              </Button>
+            )
+          ) : (
+            <p className="muted">{t("tournament.waitingReady", { n: state.readyIds.length })}</p>
+          )}
+          {remaining !== null && (
+            <p className="num num-md c-amber" role="timer">
+              {inLive && !iAmReady ? t("tournament.readyOrForfeit", { s: remaining }) : t("matchmaking.readyDeadline", { s: remaining })}
+            </p>
+          )}
+        </div>
+      )}
+      <section className="w-full max-w-[960px] text-left" aria-labelledby="bk-heading">
+        <h2 className="t-heading mb-4" id="bk-heading">
+          {t("tournament.bracket")}
+        </h2>
+        <BracketView state={state} myId={myId} />
+      </section>
+      <div className="row wrap justify-center">
+        {state.phase === "finished" ? (
+          <>
+            {onNew && (
+              <Button variant="primary" glow="sm" onClick={onNew}>
+                {t("tournament.newTournament")}
+              </Button>
+            )}
+            <Button asChild>
+              <Link href={href("/lobby")} className="no-underline">
+                {t("common.backToLobby")}
+              </Link>
+            </Button>
+          </>
+        ) : (
+          <Button variant="ghost" onClick={onLeave}>
+            {t("tournament.leave")}
+          </Button>
+        )}
+      </div>
+      {state.phase !== "finished" && !out && <p className="t-caption subtle">{t("tournament.leaveHint")}</p>}
+    </Centered>
+  );
 }

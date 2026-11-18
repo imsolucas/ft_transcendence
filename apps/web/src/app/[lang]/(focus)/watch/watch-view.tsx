@@ -81,6 +81,11 @@ export function WatchView() {
           if (v.k === "watching") setView({ k: "ended", match: v.match, winner: msg.data.winner?.name ?? "" });
           break;
         }
+        case "tournamentEnd": {
+          const v = viewRef.current;
+          if (v.k === "watching") setView({ k: "ended", match: v.match, winner: msg.data.winner?.name ?? "" });
+          break;
+        }
         case "Error":
           if (msg.data.code === "SPECTATE_NOT_FOUND") setView({ k: "error", message: t("watch.notFound") });
           else if (msg.data.code === "SPECTATE_OWN_MATCH") setView({ k: "error", message: t("watch.ownMatch") });

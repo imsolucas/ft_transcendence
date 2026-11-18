@@ -24,16 +24,57 @@ export interface GameState {
     lastUpdate: number
 }
 
+// ---------------------------------------------------------------- Bracket tournaments
+// Single elimination for 3 to 8 players; byes fill the bracket to 4 or 8 slots. The game
+// server owns the bracket and broadcasts the whole TournamentState on every change.
+
+/** A registered player, snapshotted when they join (they stay listed after leaving). */
+export interface TournamentPlayer {
+    id: string;
+    name: string;
+    picture?: string;
+    /** left the room or forfeited out: their later matches are walkovers */
+    withdrawn: boolean;
+}
+
+/** pending: players not known yet · scheduled: both known · live: ready check or playing · done */
+export type BracketMatchStatus = 'pending' | 'scheduled' | 'live' | 'done';
+/** played to the end · forfeit (left / disconnected / no-show mid-match) · walkover (opponent gone) · bye */
+export type BracketMatchResult = 'played' | 'forfeit' | 'walkover' | 'bye';
+
+export interface BracketMatch {
+    /** "r<round>m<index>", both 0-based */
+    id: string;
+    round: number;
+    index: number;
+    /** player ids; null = bye, empty slot or not decided yet (see status) */
+    p1: string | null;
+    p2: string | null;
+    winnerId: string | null;
+    /** [p1, p2] when a game was played (also for a mid-match forfeit) */
+    scores: [number, number] | null;
+    status: BracketMatchStatus;
+    result: BracketMatchResult | null;
+}
+
+export type TournamentPhase = 'registration' | 'ready' | 'playing' | 'between' | 'finished';
+
 export interface TournamentState {
-    kingId: string;
-    kingName: string;
-    challengerId: string;
-    challengerName: string;
-    queue: Array<{
-        playerId: string;
-        playerName: string;
-    }>
-    scores: Map<string, number> | Record<string, number>;
+    roomId: string;
+    phase: TournamentPhase;
+    /** registration capacity (4, 6 or 8) */
+    size: number;
+    hostId: string;
+    players: TournamentPlayer[];
+    /** rounds[0] = first round … last = final; empty during registration */
+    rounds: BracketMatch[][];
+    /** the match being readied or played */
+    currentMatchId: string | null;
+    /** players of the current match who pressed ready */
+    readyIds: string[];
+    /** ms epoch: a player not ready by then forfeits the current match */
+    readyDeadline: number | null;
+    championId: string | null;
 }
 
 export interface PlayerInputs {

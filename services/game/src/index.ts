@@ -10,7 +10,6 @@ import { MessageBroadcaster } from './websocket/Broadcaster.ts';
 import { RoomManager } from './game/roomManager.ts';
 import NewMessageHandler from './websocket/MessageHandler.ts';
 import TickSytem from './websocket/TickSystem.ts';
-import TournamentService from './websocket/TournamentService.ts';
 import { setReportLogger } from './utils/reportResults.ts';
 import crypto from 'node:crypto';
 import { registerGameGauges, registry } from './metrics.ts';
@@ -45,8 +44,9 @@ setReportLogger(server.log);
 const playerStorage = new InMemoryPlayerStorage();
 const roomManager = new RoomManager(playerStorage);
 const broadcaster = new MessageBroadcaster(roomManager);
-const tournamentService = new TournamentService(roomManager, broadcaster);
 const messageHandler = new NewMessageHandler(roomManager, broadcaster);
+// one TournamentService: it owns the bracket timers, so the tick loop shares the handler's
+const tournamentService = messageHandler.tournamentService;
 const tickSystem = new TickSytem(roomManager, tournamentService, broadcaster);
 
 // ---- Spectator mode: watchers of room X join the Socket.IO room "watch:X"
@@ -57,7 +57,8 @@ const spectatorCount = (roomId: string) => io.sockets.adapter.rooms.get(watchRoo
 function liveMatch(roomId: string): LiveMatch | null {
   const room = roomManager.getRoom(roomId);
   if (!room || room.config.isPrivate || room.status !== 'playing') return null;
-  const ids = room.mode === 'tournament' ? [room.kingId, room.challengerId] : room.playerIds.slice(0, 2);
+  // a tournament room plays one bracket match at a time: its two players
+  const ids = room.mode === 'tournament' ? (tournamentService.currentPair(room) ?? []) : room.playerIds.slice(0, 2);
   const players = ids
     .map((id) => (id ? roomManager.getPlayer(id) : undefined))
     .filter((p): p is Player => !!p)

@@ -33,7 +33,8 @@ export type GameMessage =
 | LiveMatchesRequestMessage
 | LiveMatchesMessage
 | SpectateStartedMessage
-| SpectatorCountMessage;
+| SpectatorCountMessage
+| StartTournamentMessage;
 
 export type GameErrorCodes =
 | 'ALREADY_IN_ROOM'
@@ -186,25 +187,38 @@ export interface GameEndMessage extends BaseMessage {
 	};
 }
 
+/** server → room: one bracket match ended (played or forfeited); the bracket follows */
 export interface TournamentRoundEndMessage extends BaseMessage {
 	type: 'tournamentRoundEnd';
 	data: {
-		winner: serializablePlayer
+		matchId: string;
+		winner: { id: string; name: string };
 	};
 }
 
+/** server → room: the final is decided (winner null only if every player left) */
 export interface TournamentEndMessage extends BaseMessage {
 	type: 'tournamentEnd';
 	data: {
-		winner: serializablePlayer
+		winner: { id: string; name: string } | null;
 	}
 }
 
+/**
+ * server → room (and watchers): the full bracket. Sent on every change: join, leave, start,
+ * ready, match start, result, walkover, end. The server is the only authority over it.
+ */
 export interface TournamentStateMessage extends BaseMessage {
 	type: 'tournamentState';
 	data: {
 		state: TournamentState;
 	}
+}
+
+/** client → server: the host closes registration and seeds the bracket (≥ 3 players) */
+export interface StartTournamentMessage extends BaseMessage {
+	type: 'startTournament';
+	data: Record<string, never>;
 }
 
 export interface GameStateMessage extends BaseMessage {

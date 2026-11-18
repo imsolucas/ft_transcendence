@@ -31,7 +31,6 @@ export class RoomManager {
       id: roomId,
       mode: config.mode,
       playerIds: [],
-      queueIds: [],
       status: 'waiting',
       createdAt: Date.now(),
       config: config,
@@ -62,13 +61,22 @@ export class RoomManager {
     return Array.from(this.rooms.values());
   }
 
+  /** 1v1 rooms hold two; a tournament room holds its chosen size (4, 6 or 8). */
+  capacity(room: Room): number {
+    return room.mode === 'standard' ? 2 : Math.min(8, room.config.numPlayers ?? 8);
+  }
+
+  /** A tournament only takes players during registration (it is closed once the bracket is drawn). */
+  private acceptsPlayers(room: Room): boolean {
+    return room.mode !== 'tournament' || !room.tournament || room.tournament.phase === 'registration';
+  }
+
   // Get available rooms (not full)
   getAvailableRooms(): Room[] {
     const availableRooms: Room[] = [];
     for (const room of this.rooms.values()) {
-      const maxPlayers = (room.mode === 'standard') ? 2 : 6;
       // Private rooms (created to play a friend) are only joinable by code
-      if (room.playerIds.length < maxPlayers && room.status === 'waiting' && !room.config.isPrivate) {
+      if (room.playerIds.length < this.capacity(room) && room.status === 'waiting' && !room.config.isPrivate && this.acceptsPlayers(room)) {
         availableRooms.push(room);
       }
     }
@@ -92,6 +100,8 @@ export class RoomManager {
     if (!room)
       return false;
     if (this.isRoomFull(roomId))
+      return false;
+    if (!this.acceptsPlayers(room))
       return false;
     if (room.playerIds.includes(playerId))
       return false;
@@ -151,8 +161,10 @@ export class RoomManager {
     const room = this.getRoom(roomId);
     if (!room) return -1;
 
+    // tournament seats are given per bracket match (TournamentService), not on joining
+    if (room.mode === 'tournament') return 0;
     const players = this.getPlayersInRoom(roomId);
-    const maxPlayers = room.mode === 'standard' ? 2 : 6;
+    const maxPlayers = this.capacity(room);
 
     // Find first available position (1-indexed)
     const takenPositions = new Set(players.map(p => p.position));
@@ -169,10 +181,7 @@ export class RoomManager {
     const room = this.getRoom(roomId);
     if (!room)
       return false;
-    if (room.mode === 'standard')
-      return room.playerIds.length >= 2;
-    else
-      return room.playerIds.length >= 6;
+    return room.playerIds.length >= this.capacity(room);
   }
 
   // Get number of players in a room
