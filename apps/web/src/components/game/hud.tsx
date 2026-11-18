@@ -177,12 +177,19 @@ export function GameMenu({
   online,
   onShowControls,
   onForfeit,
+  forfeitLabel,
+  confirmTitle,
+  confirmBody,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   online: boolean;
   onShowControls: () => void;
   onForfeit: () => void;
+  /** e.g. "Leave tournament" for someone who is only watching */
+  forfeitLabel?: string;
+  confirmTitle?: string;
+  confirmBody?: string;
 }) {
   const { t } = useI18n();
   const [confirm, setConfirm] = useState(false);
@@ -203,15 +210,15 @@ export function GameMenu({
             {t("game.controlsTitle")}
           </Button>
           <Button variant="danger" block onClick={() => setConfirm(true)}>
-            {t("game.forfeit")}
+            {forfeitLabel ?? t("game.forfeit")}
           </Button>
         </div>
       </Modal>
       <Modal
         open={confirm}
         onOpenChange={setConfirm}
-        title={t("game.forfeitConfirmTitle")}
-        description={t("game.forfeitConfirmBody")}
+        title={confirmTitle ?? t("game.forfeitConfirmTitle")}
+        description={confirmBody ?? t("game.forfeitConfirmBody")}
         actions={
           <>
             <Button variant="ghost" onClick={() => setConfirm(false)}>
@@ -225,7 +232,7 @@ export function GameMenu({
                 onForfeit();
               }}
             >
-              {t("game.forfeit")}
+              {forfeitLabel ?? t("game.forfeit")}
             </Button>
           </>
         }

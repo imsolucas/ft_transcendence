@@ -251,6 +251,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .bk-p.tbd { color: var(--fg-subtle); font-style: italic; }
 .bk-cell { position: relative; }
 .bk-tag { position: absolute; top: -23px; left: -1px; }
+.bk-match:has(.bk-tag) { margin-top: 24px; }
+/* phones: rounds stack top to bottom, no connector lines */
+@media (max-width: 640px) {
+  .bracket { flex-direction: column; overflow-x: visible; gap: var(--space-5); }
+  .bk-round { flex: none; min-width: 0; }
+  .bk-slot::before, .bk-slot::after, .bk-round:not(:first-child) .bk-match::before { display: none; }
+}
 
 /* CountdownOverlay and Reconnecting overlay */
 .overlay { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-5); background: var(--scrim); text-align: center; }

@@ -5,6 +5,7 @@ import type { Room } from "../types/room.types.ts";
 import type { MessageBroadcaster } from "./Broadcaster.ts";
 import { reportMatchResult } from "../utils/reportResults.ts";
 import { gameEnded } from "../presence.ts";
+import type TournamentService from "./TournamentService.ts";
 
 export const RECONNECT_GRACE_MS = 15_000;
 export const READY_DEADLINE_MS = 30_000;
@@ -12,8 +13,10 @@ export const READY_DEADLINE_MS = 30_000;
 const WS_OPEN = 1;
 
 /**
- * 1v1 match lifecycle around the core game: reconnect grace, forfeits, rematches and the
- * ready-check deadline. Tournaments keep their existing (leave = drop) behaviour.
+ * Match lifecycle around the core game: reconnect grace, forfeits, rematches and the
+ * ready-check deadline. Tournament rooms get the same reconnect grace for every player still
+ * in the bracket (the live match pauses if it is theirs), and forfeits go through the
+ * TournamentService; rematches and the room-wide ready deadline are 1v1 only.
  */
 export class MatchLifecycle {
   private pending = new Map<string, { roomId: string; timer: ReturnType<typeof setTimeout> }>();
@@ -24,7 +27,8 @@ export class MatchLifecycle {
     private roomManager: RoomManager,
     private broadcaster: MessageBroadcaster,
     /** removes a player for good (queue, room, storage) and tells the room */
-    private dropPlayer: (player: Player) => void
+    private dropPlayer: (player: Player) => void,
+    private tournaments: TournamentService
   ) {}
 
   // ---------------------------------------------------------------- reconnect grace
@@ -32,16 +36,21 @@ export class MatchLifecycle {
   /** A socket closed. Returns true when the player is being held for a reconnect. */
   onSocketClosed(player: Player): boolean {
     const room = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
-    if (!room || room.mode !== "standard" || room.status !== "playing") return false;
+    if (!room) return false;
+    const tournament = room.mode === "tournament";
+    if (tournament ? !this.tournaments.holdsSlot(room, player.id) : room.mode !== "standard" || room.status !== "playing") return false;
 
-    room.paused = true;
     const deadline = Date.now() + RECONNECT_GRACE_MS;
-    const msg: OpponentReconnectingMessage = {
-      type: "opponentReconnecting",
-      data: { playerId: player.id, playerName: player.name, deadline },
-      timestamp: Date.now(),
-    };
-    this.broadcaster.broadcastToRoom(room.id, msg, player.id);
+    // a tournament player who is only watching right now is held silently
+    if (!tournament || this.tournaments.isLivePlayer(room, player.id)) {
+      room.paused = true;
+      const msg: OpponentReconnectingMessage = {
+        type: "opponentReconnecting",
+        data: { playerId: player.id, playerName: player.name, deadline },
+        timestamp: Date.now(),
+      };
+      this.broadcaster.broadcastToRoom(room.id, msg, player.id);
+    }
 
     const timer = setTimeout(() => {
       this.pending.delete(player.id);
@@ -61,20 +70,25 @@ export class MatchLifecycle {
     const room = this.roomManager.getRoom(hold.roomId);
     clearTimeout(hold.timer);
     this.pending.delete(playerId);
-    if (!room || room.status !== "playing") return null;
+    if (!room) return null;
+    const tournament = room.mode === "tournament";
+    if (tournament ? !room.playerIds.includes(playerId) : room.status !== "playing") return null;
 
     player.socket = socket;
-    room.paused = false;
+    // resume unless the other player of the live match is away too
+    const pair = tournament ? this.tournaments.currentPair(room) : room.playerIds;
+    if (!pair?.some((id) => id !== playerId && this.pending.has(id))) room.paused = false;
     const rejoined: RejoinedMessage = {
       type: "rejoined",
       data: {
         roomId: room.id,
         playersInRoom: this.roomManager.getPlayersInRoom(room.id).map(toSerializablePlayer),
-        gameState: room.gameServer?.getGameState() ?? null,
+        gameState: room.status === "playing" ? (room.gameServer?.getGameState() ?? null) : null,
       },
       timestamp: Date.now(),
     };
     socket.send(JSON.stringify(rejoined));
+    if (tournament) this.tournaments.sendState(room, player);
     const back: OpponentReconnectedMessage = { type: "opponentReconnected", data: { playerId }, timestamp: Date.now() };
     this.broadcaster.broadcastToRoom(room.id, back, playerId);
     return player;
@@ -89,6 +103,11 @@ export class MatchLifecycle {
   /** The player gives up (menu or grace timeout): the other player wins and it is recorded. */
   forfeit(player: Player) {
     const room = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
+    if (room?.mode === "tournament") {
+      // lose the current match and stay in the room as a watcher
+      this.tournaments.forfeit(room, player.id);
+      return;
+    }
     if (!room || room.mode !== "standard" || room.status !== "playing" || !room.gameServer) return;
     const winnerId = room.playerIds.find((id) => id !== player.id);
     const winner = winnerId ? this.roomManager.getPlayer(winnerId) : undefined;

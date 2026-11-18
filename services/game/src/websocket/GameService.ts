@@ -42,10 +42,8 @@ export default class GameService {
 
         if (!room.gameServer) return false;
 
-        // In tournament, only king and challenger can send input
-        if (room.mode == 'tournament' && room.queueIds?.includes(player.id)) return true;
-
-        // Use player position to determine which paddle to control
+        // Tournament: only the two players of the current bracket match hold a seat (1 or 2);
+        // everyone else is at position 0 and watches. Use player position to determine which paddle to control
         // Position 1 = left paddle (player 1), Position 2 = right paddle (player 2)
         if (player.position === 1)
             room.gameServer.input(message.data.inputs, undefined);

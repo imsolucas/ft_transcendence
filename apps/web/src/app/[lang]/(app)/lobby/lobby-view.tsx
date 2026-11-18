@@ -119,7 +119,7 @@ function PlayPanel() {
           </div>
           <p className="muted t-caption">{t("lobby.tournamentBody")}</p>
           <div className="flex flex-wrap items-center gap-2">
-            <Segmented label={t("tournament.players", { n: size, max: 8 })} value={size} onChange={setSize} options={[4, 6, 8].map((n) => ({ value: n, label: String(n) }))} mono />
+            <Segmented label={t("lobby.tournamentSize")} value={size} onChange={setSize} options={[4, 6, 8].map((n) => ({ value: n, label: String(n) }))} mono />
             <Button asChild size="sm">
               <Link href={`${href("/play")}?mode=tournament-create&size=${size}`} className="no-underline">
                 {t("tournament.create")}

@@ -1,4 +1,4 @@
-import type { BaseMessage, CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, TournamentStateMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage, TournamentState } from "shared/index.ts";
+import type { CreateRoomMessage, GameMessage, JoinQueueMessage, JoinRoomMessage, Player, PlayerInputMessage, PlayerReadyMessage, ErrorMessage, GameErrorCodes, PlayerJoinedMessage, GameStartMessage, PlayerLeftMessage, QueueJoinedMessage, ConnectionMessage } from "shared/index.ts";
 import { toSerializablePlayer, default_config } from "shared/index.ts";
 import type { GameConfig } from "shared/index.ts";
 
@@ -27,7 +27,7 @@ import { MatchLifecycle } from "./MatchLifecycle.ts";
 const WS_OPEN = 1;
 
 export default class NewMessageHandler {
-    private tournamentService: TournamentService
+    readonly tournamentService: TournamentService
     private gameService: GameService
     private roomService: RoomService
     private broadcaster: MessageBroadcaster
@@ -36,13 +36,13 @@ export default class NewMessageHandler {
     // one shared broadcaster: index.ts attaches the spectator mirror to it
     constructor ( private roomManager: RoomManager, broadcaster?: MessageBroadcaster ) {
         this.broadcaster = broadcaster ?? new MessageBroadcaster(roomManager);
-        this.tournamentService = new TournamentService(roomManager, this.broadcaster);
         this.gameService = new GameService(roomManager, this.broadcaster);
+        this.tournamentService = new TournamentService(roomManager, this.broadcaster, (room) => this.gameService.startGame(room));
         this.roomService = new RoomService(roomManager);
-        this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p));
+        this.lifecycle = new MatchLifecycle(roomManager, this.broadcaster, (p) => this.handleDisconnection(p), this.tournamentService);
     }
 
-    /** The socket behind `player` closed: hold a 1v1 player for a reconnect, otherwise drop them. */
+    /** The socket behind `player` closed: hold a match/bracket player for a reconnect, otherwise drop them. */
     handleSocketClosed(player: Player): void {
         if (!this.lifecycle.onSocketClosed(player)) this.handleDisconnection(player);
     }
@@ -93,19 +93,25 @@ export default class NewMessageHandler {
     }
 
     handleDisconnection(player: Player): void {
-        const wasInQueue = this.roomService.leaveQueue(player);
-        const room = this.roomService.leaveRoom(player);
-
-        if (room) {
-            const leaveMessage: PlayerLeftMessage = {
-                type: 'playerLeft',
-                data: { playerName: player.name, playerId: player.id },
-                timestamp: Date.now()
-            };
-            this.broadcaster.broadcastToRoom(room.id, leaveMessage, player.id);
-        }
-
+        this.roomService.leaveQueue(player);
+        this.leaveCurrentRoom(player);
         this.roomManager.removePlayer(player.id);
+    }
+
+    /** Leaves the player's room (a tournament forfeits their match first); null if not in one. */
+    private leaveCurrentRoom(player: Player) {
+        const current = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
+        if (current?.mode === 'tournament') this.tournamentService.onLeaving(current, player);
+        const room = this.roomService.leaveRoom(player);
+        if (!room) return null;
+        const leaveMessage: PlayerLeftMessage = {
+            type: 'playerLeft',
+            data: { playerName: player.name, playerId: player.id },
+            timestamp: Date.now()
+        };
+        this.broadcaster.broadcastToRoom(room.id, leaveMessage, player.id);
+        if (room.mode === 'tournament') this.tournamentService.afterLeft(room);
+        return room;
     }
 
     routeMessage(message: GameMessage, player: Player): void {
@@ -136,6 +142,9 @@ export default class NewMessageHandler {
                 break;
             case "rematch":
                 this.lifecycle.requestRematch(player);
+                break;
+            case "startTournament":
+                this.handleStartTournament(player);
                 break;
           default:
             console.error(`[Router] ERROR: Unknown message type: ${message.type}`);
@@ -211,22 +220,18 @@ export default class NewMessageHandler {
     }
 
     handleLeaveRoom(player: Player) {
-        const room = this.roomService.leaveRoom(player);
+        const room = this.leaveCurrentRoom(player);
         if (!room) {
             this.sendError("Player not in room", 'ROOM_NOT_FOUND', player.socket);
-            return;
         }
+    }
 
-        const response: PlayerLeftMessage = {
-            type: 'playerLeft',
-            data: {
-                playerName: player.name,
-                playerId: player.id
-            },
-            timestamp: Date.now()
-        };
-
-        this.broadcaster.broadcastToRoom(room.id, response, player.id);
+    /** Host closes registration early (3+ players); identity is the socket's player. */
+    handleStartTournament(player: Player) {
+        const room = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
+        if (!room || room.mode !== 'tournament' || !this.tournamentService.requestStart(room, player)) {
+            this.sendError("Can't start this tournament", 'INVALID_REQUEST', player.socket);
+        }
     }
 
     handleLeaveQueue(player: Player) {
@@ -248,6 +253,14 @@ export default class NewMessageHandler {
     }
 
     handlePlayerReady(message: PlayerReadyMessage, player: Player) {
+        const ready = message.data?.ready === true;
+        const current = player.roomId ? this.roomManager.getRoom(player.roomId) : undefined;
+        if (current?.mode === 'tournament') {
+            // only the two players of the current bracket match ready up; the state says who did
+            this.tournamentService.setReady(current, player, ready);
+            return;
+        }
+        message.data = { ready };
         const success = this.gameService.setReady(message, player);
         if (!success.setReady) {
             this.sendError("Player not in room", 'ROOM_NOT_FOUND', player.socket);
@@ -271,12 +284,6 @@ export default class NewMessageHandler {
             this.lifecycle.clearReadyDeadline(room.id);
             const playersInRoom = this.roomManager.getPlayersInRoom(room.id);
 
-            let tournamentState: TournamentState | null = null;
-            if (room.mode === 'tournament') {
-                this.tournamentService.assignRoles(room);
-                tournamentState = this.tournamentService.getRoomTournamentState(room.id);
-            }
-
             const startMessage: GameStartMessage = {
                 type: 'gameStart',
                 data: {
@@ -285,7 +292,6 @@ export default class NewMessageHandler {
                     playerName: p.name,
                     position: p.position,
                     })),
-                    ...(tournamentState && { tournamentState })
                 },
                 timestamp: Date.now()
             };
@@ -328,6 +334,7 @@ export default class NewMessageHandler {
         this.broadcaster.broadcastToRoom(roomId, response);
 
         const room = this.roomManager.getRoom(roomId);
-        if (room && room.mode === "standard" && this.roomManager.isRoomFull(roomId)) this.lifecycle.armReadyDeadline(room);
+        if (room?.mode === "tournament") this.tournamentService.onJoined(room, player);
+        else if (room && room.mode === "standard" && this.roomManager.isRoomFull(roomId)) this.lifecycle.armReadyDeadline(room);
     }
 }

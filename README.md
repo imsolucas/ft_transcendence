@@ -3,7 +3,7 @@
 *This project has been created as part of the 42 curriculum by djin, tjun-yu, amaligno, ghwa.*
 
 Real-time Pong in the browser: accounts, friends, direct messages, online 1v1, private rooms,
-king-of-the-hill tournaments, local two-player games, a computer opponent, a leaderboard and
+bracket tournaments, local two-player games, a computer opponent, a leaderboard and
 achievements, and a retro CRT / synthwave look. Originally the 42 Common
 Core final project; since rebuilt as a personal project (2026) on a modern stack.
 
@@ -194,7 +194,7 @@ warned about unused preloads.
 | 4 | Status page, database-aware health checks, scheduled backups, restore and disaster recovery | Done |
 | 5 | Modules of the 42 subject (see below) | In progress |
 
-Known limitations: tournaments are king-of-the-hill rather than a bracket; the court stays
+Known limitations: the court stays
 landscape on phones; chat has no docked panel yet (full page only); email verification is sent but
 not required to play.
 
@@ -218,7 +218,7 @@ not required to play.
 | Health check, status page, backups and disaster recovery | Minor | Done |
 | GDPR (export, deletion with confirmation, confirmation emails) | Minor | Done |
 | Additional browsers | Minor | Partial: Firefox done, Safari untested |
-| Tournament system | Minor | Partial: king-of-the-hill, no bracket |
+| Tournament system (single-elimination bracket for 3 to 8 players: registration by room code, random seeding with byes, ready check per match, forfeits and walkovers, live bracket for players and watchers) | Minor | Done |
 | Game customization (power-ups, speeds, points, 4 court themes, defaults; the AI plays with all of them) | Minor | Done |
 | Advanced search (name, status and friendship filters, sorting, pagination) | Minor | Done |
 | Spectator mode (live public matches, read-only view, live spectator count) | Minor | Done |
