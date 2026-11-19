@@ -11,8 +11,8 @@ import { HitStop, type ReplayFrame } from "@/lib/game/fx";
 import { CourtThemePicker } from "@/components/game/court-theme-picker";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useReturnTo } from "@/lib/return-to";
 import { usePrefs } from "@/lib/prefs";
-import { useSignedIn } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { FormField, Input } from "@/components/ui/form";
 import { Kbd, Panel, Segmented } from "@/components/ui/primitives";
@@ -345,8 +345,7 @@ function LocalMatch({ setup, onPlayAgain, onChangeSetup }: { setup: Setup; onPla
   );
 }
 
-/** Back goes where the player came from: the lobby when signed in, the landing page for guests. */
+/** Back goes where the player came from: the arcade hall, the lobby, or the landing page for guests. */
 function useBackHref() {
-  const { href } = useI18n();
-  return href(useSignedIn() ? "/lobby" : "/");
+  return useReturnTo().href;
 }

@@ -12,6 +12,7 @@
     "retry": "Reintentar",
     "back": "Volver",
     "backToLobby": "Volver al vestíbulo",
+    "backToArcade": "Volver al salón recreativo",
     "loading": "Cargando…",
     "copy": "Copiar",
     "copied": "Copiado",
@@ -1102,6 +1103,20 @@
     "getReady": "PREPÁRATE",
     "ridingCount": "{n} en carrera",
     "quick": "Buscar pilotos"
+  },
+  "cyclesSolo": {
+    "title": "Light Cycles contra bots",
+    "subtitle": "Compite contra 1 a 3 pilotos de la computadora. Gana el último que siga en pie.",
+    "solo": "Solo contra bots",
+    "practice": "Practicar contra bots",
+    "bots": "Bots",
+    "start": "Empezar carrera",
+    "botName": "BOT-{n}",
+    "youWin": "¡Ganaste!",
+    "crashedOut": "Te estrellaste",
+    "place": "Puesto {place} de {n}",
+    "changeSetup": "Cambiar ajustes",
+    "notRecorded": "Las carreras de práctica contra bots no cuentan para estadísticas, monedas ni misiones."
   },
   "quests": {
     "title": "Misiones diarias",

@@ -12,6 +12,7 @@
     "retry": "Réessayer",
     "back": "Retour",
     "backToLobby": "Retour au lobby",
+    "backToArcade": "Retour à la salle d'arcade",
     "loading": "Chargement…",
     "copy": "Copier",
     "copied": "Copié",
@@ -1102,6 +1103,20 @@
     "getReady": "PRÊTS ?",
     "ridingCount": "{n} en course",
     "quick": "Trouver des pilotes"
+  },
+  "cyclesSolo": {
+    "title": "Light Cycles contre des bots",
+    "subtitle": "Affrontez 1 à 3 pilotes ordinateur. Le dernier encore en piste gagne.",
+    "solo": "Solo contre des bots",
+    "practice": "S'entraîner contre des bots",
+    "bots": "Bots",
+    "start": "Lancer la course",
+    "botName": "BOT-{n}",
+    "youWin": "Vous avez gagné !",
+    "crashedOut": "Vous vous êtes écrasé",
+    "place": "Place {place} sur {n}",
+    "changeSetup": "Modifier les réglages",
+    "notRecorded": "Les courses d'entraînement contre des bots ne comptent ni pour les statistiques, ni pour les pièces, ni pour les quêtes."
   },
   "quests": {
     "title": "Quêtes du jour",

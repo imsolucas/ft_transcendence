@@ -7,6 +7,7 @@ import { AlertTriangle, Copy, Crown, Eye, Users } from "lucide-react";
 import type { CyclesState, PartyGame, PartyPlayer, PartySide, PartyStanding, PartyState, serializablePlayer } from "shared";
 import { applyCyclesDelta } from "shared/game-engine/cycles/CyclesEngine";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useReturnTo, withFrom } from "@/lib/return-to";
 import { useMe } from "@/lib/session";
 import { announceAchievement, announceLevelUp } from "@/lib/realtime";
 import { GameSocket, type ConnectionStatus, type ServerMessage } from "@/lib/game/socket";
@@ -46,6 +47,8 @@ const CYCLES_COPY = new Set(["title", "searchingBody", "lobbyTitle", "shareCode"
 
 function PartyMatch({ game, mode, code, onRestart }: { game: PartyGame; mode: PartyMode; code: string; onRestart: () => void }) {
   const { t: tr, href } = useI18n();
+  const back = useReturnTo();
+  const fromArcade = useSearchParams().get("from") === "arcade";
   // the game actually being played (a room joined by code may be the other game)
   const [playing, setPlaying] = useState<PartyGame>(game);
   // read through a ref so `t` stays the same function: the socket effect depends on it
@@ -276,7 +279,7 @@ function PartyMatch({ game, mode, code, onRestart }: { game: PartyGame; mode: Pa
   function leave() {
     socketRef.current?.send({ type: "leaveQueue", data: { playerName: "" } });
     socketRef.current?.send({ type: "leaveRoom", data: { playerName: "" } });
-    router.push(href("/lobby"));
+    router.push(back.href);
   }
 
   const onInputs = useCallback((d: PartyDir) => {
@@ -305,8 +308,8 @@ function PartyMatch({ game, mode, code, onRestart }: { game: PartyGame; mode: Pa
                 </Button>
               )}
               <Button asChild>
-                <Link href={href("/lobby")} className="no-underline">
-                  {t("common.backToLobby")}
+                <Link href={back.href} className="no-underline">
+                  {back.label}
                 </Link>
               </Button>
             </div>
@@ -341,7 +344,16 @@ function PartyMatch({ game, mode, code, onRestart }: { game: PartyGame; mode: Pa
         <p className="muted" aria-live="polite">
           {startsIn !== null ? t("party.startsIn", { s: startsIn }) : t("party.searchingBody")}
         </p>
-        <Button onClick={leave}>{t("common.cancel")}</Button>
+        <div className="row wrap justify-center">
+          <Button onClick={leave}>{t("common.cancel")}</Button>
+          {game === "cycles" && (
+            <Button asChild variant="ghost">
+              <Link href={fromArcade ? withFrom(href("/cycles"), "arcade") : href("/cycles")} className="no-underline">
+                {t("cyclesSolo.practice")}
+              </Link>
+            </Button>
+          )}
+        </div>
       </Centered>
     );
   }
@@ -460,8 +472,8 @@ function PartyMatch({ game, mode, code, onRestart }: { game: PartyGame; mode: Pa
             {mode === "join" ? t("common.retry") : t("game.playAgain")}
           </Button>
           <Button asChild size="lg">
-            <Link href={href("/lobby")} className="no-underline">
-              {t("common.backToLobby")}
+            <Link href={back.href} className="no-underline">
+              {back.label}
             </Link>
           </Button>
         </div>

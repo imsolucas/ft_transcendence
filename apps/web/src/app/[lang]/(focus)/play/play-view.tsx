@@ -13,6 +13,7 @@ import type { Division, GameState, PlayerInputs, serializablePlayer, TournamentS
 import { PLACEMENT_GAMES } from "shared";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useReturnTo } from "@/lib/return-to";
 import { useMe } from "@/lib/session";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -54,7 +55,8 @@ export function PlayView() {
 }
 
 function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; code: string; size: number; invite: string | null; onRestart: () => void }) {
-  const { t, href } = useI18n();
+  const { t } = useI18n();
+  const back = useReturnTo();
   const router = useRouter();
   const { me } = useMe();
   const { prefs, setPref } = usePrefs();
@@ -357,7 +359,7 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
   function cancel() {
     socketRef.current?.send({ type: "leaveQueue", data: { playerName: "" } });
     socketRef.current?.send({ type: "leaveRoom", data: { playerName: "" } });
-    router.push(href("/lobby"));
+    router.push(back.href);
   }
 
   const ready = () => {
@@ -411,8 +413,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
                 </Button>
               )}
               <Button asChild>
-                <Link href={href("/lobby")} className="no-underline">
-                  {t("common.backToLobby")}
+                <Link href={back.href} className="no-underline">
+                  {back.label}
                 </Link>
               </Button>
             </div>
@@ -574,8 +576,8 @@ function OnlineMatch({ mode, code, size, invite, onRestart }: { mode: PlayMode; 
         }
         secondary={
           <Button asChild size="lg">
-            <Link href={href("/lobby")} className="no-underline">
-              {t("common.backToLobby")}
+            <Link href={back.href} className="no-underline">
+              {back.label}
             </Link>
           </Button>
         }
@@ -722,7 +724,8 @@ function TournamentScreen({
   /** only the creator can open a fresh tournament (a joiner has no new code to join) */
   onNew?: (() => void) | undefined;
 }) {
-  const { t, href } = useI18n();
+  const { t } = useI18n();
+  const back = useReturnTo();
   const nameOf = (id: string | null) => state.players.find((p) => p.id === id)?.name ?? "?";
   const live = currentMatch(state);
   const inLive = !!myId && !!live && (live.p1 === myId || live.p2 === myId);
@@ -860,8 +863,8 @@ function TournamentScreen({
               </Button>
             )}
             <Button asChild>
-              <Link href={href("/lobby")} className="no-underline">
-                {t("common.backToLobby")}
+              <Link href={back.href} className="no-underline">
+                {back.label}
               </Link>
             </Button>
           </>

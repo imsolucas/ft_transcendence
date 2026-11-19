@@ -288,6 +288,11 @@ function PlayPanel() {
                 {t("party.create")}
               </Link>
             </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link href={href("/cycles")} className="no-underline">
+                {t("cyclesSolo.solo")}
+              </Link>
+            </Button>
           </div>
           <form className="stack" onSubmit={(e) => join(e, pCode, setPError, "join", "/party")} noValidate>
             <div className="flex flex-wrap gap-2 [&>.input]:min-w-0 [&>.input]:flex-1">

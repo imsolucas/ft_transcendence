@@ -24,6 +24,7 @@ import {
   type HallPos,
 } from "shared/hall/hall";
 import { useI18n } from "@/i18n/I18nProvider";
+import { withFrom } from "@/lib/return-to";
 import { fetcher } from "@/lib/api";
 import type { DailyInfo } from "@/lib/types";
 import { GameSocket, type ConnectionStatus } from "@/lib/game/socket";
@@ -211,7 +212,7 @@ export function ArcadeView() {
   const openCabinet = useCallback(
     (id: CabinetId | null) => {
       const c = CABINETS.find((x) => x.id === id);
-      if (c) router.push(c.path.replace(/^\/[a-z]+/, (p) => href(p)));
+      if (c) router.push(withFrom(c.path.replace(/^\/[a-z]+/, (p) => href(p)), "arcade"));
     },
     [router, href]
   );
@@ -489,7 +490,7 @@ export function ArcadeView() {
         <div className="row wrap !gap-2">
           {CABINETS.map((c) => (
             <Button key={c.id} asChild size="sm">
-              <Link href={c.path.replace(/^\/[a-z]+/, (p) => href(p))}>{t(`arcade.cab.${c.id}`)}</Link>
+              <Link href={withFrom(c.path.replace(/^\/[a-z]+/, (p) => href(p)), "arcade")}>{t(`arcade.cab.${c.id}`)}</Link>
             </Button>
           ))}
         </div>

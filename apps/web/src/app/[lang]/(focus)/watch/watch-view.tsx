@@ -7,6 +7,7 @@ import { ArrowLeft, Eye, Radio, Trophy } from "lucide-react";
 import type { CyclesState, GameConfig, GameState, LiveMatch, PartyPlayer, PartyState } from "shared";
 import { applyCyclesDelta } from "shared/game-engine/cycles/CyclesEngine";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useReturnTo } from "@/lib/return-to";
 import { GameSocket, type ConnectionStatus } from "@/lib/game/socket";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/form";
@@ -27,6 +28,7 @@ type View =
 /** Spectator mode: the live public matches, or one match read-only (?room= or ?user=). */
 export function WatchView() {
   const { t, href } = useI18n();
+  const returnTo = useReturnTo();
   const router = useRouter();
   const params = useSearchParams();
   const roomParam = params.get("room");
@@ -268,7 +270,7 @@ export function WatchView() {
   // ---- list
   return (
     <div className="mx-auto flex w-full max-w-[720px] flex-col gap-4 p-4 md:p-8">
-      <Link href={href("/lobby")} className="row t-label no-underline">
+      <Link href={returnTo.href} className="row t-label no-underline">
         <ArrowLeft className="ico" aria-hidden />
         {t("common.back")}
       </Link>

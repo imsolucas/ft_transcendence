@@ -90,6 +90,22 @@ export class CyclesEngine {
     return this.#cycles.map((c) => (c.alive ? 1 : 0));
   }
 
+  get phase(): CyclesState["phase"] {
+    return this.#phase;
+  }
+  /** for bots: inside the arena and not on any trail */
+  isFree(x: number, y: number): boolean {
+    return x >= 0 && y >= 0 && x < CYCLES_SIZE && y < CYCLES_SIZE && this.#grid[y * CYCLES_SIZE + x] === -1;
+  }
+  /** for bots: where a rider is and which way it's heading (null for an unknown seat) */
+  rider(seat: number): CycleHead | null {
+    const c = this.#cycles[seat];
+    return c ? { seat: c.seat, x: c.x, y: c.y, dir: c.dir, alive: c.alive } : null;
+  }
+  get riders(): number {
+    return this.#cycles.length;
+  }
+
   /** held buttons; a press (not a hold) queues one turn */
   input(seat: number, inputs: { left: boolean; right: boolean }): void {
     const c = this.#cycles[seat];

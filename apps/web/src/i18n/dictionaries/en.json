@@ -12,6 +12,7 @@
     "retry": "Try again",
     "back": "Back",
     "backToLobby": "Back to lobby",
+    "backToArcade": "Back to the arcade",
     "loading": "Loading…",
     "copy": "Copy",
     "copied": "Copied",
@@ -1102,6 +1103,20 @@
     "getReady": "GET READY",
     "ridingCount": "{n} riding",
     "quick": "Find riders"
+  },
+  "cyclesSolo": {
+    "title": "Light Cycles vs bots",
+    "subtitle": "Race 1 to 3 computer riders. Last one riding wins.",
+    "solo": "Solo vs bots",
+    "practice": "Practice vs bots",
+    "bots": "Bots",
+    "start": "Start race",
+    "botName": "BOT-{n}",
+    "youWin": "You win!",
+    "crashedOut": "You crashed",
+    "place": "Place {place} of {n}",
+    "changeSetup": "Change setup",
+    "notRecorded": "Practice races against bots don't count toward stats, coins or quests."
   },
   "quests": {
     "title": "Daily quests",

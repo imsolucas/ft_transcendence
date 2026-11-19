@@ -14,6 +14,7 @@ import {
   type DailyChallenge,
 } from "shared/daily/daily";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useReturnTo } from "@/lib/return-to";
 import { usePrefs } from "@/lib/prefs";
 import { api, ApiError, fetcher } from "@/lib/api";
 import { useSignedIn } from "@/lib/session";
@@ -34,6 +35,7 @@ type Result = { practice: true; score: number } | { practice: false; finish: Dai
 /** Daily Challenge: today's twist and board → a run against BIT → the result. */
 export function DailyView() {
   const { t, href } = useI18n();
+  const back = useReturnTo();
   const signedIn = useSignedIn();
   // guests never ask /api/me (its 401 would open the "session expired" dialog)
   const { data: user } = useSWR<Me>(signedIn ? "/api/me" : null, fetcher, { revalidateOnFocus: false });
@@ -154,7 +156,7 @@ export function DailyView() {
   const left = me?.attemptsLeft ?? 0;
   return (
     <div className="mx-auto w-full max-w-[1100px] px-4 py-8">
-      <Link href={href(signedIn ? "/lobby" : "/")} className="row t-label mb-4 no-underline text-fg-muted">
+      <Link href={back.href} className="row t-label mb-4 no-underline text-fg-muted">
         <ArrowLeft className="ico" aria-hidden /> {t("common.back")}
       </Link>
       <header className="row mb-6 !gap-4">
