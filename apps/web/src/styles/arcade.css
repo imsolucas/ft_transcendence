@@ -129,26 +129,28 @@ html.arcade:not(.crt-off) .crt { box-shadow: inset 0 0 0 3px var(--ink-black), i
 .hall-board-text { position: absolute; inset: 4px 4px 12px; display: grid; align-content: start; gap: 2px; font: 400 5px/6px var(--font-display); color: var(--neon-amber); }
 .hall-board-title { color: var(--fg); margin-bottom: 1px; }
 .hall-player { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; pointer-events: none; }
-/* a little character: portrait on two pixel legs; the whole body bobs and the legs step while walking */
-.hall-body { position: absolute; left: -8px; top: -22px; width: 16px; height: 22px; }
-.hall-player .hall-avatar { position: absolute; left: 0; top: 0; width: 16px !important; height: 16px !important; min-width: 0; font-size: 5px; border-width: 1px; }
-.hall-legs { position: absolute; left: 3px; top: 16px; fill: var(--ink-black); }
-.hall-player[data-you] .hall-legs { fill: var(--neon-magenta); }
-.hall-legs .hall-step-b { visibility: hidden; }
-.hall-player[data-facing="l"] .hall-legs { transform: scaleX(-1); }
+/* a full-body pixel character (components/arcade/hall-character.tsx): one <g> per pose.
+   Standing shows "stand"; walking steps through walk0..3 (front-facing RPG walk cycle). */
+.hall-body { position: absolute; left: -9px; top: -26px; width: 18px; height: 27px; }
+.hall-char { display: block; width: 100%; height: 100%; overflow: visible; }
+.hall-player[data-facing="l"] .hall-char { transform: scaleX(-1); }
+.hall-pose { visibility: hidden; }
+.hall-pose-stand { visibility: visible; }
 @media (prefers-reduced-motion: no-preference) {
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-body { animation: hall-bob 300ms steps(1, end) infinite; }
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-step-a { animation: hall-step 300ms steps(1, end) infinite; }
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-step-b { animation: hall-step 300ms steps(1, end) infinite reverse; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-stand { visibility: hidden; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose:not(.hall-pose-stand) { animation: hall-walk 560ms steps(1, end) infinite; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk1 { animation-delay: -420ms; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk2 { animation-delay: -280ms; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk3 { animation-delay: -140ms; }
 }
-@keyframes hall-bob { 0%, 49% { transform: translateY(0); } 50%, 100% { transform: translateY(-1px); } }
-@keyframes hall-step { 0%, 49% { visibility: visible; } 50%, 100% { visibility: hidden; } }
-.hall-player[data-facing="l"] .hall-avatar svg { transform: scaleX(-1); }
-.hall-player[data-you] .hall-avatar { outline: 1px solid var(--neon-magenta); outline-offset: 1px; }
-.hall-player::after { content: ""; position: absolute; left: -6px; top: -2px; width: 12px; height: 3px; background: color-mix(in srgb, var(--ink-black) 45%, transparent); }
-.hall-name { position: absolute; left: 50%; top: -29px; transform: translateX(-50%); padding: 0 2px; white-space: nowrap; font: 600 5px/6px var(--font-body); color: var(--fg); background: color-mix(in srgb, var(--bg) 70%, transparent); }
+/* each walk frame is visible for its quarter of the cycle (offset by the delays above) */
+@keyframes hall-walk { 0%, 24.99% { visibility: visible; } 25%, 100% { visibility: hidden; } }
+/* you: a soft neon glow around your own character */
+.hall-player[data-you] .hall-char { filter: drop-shadow(0 0 1.5px var(--neon-magenta)); }
+.hall-player::after { content: ""; position: absolute; left: -6px; top: -1px; width: 12px; height: 3px; border-radius: 50%; background: color-mix(in srgb, var(--ink-black) 45%, transparent); }
+.hall-name { position: absolute; left: 50%; top: -33px; transform: translateX(-50%); padding: 0 2px; white-space: nowrap; font: 600 5px/6px var(--font-body); color: var(--fg); background: color-mix(in srgb, var(--bg) 70%, transparent); }
 .hall-player[data-you] .hall-name { color: var(--neon-magenta); }
-.hall-bubble { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); padding: 1px 3px; white-space: nowrap; font: 400 5px/7px var(--font-display); color: var(--ink-black); background: var(--fg); }
+.hall-bubble { position: absolute; left: 50%; bottom: 35px; transform: translateX(-50%); padding: 1px 3px; white-space: nowrap; font: 400 5px/7px var(--font-display); color: var(--ink-black); background: var(--fg); }
 .hall-bubble::after { content: ""; position: absolute; left: 50%; bottom: -2px; width: 2px; height: 2px; margin-left: -1px; background: var(--fg); }
 @media (prefers-reduced-motion: no-preference) {
   :root:not(.reduce-motion) .hall-bubble { animation: arcade-blink 900ms steps(1, end) 1 reverse; }

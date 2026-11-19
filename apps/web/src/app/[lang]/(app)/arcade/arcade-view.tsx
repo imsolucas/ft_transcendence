@@ -27,9 +27,10 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { fetcher } from "@/lib/api";
 import type { DailyInfo } from "@/lib/types";
 import { GameSocket, type ConnectionStatus } from "@/lib/game/socket";
-import { Avatar, EmptyState, Panel } from "@/components/ui/primitives";
+import { EmptyState, Panel } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { BoardArt, CabinetArt, CouchArt } from "@/components/arcade/hall-art";
+import { HallCharacter } from "@/components/arcade/hall-character";
 
 const KEY_BITS: Record<string, number> = {
   w: HALL_UP,
@@ -521,22 +522,7 @@ function HallAvatar({
       )}
       <span className="hall-name">{label}</span>
       <span className="hall-body">
-        <Avatar name={player.name} src={player.avatar} look={player.look} size="sm" className="hall-avatar" />
-        {/* two pixel legs; the walk cycle swaps the two frames */}
-        <svg className="hall-legs" width="10" height="5" viewBox="0 0 10 5" shapeRendering="crispEdges" aria-hidden focusable="false">
-          <g className="hall-step-a">
-            <rect x="2" y="0" width="2" height="4" />
-            <rect x="6" y="0" width="2" height="4" />
-            <rect x="1" y="4" width="3" height="1" />
-            <rect x="6" y="4" width="3" height="1" />
-          </g>
-          <g className="hall-step-b">
-            <rect x="1" y="0" width="2" height="3" />
-            <rect x="7" y="0" width="2" height="4" />
-            <rect x="0" y="3" width="3" height="1" />
-            <rect x="7" y="4" width="3" height="1" />
-          </g>
-        </svg>
+        <HallCharacter id={player.id} look={player.look} />
       </span>
     </div>
   );

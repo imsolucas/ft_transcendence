@@ -267,3 +267,98 @@ export function avatarRuns(spec: AvatarSpec): { x: number; y: number; w: number;
   });
   return runs;
 }
+
+// ---------------------------------------------------------------- full-body character (arcade hall)
+
+/** Walking sprite poses: standing, then a 4-frame walk cycle (contact, passing, contact, passing). */
+export type CharacterPose = "stand" | "walk0" | "walk1" | "walk2" | "walk3";
+export const CHARACTER_POSES: readonly CharacterPose[] = ["stand", "walk0", "walk1", "walk2", "walk3"];
+/** sprite grid incl. a 1-pixel outline margin and one spare row for the walk bob */
+export const CHARACTER_W = 14;
+export const CHARACTER_H = 21;
+
+const SHIRT_SHADES = ["#c41f72", "#16a9bd", "#c7861f", "#4fc244", "#7140c4", "#b3b0c2"];
+const PANTS = { P: "#3a3f78" };
+const SHOE = { B: "#e8e6f0", b: "#9d8ec2" };
+const OUTLINE = "#0b0614";
+
+// Body below the head (rows 10..17 of the 12-wide figure), front-facing like a classic RPG
+// sprite. C shirt, c shirt shade, S hand (skin), P trousers, B shoe, b sole.
+const TORSO: Record<CharacterPose, Rows> = {
+  stand: ["..cCCCCCCc..", ".cCCCCCCCCc.", ".cCCCCCCCCc.", ".SCCCCCCCCS."],
+  // the hand opposite the lifted foot swings up
+  walk0: ["..cCCCCCCc..", ".cCCCCCCCCc.", ".cCCCCCCCCS.", ".SCCCCCCCC.."],
+  walk1: ["..cCCCCCCc..", ".cCCCCCCCCc.", ".cCCCCCCCCc.", ".SCCCCCCCCS."],
+  walk2: ["..cCCCCCCc..", ".cCCCCCCCCc.", ".SCCCCCCCCc.", "..CCCCCCCCS."],
+  walk3: ["..cCCCCCCc..", ".cCCCCCCCCc.", ".cCCCCCCCCc.", ".SCCCCCCCCS."],
+};
+const LEGS: Record<CharacterPose, Rows> = {
+  stand: ["...PPPPPP...", "...PP..PP...", "...BB..BB...", "...bb..bb..."],
+  // left foot up
+  walk0: ["...PPPPPP...", "...BB..PP...", "...bb..BB...", ".......bb..."],
+  // passing: feet together, body up a pixel
+  walk1: ["...PPPPPP...", "...PP..PP...", "...BB..BB...", "...bb..bb..."],
+  // right foot up
+  walk2: ["...PPPPPP...", "...PP..BB...", "...BB..bb...", "...bb......."],
+  walk3: ["...PPPPPP...", "...PP..PP...", "...BB..BB...", "...bb..bb..."],
+};
+
+/**
+ * A full-body pixel character for `spec` in one pose (front-facing; flip it for left), as
+ * horizontal runs on a CHARACTER_W × CHARACTER_H grid with a transparent background and a
+ * dark 1-pixel outline. The head is the player's 12×12 avatar head (hair, eyes, mouth, item).
+ */
+export function characterRuns(spec: AvatarSpec, pose: CharacterPose): { x: number; y: number; w: number; c: string }[] {
+  const grid: (string | null)[][] = Array.from({ length: CHARACTER_H }, () => Array<string | null>(CHARACTER_W).fill(null));
+  const lift = pose === "walk1" || pose === "walk3" ? 1 : 0;
+  const ox = 1;
+  const oy = 2 - lift;
+  const skin = SKINS[spec.skin] ?? SKINS[0]!;
+  const shirt = SHIRTS[spec.shirt] ?? SHIRTS[0]!;
+  const shirtShade = SHIRT_SHADES[spec.shirt] ?? SHIRT_SHADES[0]!;
+  const paint = (rows: Rows, top: number, colour: (ch: string) => string | null) => {
+    rows.forEach((row, i) => {
+      const y = oy + top + i;
+      if (y < 0 || y >= CHARACTER_H) return;
+      for (let x = 0; x < row.length && x < AVATAR_GRID; x++) {
+        const ch = row[x]!;
+        if (ch === ".") continue;
+        const c = colour(ch);
+        if (c) grid[y]![ox + x] = c;
+      }
+    });
+  };
+  const body = (ch: string) =>
+    ch === "C" ? shirt : ch === "c" ? shirtShade : ch === "S" ? skin.base : ch === "P" ? PANTS.P : ch === "B" ? SHOE.B : ch === "b" ? SHOE.b : null;
+  paint(LEGS[pose], 14, body);
+  paint(TORSO[pose], 10, body);
+  // head: rows 0..9 of the avatar, without its background and bust
+  paint(HEAD, 0, (ch) => (ch === "S" ? skin.base : ch === "s" ? skin.shade : null));
+  paint(EYES[spec.eyes]?.rows ?? [], 0, (ch) => (ch === "E" ? INK.eye : ch === "W" ? INK.white : null));
+  paint(MOUTHS[spec.mouth]?.rows ?? [], 0, (ch) => (ch === "M" ? INK.mouth : ch === "W" ? INK.white : null));
+  paint((HAIRS[spec.hair]?.rows ?? []).slice(0, 10), 0, (ch) => (ch === "H" ? (HAIR_COLORS[spec.hairColor] ?? HAIR_COLORS[0]!) : null));
+  const item = ITEMS[spec.item];
+  if (item) paint(item.rows, 0, (ch) => (ch === "A" ? item.colors.A : ch === "a" ? item.colors.a : null));
+
+  // 1-pixel outline around the whole silhouette (4-neighbourhood)
+  const filled = grid.map((row) => row.map((c) => c !== null));
+  for (let y = 0; y < CHARACTER_H; y++) {
+    for (let x = 0; x < CHARACTER_W; x++) {
+      if (filled[y]![x]) continue;
+      if (filled[y - 1]?.[x] || filled[y + 1]?.[x] || filled[y]![x - 1] || filled[y]![x + 1]) grid[y]![x] = OUTLINE;
+    }
+  }
+
+  const runs: { x: number; y: number; w: number; c: string }[] = [];
+  grid.forEach((row, y) => {
+    let x = 0;
+    while (x < CHARACTER_W) {
+      const c = row[x];
+      let w = 1;
+      while (x + w < CHARACTER_W && row[x + w] === c) w++;
+      if (c) runs.push({ x, y, w, c });
+      x += w;
+    }
+  });
+  return runs;
+}
