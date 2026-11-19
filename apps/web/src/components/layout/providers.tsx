@@ -97,6 +97,11 @@ export function Providers({ locale, dict, children }: { locale: Locale; dict: Di
           </Suspense>
           <Toaster
             position="bottom-right"
+            // Inline on purpose: sonner injects an unlayered `system-ui` font rule at runtime, and
+            // unlayered CSS beats everything in our @layer components, whatever its specificity.
+            // On phones with a decorative system font (scaled by the arcade font-size-adjust)
+            // that made toast text huge and overlapping.
+            style={{ fontFamily: "var(--font-body)" }}
             toastOptions={{
               unstyled: true,
               classNames: {

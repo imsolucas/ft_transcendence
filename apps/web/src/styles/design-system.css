@@ -151,11 +151,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); flex-wrap: wrap; }
 
 /* Toast and Banner */
-/* sonner sets its own system-ui font stack, injected at runtime after this file: on phones whose
-   system font is decorative (e.g. a handwriting font) that font, scaled by the arcade
-   font-size-adjust, made toasts huge and overlapping. Toasts use the app fonts like everything else. */
-:root [data-sonner-toaster] { font-family: var(--font-body); }
-.toast { display: flex; align-items: flex-start; gap: var(--space-3); width: 360px; max-width: 100%; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-3); box-shadow: var(--shadow-pop); }
+/* The toaster's font is set inline on <Toaster> (providers.tsx): sonner's own unlayered rule would
+   beat anything in this layer. Long unbroken chat messages wrap instead of overflowing. */
+.toast { overflow-wrap: anywhere; display: flex; align-items: flex-start; gap: var(--space-3); width: 360px; max-width: 100%; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-3); box-shadow: var(--shadow-pop); }
 .toast > .ico { margin-top: 2px; }
 .toast-success > .ico { color: var(--neon-green); } .toast-error > .ico { color: var(--neon-red); }
 .toast-info > .ico { color: var(--neon-cyan); } .toast-warn > .ico { color: var(--neon-amber); }
