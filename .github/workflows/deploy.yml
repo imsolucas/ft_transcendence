@@ -1,0 +1,98 @@
+# Every push to main: typecheck + lint all three apps, then deploy to the Oracle server.
+# The deploy key is restricted on the server to one forced command (~/volley-deploy.sh): it
+# receives a tar of this commit, swaps the code (keeping infra/.env.prod and backups/) and runs
+# `make prod`. Repository secrets: DEPLOY_HOST, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# one deploy at a time; a newer push waits instead of cancelling a half-finished deploy
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            services/users/package-lock.json
+            services/game/package-lock.json
+
+      - name: Web
+        working-directory: apps/web
+        run: |
+          npm ci --no-audit --no-fund
+          # route types (LayoutProps, PageProps) live in .next/types, which a fresh checkout lacks
+          npx next typegen
+          npx tsc --noEmit
+          npm run lint
+
+      - name: Users service
+        working-directory: services/users
+        run: |
+          npm ci --no-audit --no-fund
+          npx prisma generate
+          npm run typecheck
+
+      - name: Game service
+        working-directory: services/game
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run party:check
+          npm run party:flow
+
+  deploy:
+    name: Deploy to production
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://volley.lucasdyj.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ship this commit to the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          git archive --format=tar HEAD | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "ubuntu@${DEPLOY_HOST}"
+
+      - name: Smoke test
+        run: |
+          for path in /en /api/config; do
+            for attempt in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "https://volley.lucasdyj.dev${path}") || true
+              [ "$code" = 200 ] && { echo "${path} ${code}"; break; }
+              [ "$attempt" = 6 ] && { echo "::error::${path} answered ${code}"; exit 1; }
+              sleep 10
+            done
+          done
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy
