@@ -138,12 +138,13 @@ html.arcade:not(.crt-off) .crt { box-shadow: inset 0 0 0 3px var(--ink-black), i
 .hall-pose-stand { visibility: visible; }
 @media (prefers-reduced-motion: no-preference) {
   :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-stand { visibility: hidden; }
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose:not(.hall-pose-stand) { animation: hall-walk 560ms steps(1, end) infinite; }
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk1 { animation-delay: -420ms; }
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk2 { animation-delay: -280ms; }
-  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk3 { animation-delay: -140ms; }
+  /* one full rule per frame (same specificity, so no rule can drop another's delay): each frame
+     is visible for its own quarter of the 560 ms cycle, exactly one at a time */
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk0 { animation: hall-walk 560ms steps(1, end) 0ms infinite; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk1 { animation: hall-walk 560ms steps(1, end) -420ms infinite; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk2 { animation: hall-walk 560ms steps(1, end) -280ms infinite; }
+  :root:not(.reduce-motion) .hall-player[data-moving] .hall-pose-walk3 { animation: hall-walk 560ms steps(1, end) -140ms infinite; }
 }
-/* each walk frame is visible for its quarter of the cycle (offset by the delays above) */
 @keyframes hall-walk { 0%, 24.99% { visibility: visible; } 25%, 100% { visibility: hidden; } }
 /* you: a soft neon glow around your own character */
 .hall-player[data-you] .hall-char { filter: drop-shadow(0 0 1.5px var(--neon-magenta)); }
